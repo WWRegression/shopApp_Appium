@@ -1,0 +1,33 @@
+{
+  "siteCode": "VN",
+  "countryName": "Việt Nam (Tiếng Việt)",
+  "searchApiPath": "global",
+  "customer": {
+    "firstName": "KK Katalon",
+    "mobile": "0912345678"
+  },
+  "shipping": {
+    "address1": "Lê Văn Lương",
+    "address2": "111",
+    "landmark": "Xã Đông Hiệp",
+    "town": "Thành phố Cần Thơ",
+    "searchText": "Thành phố Cần Thơ"
+  },
+  "product": {
+    "sku": "SM-S948BZKCXXV",
+    "deviceName": "Galaxy S26 Ultra",
+    "color": "black",
+    "storage": "512 GB"
+  },
+  "search": {
+    "keyword": "Đồng hồ",
+    "haSku": "RS90F65D2FSV",
+    "vdSku": "QA55QN70FAKXXV"
+  },
+  "tradeIn": {
+    "brand": "SAMSUNG",
+    "category": "Điện thoại",
+    "device": "Galaxy Z Fold4 12GB/256GB",
+    "imei": "351787742847020"
+  }
+}

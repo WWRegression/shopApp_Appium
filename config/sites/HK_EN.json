@@ -1,0 +1,34 @@
+{
+  "siteCode": "HK_EN",
+  "countryName": "Hong Kong & Macau SAR, China (English)",
+  "searchApiPath": "global",
+  "customer": {
+    "firstName": "KK",
+    "lastName": "Katalon",
+    "mobile": "91234567"
+  },
+  "shipping": {
+    "address1": "111",
+    "district": "Central and Western",
+    "town": "Hong Kong SAR"
+  },
+  "product": {
+    "sku": "SM-F9660DBGTGY",
+    "deviceName": "Galaxy Z Fold7",
+    "color": "Blue Shadow",
+    "storage": "512GB"
+  },
+  "search": {
+    "keyword": "smart watch",
+    "haSku": "RS80F65J1FSH",
+    "vdSku": "QA43QEF1AJXZK"
+  },
+  "tradeIn": {
+    "brand": "APPLE",
+    "device": "Apple iPhone 14 Pro Max",
+    "storage": "512GB",
+    "color": "Hong Kong/Macau",
+    "imei": "354495640217760",
+    "purchaseFrom": "0"
+  }
+}

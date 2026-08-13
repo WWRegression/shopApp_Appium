@@ -1,0 +1,41 @@
+{
+  "siteCode": "HU",
+  "countryName": "Magyarország (Magyar)",
+  "searchApiPath": "global",
+  "customer": {
+    "firstName": "KK",
+    "lastName": "Katalon",
+    "mobile": "06999999999"
+  },
+  "shipping": {
+    "address1": "Andrássy út",
+    "address2": "Budapest",
+    "postalCode": "1075",
+    "town": "asdf"
+  },
+  "product": {
+    "sku": "SM-F966BDBBEUE",
+    "deviceName": "Galaxy Z Fold7",
+    "color": "Blue Shadow",
+    "storage": "256GB"
+  },
+  "search": {
+    "keyword": "okosóra",
+    "haSku": "RB50DG632EB1EO",
+    "vdSku": "QE65QN900FTXXH"
+  },
+  "tradeIn": {
+    "brand": "Samsung",
+    "category": "Mobiles",
+    "model": "Samsung Galaxy Z Flip4 5G",
+    "device": "Samsung Galaxy Z Flip4 5G 256GB F721B",
+    "imei": "358975993711879"
+  },
+  "checkout": {
+    "fiscalCode": "BACXHUHBXXX",
+    "iban": "HU42117730161111101800000000"
+  },
+  "features": {
+    "scPlus": false
+  }
+}

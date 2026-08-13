@@ -1,0 +1,40 @@
+{
+  "siteCode": "SA",
+  "countryName": "Saudi Arabia (Arabic)",
+  "searchApiPath": "global",
+  "customer": {
+    "firstName": "KK",
+    "lastName": "Katalon",
+    "mobile": "+966123456789"
+  },
+  "shipping": {
+    "address1": "Test1234",
+    "address2": "Test1234",
+    "apartment": "ابها الجديدة",
+    "district": "الأندلس",
+    "town": "أبها"
+  },
+  "product": {
+    "sku": "SM-S948BZKIMEA",
+    "deviceName": "Galaxy S26 Ultra",
+    "color": "black",
+    "storage": "256GB"
+  },
+  "search": {
+    "keyword": "سماعة",
+    "haSku": "RH69DG803ES9ZA",
+    "vdSku": "QA65S90FAEXSA"
+  },
+  "tradeIn": {
+    "brand": "Samsung",
+    "category": "Mobile",
+    "model": "Z Series",
+    "subseries": "Flip Series",
+    "device": "Z Flip 4 (5G)",
+    "storage": "256 GB"
+  },
+  "features": {
+    "tradeUp": false,
+    "wishlist": false
+  }
+}

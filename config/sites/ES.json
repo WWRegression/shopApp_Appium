@@ -1,0 +1,41 @@
+{
+  "siteCode": "ES",
+  "countryName": "España (Español)",
+  "phoneCountryCode": "+34",
+  "searchApiPath": "global",
+  "customer": {
+    "firstName": "KK",
+    "lastName": "Katalon",
+    "mobile": "603549464",
+    "birthYear": "1990",
+    "documentType": "Pasaporte",
+    "documentNumber": "12345678"
+  },
+  "shipping": {
+    "address1": "Santiago Bernabeu 20, Madrid",
+    "district": "Alicante",
+    "postalCode": "03010",
+    "town": "Alicante",
+    "searchText": "Alicante"
+  },
+  "product": {
+    "sku": "SM-F966BZKCEUB",
+    "deviceName": "Galaxy Z Fold7",
+    "color": "Jetblack",
+    "storage": "512GB"
+  },
+  "search": {
+    "keyword": "reloj",
+    "haSku": "RB38C776CS9/EF",
+    "vdSku": "TQ55S95FATXXC"
+  },
+  "tradeIn": {
+    "brand": "SAMSUNG",
+    "device": "Samsung Galaxy Z Fold4",
+    "storage": "256GB",
+    "imei": "351787742847020"
+  },
+  "checkout": {
+    "fiscalCode": "12345678"
+  }
+}

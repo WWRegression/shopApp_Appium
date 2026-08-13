@@ -1,0 +1,41 @@
+{
+  "siteCode": "AT",
+  "countryName": "Österreich (Deutsch)",
+  "phoneCountryCode": "Österreich",
+  "searchApiPath": "hybris",
+  "customer": {
+    "firstName": "KK",
+    "lastName": "Katalon",
+    "mobile": "6766615964"
+  },
+  "shipping": {
+    "address1": "MÖTSCHENDORF",
+    "address2": "Spielerstrasse 22",
+    "district": "Styria",
+    "postalCode": "8733",
+    "town": "asdf"
+  },
+  "product": {
+    "sku": "SM-S948BZVGEUE",
+    "deviceName": "Galaxy Z Fold7",
+    "color": "jetblack",
+    "storage": "512GB"
+  },
+  "search": {
+    "keyword": "Armbanduhr",
+    "haSku": "RS90F67BEFEF",
+    "vdSku": "QE65QN900FTXXN"
+  },
+  "tradeIn": {
+    "brand": "Apple",
+    "category": "Handys",
+    "device": "Apple iPhone 13 Pro Max 256GB",
+    "imei": "359978128084906"
+  },
+  "checkout": {
+    "iban": "AT611904300234573201"
+  },
+  "features": {
+    "sim": true
+  }
+}

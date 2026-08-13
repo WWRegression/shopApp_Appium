@@ -1,0 +1,39 @@
+{
+  "siteCode": "AU",
+  "countryName": "Australia (English)",
+  "searchApiPath": "global",
+  "customer": {
+    "firstName": "KK",
+    "lastName": "Katalon",
+    "mobile": "0410231234"
+  },
+  "shipping": {
+    "address1": "25 Black Oak Dr",
+    "address2": "BARANGAROO",
+    "postalCode": "2000",
+    "town": "BARANGAROO"
+  },
+  "product": {
+    "sku": "SM-F966BZKAATS",
+    "deviceName": "galaxy z fold7",
+    "color": "jet black",
+    "storage": "256 GB"
+  },
+  "search": {
+    "keyword": "smart watch",
+    "haSku": "RF59A7670SR/SA",
+    "vdSku": "QA85QN70FAWXXY"
+  },
+  "tradeIn": {
+    "brand": "Samsung",
+    "category": "PHONE",
+    "device": "Galaxy Z Fold 4",
+    "storage": "512"
+  },
+  "tradeUp": {
+    "postalCode": "5000"
+  },
+  "features": {
+    "sim": true
+  }
+}

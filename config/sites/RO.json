@@ -1,0 +1,31 @@
+{
+  "siteCode": "RO",
+  "countryName": "România  (Română)",
+  "searchApiPath": "newhybris",
+  "customer": {
+    "firstName": "KK",
+    "lastName": "Katalon",
+    "mobile": "0987654321"
+  },
+  "shipping": {
+    "address1": "Samsung Tower",
+    "address2": "Alba",
+    "postalCode": "123456"
+  },
+  "product": {
+    "sku": "SM-F966BZKBEUE",
+    "deviceName": "Galaxy Z Fold7",
+    "color": "Jetblack",
+    "storage": "256GB"
+  },
+  "search": {
+    "keyword": "ceas",
+    "haSku": "RF50C510ES9/EO",
+    "vdSku": "QE50QN80FAUXXH"
+  },
+  "tradeIn": {
+    "brand": "Apple",
+    "device": "Apple iPhone XR 64GB",
+    "imei": "356423100246457"
+  }
+}

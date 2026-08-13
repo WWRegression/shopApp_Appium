@@ -1,0 +1,35 @@
+{
+  "siteCode": "JP",
+  "countryName": "日本 (日本語)",
+  "searchApiPath": "global",
+  "customer": {
+    "firstName": "KK",
+    "lastName": "Katalon",
+    "mobile": "7036789000"
+  },
+  "shipping": {
+    "address1": "南麻布",
+    "address2": "random",
+    "district": "東京都",
+    "postalCode": "1060047",
+    "town": "港区",
+    "searchText": "1060047"
+  },
+  "product": {
+    "sku": "SM-S931QZKESJP",
+    "deviceName": "Galaxy S25",
+    "color": "blueblack",
+    "storage": "256GB｜12GB"
+  },
+  "tradeIn": {
+    "brand": "Samsung",
+    "category": "スマートフォン",
+    "device": "Galaxy Z Fold5",
+    "storage": "256GB",
+    "imei": "356223188920373"
+  },
+  "features": {
+    "tradeUp": false,
+    "scPlus": false
+  }
+}

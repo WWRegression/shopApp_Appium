@@ -1,0 +1,320 @@
+{
+  "_comment": "Site-specific N/A only. Rows already covered by site features + requiresFeatures are excluded. Source: Katalon TestCases.xlsx.",
+  "AE": [
+    "PROD_BACKWARD_02",
+    "PROD_BUY_06",
+    "PROD_HOME_04",
+    "PROD_LOGIN_06",
+    "PROD_LOGIN_07",
+    "UAT_APP_07"
+  ],
+  "AE_AR": [
+    "PROD_BACKWARD_02",
+    "PROD_BUY_06",
+    "PROD_HOME_04",
+    "PROD_LOGIN_06",
+    "PROD_LOGIN_07",
+    "UAT_APP_07"
+  ],
+  "AT": [
+    "PROD_BUY_06",
+    "PROD_LOGIN_06",
+    "PROD_LOGIN_07"
+  ],
+  "AU": [
+    "PROD_BUY_06",
+    "PROD_LOGIN_06",
+    "PROD_LOGIN_07",
+    "PROD_MYPAGE_06"
+  ],
+  "BE": [
+    "PROD_BUY_06",
+    "PROD_LOGIN_06",
+    "PROD_LOGIN_07",
+    "PROD_MYPAGE_07",
+    "UAT_APP_07"
+  ],
+  "BE_FR": [
+    "PROD_BUY_06",
+    "PROD_LOGIN_06",
+    "PROD_LOGIN_07",
+    "PROD_MYPAGE_07",
+    "UAT_APP_07"
+  ],
+  "CA": [
+    "PROD_BUY_06",
+    "PROD_LOGIN_06",
+    "PROD_LOGIN_07",
+    "UAT_APP_07"
+  ],
+  "CA_FR": [
+    "PROD_BUY_06",
+    "PROD_LOGIN_06",
+    "PROD_LOGIN_07",
+    "UAT_APP_07"
+  ],
+  "CH": [
+    "PROD_BUY_06",
+    "PROD_LOGIN_06",
+    "PROD_LOGIN_07",
+    "UAT_APP_07"
+  ],
+  "CH_FR": [
+    "PROD_BUY_06",
+    "PROD_LOGIN_06",
+    "PROD_LOGIN_07",
+    "UAT_APP_07"
+  ],
+  "CL": [
+    "PROD_BUY_06",
+    "PROD_LOGIN_06",
+    "PROD_LOGIN_07",
+    "UAT_APP_07"
+  ],
+  "CN": [
+    "PROD_BUY_06",
+    "PROD_BUY_07",
+    "PROD_CART_04",
+    "PROD_HOME_05",
+    "PROD_LOGIN_05",
+    "PROD_LOGIN_06",
+    "PROD_MYPAGE_04",
+    "PROD_MYPAGE_07",
+    "PROD_SHOP_04",
+    "PROD_SHOP_05",
+    "UAT_APP_07",
+    "UAT_APP_09",
+    "UAT_APP_10"
+  ],
+  "CO": [
+    "PROD_BUY_06",
+    "PROD_LOGIN_06",
+    "PROD_LOGIN_07",
+    "UAT_APP_07"
+  ],
+  "CZ": [
+    "PROD_BUY_06",
+    "PROD_LOGIN_06",
+    "PROD_LOGIN_07",
+    "PROD_MYPAGE_07",
+    "UAT_APP_07"
+  ],
+  "DE": [
+    "PROD_BUY_06",
+    "PROD_LOGIN_07",
+    "PROD_MYPAGE_04",
+    "PROD_MYPAGE_07"
+  ],
+  "ES": [
+    "PROD_BUY_06",
+    "PROD_LOGIN_06",
+    "PROD_LOGIN_07",
+    "PROD_MYPAGE_04",
+    "UAT_APP_07"
+  ],
+  "FR": [
+    "PROD_BUY_06",
+    "PROD_LOGIN_06",
+    "PROD_LOGIN_07",
+    "PROD_MYPAGE_04",
+    "UAT_APP_07",
+    "UAT_APP_08"
+  ],
+  "HK": [
+    "PROD_BUY_06",
+    "PROD_LOGIN_06",
+    "PROD_LOGIN_07",
+    "UAT_APP_07"
+  ],
+  "HK_EN": [
+    "PROD_BUY_06",
+    "PROD_LOGIN_06",
+    "PROD_LOGIN_07",
+    "UAT_APP_07"
+  ],
+  "HU": [
+    "PROD_BUY_06",
+    "PROD_LOGIN_06",
+    "PROD_LOGIN_07",
+    "PROD_MYPAGE_07",
+    "UAT_APP_07"
+  ],
+  "ID": [
+    "PROD_BUY_06",
+    "PROD_HOME_04",
+    "PROD_LOGIN_06",
+    "PROD_LOGIN_07",
+    "UAT_APP_07"
+  ],
+  "IL": [
+    "PROD_BUY_06",
+    "PROD_LOGIN_06",
+    "PROD_LOGIN_07",
+    "PROD_MYPAGE_04",
+    "PROD_MYPAGE_07",
+    "UAT_APP_07"
+  ],
+  "IN": [
+    "PROD_BUY_06",
+    "PROD_HOME_05",
+    "PROD_LOGIN_07",
+    "PROD_SHOP_04",
+    "UAT_APP_07"
+  ],
+  "IT": [
+    "PROD_BUY_06",
+    "PROD_HOME_04",
+    "PROD_LOGIN_06",
+    "PROD_LOGIN_07",
+    "UAT_APP_07"
+  ],
+  "JP": [
+    "PROD_BUY_06",
+    "PROD_BUY_07",
+    "PROD_CHECKOUT_02",
+    "PROD_LOGIN_06",
+    "PROD_LOGIN_07",
+    "UAT_APP_07"
+  ],
+  "MX": [
+    "PROD_BUY_05",
+    "PROD_BUY_06",
+    "PROD_HOME_04",
+    "PROD_LOGIN_06",
+    "PROD_LOGIN_07",
+    "UAT_APP_07"
+  ],
+  "MY": [
+    "PROD_BUY_06",
+    "PROD_HOME_04",
+    "PROD_LOGIN_06",
+    "PROD_LOGIN_07",
+    "UAT_APP_07"
+  ],
+  "NL": [
+    "PROD_BUY_06",
+    "PROD_LOGIN_06",
+    "PROD_LOGIN_07",
+    "PROD_MYPAGE_04",
+    "PROD_MYPAGE_07",
+    "UAT_APP_07"
+  ],
+  "NZ": [
+    "PROD_BUY_06",
+    "PROD_LOGIN_06",
+    "PROD_LOGIN_07",
+    "UAT_APP_07"
+  ],
+  "PE": [
+    "PROD_BUY_06",
+    "PROD_LOGIN_06",
+    "PROD_LOGIN_07",
+    "UAT_APP_07"
+  ],
+  "PH": [
+    "PROD_BUY_06",
+    "PROD_LOGIN_06",
+    "PROD_LOGIN_07",
+    "UAT_APP_07"
+  ],
+  "PL": [
+    "PROD_BUY_05",
+    "PROD_BUY_06",
+    "PROD_HOME_04",
+    "PROD_LOGIN_06",
+    "PROD_LOGIN_07",
+    "UAT_APP_07"
+  ],
+  "PT": [
+    "PROD_BUY_06",
+    "PROD_LOGIN_06",
+    "PROD_LOGIN_07",
+    "PROD_MYPAGE_04",
+    "UAT_APP_07"
+  ],
+  "RO": [
+    "PROD_BUY_06",
+    "PROD_LOGIN_06",
+    "PROD_LOGIN_07",
+    "PROD_MYPAGE_06",
+    "PROD_MYPAGE_07",
+    "UAT_APP_07"
+  ],
+  "SA": [
+    "PROD_BACKWARD_02",
+    "PROD_BUY_06",
+    "PROD_HOME_04",
+    "PROD_LOGIN_06",
+    "PROD_LOGIN_07",
+    "UAT_APP_07"
+  ],
+  "SA_EN": [
+    "PROD_BACKWARD_02",
+    "PROD_BUY_06",
+    "PROD_HOME_04",
+    "PROD_LOGIN_06",
+    "PROD_LOGIN_07",
+    "UAT_APP_07"
+  ],
+  "SE": [
+    "PROD_BUY_06",
+    "PROD_LOGIN_06",
+    "PROD_LOGIN_07",
+    "PROD_MYPAGE_04",
+    "PROD_MYPAGE_07"
+  ],
+  "SG": [
+    "PROD_BUY_06",
+    "PROD_HOME_04",
+    "PROD_LOGIN_06",
+    "PROD_LOGIN_07",
+    "UAT_APP_07"
+  ],
+  "TH": [
+    "PROD_BUY_06",
+    "PROD_HOME_04",
+    "PROD_LOGIN_06",
+    "PROD_LOGIN_07",
+    "UAT_APP_07"
+  ],
+  "TR": [
+    "PROD_BUY_06",
+    "PROD_LOGIN_06",
+    "PROD_LOGIN_07",
+    "PROD_MYPAGE_04",
+    "UAT_APP_07"
+  ],
+  "TW": [
+    "PROD_BACKWARD_02",
+    "PROD_BUY_06",
+    "PROD_LOGIN_06",
+    "PROD_LOGIN_07",
+    "UAT_APP_07"
+  ],
+  "UK": [
+    "PROD_BUY_07",
+    "PROD_LOGIN_06",
+    "PROD_LOGIN_07"
+  ],
+  "US": [
+    "PROD_BACKWARD_02",
+    "PROD_BUY_06",
+    "PROD_HOME_05",
+    "PROD_LOGIN_06",
+    "PROD_LOGIN_07",
+    "PROD_MYPAGE_02",
+    "PROD_SHOP_04"
+  ],
+  "VN": [
+    "PROD_BUY_06",
+    "PROD_LOGIN_06",
+    "PROD_LOGIN_07",
+    "UAT_APP_07"
+  ],
+  "ZA": [
+    "PROD_BUY_06",
+    "PROD_LOGIN_06",
+    "PROD_LOGIN_07",
+    "UAT_APP_07"
+  ]
+}

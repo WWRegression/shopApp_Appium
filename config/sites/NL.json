@@ -1,0 +1,37 @@
+{
+  "siteCode": "NL",
+  "countryName": "Nederland (Dutch)",
+  "phoneCountryCode": "+31",
+  "searchApiPath": "newhybris",
+  "customer": {
+    "firstName": "KK",
+    "lastName": "Katalon",
+    "mobile": "123456789",
+    "birthYear": "1990"
+  },
+  "shipping": {
+    "address1": "Evert van de Beekstraat",
+    "address2": "1",
+    "district": "Antwerpen",
+    "postalCode": "1118CP",
+    "town": "Schiphol",
+    "searchText": "Evert van de Beekstraat 1"
+  },
+  "product": {
+    "sku": "SM-S948BZKGEUB",
+    "deviceName": "Galaxy S26 Ultra",
+    "color": "Black",
+    "storage": "512GB"
+  },
+  "search": {
+    "keyword": "horloge",
+    "haSku": "RB38C607AB1/EF",
+    "vdSku": "QE77S94FAEXXN"
+  },
+  "tradeIn": {
+    "brand": "Samsung",
+    "device": "Galaxy Z Fold4",
+    "storage": "256GB",
+    "imei": "351787742847020"
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "siteCode": "AE_AR",
+  "countryName": "الإمارات العربية المتحدة (العربي)",
+  "searchApiPath": "global",
+  "customer": {
+    "firstName": "KK",
+    "lastName": "Katalon",
+    "mobile": "97146538690"
+  },
+  "shipping": {
+    "address1": "Samsung Tower",
+    "address2": "Klein Bennebek",
+    "apartment": "258",
+    "landmark": "Near Safa Park",
+    "town": "أبو ظبي",
+    "searchText": "دبي"
+  },
+  "product": {
+    "sku": "SM-S948BZSOMEA",
+    "deviceName": "galaxy s26 ultra",
+    "color": "Silver Shadow",
+    "storage": "512 GB"
+  },
+  "search": {
+    "keyword": "ساعة ذكية",
+    "haSku": "RS90F64D1FAE",
+    "vdSku": "LS37FG750EMXUE"
+  },
+  "tradeIn": {
+    "brand": "سامسونج",
+    "category": "الهاتف الذكي",
+    "model": "سلسلة Z",
+    "subseries": "فولد سلسلة",
+    "device": "Z فولد 4 (5G)",
+    "storage": "1 تيرابايت",
+    "imei": "351787742847020"
+  },
+  "features": {
+    "wishlist": false
+  }
+}

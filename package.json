@@ -1,0 +1,41 @@
+{
+  "name": "appium-samsung-automation",
+  "version": "1.0.0",
+  "description": "Samsung ShopApp automation framework with Appium, TypeScript, and WebdriverIO",
+  "private": true,
+  "scripts": {
+    "test": "npm run test:sanity",
+    "test:sanity": "cross-env TEST_TYPE=sanity APP_ENV=prod wdio run wdio.conf.ts",
+    "test:phase3": "cross-env TEST_TYPE=phase3 APP_ENV=prod wdio run wdio.conf.ts",
+    "test:flagship": "npm run test:flagship:uat",
+    "test:flagship:uat": "cross-env TEST_TYPE=flagship APP_ENV=stg wdio run wdio.conf.ts",
+    "test:flagship:postunpack": "cross-env TEST_TYPE=flagship APP_ENV=prod wdio run wdio.conf.ts",
+    "test:spec": "wdio run wdio.conf.ts --spec",
+    "build": "tsc --noEmit",
+    "lint": "tsc --noEmit"
+  },
+  "dependencies": {
+    "mssql": "^11.0.1"
+  },
+  "devDependencies": {
+    "@types/mocha": "^10.0.10",
+    "@types/mssql": "^12.3.0",
+    "@types/node": "^22.13.4",
+    "@wdio/appium-service": "^9.5.0",
+    "@wdio/cli": "^9.5.0",
+    "@wdio/globals": "^9.5.0",
+    "@wdio/local-runner": "^9.5.0",
+    "@wdio/mocha-framework": "^9.5.0",
+    "@wdio/spec-reporter": "^9.5.0",
+    "appium": "^2.15.0",
+    "appium-uiautomator2-driver": "^4.0.0",
+    "cross-env": "^10.1.0",
+    "expect-webdriverio": "^5.1.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^7.0.2",
+    "webdriverio": "^9.5.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
