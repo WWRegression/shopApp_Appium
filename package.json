@@ -1,5 +1,5 @@
 {
-  "name": "appium-samsung-automation",
+  "name": "shopApp_Appium",
   "version": "1.0.0",
   "description": "Samsung ShopApp automation framework with Appium, TypeScript, and WebdriverIO",
   "private": true,
