@@ -93,15 +93,16 @@ export class BcLocator {
     );
   }
 
-  get continueSplashButton() {
+  get galaxyClubBanner() {
+    return $('#galaxy-club, a[an-la="samsung galaxy club:no, thanks" i]');
+  }
+
+  get galaxyClubNoButton() {
     return $(
       [
-        '[an-la="free gift:continue"]',
-        '[an-la="add-on:continue"]',
-        '[an-la="add-on:go to cart"]',
-        '[an-la="evoucher:go to cart"]',
-        '#giftContinue',
-        '#skipGoCartAddOn',
+        'a[an-la="samsung galaxy club:no, thanks" i]',
+        'div[an-la="samsung galaxy club:no, thanks" i]',
+        '#gc-no-btn div[an-ca="option click"]',
       ].join(', ')
     );
   }
@@ -120,11 +121,30 @@ export class BcLocator {
   }
 
   get scPlusAddButton() {
-    return $('[an-la*="care+" i], [an-la*="samsung care" i]');
+    return $(
+      [
+        '.hubble-product__options-list-wrap:not([style*="hidden"]) .js-smc',
+        '.wearable-option.option-care li:not(.depth-two) button:not([an-la*="none"])',
+        '.smc-list .insurance__item--yes',
+        '.option-care .pd-select-option__item > .pd-option-selector:has([an-la="samsung care:yes"])',
+        '[id="#vipCumCarePlus"] #molecule_careplus_item',
+        '.watch-bc-buyflow.care-option:not([style*="none"]) button:not([an-la*="care:none"]):not([an-la*="care:no"])',
+      ].join(', ')
+    );
   }
 
   get scPlusNoButton() {
-    return $('[an-la*="care+" i][an-la*="no" i], [an-la*="none" i]');
+    return $(
+      [
+        '.hubble-product__options-list-wrap:not([style*="hidden"]) .js-smc-none',
+        '.hubble-product__options-list-wrap:not([style*="hidden"]) #carenone',
+        '.wearable-option.option-care button[an-la="samsung care:none"]',
+        '.smc-list .insurance__item--no',
+        '.option-care .pd-option-selector:has([an-la="samsung care:no"])',
+        '[class*="VIPCumCarePlusContainer"] button[an-la*="samsung care:no" i]',
+        '.watch-bc-buyflow.care-option:not([style*="none"]) button[an-la="samsung care:no"]',
+      ].join(', ')
+    );
   }
 
   get eupAddButton() {

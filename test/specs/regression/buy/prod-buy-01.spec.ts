@@ -17,16 +17,9 @@ describe('PROD_BUY_01', () => {
       await searchPage.searchByKeyword(site.product.sku);
       await searchPage.openProductFromResults(site.product.sku);
 
-      await bcPage.selectDeviceOptions({
-        deviceName: site.product.deviceName,
-        storage: site.product.storage,
-        color: site.product.color,
-      });
-
       await bcPage.tradeIn.addService(site.tradeIn);
       await bcPage.tradeIn.verifyServiceApplied();
 
-      await bcPage.proceedToCart();
       await cartPage.ready();
       await cartPage.tradeIn.verifyServiceApplied();
     });

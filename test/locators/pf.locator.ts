@@ -1,9 +1,16 @@
 export class PfLocator {
   get productGrid() {
-    return $('~YOUR_PF_PRODUCT_GRID_SELECTOR');
+    return $$('//android.widget.ImageView[@content-desc]');
   }
 
+  /** Katalon Search.groovy getMatchingPfCardCount / collectProductsInfo와 동일한 패턴. */
   get firstProductCard() {
-    return $('~YOUR_PF_FIRST_PRODUCT_SELECTOR');
+    return $('(//android.widget.ImageView[@content-desc and string-length(@content-desc) > 9])[1]');
+  }
+
+  productCardContaining(text: string) {
+    return $(
+      `(//android.widget.ImageView[@content-desc and contains(@content-desc, "${text}")])[1]`
+    );
   }
 }

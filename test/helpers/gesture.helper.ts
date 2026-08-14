@@ -1,105 +1,148 @@
 /**
- * Gesture helpers (Katalon Keywords/ScrollActions.groovy 참고).
- * Native scroll/swipe + element까지 스크롤.
+ * Common swipe/scroll gestures. Migrated from Katalon Keywords/ScrollActions.groovy
+ * (fixed Mobile.delay waits removed in favor of explicit WDIO waits at call sites).
+ *
+ * Everything below funnels through two low-level primitives — gestureByBoundary (boundary
+ * box) and gestureByElement (relative to an element) — so the actual `mobile: swipeGesture` /
+ * `mobile: scrollGesture` command-building logic exists in exactly one place each.
  */
 
-export type ScrollDirection = 'up' | 'down' | 'left' | 'right';
+export type GestureDirection = 'up' | 'down' | 'left' | 'right';
+export type GestureKind = 'swipe' | 'scroll';
 
-async function windowSize(): Promise<{ width: number; height: number }> {
-  return driver.getWindowSize();
+export interface GestureBoundary {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
 }
 
-/** UiAutomator2 mobile: swipeGesture */
-export async function swipeByBoundary(
-  direction: ScrollDirection,
-  percent = 0.95,
-  top = 300
-): Promise<boolean> {
-  const result = await driver.execute('mobile: swipeGesture', {
-    left: 100,
-    top,
-    width: 200,
-    height: 800,
-    direction,
-    percent,
-  });
-  await driver.pause(500);
-  return Boolean(result);
-}
+const DEFAULT_BOUNDARY: GestureBoundary = { left: 100, top: 300, width: 200, height: 800 };
 
-/** UiAutomator2 mobile: scrollGesture */
-export async function scrollByBoundary(
-  direction: ScrollDirection,
-  percent = 1,
-  options?: { left?: number; top?: number; width?: number; height?: number; attempts?: number }
-): Promise<void> {
-  const attempts = options?.attempts ?? 1;
-  for (let i = 0; i < attempts; i++) {
-    await driver.execute('mobile: scrollGesture', {
-      left: options?.left ?? 100,
-      top: options?.top ?? 100,
-      width: options?.width ?? 200,
-      height: options?.height ?? 800,
-      direction,
-      percent,
-    });
-  }
-}
-
-/** W3C pointer scroll (ratio of screen height). */
-export async function scrollDownWithW3CActions(
-  startRatio = 0.8,
-  endRatio = 0.1
-): Promise<void> {
-  const { width, height } = await windowSize();
-  const startX = Math.floor(width / 2);
-  const startY = Math.floor(height * startRatio);
-  const endY = Math.floor(height * endRatio);
-
-  await driver
-    .action('pointer', { parameters: { pointerType: 'touch' } })
-    .move({ x: startX, y: startY, duration: 0 })
-    .down()
-    .move({ x: startX, y: endY, duration: 1000 })
-    .up()
-    .perform();
-}
-
-export async function scrollUpWithW3CActions(
-  startRatio = 0.2,
-  endRatio = 0.8
-): Promise<void> {
-  await scrollDownWithW3CActions(startRatio, endRatio);
+function gestureCommand(kind: GestureKind): 'mobile: swipeGesture' | 'mobile: scrollGesture' {
+  return kind === 'swipe' ? 'mobile: swipeGesture' : 'mobile: scrollGesture';
 }
 
 /**
- * Scroll until selector is present (Katalon scrollUntilElementFound).
+ * Shared primitive behind every boundary-box swipe/scroll in this project — reuse this
+ * directly for a one-off gesture that doesn't fit the named helpers below.
+ *
+ * DEFAULT_BOUNDARY is a generic fallback, not a validated Katalon value — when porting a
+ * specific Katalon call site (e.g. ScrollActions.scrollByBoundary(driver, 250, 400, 200, 800,
+ * 1, "up")), pass its literal boundary/attempts instead of relying on the default.
  */
-export async function scrollUntilElementFound(
-  selector: string,
-  maxAttempts = 10,
-  startRatio = 0.8,
-  endRatio = 0.1
-): Promise<boolean> {
-  for (let attempt = 0; attempt < maxAttempts; attempt++) {
-    const el = $(selector);
-    if (await el.isExisting().catch(() => false)) {
-      return true;
-    }
-    await scrollDownWithW3CActions(startRatio, endRatio);
-    await driver.pause(300);
+export async function gestureByBoundary(
+  kind: GestureKind,
+  direction: GestureDirection,
+  percent: number,
+  boundary: Partial<GestureBoundary> = {},
+  attempts = 1
+): Promise<void> {
+  const args = { ...DEFAULT_BOUNDARY, ...boundary, direction, percent };
+  for (let i = 0; i < attempts; i++) {
+    await driver.execute(gestureCommand(kind), args);
   }
-  return false;
 }
 
-/** Scroll element into center via JS (WebView). */
+/**
+ * Shared primitive behind every element-relative swipe/scroll in this project.
+ * Katalon: ScrollActions.scrollByElementId
+ */
+export async function gestureByElement(
+  kind: GestureKind,
+  element: ChainablePromiseElement,
+  direction: GestureDirection,
+  percent: number
+): Promise<void> {
+  const el = await element;
+  await driver.execute(gestureCommand(kind), { elementId: el.elementId, direction, percent });
+}
+
+/** Swipe toward the top of the screen. */
+export async function swipeToTop(): Promise<void> {
+  await gestureByBoundary('swipe', 'down', 0.95, { top: 300 });
+}
+
+/** Scroll a list down one page. */
+export async function scrollDown(): Promise<void> {
+  await gestureByBoundary('scroll', 'down', 1, { left: 250, top: 400 });
+}
+
+/**
+ * Generic directional swipe within a boundary box.
+ * Katalon: ScrollActions.swipeByBoundary(direction, percent, driver, top)
+ */
+export async function swipeByBoundary(
+  direction: GestureDirection,
+  percent: number,
+  boundary: Partial<GestureBoundary> = {}
+): Promise<void> {
+  await gestureByBoundary('swipe', direction, percent, boundary);
+}
+
+/**
+ * Scroll within a boundary box, repeated `attempts` times.
+ * Katalon: ScrollActions.scrollByBoundary
+ */
+export async function scrollByBoundary(
+  direction: GestureDirection,
+  percent: number,
+  boundary: Partial<GestureBoundary> = {},
+  attempts = 1
+): Promise<void> {
+  await gestureByBoundary('scroll', direction, percent, boundary, attempts);
+}
+
+/**
+ * Scroll relative to a specific element (rather than a boundary box).
+ * Katalon: ScrollActions.scrollByElementId
+ */
+export async function scrollByElement(
+  element: ChainablePromiseElement,
+  direction: GestureDirection,
+  percent: number
+): Promise<void> {
+  await gestureByElement('scroll', element, direction, percent);
+}
+
+/** Scroll element into center via JS (WebView only — different mechanism than the
+ * mobile:*Gesture commands above, since those don't reach into WebView DOM layout). */
 export async function scrollElementToCenter(
   element: ChainablePromiseElement
 ): Promise<void> {
+  const resolved = await element;
   await driver.execute(
     // runs in WebView browser context
     'arguments[0].scrollIntoView({ behavior: "smooth", block: "center" });',
-    element
+    resolved
   );
   await driver.pause(300);
+}
+
+/**
+ * Tap a raw screen coordinate. Use when an element's real tap target isn't at its bounding-box
+ * center (default .click() behavior) — e.g. a merged accessibility node.
+ * Katalon: UI.tapAtCoordinates
+ */
+export async function tapAtCoordinates(x: number, y: number): Promise<void> {
+  await driver.execute('mobile: clickGesture', { x, y });
+}
+
+/**
+ * Scroll down repeatedly until `locator` exists, or maxAttempts is reached. Returns whether found.
+ * Katalon: ScrollActions.scrollUntilElementFound (used raw W3C pointer actions via
+ * scrollDownWithW3CActions; this reuses the same mobile: scrollGesture primitive as every
+ * other scroll in this file instead of maintaining a second gesture mechanism).
+ */
+export async function scrollUntilVisible(
+  locator: ChainablePromiseElement,
+  maxAttempts = 10
+): Promise<boolean> {
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    if (await locator.isExisting().catch(() => false)) {
+      return true;
+    }
+    await scrollDown();
+  }
+  return false;
 }

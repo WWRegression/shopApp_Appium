@@ -10,7 +10,6 @@ describe('PROD_BUY_03', () => {
     await runOrSkip.call(this, 'PROD_BUY_03', async () => {
       await bcPage.sim.addService();
       await bcPage.sim.verifyServiceApplied();
-      await bcPage.proceedToCart();
       await cartPage.sim.verifyServiceApplied();
     });
   });

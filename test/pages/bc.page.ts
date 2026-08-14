@@ -4,6 +4,7 @@ import { BcTradeInService } from '../services/tradein/bc-tradein.service';
 import { BcScPlusService } from '../services/scplus/bc-scplus.service';
 import { BcEupService } from '../services/eup/bc-eup.service';
 import { BcSimService } from '../services/sim/bc-sim.service';
+import { BcGalaxyClubService } from '../services/galaxyclub/bc-galaxyclub.service';
 import { switchToWebView, switchUrl } from '../helpers/context.helper';
 import { scrollElementToCenter } from '../helpers/gesture.helper';
 
@@ -20,44 +21,81 @@ export class BcPage extends BasePage {
   readonly scPlus = new BcScPlusService();
   readonly eup = new BcEupService();
   readonly sim = new BcSimService();
+  readonly galaxyClub = new BcGalaxyClubService();
 
-  /** BC WebView로 전환하고 buy URL 윈도우를 잡는다. */
-  async ready(): Promise<void> {
+  async selectOptions(options: BcProductOptions): Promise<void> {
     await switchToWebView();
     await switchUrl('buy');
     await this.closePopupIfDisplayed();
     await this.acceptCookieBannerIfShown();
+
+    await this.selectOption('deviceName', options.deviceName);
+    await this.selectOption('storage', options.storage);
+    await this.selectOption('color', options.color);
   }
 
-  async selectDeviceOptions(options: BcProductOptions): Promise<void> {
-    await this.ready();
+  async selectOption(field: keyof BcProductOptions, value: string): Promise<void> {
+    await switchToWebView();
 
-    const device = this.locator.deviceOption(options.deviceName);
-    if (await device.isDisplayed().catch(() => false)) {
-      await this.clickWhenReady(device);
-    }
+    const target =
+      field === 'deviceName'
+        ? this.locator.deviceOption(value)
+        : field === 'storage'
+          ? this.locator.storageOption(value)
+          : this.locator.colorOption(value);
 
-    const storage = this.locator.storageOption(options.storage);
-    if (await storage.isDisplayed().catch(() => false)) {
-      await this.clickWhenReady(storage);
-    }
-
-    const color = this.locator.colorOption(options.color);
-    if (await color.isDisplayed().catch(() => false)) {
-      await this.clickWhenReady(color);
+    if (await target.isDisplayed().catch(() => false)) {
+      await this.clickWhenReady(target);
     }
   }
 
-  async proceedToCart(): Promise<void> {
+  async verifyOptions(): Promise<void> {
+    // TODO: Implement selected options verification
+  }
+
+  async getSelectedOption(_field: keyof BcProductOptions): Promise<string> {
+    // TODO: Implement selected option readback
+    return '';
+  }
+
+  async verifySku(_sku: string): Promise<void> {
+    // TODO: Implement SKU verification
+  }
+
+  async getSummaryDetails(part?: string): Promise<string | Record<string, string>> {
+    // TODO: Implement summary details readback (e.g. getSummaryDetails('SKU'))
+    return part ? '' : {};
+  }
+
+  async verifyPrice(_kind: string): Promise<void> {
+    // TODO: Implement price verification
+  }
+
+  async getSummaryPrice(_kind: string): Promise<string> {
+    // TODO: Implement summary price readback
+    return '';
+  }
+
+  /**
+   * 클릭만 한다 — cart 도달 확인은 여기서 안 함.
+   * add-on 화면은 URL이 그대로 /buy/라서, 여기서 switchUrl('cart')를 먼저 불러버리면
+   * (아직 add-on 창은 안 잡히고) 이전 실행에서 남아있는 오래된 cart 탭을 잘못 찾아
+   * 거기로 전환해버릴 수 있다. cart 도달 확인은 add-on 컨티뉴까지 다 끝난 뒤
+   * cartPage.ready()에서 한다.
+   */
+  async clickAddToCart(): Promise<void> {
     await switchToWebView();
     await scrollElementToCenter(this.locator.addToCartButton).catch(() => undefined);
-    await this.locator.addToCartButton.waitForClickable({ timeout: 15000 });
-    await this.locator.addToCartButton.click();
 
-    if (await this.locator.continueSplashButton.isDisplayed().catch(() => false)) {
-      await this.locator.continueSplashButton.click();
-    }
+    // Sticky bar buttons are position:fixed — WebdriverIO's native clickability
+    // check can time out on them, so click via JS (Katalon does the same here).
+    const button = this.locator.addToCartButton;
+    await button.waitForExist({ timeout: 15000 });
+    await driver.execute('arguments[0].click();', await button);
+  }
 
-    await switchUrl('cart').catch(() => false);
+  async isOptionSectionVisible(_field: keyof BcProductOptions): Promise<boolean> {
+    // TODO: Implement option section visibility check
+    return false;
   }
 }

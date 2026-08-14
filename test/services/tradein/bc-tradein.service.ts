@@ -27,8 +27,10 @@ export class BcTradeInService implements AddedService {
   async selectNoForService(): Promise<void> {
     await switchToWebView();
     const no = this.locator.tradeInNoOption();
-    await scrollElementToCenter(no);
-    await no.click();
+    if (await no.isDisplayed().catch(() => false)) {
+      await scrollElementToCenter(no);
+      await no.click();
+    }
   }
 
   async removeService(): Promise<void> {

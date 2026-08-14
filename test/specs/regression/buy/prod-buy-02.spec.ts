@@ -11,7 +11,6 @@ describe('PROD_BUY_02', () => {
       void site.product;
       await bcPage.scPlus.addService();
       await bcPage.scPlus.verifyServiceApplied();
-      await bcPage.proceedToCart();
       await cartPage.scPlus.verifyServiceApplied();
     });
   });

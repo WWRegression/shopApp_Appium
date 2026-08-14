@@ -11,7 +11,6 @@ describe('PROD_BUY_04', () => {
       void site.checkout?.eupImei;
       await bcPage.eup.addService();
       await bcPage.eup.verifyServiceApplied();
-      await bcPage.proceedToCart();
       await cartPage.eup.verifyServiceApplied();
     });
   });
