@@ -112,7 +112,7 @@ export async function switchToWebView(
   }
 }
 
-function pageUrlPatterns(page: PageUrlKey, siteCode: string): string[] {
+export function pageUrlPatterns(page: PageUrlKey, siteCode: string): string[] {
   const site = siteCode.toLowerCase();
   const patterns: Record<string, string[]> = {
     cart: [`${site}/cart`],

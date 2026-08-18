@@ -5,7 +5,7 @@ export class HomePage extends BasePage {
   private readonly locator = new HomeLocator();
 
   async verifyOnboarding(): Promise<void> {
-    await this.closePopupIfDisplayed();
+    await this.closePopupIfShown();
     await this.acceptCookieBannerIfShown();
     // TODO: Implement onboarding verification
     await this.locator.onboardingTitle.waitForDisplayed();

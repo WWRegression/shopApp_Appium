@@ -26,7 +26,7 @@ export class BcPage extends BasePage {
   async selectOptions(options: BcProductOptions): Promise<void> {
     await switchToWebView();
     await switchUrl('buy');
-    await this.closePopupIfDisplayed();
+    await this.closePopupIfShown();
     await this.acceptCookieBannerIfShown();
 
     await this.selectOption('deviceName', options.deviceName);
@@ -45,8 +45,18 @@ export class BcPage extends BasePage {
           : this.locator.colorOption(value);
 
     if (await target.isDisplayed().catch(() => false)) {
-      await this.clickWhenReady(target);
+      await scrollElementToCenter(target).catch(() => undefined);
+      await target.waitForClickable({ timeout: 10000 });
+      await target.click();
     }
+  }
+
+  /**
+   * 지금 화면이 BC 페이지인지 (base.page.ts의 isPage('BC') 위임).
+   * 전제: selectOptions() 등 BC 진입 메서드 호출 뒤에만 사용 (isPage 참고).
+   */
+  async isBcPage(): Promise<boolean> {
+    return this.isPage('BC');
   }
 
   async verifyOptions(): Promise<void> {

@@ -23,10 +23,12 @@ describe('SAMPLE_PF_BC_CART', () => {
     const site = getSite();
 
     await cartPage.clearCart();
+
     await searchPage.searchByKeyword('Galaxy Z Fold8');
     await pfPage.selectPfCard();
 
     await bcPage.selectOptions(site.product);
+    await expect(bcPage.isBcPage()).resolves.toBe(true);
     await bcPage.galaxyClub.selectNoForService();
     await bcPage.tradeIn.selectNoForService();
     await bcPage.scPlus.selectNoForService();

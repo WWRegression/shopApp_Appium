@@ -38,10 +38,15 @@ export class CartPage extends BasePage {
   async clearCart(): Promise<void> {
     await this.clickBnbCart();
     await this.ready();
-    await this.closePopupIfDisplayed();
+    await this.closePopupIfShown();
 
-    while (await this.locator.removeItemButton.isDisplayed().catch(() => false)) {
-      await driver.execute('arguments[0].click();', await this.locator.removeItemButton);
+    for (;;) {
+      const removeButton = this.locator.removeItemButton;
+      if (!(await removeButton.isDisplayed().catch(() => false))) {
+        break;
+      }
+
+      await driver.execute('arguments[0].click();', await removeButton);
 
       const confirmButton = this.locator.removeConfirmButton;
       if (await confirmButton.isDisplayed().catch(() => false)) {
