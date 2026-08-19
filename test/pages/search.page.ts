@@ -6,7 +6,7 @@ export class SearchPage extends BasePage {
   private readonly locator = new SearchLocator();
 
   async openSearch(): Promise<void> {
-    await this.clickHeaderSearch();
+    await this.selectHeaderIcon('search');
   }
 
   async search(keyword: string): Promise<void> {

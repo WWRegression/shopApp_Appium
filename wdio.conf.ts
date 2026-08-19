@@ -76,7 +76,7 @@ export const config: WebdriverIO.Config = {
 
   before: async () => {
     await driver.activateApp(site.appPackage);
-},
+  },
   /**
    * Katalon ReportHandler AFTER_TEST_CASE 대응.
    * reportDb=true 일 때만 업로드 (접속 정보는 db.helper.ts).

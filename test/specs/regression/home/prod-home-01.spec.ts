@@ -10,7 +10,7 @@ describe('PROD_HOME_01', () => {
     await runOrSkip.call(this, 'PROD_HOME_01', async (site) => {
       await homePage.verifyOnboarding();
       await loginPage.continueAsGuest();
-      await homePage.acceptCookieBannerIfShown();
+      await homePage.dismissCookieIfShown();
       void site;
     });
   });

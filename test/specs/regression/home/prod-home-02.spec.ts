@@ -7,7 +7,7 @@ describe('PROD_HOME_02', () => {
   it('Registered User - initial setup, auto-login, TrustArc cookie', async function () {
     await runOrSkip.call(this, 'PROD_HOME_02', async () => {
       await homePage.verifyOnboarding();
-      await homePage.acceptCookieBannerIfShown();
+      await homePage.dismissCookieIfShown();
     });
   });
 });

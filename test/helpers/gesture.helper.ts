@@ -45,8 +45,28 @@ export async function gestureByBoundary(
 }
 
 /**
- * Shared primitive behind every element-relative swipe/scroll in this project.
- * Katalon: ScrollActions.scrollByElementId
+ * Short scroll up (finger moves down).
+ * Long pages hide Header/BNB; a small scroll up brings them back.
+ */
+export async function scrollUp(): Promise<void> {
+  const { width, height } = await driver.getWindowSize();
+  const x = Math.floor(width / 2);
+  const startY = Math.floor(height * 0.42);
+  const endY = Math.floor(height * 0.6);
+
+  await driver
+    .action('pointer', { parameters: { pointerType: 'touch' } })
+    .move({ x, y: startY, duration: 0 })
+    .down()
+    .pause(50)
+    .move({ x, y: endY, duration: 400 })
+    .up()
+    .perform();
+  await driver.pause(300);
+}
+
+/**
+ * Scroll until selector is present (Katalon scrollUntilElementFound).
  */
 export async function gestureByElement(
   kind: GestureKind,

@@ -5,8 +5,7 @@ export class HomePage extends BasePage {
   private readonly locator = new HomeLocator();
 
   async verifyOnboarding(): Promise<void> {
-    await this.closePopupIfShown();
-    await this.acceptCookieBannerIfShown();
+    await this.dismissOverlays();
     // TODO: Implement onboarding verification
     await this.locator.onboardingTitle.waitForDisplayed();
   }
@@ -18,7 +17,7 @@ export class HomePage extends BasePage {
 
   async verifyBottomNavigation(): Promise<void> {
     // TODO: Verify BNB Home/Shop/Offers/Cart/Account redirection
-    await this.clickBnbHome();
+    await this.selectBnbMenu('home');
   }
 
   async verifyTermsAndConditions(): Promise<void> {

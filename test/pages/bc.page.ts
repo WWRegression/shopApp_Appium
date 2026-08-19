@@ -26,12 +26,12 @@ export class BcPage extends BasePage {
   async selectOptions(options: BcProductOptions): Promise<void> {
     await switchToWebView();
     await switchUrl('buy');
-    await this.closePopupIfShown();
-    await this.acceptCookieBannerIfShown();
+    await this.dismissOverlays();
 
     await this.selectOption('deviceName', options.deviceName);
     await this.selectOption('storage', options.storage);
     await this.selectOption('color', options.color);
+    await this.dismissOverlays();
   }
 
   async selectOption(field: keyof BcProductOptions, value: string): Promise<void> {
