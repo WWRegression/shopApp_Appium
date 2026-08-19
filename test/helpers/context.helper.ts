@@ -179,3 +179,18 @@ export async function switchUrl(
 
   return false;
 }
+
+/**
+ * WebView 전환 + URL 매칭(switchUrl)까지는 성공해도 DOM이 아직 안 그려졌을 수 있어,
+ * 페이지 루트 레이아웃이 실제로 뜨는 것까지 확인하고 그 결과를 반환한다.
+ * 각 page의 prepareXxxPage()는 이 헬퍼에 자기 urlKey/layout 로케이터만 넘기면 된다.
+ */
+export async function preparePage(
+  urlKey: PageUrlKey,
+  layout: ChainablePromiseElement,
+  timeout = 10000
+): Promise<boolean> {
+  await switchToWebView();
+  await switchUrl(urlKey);
+  return layout.waitForDisplayed({ timeout }).catch(() => false);
+}

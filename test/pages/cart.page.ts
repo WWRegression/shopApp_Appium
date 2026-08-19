@@ -4,7 +4,7 @@ import { CartTradeInService } from '../services/tradein/cart-tradein.service';
 import { CartScPlusService } from '../services/scplus/cart-scplus.service';
 import { CartEupService } from '../services/eup/cart-eup.service';
 import { CartSimService } from '../services/sim/cart-sim.service';
-import { switchToNative, switchToWebView, switchUrl } from '../helpers/context.helper';
+import { switchToNative, preparePage } from '../helpers/context.helper';
 
 export class CartPage extends BasePage {
   private readonly locator = new CartLocator();
@@ -20,14 +20,12 @@ export class CartPage extends BasePage {
    * 반환할 수 있다. cartLayout이 뜰 때까지 마저 기다려야 그 뒤 로직(예: clearCart의
    * remove 버튼 탐색)이 "아직 안 그려짐"을 "원래 비어있음"으로 오인하지 않는다.
    */
-  async ready(): Promise<void> {
-    await switchToWebView();
-    await switchUrl('cart');
-    await this.locator.cartLayout.waitForDisplayed({ timeout: 10000 }).catch(() => undefined);
+  async prepareCartPage(): Promise<boolean> {
+    return preparePage('cart', this.locator.cartLayout);
   }
 
   async proceedToCheckout(): Promise<void> {
-    await this.ready();
+    await this.prepareCartPage();
     await this.locator.checkoutButton.click();
   }
 
@@ -36,9 +34,9 @@ export class CartPage extends BasePage {
    * 개수 상한 없음: mochaOpts.timeout(120s)이 이미 전체 테스트 단위의 무한루프 방지막 역할.
    */
   async clearCart(): Promise<void> {
-    await this.clickBnbCart();
-    await this.ready();
-    await this.closePopupIfShown();
+    await this.selectBnbMenu('cart');
+    await this.prepareCartPage();
+    await this.dismissPopupIfShown();
 
     for (;;) {
       const removeButton = this.locator.removeItemButton;

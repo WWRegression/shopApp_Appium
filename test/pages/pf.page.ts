@@ -16,9 +16,6 @@ export class PfPage extends BasePage {
 
     await card.waitForDisplayed({ timeout: 20000 });
     await card.click();
-
-    await switchToWebView(10);
-    await switchUrl('buy').catch(() => switchUrl('PD'));
   }
 
   async selectPfCardExcluding(_keywords: string[]): Promise<void> {

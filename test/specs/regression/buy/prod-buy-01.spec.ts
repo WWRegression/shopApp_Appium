@@ -20,7 +20,7 @@ describe('PROD_BUY_01', () => {
       await bcPage.tradeIn.addService(site.tradeIn);
       await bcPage.tradeIn.verifyServiceApplied();
 
-      await cartPage.ready();
+      await cartPage.prepareCartPage();
       await cartPage.tradeIn.verifyServiceApplied();
     });
   });

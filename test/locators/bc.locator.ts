@@ -3,6 +3,10 @@
  * CSS는 Hybris BC 기준. 앱 변경 시 Inspector로 보정.
  */
 export class BcLocator {
+  get bcLayout() {
+    return $('div .bc-cross-navigation-wrap, section.watch-bc');
+  }
+
   tradeInYesOption() {
     return $(
       [
