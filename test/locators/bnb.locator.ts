@@ -1,6 +1,6 @@
-export type BnbMenu = 'home' | 'shop' | 'offers' | 'cart' | 'account';
+export type BnbMenu = 'home' | 'shop' | 'offers' | 'cart' | 'mypage';
 
-export const BNB_MENUS: BnbMenu[] = ['home', 'shop', 'offers', 'cart', 'account'];
+export const BNB_MENUS: BnbMenu[] = ['home', 'shop', 'offers', 'cart', 'mypage'];
 
 /**
  * Native bottom navigation.
@@ -60,6 +60,7 @@ export class BnbLocator {
       or (contains(@content-desc, "Vásárlás") and contains(@content-desc, "2. lap"))
       or (contains(@content-desc, "Magazin online") and contains(@content-desc, "Fila 2"))
       or (contains(@content-desc, "Mağaza") and contains(@content-desc, "Sekme 2"))
+      or (contains(@content-desc, "ショップ") and contains(@content-desc, "タブ"))
      ]`
     );
   }
@@ -87,6 +88,7 @@ export class BnbLocator {
       or (contains(@content-desc, "Promociones") and contains(@content-desc, "Pestaña 3"))
       or (contains(@content-desc, "Oferte") and contains(@content-desc, "Fila 3"))
       or (contains(@content-desc, "Kampanyalar") and contains(@content-desc, "Sekme 3"))
+      or (contains(@content-desc, "オファー") and contains(@content-desc, "タブ"))
      ]`
     );
   }
@@ -95,7 +97,7 @@ export class BnbLocator {
     return $(
       `//android.view.View[
       (contains(@content-desc, "Cart") and contains(@content-desc, "Tab 4"))
-      or (contains(@content-desc, "عربة التسوق") and contains(@content-desc, "4 علامة التبويب"))
+      or (contains(@content-desc, "عربة التسوق") and contains(@content-desc, "علامة التبويب 4"))
       or (contains(@content-desc, "Panier") and contains(@content-desc, "Onglet 4"))
       or (contains(@content-desc, "Carrito") and contains(@content-desc, "Pestaña 4"))
       or (contains(@content-desc, "Mon panier") and contains(@content-desc, "Onglet 4"))
@@ -114,6 +116,7 @@ export class BnbLocator {
       or (contains(@content-desc, "Kosár") and contains(@content-desc, "4. lap"))
       or (contains(@content-desc, "Coș") and contains(@content-desc, "Fila 4"))
       or (contains(@content-desc, "Sepet") and contains(@content-desc, "Sekme 4"))
+      or (contains(@content-desc, "カート") and contains(@content-desc, "タブ"))
       ]`
     );
   }
@@ -123,6 +126,7 @@ export class BnbLocator {
       `//android.view.View[
 			(contains(@content-desc, "My Page") and contains(@content-desc, "Tab 5"))
 			or (contains(@content-desc, "My page") and contains(@content-desc, "Tab 5"))
+      or (contains(@content-desc, "My Page") and contains(@content-desc, "Flik 5"))
 			or (contains(@content-desc, "Mein Account") and contains(@content-desc, "Tab 5"))
 			or (contains(@content-desc, "Mon compte") and contains(@content-desc, "Onglet 5"))
 			or (contains(@content-desc, "La mia pagina") and contains(@content-desc, "Scheda 5"))
@@ -133,7 +137,7 @@ export class BnbLocator {
 			or (contains(@content-desc, "Halaman saya") and contains(@content-desc, "Tab 5"))
 			or (contains(@content-desc, "หน้าของฉัน") and contains(@content-desc, "แท็บที่ 5"))
 			or (contains(@content-desc, "Ma page") and contains(@content-desc, "Onglet 5"))
-			or (contains(@content-desc, "صفحتي") and contains(@content-desc, "5 علامة التبويب"))
+			or (contains(@content-desc, "صفحتي") and contains(@content-desc, "علامة التبويب 5"))
 			or (contains(@content-desc, "Mijn pagina") and contains(@content-desc, "Tabblad 5"))
 			or (contains(@content-desc, "Moje Konto") and contains(@content-desc, "Karta 5"))
 			or (contains(@content-desc, "Pagina mea") and contains(@content-desc, "Fila 5"))
@@ -143,7 +147,6 @@ export class BnbLocator {
 			or (contains(@content-desc, "我的頁面") and contains(@content-desc, "第 5"))
 			or (contains(@content-desc, "Saját profilom") and contains(@content-desc, "5. lap"))
 			or (contains(@content-desc, "Hesabım") and contains(@content-desc, "Sekme 5"))
-			or (contains(@content-desc, "マイページ") and contains(@content-desc, "タブ"))
 			or (contains(@content-desc, "Minha página") and contains(@content-desc, "Separador 5"))
 			or (contains(@content-desc, "个人中心") and contains(@content-desc, "第 5"))
 			or (contains(@content-desc, "アカウント") and contains(@content-desc, "タブ"))
@@ -162,7 +165,7 @@ export class BnbLocator {
         return this.offersButton;
       case 'cart':
         return this.cartButton;
-      case 'account':
+      case 'mypage':
         return this.mypageButton;
     }
   }
