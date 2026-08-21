@@ -6,13 +6,10 @@
  *
  * 업로드 on/off · releaseName: config/run.config.ts (또는 --report-db / --release)
  */
-import { execFile } from 'node:child_process';
-import { promisify } from 'node:util';
 import os from 'node:os';
 import { getRunConfig } from '../../config/run.config';
 import { getAppPackage } from '../../config/site';
-
-const execFileAsync = promisify(execFile);
+import { getPackageVersion } from './devices.helper';
 
 /** Report DB 접속 (고정). password만 팀 계정에 맞게 수정. */
 const REPORT_DB = {
@@ -71,47 +68,6 @@ function buildDbConfig() {
     },
     pool: { max: 2, min: 0, idleTimeoutMillis: 10000 },
   };
-}
-
-/**
- * adb dumpsys package → versionName(versionCode)
- */
-export async function getPackageVersion(
-  appPackage: string,
-  deviceUdid?: string
-): Promise<string> {
-  if (!appPackage) {
-    return '';
-  }
-
-  try {
-    const adbArgs = [
-      ...(deviceUdid ? ['-s', deviceUdid] : []),
-      'shell',
-      'dumpsys',
-      'package',
-      appPackage,
-    ];
-    const { stdout } = await execFileAsync('adb', adbArgs, {
-      encoding: 'utf8',
-      timeout: 15000,
-    });
-
-    const versionName = extractDumpValue(stdout, 'versionName');
-    const versionCode = extractDumpValue(stdout, 'versionCode');
-    if (versionName === 'Not Found' && versionCode === 'Not Found') {
-      return '';
-    }
-    return `${versionName}(${versionCode})`;
-  } catch {
-    return '';
-  }
-}
-
-function extractDumpValue(output: string, key: string): string {
-  const re = new RegExp(`${key}=([^\\s]+)`);
-  const match = output.match(re);
-  return match?.[1] ?? 'Not Found';
 }
 
 /**

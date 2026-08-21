@@ -28,7 +28,7 @@ describe('SAMPLE_PF_BC_CART', () => {
     await pfPage.selectPfCard();
 
     await bcPage.selectOptions(site.product);
-    // await expect(bcPage.isBcPage()).resolves.toBe(true);
+  
     await bcPage.galaxyClub.selectNoForService();
     await bcPage.tradeIn.selectNoForService();
     await bcPage.scPlus.selectNoForService();

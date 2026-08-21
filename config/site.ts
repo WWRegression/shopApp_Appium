@@ -123,6 +123,20 @@ export interface Site {
     iban?: string;
     eupImei?: string;
   };
+  mypageMenuList?: {
+    support?: boolean;
+    policy?: boolean;
+    settings?: boolean;
+    accountManagement?: boolean;
+    logout?: boolean;
+  };
+  shopMenuList?: {
+    samsungEducationStore?: boolean;
+    samsungGovermentStore?: boolean;
+    moreSamsungApps?: boolean;
+    support?: boolean;
+    country?: boolean;
+  };
 }
 
 export type LoadedSite = Site & {

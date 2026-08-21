@@ -35,5 +35,17 @@
   },
   "features": {
     "sim": true
+  },
+  "mypageMenuList": {
+    "support": true,
+    "policy": true,
+    "settings": true,
+    "accountManagement": true,
+    "logout": false
+  },
+  "shopMenuList": {
+    "samsungEducationStore": true,
+    "samsungGovermentStore": true,
+    "moreSamsungApps": true
   }
 }
