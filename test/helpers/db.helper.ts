@@ -9,7 +9,7 @@
 import os from 'node:os';
 import { getRunConfig } from '../../config/run.config';
 import { getAppPackage } from '../../config/site';
-import { getPackageVersion } from './devices.helper';
+import { getPackageVersion } from './device.helper';
 
 /** Report DB 접속 (고정). password만 팀 계정에 맞게 수정. */
 const REPORT_DB = {

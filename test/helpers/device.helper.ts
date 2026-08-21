@@ -20,6 +20,16 @@ export async function getAppPid(): Promise<string> {
   return adb('shell', 'pidof', targetPackage()).catch(() => '');
 }
 
+/** Forwards an OS-assigned free local port to the given pid's webview devtools socket, returns the port. */
+export async function getWebviewDevtoolsPort(pid: string): Promise<string> {
+  return adb('forward', 'tcp:0', `localabstract:webview_devtools_remote_${pid}`);
+}
+
+/** Removes a port forward set up by getWebviewDevtoolsPort() (or any adb forward on that port). */
+export async function removePortForward(port: string): Promise<void> {
+  await adb('forward', '--remove', `tcp:${port}`);
+}
+
 /** adb dumpsys package → versionName(versionCode) */
 export async function getPackageVersion(
   appPackage: string,
