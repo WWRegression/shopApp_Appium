@@ -15,7 +15,7 @@ export async function clickElement(
 }
 
 /** Prefer getText(); fall back to content-desc. */
-export async function readElementLabel(element: ChainablePromiseElement): Promise<string> {
+export async function getElementLabel(element: ChainablePromiseElement): Promise<string> {
   if (!(await isDisplayedSafe(element))) {
     return '';
   }

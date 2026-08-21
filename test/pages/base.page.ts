@@ -7,7 +7,7 @@ import {
   clickElement,
   isDisplayedSafe,
   matchesText,
-  readElementLabel,
+  getElementLabel,
 } from '../helpers/element.helper';
 
 export type { HeaderIcon, BnbMenu };
@@ -69,7 +69,7 @@ export class BasePage {
 
   private async getHeaderTitle(): Promise<string> {
     await this.prepareHeaderBnb();
-    return readElementLabel(this.headerLocator.title);
+    return getElementLabel(this.headerLocator.title);
   }
 
   /** BNB */
