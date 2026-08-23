@@ -4,7 +4,7 @@ import { CartTradeInService } from '../services/tradein/cart-tradein.service';
 import { CartScPlusService } from '../services/scplus/cart-scplus.service';
 import { CartEupService } from '../services/eup/cart-eup.service';
 import { CartSimService } from '../services/sim/cart-sim.service';
-import { switchToNative, preparePage } from '../helpers/context.helper';
+import { switchToNative, prepareWebViewPage } from '../helpers/context.helper';
 
 export class CartPage extends BasePage {
   private readonly locator = new CartLocator();
@@ -15,13 +15,13 @@ export class CartPage extends BasePage {
   readonly sim = new CartSimService();
 
   /**
-   * Katalon Cart.verifyCartLoad() 대응 — switchUrl('cart')는 window.location.href만
-   * 보므로, 실제 카트 페이지 URL로 바뀌었지만 DOM은 아직 안 그려진 순간에도 true를
-   * 반환할 수 있다. cartLayout이 뜰 때까지 마저 기다려야 그 뒤 로직(예: clearCart의
+   * Katalon Cart.verifyCartLoad() 대응 — switchToWebViewWindow('cart')는 window URL만
+   * 보므로, 실제 카트 페이지 URL로 바뀌었지만 DOM은 아직 안 그려진 순간에도 전환이
+   * 끝날 수 있다. cartLayout이 뜰 때까지 마저 기다려야 그 뒤 로직(예: clearCart의
    * remove 버튼 탐색)이 "아직 안 그려짐"을 "원래 비어있음"으로 오인하지 않는다.
    */
   async prepareCartPage(): Promise<boolean> {
-    return preparePage('cart', this.locator.cartLayout);
+    return prepareWebViewPage('cart', this.locator.cartLayout);
   }
 
   async proceedToCheckout(): Promise<void> {

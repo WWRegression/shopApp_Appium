@@ -5,7 +5,7 @@ import { BcScPlusService } from '../services/scplus/bc-scplus.service';
 import { BcEupService } from '../services/eup/bc-eup.service';
 import { BcSimService } from '../services/sim/bc-sim.service';
 import { BcGalaxyClubService } from '../services/galaxyclub/bc-galaxyclub.service';
-import { switchToWebView, preparePage } from '../helpers/context.helper';
+import { switchToWebView, prepareWebViewPage, isCurrentPage } from '../helpers/context.helper';
 import { scrollElementToCenter } from '../helpers/gesture.helper';
 
 export interface BcProductOptions {
@@ -25,7 +25,7 @@ export class BcPage extends BasePage {
 
   /** cart.page.ts의 prepareCartPage()와 동일한 패턴 — webview 전환 + url 매칭 + bcLayout 렌더 확인. */
   async prepareBcPage(): Promise<boolean> {
-    return preparePage('buy', this.locator.bcLayout);
+    return prepareWebViewPage('bc', this.locator.bcLayout);
   }
 
   async selectOptions(options: BcProductOptions): Promise<void> {
@@ -56,11 +56,11 @@ export class BcPage extends BasePage {
   }
 
   /**
-   * 지금 화면이 BC 페이지인지 (base.page.ts의 isPage('BC') 위임).
-   * 전제: selectOptions() 등 BC 진입 메서드 호출 뒤에만 사용 (isPage 참고).
+   * True when getCurrentPage() resolves to BC in the current (or corrected) context.
+   * Prefer calling after BC entry (e.g. selectOptions / prepareBcPage).
    */
   async isBcPage(): Promise<boolean> {
-    return this.matchesBnbMenu('BC');
+    return isCurrentPage('bc');
   }
 
   async verifyOptions(): Promise<void> {
@@ -92,7 +92,7 @@ export class BcPage extends BasePage {
 
   /**
    * 클릭만 한다 — cart 도달 확인은 여기서 안 함.
-   * add-on 화면은 URL이 그대로 /buy/라서, 여기서 switchUrl('cart')를 먼저 불러버리면
+   * add-on 화면은 URL이 그대로 /buy/라서, 여기서 switchToWebViewWindow('cart')를 먼저 불러버리면
    * (아직 add-on 창은 안 잡히고) 이전 실행에서 남아있는 오래된 cart 탭을 잘못 찾아
    * 거기로 전환해버릴 수 있다. cart 도달 확인은 add-on 컨티뉴까지 다 끝난 뒤
    * cartPage.prepareCartPage()에서 한다.

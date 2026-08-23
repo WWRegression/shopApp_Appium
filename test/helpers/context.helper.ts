@@ -4,7 +4,17 @@ import { isDisplayedSafe } from './element.helper';
 
 /**
  * Hybrid context helpers — Native ↔ Hybris WebView.
+ *
+ * Layers:
+ *   1) Context  — Native ↔ WEBVIEW_<package>   (switchToNative / switchToWebView)
+ *   2) Window   — URL-matched window focus     (switchToWebViewWindow)
+ *   3) Prepare  — context + window + layout   (prepareWebViewPage)
+ *   4) Detect   — which page is on screen      (getCurrentPage)
  */
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
 
 /** WebView URL lookup keys. Native pages have no URL patterns. */
 export type PageUrlKey = WebViewPage | 'site' | 'useinsider';
@@ -27,13 +37,22 @@ export interface CurrentPageResult {
   context: ContextType;
 }
 
-function targetPackage(): string {
+// ---------------------------------------------------------------------------
+// Package
+// ---------------------------------------------------------------------------
+
+/** App package for the current site (or capability fallback). */
+export function targetPackage(): string {
   return (
     getAppPackage(getRunConfig().site) ||
     (browser.capabilities as WebdriverIO.Capabilities)['appium:appPackage'] ||
     ''
   );
 }
+
+// ---------------------------------------------------------------------------
+// Context — read / check
+// ---------------------------------------------------------------------------
 
 export async function getCurrentContext(): Promise<string> {
   return String(await driver.getContext());
@@ -45,72 +64,126 @@ export async function getAvailableContexts(): Promise<string[]> {
 }
 
 export async function isNativeContext(contextName?: string): Promise<boolean> {
-  const name = contextName ?? (await getCurrentContext());
-  const upper = name.toUpperCase();
-  return upper === 'NATIVE_APP' || upper.includes('NATIVE');
+  const name = (contextName ?? (await getCurrentContext())).toUpperCase();
+  return name === 'NATIVE_APP';
 }
 
-/** In-app Hybris WebView context (excludes Chrome). */
+/** True when context is WEBVIEW_<appPackage>. */
 export async function isWebViewContext(
-  appPackage = targetPackage(),
-  contextName?: string
+  contextName?: string,
+  appPackage = targetPackage()
 ): Promise<boolean> {
-  const name = contextName ?? (await getCurrentContext());
-  const lower = name.toLowerCase();
+  const ctx = (contextName ?? (await getCurrentContext())).toLowerCase();
   const pkg = appPackage.toLowerCase();
-  return (
-    lower.includes('webview') &&
-    !lower.includes('chrome') &&
-    (!pkg || lower.endsWith(pkg))
-  );
+  return !!pkg && ctx === `webview_${pkg}`;
+}
+
+async function findAppWebViewContext(
+  contexts: string[],
+  appPackage = targetPackage()
+): Promise<string | undefined> {
+  for (const ctx of contexts) {
+    if (await isWebViewContext(ctx, appPackage)) {
+      return ctx;
+    }
+  }
+  return undefined;
+}
+
+// ---------------------------------------------------------------------------
+// Context — switch
+// ---------------------------------------------------------------------------
+
+/** Wait until WEBVIEW_<package> appears in getContexts(). */
+export async function waitForWebView(
+  timeoutSec = 5,
+  appPackage = targetPackage()
+): Promise<boolean> {
+  const deadline = Date.now() + timeoutSec * 1000;
+
+  while (Date.now() < deadline) {
+    if (await findAppWebViewContext(await getAvailableContexts(), appPackage)) {
+      return true;
+    }
+    await driver.pause(300);
+  }
+
+  return false;
+}
+
+export async function switchToNative(): Promise<void> {
+  if (await isNativeContext()) {
+    return;
+  }
+  await driver.switchContext('NATIVE_APP');
 }
 
 /**
- * Recover to Native when the current context is app WebView but no app WebView
- * context appears in getAvailableContexts(). Does not switch to WebView.
+ * Switch to app WebView context (WEBVIEW_<package>).
+ * Does not switch window/URL — use switchToWebViewWindow for that.
+ */
+export async function switchToWebView(
+  waitTimeSec = 5,
+  appPackage = targetPackage()
+): Promise<boolean> {
+  try {
+    const current = await getCurrentContext();
+    if (await isWebViewContext(current, appPackage)) {
+      return true;
+    }
+
+    if (!(await waitForWebView(waitTimeSec, appPackage))) {
+      return false;
+    }
+
+    const target = await findAppWebViewContext(
+      await getAvailableContexts(),
+      appPackage
+    );
+    if (!target) {
+      return false;
+    }
+
+    await driver.switchContext(target);
+    await driver.pause(1500);
+    return isWebViewContext(await getCurrentContext(), appPackage);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * App WebView stale or non-app context → switch to Native.
+ * Returns where the driver should be treated as after recovery.
  */
 export async function recoverToNativeIfStale(
   appPackage = targetPackage()
 ): Promise<ContextType> {
-  const named = await getCurrentContext();
-  const available = await getAvailableContexts();
+  const currentCtx = await getCurrentContext();
+  const availableCtxs = await getAvailableContexts();
 
-  if (await isNativeContext(named)) {
+  if (await isNativeContext(currentCtx)) {
     return 'native';
   }
 
-  if (await isWebViewContext(appPackage, named)) {
-    let hasAppWebViewContext = false;
-    for (const ctx of available) {
-      if (await isWebViewContext(appPackage, ctx)) {
-        hasAppWebViewContext = true;
-        break;
-      }
-    }
-    if (!hasAppWebViewContext) {
+  if (await isWebViewContext(currentCtx, appPackage)) {
+    const stillAvailable = availableCtxs.some(
+      (ctx) => ctx.toLowerCase() === currentCtx.toLowerCase()
+    );
+    if (!stillAvailable) {
       await switchToNative();
       return 'native';
     }
     return 'webview';
   }
 
+  await switchToNative();
   return 'native';
 }
 
-/**
- * 현재 WebView에서 활성 window의 URL을 반환한다.
- * WebView context가 아니거나 JS 실행에 실패하면 undefined.
- */
-export async function getWebViewUrl(): Promise<string | undefined> {
-  if (!(await isWebViewContext())) {
-    return undefined;
-  }
-  try {
-    return String(await driver.execute('return window.location.href;'));
-  } catch {
-    return undefined;
-  }
-}
+// ---------------------------------------------------------------------------
+// URL patterns
+// ---------------------------------------------------------------------------
 
 /** URL fragments for a Hybris WebView page or window-switch target. */
 export function pageUrlPatterns(page: PageUrlKey, siteCode: string): string[] {
@@ -141,6 +214,83 @@ function hrefMatches(href: string, patterns: string[]): boolean {
   return patterns.some((pattern) => url.includes(pattern.toLowerCase()));
 }
 
+function hrefMatchesPage(href: string, page: PageUrlKey, siteCode: string): boolean {
+  const onSite = hrefMatches(href, pageUrlPatterns('site', siteCode));
+  return onSite && hrefMatches(href, pageUrlPatterns(page, siteCode));
+}
+
+// ---------------------------------------------------------------------------
+// Window — URL / focus
+// ---------------------------------------------------------------------------
+
+/** Active window URL in the current WebView, or undefined. */
+export async function getWebViewUrl(): Promise<string | undefined> {
+  if (!(await isWebViewContext())) {
+    return undefined;
+  }
+  try {
+    return String(await driver.execute('return window.location.href;'));
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * Switch to the WebView window whose URL matches the page pattern.
+ * Requires WebView context. Throws if no matching window is found.
+ */
+export async function switchToWebViewWindow(
+  page: PageUrlKey = 'site',
+  siteCode = getRunConfig().site
+): Promise<void> {
+  if (!(await isWebViewContext())) {
+    throw new Error('switchToWebViewWindow: not in WebView context');
+  }
+
+  const currentHref = await getWebViewUrl();
+  if (currentHref && hrefMatchesPage(currentHref, page, siteCode)) {
+    return;
+  }
+
+  for (const handle of await driver.getWindowHandles()) {
+    try {
+      await driver.switchToWindow(handle);
+      const href = await getWebViewUrl();
+      if (href && hrefMatchesPage(href, page, siteCode)) {
+        return;
+      }
+    } catch {
+      // unresponsive window — skip
+    }
+  }
+
+  throw new Error(`switchToWebViewWindow: no window matched page=${page}`);
+}
+
+/**
+ * Prepare a Hybris WebView page before actions:
+ * switchToWebView + switchToWebViewWindow + layout ready.
+ * Returns false when context/window/layout is not ready (does not throw).
+ */
+export async function prepareWebViewPage(
+  urlKey: PageUrlKey,
+  layout: ChainablePromiseElement,
+  timeout = 10000
+): Promise<boolean> {
+  if (!(await switchToWebView())) {
+    return false;
+  }
+  try {
+    await switchToWebViewWindow(urlKey);
+  } catch {
+    return false;
+  }
+  return layout.waitForDisplayed({ timeout }).catch(() => false);
+}
+
+// ---------------------------------------------------------------------------
+// Current page — detect
+// ---------------------------------------------------------------------------
 
 async function hasWebViewBcSignature(): Promise<boolean> {
   const bcMarker = $(
@@ -156,34 +306,30 @@ async function hasWebViewBcSignature(): Promise<boolean> {
 
 async function detectCurrentPageInWebView(href: string): Promise<WebViewPage | 'unknown'> {
   const site = getRunConfig().site;
+  const ordered: WebViewPage[] = [
+    'wdsLogin',
+    'cart',
+    'checkout',
+    'wish',
+    'address',
+  ];
 
-  if (hrefMatches(href, pageUrlPatterns('wdsLogin', site))) {
-    return 'wdsLogin';
-  }
-  if (hrefMatches(href, pageUrlPatterns('cart', site))) {
-    return 'cart';
-  }
-  if (hrefMatches(href, pageUrlPatterns('checkout', site))) {
-    return 'checkout';
-  }
-  if (hrefMatches(href, pageUrlPatterns('wish', site))) {
-    return 'wish';
-  }
-  if (hrefMatches(href, pageUrlPatterns('address', site))) {
-    return 'address';
+  for (const page of ordered) {
+    if (hrefMatches(href, pageUrlPatterns(page, site))) {
+      return page;
+    }
   }
 
-  const isBcOrPd =
-    hrefMatches(href, pageUrlPatterns('bc', site)) ||
-    hrefMatches(href, pageUrlPatterns('pd', site));
-  if (isBcOrPd) {
+  const bcPatterns = pageUrlPatterns('bc', site);
+  const pdPatterns = pageUrlPatterns('pd', site);
+  if (hrefMatches(href, bcPatterns) || hrefMatches(href, pdPatterns)) {
     if (await hasWebViewBcSignature()) {
       return 'bc';
     }
-    if (hrefMatches(href, pageUrlPatterns('bc', site))) {
+    if (hrefMatches(href, bcPatterns)) {
       return 'bc';
     }
-    if (hrefMatches(href, pageUrlPatterns('pd', site))) {
+    if (hrefMatches(href, pdPatterns)) {
       return 'pd';
     }
   }
@@ -197,152 +343,27 @@ async function detectCurrentPageInNative(): Promise<NativePage | 'unknown'> {
     return 'search';
   }
 
-  // TODO: home / shop / offers / account / nativePd — BasePage (getSelectedBnbMenu, getHeaderTitle)
+  // TODO: home / shop / offers / account / nativePd — BasePage
   return 'unknown';
 }
 
 /**
  * Detect the current page from the active screen.
- * Does not switch to WebView for guessing. May switch to Native once to recover a stale WebView handle.
+ * May switch to Native once to recover a stale WebView. Does not switch to WebView.
  */
 export async function getCurrentPage(): Promise<CurrentPageResult> {
   const context = await recoverToNativeIfStale();
 
   if (context === 'webview') {
-    const href = await getWebViewUrl();
-    const page = await detectCurrentPageInWebView(href ?? '');
+    const page = await detectCurrentPageInWebView((await getWebViewUrl()) ?? '');
     return { page, context };
   }
 
-  const page = await detectCurrentPageInNative();
-  return { page, context };
+  return { page: await detectCurrentPageInNative(), context };
 }
 
-export async function isCurrentPage(page: Exclude<CurrentPage, 'unknown'>): Promise<boolean> {
+export async function isCurrentPage(
+  page: Exclude<CurrentPage, 'unknown'>
+): Promise<boolean> {
   return (await getCurrentPage()).page === page;
-}
-
-export async function waitForWebView(
-  timeoutSec = 5,
-  appPackage = targetPackage()
-): Promise<boolean> {
-  const deadline = Date.now() + timeoutSec * 1000;
-
-  while (Date.now() < deadline) {
-    const contexts = await getAvailableContexts();
-    let found = false;
-    for (const ctx of contexts) {
-      if (await isWebViewContext(appPackage, ctx)) {
-        found = true;
-        break;
-      }
-    }
-    if (found) {
-      return true;
-    }
-    await driver.pause(300);
-  }
-
-  return false;
-}
-
-export async function switchToNative(): Promise<void> {
-  const named = await getCurrentContext();
-  if (await isNativeContext(named)) return;
-  await driver.switchContext('NATIVE_APP');
-}
-
-/**
- * Switch to app WebView. Prefer package-matched context, then non-chrome WEBVIEW_*.
- */
-export async function switchToWebView(
-  waitTimeSec = 5,
-  appPackage = targetPackage()
-): Promise<boolean> {
-  try {
-    const named = await getCurrentContext();
-    if (await isWebViewContext(appPackage, named)) {
-      return true;
-    }
-
-    if (!(await waitForWebView(waitTimeSec, appPackage))) {
-      return false;
-    }
-
-    const contexts = await getAvailableContexts();
-    const pkg = appPackage.toLowerCase();
-    const byPackage = contexts.find((ctx) => ctx.toLowerCase().endsWith(pkg));
-    const byWebView = contexts.find(
-      (ctx) =>
-        ctx.toLowerCase().includes('webview') &&
-        !ctx.toLowerCase().includes('chrome')
-    );
-    const target = byPackage ?? byWebView;
-
-    if (!target) {
-      return false;
-    }
-
-    await driver.switchContext(target);
-    await driver.pause(1500);
-    return isWebViewContext(appPackage, await getCurrentContext());
-  } catch {
-    return false;
-  }
-}
-
-/**
- * Switch to the WebView window whose URL matches the page pattern.
- * Handles are opaque IDs — URL is only readable after switchToWindow.
- */
-export async function switchUrl(
-  page: PageUrlKey = 'site',
-  siteCode = getRunConfig().site
-): Promise<boolean> {
-  if (!(await isWebViewContext())) {
-    return false;
-  }
-
-  const targetUrls = pageUrlPatterns(page, siteCode);
-  const sitePatterns = pageUrlPatterns('site', siteCode);
-
-  const urlMatchesPage = (href: string): boolean => {
-    const url = href.toLowerCase();
-    const onSite = sitePatterns.some((p) => url.includes(p.toLowerCase()));
-    return onSite && targetUrls.some((p) => url.includes(p.toLowerCase()));
-  };
-
-  const currentHref = await getWebViewUrl();
-  if (currentHref && urlMatchesPage(currentHref)) {
-    return true;
-  }
-
-  for (const handle of await driver.getWindowHandles()) {
-    try {
-      await driver.switchToWindow(handle);
-      const href = await getWebViewUrl();
-      if (href && urlMatchesPage(href)) {
-        return true;
-      }
-    } catch {
-      // unresponsive window — skip
-    }
-  }
-
-  return false;
-}
-
-/**
- * WebView 전환 + URL 매칭(switchUrl)까지는 성공해도 DOM이 아직 안 그려졌을 수 있어,
- * 페이지 루트 레이아웃이 실제로 뜨는 것까지 확인하고 그 결과를 반환한다.
- * 각 page의 prepareXxxPage()는 이 헬퍼에 자기 urlKey/layout 로케이터만 넘기면 된다.
- */
-export async function preparePage(
-  urlKey: PageUrlKey,
-  layout: ChainablePromiseElement,
-  timeout = 10000
-): Promise<boolean> {
-  await switchToWebView();
-  await switchUrl(urlKey);
-  return layout.waitForDisplayed({ timeout }).catch(() => false);
 }
