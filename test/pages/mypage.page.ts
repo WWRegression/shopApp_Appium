@@ -1,6 +1,7 @@
 import { BasePage } from './base.page';
 import { MypageLocator } from '../locators/mypage.locator';
-import { switchToNative, getAvailableUrls } from '../helpers/context.helper';
+import { switchToNative } from '../helpers/context.helper';
+import { getAvailableUrls } from '../helpers/device.helper';
 import { scrollUntilVisible } from '../helpers/gesture.helper';
 import { getElementLabel } from '../helpers/element.helper';
 
@@ -119,7 +120,7 @@ export class MypagePage extends BasePage {
     const deadline = Date.now() + timeoutMs;
     while (Date.now() < deadline) {
       const pages = await getAvailableUrls();
-      const page = pages.find((p) => p.type === 'page' && p.url && !this.knownPageIds.has(p.id));
+      const page = pages.find((p) => p.url && !this.knownPageIds.has(p.id));
       if (page) {
         this.knownPageIds.add(page.id);
         return { url: page.url, title: page.title };

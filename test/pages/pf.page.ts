@@ -1,6 +1,6 @@
 import { BasePage } from './base.page';
 import { PfLocator } from '../locators/pf.locator';
-import { switchToNative, switchToWebView, switchUrl } from '../helpers/context.helper';
+import { switchToNative } from '../helpers/context.helper';
 
 export type PfTabTarget = { tab: string } | { product: string };
 export type WishState = 'add' | 'remove';

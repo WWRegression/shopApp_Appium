@@ -1,6 +1,7 @@
 import { getRunConfig } from '../../config/run.config';
 import { getAppPackage } from '../../config/site';
 import { isDisplayedSafe } from './element.helper';
+import { getAvailableUrls } from './device.helper';
 
 /**
  * Hybrid context helpers — Native ↔ Hybris WebView.
@@ -94,15 +95,19 @@ async function findAppWebViewContext(
 // Context — switch
 // ---------------------------------------------------------------------------
 
-/** Wait until WEBVIEW_<package> appears in getContexts(). */
-export async function waitForWebView(
-  timeoutSec = 5,
+/**
+ * Wait until a real webview page (type 'page', non-empty url) shows up via CDP
+ * for this app's pid — no Appium context switch involved, so polling is cheap.
+ */
+async function waitForWebView(
+  timeoutSec: number,
   appPackage = targetPackage()
 ): Promise<boolean> {
   const deadline = Date.now() + timeoutSec * 1000;
 
   while (Date.now() < deadline) {
-    if (await findAppWebViewContext(await getAvailableContexts(), appPackage)) {
+    const pages = await getAvailableUrls(appPackage);
+    if (pages.some((p) => p.url)) {
       return true;
     }
     await driver.pause(300);
@@ -145,7 +150,6 @@ export async function switchToWebView(
     }
 
     await driver.switchContext(target);
-    await driver.pause(1500);
     return isWebViewContext(await getCurrentContext(), appPackage);
   } catch {
     return false;

@@ -22,9 +22,9 @@ export async function adb(...args: string[]): Promise<string> {
   return stdout.trim();
 }
 
-/** Process id of the current app package. */
-export async function getAppPid(): Promise<string> {
-  return adb('shell', 'pidof', targetPackage()).catch(() => '');
+/** Process id of the given app package (defaults to the current site's target package). */
+export async function getAppPid(appPackage = targetPackage()): Promise<string> {
+  return adb('shell', 'pidof', appPackage).catch(() => '');
 }
 
 /** Forwards an OS-assigned free local port to the given pid's webview devtools socket, returns the port. */
@@ -39,20 +39,24 @@ export async function removePortForward(port: string): Promise<void> {
 
 /**
  * Lists WebView pages via Chrome DevTools /json (no Appium context switch).
- * TODO: wire adb forward + HTTP /json.
+ * Only 'page' entries are returned — other target types (e.g. 'worker') are
+ * dropped here so callers don't each have to filter.
+ * Uses an OS-assigned free port (tcp:0) so this doesn't collide with another
+ * process or with other workers running in parallel.
  */
-export async function getAvailableUrls(): Promise<WebViewDevtoolsPage[]> {
-  const pid = await getAppPid();
+export async function getAvailableUrls(appPackage = targetPackage()): Promise<WebViewDevtoolsPage[]> {
+  const pid = await getAppPid(appPackage);
   if (!pid) {
     return [];
   }
 
-  const port = await adb('forward', 'tcp:0', `localabstract:webview_devtools_remote_${pid}`);
+  const port = await getWebviewDevtoolsPort(pid);
   try {
     const res = await fetch(`http://localhost:${port}/json`);
-    return (await res.json()) as CdpPage[];
+    const pages = (await res.json()) as WebViewDevtoolsPage[];
+    return pages.filter((p) => p.type === 'page');
   } finally {
-    await adb('forward', '--remove', `tcp:${port}`).catch(() => undefined);
+    await removePortForward(port).catch(() => undefined);
   }
 }
 
