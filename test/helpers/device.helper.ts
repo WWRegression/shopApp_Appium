@@ -4,11 +4,11 @@ import { targetPackage } from './context.helper';
 
 const execFileAsync = promisify(execFile);
 
-export interface WebViewDevtoolsPage {
+/** WebView page from CDP /json (id, url, title only). */
+export interface CdpPage {
   id: string;
   url: string;
   title: string;
-  type: string;
 }
 
 function deviceArgs(): string[] {
@@ -38,14 +38,11 @@ export async function removePortForward(port: string): Promise<void> {
 }
 
 /**
- * Lists WebView pages via Chrome DevTools /json (no Appium context switch).
- * Only 'page' entries are returned — other target types (e.g. 'worker') are
- * dropped here so callers don't each have to filter.
- * Uses an OS-assigned free port (tcp:0) so this doesn't collide with another
- * process or with other workers running in parallel.
+ * WebView pages via Chrome DevTools /json (no Appium context switch).
+ * Returns type === 'page' entries with a url.
  */
-export async function getAvailableUrls(appPackage = targetPackage()): Promise<WebViewDevtoolsPage[]> {
-  const pid = await getAppPid(appPackage);
+export async function getPagesByCdp(): Promise<CdpPage[]> {
+  const pid = await getAppPid();
   if (!pid) {
     return [];
   }
@@ -53,8 +50,17 @@ export async function getAvailableUrls(appPackage = targetPackage()): Promise<We
   const port = await getWebviewDevtoolsPort(pid);
   try {
     const res = await fetch(`http://localhost:${port}/json`);
-    const pages = (await res.json()) as WebViewDevtoolsPage[];
-    return pages.filter((p) => p.type === 'page');
+    const entries = (await res.json()) as Array<{
+      id: string;
+      url?: string;
+      title?: string;
+      type?: string;
+    }>;
+    return entries
+      .filter((e) => e.type === 'page' && !!e.url)
+      .map((e) => ({ id: e.id, url: e.url!, title: e.title ?? '' }));
+  } catch {
+    return [];
   } finally {
     await removePortForward(port).catch(() => undefined);
   }
