@@ -4,6 +4,13 @@ import { targetPackage } from './context.helper';
 
 const execFileAsync = promisify(execFile);
 
+export interface WebViewDevtoolsPage {
+  id: string;
+  url: string;
+  title: string;
+  type: string;
+}
+
 function deviceArgs(): string[] {
   const udid = (browser.capabilities as WebdriverIO.Capabilities & { deviceUDID?: string }).deviceUDID;
   return udid ? ['-s', udid] : [];
@@ -28,6 +35,25 @@ export async function getWebviewDevtoolsPort(pid: string): Promise<string> {
 /** Removes a port forward set up by getWebviewDevtoolsPort() (or any adb forward on that port). */
 export async function removePortForward(port: string): Promise<void> {
   await adb('forward', '--remove', `tcp:${port}`);
+}
+
+/**
+ * Lists WebView pages via Chrome DevTools /json (no Appium context switch).
+ * TODO: wire adb forward + HTTP /json.
+ */
+export async function getAvailableUrls(): Promise<WebViewDevtoolsPage[]> {
+  const pid = await getAppPid();
+  if (!pid) {
+    return [];
+  }
+
+  const port = await adb('forward', 'tcp:0', `localabstract:webview_devtools_remote_${pid}`);
+  try {
+    const res = await fetch(`http://localhost:${port}/json`);
+    return (await res.json()) as CdpPage[];
+  } finally {
+    await adb('forward', '--remove', `tcp:${port}`).catch(() => undefined);
+  }
 }
 
 /** adb dumpsys package → versionName(versionCode) */
