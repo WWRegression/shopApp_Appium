@@ -4,8 +4,11 @@ import { targetPackage } from './context.helper';
 
 const execFileAsync = promisify(execFile);
 
-/** WebView page from CDP /json (id, url, title only). */
-export interface CdpPage {
+/**
+ * Browser page snapshot (id, url, title).
+ * Sourced via Chrome DevTools /json — no Appium context/window switch.
+ */
+export interface BrowserPageInfo {
   id: string;
   url: string;
   title: string;
@@ -38,10 +41,10 @@ export async function removePortForward(port: string): Promise<void> {
 }
 
 /**
- * WebView pages via Chrome DevTools /json (no Appium context switch).
+ * List browser pages via Chrome DevTools /json (no Appium context switch).
  * Returns type === 'page' entries with a url.
  */
-export async function getPagesByCdp(): Promise<CdpPage[]> {
+export async function getBrowserPages(): Promise<BrowserPageInfo[]> {
   const pid = await getAppPid();
   if (!pid) {
     return [];

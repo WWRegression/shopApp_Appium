@@ -75,7 +75,8 @@ run.config (site / testType / environment / releaseName)
 
 | Helper | Katalon 대응 | 용도 |
 |--------|--------------|------|
-| `context.helper` | switchToWebView / switchToWebViewWindow | Native ↔ WebView |
+| `context.helper` | switchToWebView / switchToWindowByPage / getCurrentWindowUrl | Native ↔ WebView |
+| `device.helper` | getBrowserPageList | Browser page list (no Appium switch) |
 | `env.helper` | TestEnvContext / API base | stg/prod, URL |
 | `db.helper` + `report.helper` | ReportHandler | TC 결과 DB |
 | `LoginPage.wdsLoginIfNeeded` | LogIn.wdsLogin | STG WDS 로그인 |

@@ -65,7 +65,7 @@ export class LoginPage extends BasePage {
     console.log('[login] WDS page shown, starting login');
 
     // sts.secsso.net WebView 준비 (Katalon: switchToWebView + window scan)
-    await switchToWebView(10).catch(() => undefined);
+    await switchToWebView(10000).catch(() => undefined);
     await switchToNative();
 
     await this.locator.wdsIdInput.waitForDisplayed({ timeout: 10000 });

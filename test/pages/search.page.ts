@@ -1,6 +1,6 @@
 import { BasePage } from './base.page';
 import { SearchLocator } from '../locators/search.locator';
-import { switchToNative, switchToWebView, switchToWebViewWindow } from '../helpers/context.helper';
+import { switchToNative, switchToWebView, switchToWindowByPage } from '../helpers/context.helper';
 
 export class SearchPage extends BasePage {
   private readonly locator = new SearchLocator();
@@ -33,11 +33,11 @@ export class SearchPage extends BasePage {
     await card.click();
 
     // BC/PD는 WebView인 경우가 많음
-    await switchToWebView(10);
+    await switchToWebView(10000);
     try {
-      await switchToWebViewWindow('bc');
+      await switchToWindowByPage('bc');
     } catch {
-      await switchToWebViewWindow('pd');
+      await switchToWindowByPage('pd');
     }
   }
 

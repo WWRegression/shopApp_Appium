@@ -1,7 +1,7 @@
 import { BasePage } from './base.page';
 import { MypageLocator } from '../locators/mypage.locator';
 import { switchToNative } from '../helpers/context.helper';
-import { getAvailableUrls } from '../helpers/device.helper';
+import { getBrowserPages } from '../helpers/device.helper';
 import { scrollUntilVisible } from '../helpers/gesture.helper';
 import { getElementLabel } from '../helpers/element.helper';
 
@@ -52,7 +52,7 @@ export class MypagePage extends BasePage {
     // Baseline before the loop — prevents leftover webview pages from earlier
     // sessions being mistaken for newly opened ones.
     this.knownPageIds.clear();
-    const existing = await getAvailableUrls();
+    const existing = await getBrowserPages();
     for (const p of existing) {
       this.knownPageIds.add(p.id);
     }
@@ -119,7 +119,7 @@ export class MypagePage extends BasePage {
   private async findWebviewPage(timeoutMs = 4000): Promise<{ url: string; title: string } | null> {
     const deadline = Date.now() + timeoutMs;
     while (Date.now() < deadline) {
-      const pages = await getAvailableUrls();
+      const pages = await getBrowserPages();
       const page = pages.find((p) => p.url && !this.knownPageIds.has(p.id));
       if (page) {
         this.knownPageIds.add(page.id);
