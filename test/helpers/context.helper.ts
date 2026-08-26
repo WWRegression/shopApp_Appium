@@ -181,14 +181,13 @@ async function findWindowByPage(
     returnDetailedContexts: true,
     isAndroidWebviewVisible: true,
   });
-
+  console.log('[findWindowByPage] contexts=', JSON.stringify(contexts, null, 2));
   for (const ctx of contexts) {
     if (typeof ctx === 'string' || ctx.id === 'NATIVE_APP') {
       continue;
     }
     const url = ctx.url ?? '';
-    const webviewPageId =
-      'webviewPageId' in ctx && ctx.webviewPageId ? String(ctx.webviewPageId) : '';
+    const webviewPageId = 'webviewPageId' in ctx && ctx.webviewPageId ? String(ctx.webviewPageId) : '';
     if (!url || !webviewPageId) {
       continue;
     }
@@ -279,6 +278,19 @@ export async function prepareWebViewPage(
 // 4) Detect — URL match + current page
 // ===========================================================================
 
+/** URL fragments for fragment-matched pages (bc/pd/site use path helpers). */
+function pageUrlPatterns(page: Exclude<PageUrlKey, 'bc' | 'pd' | 'site'>): string[] {
+  const patterns: Record<Exclude<PageUrlKey, 'bc' | 'pd' | 'site'>, string[]> = {
+    cart: ['/cart'],
+    checkout: ['/checkout'],
+    mypageWishlist: ['mypage/wishlist'],
+    mypageProfile: ['mypage/profile-setting'],
+    wdsLogin: ['wds.samsung.com', 'sts.secsso.net'],
+    useinsider: ['useinsider'],
+  };
+  return patterns[page];
+}
+
 /** Site gate: `ae/` so CN matches via host `samsung.com.cn/`. */
 function isOnSite(href: string, siteCode: string): boolean {
   return href.toLowerCase().includes(`${siteCode.toLowerCase()}/`);
@@ -289,7 +301,7 @@ function isOnSite(href: string, siteCode: string): boolean {
  * Global: /ae/smartphones/... → ['smartphones', ...]
  * CN: samsung.com.cn/smartphones/... → ['smartphones', ...]
  */
-function shopRelativeSegments(href: string, siteCode: string): string[] | null {
+function getSiteUrlSegments(href: string, siteCode: string): string[] | null {
   if (!isOnSite(href, siteCode)) {
     return null;
   }
@@ -305,56 +317,57 @@ function shopRelativeSegments(href: string, siteCode: string): string[] | null {
   }
 }
 
-function pageUrlPatterns(page: PageUrlKey, siteCode: string): string[] {
-  const site = siteCode.toLowerCase();
-  const patterns: Record<PageUrlKey, string[]> = {
-    bc: [],
-    pd: [],
-    cart: [`${site}/cart`, '/cart'],
-    checkout: [`${site}/checkout`, '/checkout'],
-    mypageWishlist: ['mypage/wishlist'],
-    mypageProfile: ['mypage/profile-setting'],
-    wdsLogin: ['sts.secsso.net'],
-    site: [`${site}/`],
-    useinsider: ['useinsider'],
-  };
-  return patterns[page];
+function hrefIncludesAny(href: string, patterns: string[]): boolean {
+  const url = href.toLowerCase();
+  return patterns.some((p) => url.includes(p.toLowerCase()));
+}
+
+/** BC: /{category}/{family}/buy/ */
+function isBcUrl(href: string, siteCode: string): boolean {
+  const segs = getSiteUrlSegments(href, siteCode);
+  return segs !== null && segs[2] === 'buy';
+}
+
+/** PD: .../{sku}/buy/ or product path without buy (not cart/checkout/...). */
+function isPdUrl(href: string, siteCode: string): boolean {
+  const segs = getSiteUrlSegments(href, siteCode);
+  if (!segs) {
+    return false;
+  }
+  const reserved = new Set([
+    'cart',
+    'checkout',
+    'wishlist',
+    'mypage',
+    'my-account',
+    'search',
+    'multi-search',
+  ]);
+  if (reserved.has(segs[0] ?? '')) {
+    return false;
+  }
+  if (segs[3] === 'buy') {
+    return true;
+  }
+  return !segs.includes('buy') && segs.length >= 3;
 }
 
 /**
  * True when href matches the given page.
- * bc: /{category}/{family}/buy/  |  pd: sku/.../buy/ or product path without buy
+ * site → isOnSite | bc/pd → path structure | others → fragment (+ site gate)
  */
-export function matchPageByUrl(href: string, page: PageUrlKey, siteCode: string): boolean {
-  if (page === 'bc' || page === 'pd') {
-    const segs = shopRelativeSegments(href, siteCode);
-    if (!segs) {
-      return false;
-    }
-    if (page === 'bc') {
-      return segs[2] === 'buy';
-    }
-    const reserved = new Set([
-      'cart',
-      'checkout',
-      'wishlist',
-      'mypage',
-      'my-account',
-      'search',
-      'multi-search',
-    ]);
-    if (reserved.has(segs[0] ?? '')) {
-      return false;
-    }
-    if (segs[3] === 'buy') {
-      return true;
-    }
-    return !segs.includes('buy') && segs.length >= 3;
+function matchPageByUrl(href: string, page: PageUrlKey, siteCode: string): boolean {
+  if (page === 'site') {
+    return isOnSite(href, siteCode);
+  }
+  if (page === 'bc') {
+    return isBcUrl(href, siteCode);
+  }
+  if (page === 'pd') {
+    return isPdUrl(href, siteCode);
   }
 
-  const patterns = pageUrlPatterns(page, siteCode);
-  const url = href.toLowerCase();
-  const matched = patterns.some((p) => url.includes(p.toLowerCase()));
+  const matched = hrefIncludesAny(href, pageUrlPatterns(page));
   if (page === 'wdsLogin' || page === 'useinsider') {
     return matched;
   }
