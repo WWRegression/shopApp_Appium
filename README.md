@@ -46,8 +46,8 @@ npm.cmd run test:spec -- test/specs/sample/test-debug.spec.ts --site AT
 ```text
 config/
   run.config.ts          ← site / testType / environment / releaseName
-  site.ts                ← region별 package + activity, loadSite
-  sites/{SITE}.json      ← 사이트별 테스트 데이터·features
+  site.ts                ← site별 package + activity, loadSite
+  sites/{SITE}.json      ← site별 테스트 데이터·features
   tc-exclusions.json
 test/
   helpers/               ← context, device, env, db, gesture, …
@@ -71,7 +71,7 @@ test/specs/
 │   ├── uat-app-01.spec.ts
 │   └── ...
 └── sample/
-    └── test-debug.spec.ts
+    └── sample-pf-bc-cart.spec.ts
 ```
 
 ## 실행 설정
@@ -106,7 +106,7 @@ npm run test:flagship:postunpack -- --site DE --release R26
 npm run test:flagship:uat -- --site US --env prod
 
 # 단일 파일
-npm run test:spec -- test/specs/sample/test-debug.spec.ts --site AT
+npm run test:spec -- test/specs/sample/sample-pf-bc-cart.spec.ts --site AU
 ```
 
 ### STG (WDS) 로그인
