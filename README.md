@@ -16,6 +16,61 @@ Samsung ShopApp 자동화 Framework (Appium + TypeScript + WebdriverIO)
 
 Appium 서버는 `@wdio/appium-service`가 테스트 실행 시 자동으로 띄웁니다.
 
+## 실행 Flow (npm 시작부터)
+
+```text
+npm run test:sanity | test:phase3 | test:flagship:* | test:spec
+  │
+  │  package.json scripts
+  │    · cross-env TEST_TYPE=… APP_ENV=…   (sanity/phase3/flagship)
+  │    · wdio run wdio.conf.ts [--spec …] [--site …] [--release …] …
+  ▼
+wdio CLI 기동
+  │
+  ▼
+wdio.conf.ts 로드
+  │  1) getRunConfig()
+  │       CLI(--site/--env/--release/--report-db) > env(SITE/APP_ENV/…) > defaults
+  │  2) loadSite(siteCode)
+  │       getAppIdentity → package/activity
+  │       sites/{SITE}.json → 테스트 데이터·features
+  │  3) getSpecsForTestType(testType)
+  │       sanity/phase3 → test/specs/regression/**
+  │       flagship      → test/specs/flagship/**
+  │       (--spec 있으면 해당 파일만)
+  │  4) capabilities에 appPackage / appActivity 설정
+  ▼
+Appium service 기동  (@wdio/appium-service)
+  ▼
+Session 생성  (UiAutomator2 ↔ Device)
+  ▼
+before hook
+  │  driver.activateApp(package)
+  ▼
+Mocha Spec 실행
+  │  Page / Service / Locator
+  │  context.helper (필요 시 Native ↔ WebView ↔ Window)
+  ▼
+afterTest
+  │  reportDb=true 이면 report.helper → DB 업로드
+  ▼
+Session 종료 / Appium 종료
+```
+
+### Hybrid Context / Window (Spec 내부)
+
+```text
+Native (NATIVE_APP)
+  │  switchToWebView() / hasAppWebViewContext()
+  ▼
+WebView context (WEBVIEW_<package>)
+  │  switchToWindowByPage('cart'|'bc'|…)
+  │    · detailed getContexts → url 매칭
+  │    · switchToWindow(webviewPageId)
+  ▼
+Focused window → Page actions
+```
+
 ## Quick start
 
 ```bash
@@ -143,16 +198,6 @@ prepareWebViewPage('bc', layout)
 - Context wait: Appium `getContexts({ waitForWebviewMs, filterByCurrentAndroidApp })`
 - Window wait/focus: detailed `getContexts`의 `url` + `webviewPageId`로 `switchToWindow`
 - Native에서 URL만 볼 때: `device.helper`의 `getBrowserPageList` (Appium context 전환 없음)
-
-## 데이터 참조
-
-```text
-run.config (site / testType / environment / releaseName)
-  → site.ts getAppIdentity + loadSite
-  → sites/{SITE}.json (features override)
-  → tc-exclusions.json
-  → specs
-```
 
 ## Helpers
 
