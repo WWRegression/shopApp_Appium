@@ -15,7 +15,7 @@ export class CartPage extends BasePage {
   readonly sim = new CartSimService();
 
   /**
-   * Katalon Cart.verifyCartLoad() 대응 — switchToWebViewWindow('cart')는 window URL만
+   * Katalon Cart.verifyCartLoad() 대응 — switchToWindowByPage('cart')는 window URL만
    * 보므로, 실제 카트 페이지 URL로 바뀌었지만 DOM은 아직 안 그려진 순간에도 전환이
    * 끝날 수 있다. cartLayout이 뜰 때까지 마저 기다려야 그 뒤 로직(예: clearCart의
    * remove 버튼 탐색)이 "아직 안 그려짐"을 "원래 비어있음"으로 오인하지 않는다.

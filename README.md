@@ -187,16 +187,18 @@ npm run test:sanity -- --site DE --release R26 --report-db
 | Context | `switchToNative` / `switchToWebView` / `hasAppWebViewContext` | `NATIVE_APP` ↔ `WEBVIEW_<package>` |
 | Window | `getCurrentWindowUrl` / `switchToWindowByPage` | URL 패턴으로 WebView 안 page(탭) 포커스 |
 | Prepare | `prepareWebViewPage` | context + window + layout ready |
-| Detect | `matchPageByUrl` / `getCurrentPage` | URL·화면으로 현재 페이지 판별 |
+| Detect | `getCurrentWebViewPage` / `isCurrentWebViewPage` | Hybris WebView 페이지 판별 (Native context OK, 전환 없음) |
 
 ```text
-switchToWebView()              → WEBVIEW_<package> context
-switchToWindowByPage('cart')   → cart URL window focus
-prepareWebViewPage('bc', layout)
+switchToWebView()                         → WEBVIEW_<package> context
+switchToWindowByPage('cart')              → cart URL window focus
+prepareWebViewPage('bc', layout)          → context + window + layout
+getCurrentWebViewPage({ waitMs: 5000 })   → 'bc' | 'pd' | … (PF card 직후 등)
 ```
 
-- Context wait: Appium `getContexts({ waitForWebviewMs, filterByCurrentAndroidApp })`
+- Context wait: Appium `getContexts({ waitForWebviewMs })`
 - Window wait/focus: detailed `getContexts`의 `url` + `webviewPageId`로 `switchToWindow`
+- Detect: focused URL 또는 detailed contexts URL (`matchPageByUrl`) — context 전환 없음
 - Native에서 URL만 볼 때: `device.helper`의 `getBrowserPageList` (Appium context 전환 없음)
 
 ## Helpers

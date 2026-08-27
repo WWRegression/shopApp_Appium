@@ -5,7 +5,7 @@ import { BcScPlusService } from '../services/scplus/bc-scplus.service';
 import { BcEupService } from '../services/eup/bc-eup.service';
 import { BcSimService } from '../services/sim/bc-sim.service';
 import { BcGalaxyClubService } from '../services/galaxyclub/bc-galaxyclub.service';
-import { switchToWebView, prepareWebViewPage, isCurrentPage } from '../helpers/context.helper';
+import { switchToWebView, prepareWebViewPage, isCurrentWebViewPage } from '../helpers/context.helper';
 import { scrollElementToCenter } from '../helpers/gesture.helper';
 
 export interface BcProductOptions {
@@ -56,11 +56,11 @@ export class BcPage extends BasePage {
   }
 
   /**
-   * True when getCurrentPage() resolves to BC in the current (or corrected) context.
+   * True when getCurrentWebViewPage() resolves to BC (Native context OK).
    * Prefer calling after BC entry (e.g. selectOptions / prepareBcPage).
    */
   async isBcPage(): Promise<boolean> {
-    return isCurrentPage('bc');
+    return isCurrentWebViewPage('bc');
   }
 
   async verifyOptions(): Promise<void> {
@@ -92,7 +92,7 @@ export class BcPage extends BasePage {
 
   /**
    * 클릭만 한다 — cart 도달 확인은 여기서 안 함.
-   * add-on 화면은 URL이 그대로 /buy/라서, 여기서 switchToWebViewWindow('cart')를 먼저 불러버리면
+   * add-on 화면은 URL이 그대로 /buy/라서, 여기서 switchToWindowByPage('cart')를 먼저 불러버리면
    * (아직 add-on 창은 안 잡히고) 이전 실행에서 남아있는 오래된 cart 탭을 잘못 찾아
    * 거기로 전환해버릴 수 있다. cart 도달 확인은 add-on 컨티뉴까지 다 끝난 뒤
    * cartPage.prepareCartPage()에서 한다.
