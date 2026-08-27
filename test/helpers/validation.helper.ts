@@ -17,6 +17,10 @@ export async function assertElementTextContains(
   expect(text).toContain(expectedText);
 }
 
+export function assertEqual<T>(actual: T, expected: T): void {
+  expect(actual).toBe(expected);
+}
+
 export async function assertCurrentActivity(
   expectedActivity: string
 ): Promise<void> {

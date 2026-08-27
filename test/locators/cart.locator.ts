@@ -33,6 +33,48 @@ export class CartLocator {
     );
   }
 
+  /** All rendered cart item lines, unfiltered by sku. Match on data-modelcode in code. */
+  get itemLines() {
+    return $$(
+      [
+        '.cart-row',
+        '.cart-item:is([data-pvitype="mobile"], [data-pvitype="tv"], [data-pvitype="refrigerator"], [data-pimsubtype="e-vouchers"], [data-pvitype="mobile accessory"], [data-an-sc="card-cart-product"])',
+      ].join(', ')
+    );
+  }
+
+  /**
+   * Quantity-increase control. Matches both cart UI variants:
+   *  - stepper + button (carries value/data-modelunit)
+   *  - buy-one-more button (adds a new row on click)
+   */
+  quantityAddButton(sku: string) {
+    return $$(
+      [
+        `[data-modelcode="${sku}"] cart-item-counter button.btn-qty-plus`,
+        `.cart-item[data-modelcode="${sku}"] button[data-an-la="plus button"]`,
+        `.btn-qty-plus[data-modelcode="${sku}"]`,
+        `.btn-buy-one-more[data-modelcode="${sku}"]`,
+      ].join(', ')
+    );
+  }
+
+  /** Quantity-decrease stepper button. Not present on row-per-unit UIs — use rowRemoveButton instead. */
+  quantityReduceButton(sku: string) {
+    return $$(
+      [
+        `cart-item-counter[data-modelcode="${sku}"] button[data-an-tr="cart-product-remove"]:not([disabled])`,
+        `.cart-item[data-modelcode="${sku}"] .cart-item__quantity button[data-an-tr="cart-product-remove"]:not([disabled])`,
+        `div[data-modelcode="${sku}"] cart-item-counter button[data-an-tr="cart-product-remove"]:not([disabled])`,
+      ].join(', ')
+    );
+  }
+
+  /** Removes an entire row (one unit) on row-per-unit UIs — pair with removeConfirmButton. */
+  rowRemoveButton(sku: string) {
+    return $(`.cart-item[data-modelcode="${sku}"] button[data-an-la="remove item"]`);
+  }
+
   get tradeInRemoveButton() {
     return $(
       [

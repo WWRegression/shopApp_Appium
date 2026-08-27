@@ -27,6 +27,14 @@ export async function getElementLabel(element: ChainablePromiseElement): Promise
   return (desc ?? '').trim();
 }
 
+/** For widgets that only respond to touchstart, not click() (e.g. cart quantity stepper). */
+export async function dispatchTouchStart(element: ChainablePromiseElement): Promise<void> {
+  await driver.execute(
+    "arguments[0].dispatchEvent(new TouchEvent('touchstart', { bubbles: true }));",
+    await element
+  );
+}
+
 export function matchesText(actual: string, expected: string | RegExp): boolean {
   if (expected instanceof RegExp) {
     return expected.test(actual);
