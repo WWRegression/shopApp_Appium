@@ -189,28 +189,33 @@ async function getDetailedWebViewWindows(): Promise<MatchedWebViewPage[]> {
     return [];
   }
 
-  const contexts = await driver.getContexts({
-    returnDetailedContexts: true,
-    isAndroidWebviewVisible: true,
-  });
+  try {
+    const contexts = await driver.getContexts({
+      returnDetailedContexts: true,
+      isAndroidWebviewVisible: true,
+    });
 
-  const windows: MatchedWebViewPage[] = [];
-  for (const ctx of contexts) {
-    if (typeof ctx === 'string') {
-      continue;
+    const windows: MatchedWebViewPage[] = [];
+    for (const ctx of contexts) {
+      if (typeof ctx === 'string') {
+        continue;
+      }
+      if (ctx.id.toLowerCase() !== expected) {
+        continue;
+      }
+      const url = ctx.url ?? '';
+      const webviewPageId =
+        'webviewPageId' in ctx && ctx.webviewPageId ? String(ctx.webviewPageId) : '';
+      if (!url || !webviewPageId) {
+        continue;
+      }
+      windows.push({ url, webviewPageId });
     }
-    if (ctx.id.toLowerCase() !== expected) {
-      continue;
-    }
-    const url = ctx.url ?? '';
-    const webviewPageId =
-      'webviewPageId' in ctx && ctx.webviewPageId ? String(ctx.webviewPageId) : '';
-    if (!url || !webviewPageId) {
-      continue;
-    }
-    windows.push({ url, webviewPageId });
+    return windows;
+  } catch {
+    // WDIO may throw when WebView exists but has no pages (e.g. after native back).
+    return [];
   }
-  return windows;
 }
 
 async function findWindowByPage(
