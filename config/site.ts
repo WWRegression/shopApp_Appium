@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import tcExclusionsFile from './tc-exclusions.json';
+import { getResolvedSkuCache } from '../test/helpers/product-api.helper';
 
 export type ApkRegion = 'CN' | 'IN' | 'US' | 'GLOBAL';
 
@@ -190,6 +191,29 @@ function resolveExcludedTcs(siteCode: string, siteJsonExcluded?: string[]): stri
   return [...new Set(merged)];
 }
 
+/** Overlays the cached IM product onto the static value, only when every field resolved. */
+function resolveProduct(
+  cache: ReturnType<typeof getResolvedSkuCache>,
+  staticProduct: Site['product']
+): Site['product'] {
+  const im = cache.IM;
+  if (im?.sku && im.color && im.name && im.storage) {
+    return { sku: im.sku, deviceName: im.name, color: im.color, storage: im.storage };
+  }
+  return staticProduct;
+}
+
+function resolveSearch(
+  cache: ReturnType<typeof getResolvedSkuCache>,
+  staticSearch: Site['search']
+): Site['search'] {
+  return {
+    ...staticSearch,
+    vdSku: cache.VD?.sku ?? staticSearch.vdSku,
+    haSku: cache.HA?.sku ?? staticSearch.haSku,
+  };
+}
+
 export function loadSite(siteCode: string): LoadedSite {
   const code = siteCode.toUpperCase();
   const filePath = path.join(SITES_DIR, `${code}.json`);
@@ -201,6 +225,7 @@ export function loadSite(siteCode: string): LoadedSite {
   const data = JSON.parse(fs.readFileSync(filePath, 'utf8')) as Site;
   const apkRegion = getApkRegion(code);
   const apkIdentity = getAppIdentity(code);
+  const resolvedCache = getResolvedSkuCache(code);
 
   return {
     ...data,
@@ -210,6 +235,8 @@ export function loadSite(siteCode: string): LoadedSite {
     appActivity: apkIdentity.activity,
     features: resolveFeatures(data.features),
     excludedTcs: resolveExcludedTcs(code, data.excludedTcs),
+    product: resolveProduct(resolvedCache, data.product),
+    search: resolveSearch(resolvedCache, data.search),
   };
 }
 

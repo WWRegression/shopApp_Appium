@@ -32,6 +32,7 @@
     "cross-env": "^10.1.0",
     "expect-webdriverio": "^5.1.0",
     "ts-node": "^10.9.2",
+    "tsx": "^4.23.12",
     "typescript": "^7.0.2",
     "webdriverio": "^9.5.0"
   },

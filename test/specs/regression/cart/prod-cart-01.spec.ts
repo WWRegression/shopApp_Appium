@@ -13,14 +13,13 @@ describe('PROD_CART_01', () => {
   const addOnPage = new AddOnPage();
 
   it('quantity +/-, product removal, cart icon count', async function () {
-    this.timeout(180000);
     await runOrSkip.call(this, 'PROD_CART_01', async (site) => {
       await cartPage.clearCart();
 
-      await searchPage.searchByKeyword('galaxy z fold 8');
+      await searchPage.searchByKeyword(site.product.sku);
       await pfPage.selectPfCard();
 
-      await bcPage.selectOptions(site.product);
+      await bcPage.selectOptions(site.product); 
       await bcPage.galaxyClub.selectNoForService();
       await bcPage.tradeIn.selectNoForService();
       await bcPage.scPlus.selectNoForService();
