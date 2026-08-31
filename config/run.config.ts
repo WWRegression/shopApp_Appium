@@ -6,8 +6,10 @@
  *
  * 예:
  *   npm run test:sanity
- *   npm run test:flagship:uat -- --site DE --release R26
- *   npm run test:flagship:postunpack -- --site=US --release=R26 --report-db
+ *   npm run test:sanity -- --site DE --release 30RC1_SENH
+ *   npm run test:phase3 -- --site=US --release 30RC1_SENH --report-db
+ *   npm run test:flagship:uat -- --site DE --release 30RC1_SENH
+ *   npm run test:flagship:postunpack -- --site=US --release 30RC1_SENH --report-db
  */
 export type TestType = 'sanity' | 'phase3' | 'flagship';
 
