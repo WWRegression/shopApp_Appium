@@ -1,0 +1,33 @@
+{
+  "siteCode": "SE",
+  "countryName": "Sverige (Svenska)",
+  "phoneCountryCode": "+46",
+  "customer": {
+    "firstName": "KK",
+    "lastName": "Katalon",
+    "mobile": "854589400",
+    "birthYear": "1990"
+  },
+  "shipping": {
+    "address1": "Flygbussarna",
+    "district": "Stockholm",
+    "postalCode": "12344",
+    "town": "Stockholm"
+  },
+  "product": {
+    "sku": "SM-F966BZKCEUB",
+    "deviceName": "Galaxy Z Fold7",
+    "color": "Jetblack",
+    "storage": "512GB"
+  },
+  "search": {
+    "keyword": "smartklocka",
+    "haSku": "RS90F64EETEF",
+    "vdSku": "TQ75QN85FAUXXC"
+  },
+  "tradeIn": {
+    "brand": "Apple",
+    "device": "Apple iPhone 12 Pro Max 128GB",
+    "imei": "351704551369632"
+  }
+}

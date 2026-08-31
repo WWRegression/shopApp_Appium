@@ -1,0 +1,38 @@
+{
+  "siteCode": "CO",
+  "countryName": "Colombia (Español)",
+  "customer": {
+    "firstName": "KK",
+    "lastName": "Katalon",
+    "mobile": "3057590516",
+    "documentType": "pasaporte",
+    "documentNumber": "1032456333"
+  },
+  "shipping": {
+    "address1": "Casa",
+    "address2": "#AB123-CD456",
+    "apartment": "asdfasg",
+    "district": "Bogota, D.C.",
+    "landmark": "Bogota, D.C.",
+    "town": "BOGOTA, D.C.",
+    "searchText": "Bogota, D.C."
+  },
+  "product": {
+    "sku": "SM-S948BLBKLTC",
+    "deviceName": "Galaxy S26 Ultra",
+    "color": "sky blue",
+    "storage": "512GB"
+  },
+  "search": {
+    "keyword": "reloj",
+    "haSku": "RB43DG6005S9CO",
+    "vdSku": "QN75QN70FAKXZL"
+  },
+  "tradeIn": {
+    "brand": "Samsung",
+    "category": "SMARTPHONE",
+    "device": "Samsung Galaxy Z Fold4 5G",
+    "storage": "512GB",
+    "imei": "445387661033021"
+  }
+}

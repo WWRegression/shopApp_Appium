@@ -1,0 +1,36 @@
+{
+  "siteCode": "DE",
+  "countryName": "Deutschland (Deutsch)",
+  "phoneCountryCode": "+49",
+  "customer": {
+    "firstName": "KK",
+    "lastName": "Katalon",
+    "mobile": "6925434126",
+    "birthYear": "1990"
+  },
+  "shipping": {
+    "address1": "Berliner Allee",
+    "address2": "1",
+    "district": "St. Wendel",
+    "postalCode": "66606",
+    "town": "abcd",
+    "searchText": "Berliner St. 1"
+  },
+  "product": {
+    "sku": "SM-F966BDBCEUB",
+    "deviceName": "Galaxy Z Fold7",
+    "color": "Blue Shadow",
+    "storage": "512GB"
+  },
+  "search": {
+    "keyword": "Armbanduhr",
+    "haSku": "RB38C607AB1/EF",
+    "vdSku": "GQ65QN990FTXZG"
+  },
+  "tradeIn": {
+    "brand": "Samsung",
+    "category": "SMARTWATCH",
+    "device": "Galaxy Watch7 | 40mm | LTE | L305",
+    "imei": "358093791036958"
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "siteCode": "CN",
+  "customer": {
+    "firstName": "KK",
+    "mobile": "18123456789"
+  },
+  "shipping": {
+    "address1": "北京市-朝阳区-幸福二村10号楼",
+    "district": "海淀区",
+    "town": "北京市"
+  },
+  "product": {
+    "sku": "SM-F9660ZKGCHC",
+    "deviceName": "Galaxy Z Fold7",
+    "color": "Blue Shadow",
+    "storage": "512GB"
+  },
+  "search": {
+    "keyword": "手表",
+    "haSku": "RM90F64X1CSC",
+    "vdSku": "UA85U8000FJXXZ"
+  },
+  "tradeIn": {
+    "brand": "三星",
+    "category": "手机",
+    "model": "Galaxy Z系列",
+    "device": "三星 Galaxy Z Fold4 (5G)"
+  },
+  "checkout": {
+    "eupImei": "355550201160194"
+  }
+}

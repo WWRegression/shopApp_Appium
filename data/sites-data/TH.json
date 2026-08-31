@@ -1,0 +1,33 @@
+{
+  "siteCode": "TH",
+  "countryName": "ประเทศไทย (ไทย)",
+  "customer": {
+    "firstName": "KK Katalon",
+    "mobile": "661234567"
+  },
+  "shipping": {
+    "address1": "111",
+    "district": "ป้อมปราบศัตรูพ่าย",
+    "postalCode": "10100",
+    "town": "บ้านบาตร",
+    "searchText": "กรุงเทพมหานคร"
+  },
+  "product": {
+    "sku": "SM-F966BDBGTHL",
+    "deviceName": "galaxy z fold7",
+    "color": "blue shadow",
+    "storage": "512 GB"
+  },
+  "search": {
+    "keyword": "นาฬิกาอัจฉริยะ",
+    "haSku": "RT42CG6644S9ST",
+    "vdSku": "QA65S90FAEXXT"
+  },
+  "tradeIn": {
+    "brand": "Samsung",
+    "category": "สมาร์ทโฟน",
+    "device": "S23 Ultra",
+    "storage": "256GB",
+    "imei": "524644035655028"
+  }
+}

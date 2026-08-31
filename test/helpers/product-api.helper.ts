@@ -312,7 +312,7 @@ export async function isSkuInStock(site: LoadedSite, sku: string): Promise<boole
 
 /**
  * Local cache of resolved products (config/cache, gitignored), keyed by site then type:
- * { AU: { IM, VD, HA }, DE: {...} }. Falls back to sites/{SITE}.json — see site.ts.
+ * { AU: { IM, VD, HA }, DE: {...} }. Falls back to data/sites-data/{SITE}.json — see site.ts.
  */
 const CACHE_FILE = path.join(__dirname, '..', '..', 'config', 'cache', 'resolved-sku.json');
 

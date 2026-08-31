@@ -16,7 +16,7 @@ export interface TestCaseMeta {
 /**
  * Canonical TC catalog for this project.
  * - suites: which TEST_TYPE runs the TC (via runOrSkip)
- * - requiresFeatures: site feature gate (DEFAULT_SITE_FEATURES + sites/{SITE}.json)
+ * - requiresFeatures: site feature gate (DEFAULT_SITE_FEATURES + site-features.json)
  */
 export const testCaseCatalog: TestCaseMeta[] = [
   // Runs first (see test/specs/regression/_call-api.spec.ts filename) — resolves a

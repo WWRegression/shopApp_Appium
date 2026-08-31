@@ -1,0 +1,36 @@
+{
+  "siteCode": "NZ",
+  "countryName": "New Zealand (English)",
+  "customer": {
+    "firstName": "KK",
+    "lastName": "Katalon",
+    "mobile": "0123456789"
+  },
+  "shipping": {
+    "address1": "Whangarei",
+    "address2": "Whangarei",
+    "district": "Whangarei",
+    "postalCode": "0110",
+    "town": "Onerahi",
+    "searchText": "123"
+  },
+  "product": {
+    "sku": "SM-F966BDBGXNZ",
+    "deviceName": "galaxy z fold7",
+    "color": "blue shadow",
+    "storage": "512 GB"
+  },
+  "search": {
+    "keyword": "smart watch",
+    "haSku": "RS80F64G4FSA",
+    "vdSku": "QA65S90FAEXNZ"
+  },
+  "tradeIn": {
+    "brand": "Apple",
+    "category": "Phone",
+    "device": "IPHONE XS",
+    "storage": "512GB",
+    "color": "Grey",
+    "imei": "357263092581894"
+  }
+}

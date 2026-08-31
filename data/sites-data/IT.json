@@ -1,0 +1,40 @@
+{
+  "siteCode": "IT",
+  "countryName": "Italia (Italiano)",
+  "phoneCountryCode": "Italia",
+  "customer": {
+    "firstName": "KK",
+    "lastName": "Katalon",
+    "mobile": "1335123456",
+    "birthYear": "1990"
+  },
+  "shipping": {
+    "address1": "Piazza Addolorata",
+    "address2": "123",
+    "district": "Agrigento",
+    "postalCode": "15011",
+    "town": "Alessandria",
+    "searchText": "Piazza Addolorata, Acqui Terme, AL, Italia"
+  },
+  "product": {
+    "sku": "SM-F966BDBCEUE",
+    "deviceName": "Galaxy Z Fold7",
+    "color": "Blue Shadow",
+    "storage": "512GB"
+  },
+  "search": {
+    "keyword": "orologio",
+    "haSku": "RB38C674CSA/EF",
+    "vdSku": "QE55S85FAUXZT"
+  },
+  "tradeIn": {
+    "brand": "SAMSUNG",
+    "category": "Smartphone",
+    "device": "Galaxy S25 5G 512GB S931B",
+    "imei": "350505564167041"
+  },
+  "checkout": {
+    "fiscalCode": "MRTMTT25D09F205Z",
+    "iban": "IT69H0300203280165147682131"
+  }
+}

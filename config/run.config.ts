@@ -22,6 +22,8 @@ export interface RunConfig {
   environment: AppEnvironment;
   releaseName: string;
   reportDb: boolean;
+  /** UAT(stg): false → 장바구니 불가 시 Planned. true → Fail. */
+  flagshipSetupDone: boolean;
 }
 
 /** 여기만 고쳐도 실행됩니다. (매 리그레이션마다 releaseName 갱신) */
@@ -31,6 +33,7 @@ const defaults: RunConfig = {
   environment: 'prod',
   releaseName: '30RC1_SENH',
   reportDb: false,
+  flagshipSetupDone: false,
 };
 
 function readArg(argv: string[], name: string): string | undefined {
@@ -112,6 +115,10 @@ export function getRunConfig(): RunConfig {
       defaults.releaseName
     ).trim(),
     reportDb: cliReportDb ?? parseEnvFlag(process.env.REPORT_DB) ?? defaults.reportDb,
+    flagshipSetupDone:
+      hasFlag(argv, 'setup-done') ||
+      parseEnvFlag(process.env.FLAGSHIP_SETUP_DONE) === true ||
+      defaults.flagshipSetupDone,
   };
 
   return cached;

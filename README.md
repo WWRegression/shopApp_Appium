@@ -33,7 +33,8 @@ wdio.conf.ts 로드
   │       CLI(--site/--env/--release/--report-db) > env(SITE/APP_ENV/…) > defaults
   │  2) loadSite(siteCode)
   │       getAppIdentity → package/activity
-  │       sites/{SITE}.json → 테스트 데이터·features
+  │       data/sites-data/{SITE}.json → 테스트 픽스처
+  │       site-features.json → features / searchApiPath
   │  3) getSpecsForTestType(testType)
   │       sanity/phase3 → test/specs/regression/**
   │       flagship      → test/specs/flagship/**
@@ -101,11 +102,16 @@ npm.cmd run test:spec -- test/specs/sample/test-debug.spec.ts --site AT
 ```text
 config/
   run.config.ts          ← site / testType / environment / releaseName
-  site.ts                ← site별 package + activity, loadSite
-  sites/{SITE}.json      ← site별 테스트 데이터·features
+  site.ts                ← package/activity, loadSite
+  site-features.json     ← site별 features · searchApiPath override
   tc-exclusions.json
+data/
+  sites-data/{SITE}.json ← 계정·주소·검색 픽스처
+  flagship-data/
+    skus/{SITE}.json     ← Flagship SKU 카탈로그
+    generator/           ← Products.csv, sku-from-csv.ts
 test/
-  helpers/               ← context, device, env, db, gesture, …
+  helpers/               ← context, device, env, db, gesture, flagship SKU 로드, …
   pages/ / locators/     ← Page Object
   services/              ← trade-in, sc+, … 도메인 로직
   specs/

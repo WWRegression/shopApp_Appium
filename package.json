@@ -11,7 +11,7 @@
     "test:flagship:uat": "cross-env TEST_TYPE=flagship APP_ENV=stg wdio run wdio.conf.ts",
     "test:flagship:postunpack": "cross-env TEST_TYPE=flagship APP_ENV=prod wdio run wdio.conf.ts",
     "test:spec": "wdio run wdio.conf.ts --spec",
-    "flagship:skus": "tsx config/flagship/sku-from-excel.ts",
+    "flagship:skus": "tsx data/flagship-data/generator/sku-from-csv.ts",
     "build": "tsc --noEmit",
     "lint": "tsc --noEmit"
   },

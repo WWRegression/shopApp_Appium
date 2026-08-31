@@ -1,0 +1,33 @@
+{
+  "siteCode": "HK",
+  "countryName": "香港及澳門特別行政區 (繁體中文)",
+  "customer": {
+    "firstName": "KK",
+    "lastName": "Katalon",
+    "mobile": "91234567"
+  },
+  "shipping": {
+    "address1": "111",
+    "district": "中西區",
+    "town": "香港特別行政區"
+  },
+  "product": {
+    "sku": "SM-F9660DBGTGY",
+    "deviceName": "Galaxy Z Fold7",
+    "color": "Blue Shadow",
+    "storage": "512 GB"
+  },
+  "search": {
+    "keyword": "智能手錶",
+    "haSku": "RS80F65J1FSH",
+    "vdSku": "QA43QEF1AJXZK"
+  },
+  "tradeIn": {
+    "brand": "APPLE",
+    "device": "Apple iPhone 14 Pro Max",
+    "storage": "512GB",
+    "color": "香港或澳門原廠行貨",
+    "imei": "354495640217760",
+    "purchaseFrom": "0"
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "siteCode": "SG",
+  "countryName": "Singapore (English)",
+  "customer": {
+    "firstName": "KK",
+    "lastName": "Katalon",
+    "mobile": "99999999"
+  },
+  "shipping": {
+    "address1": "23, MARINA BAY MRT STATION, PARK STREET",
+    "postalCode": "018926",
+    "searchText": "018926"
+  },
+  "product": {
+    "sku": "SM-S948BZVCXSP",
+    "deviceName": "galaxy z fold7",
+    "color": "blue shadow",
+    "storage": "512 GB"
+  },
+  "search": {
+    "keyword": "smart watch",
+    "haSku": "RB43DG6005S9SS",
+    "vdSku": "QA65S85FAEXXS"
+  },
+  "tradeIn": {
+    "brand": "Apple",
+    "device": "iPhone 12 Pro Max",
+    "storage": "512GB / 6GB",
+    "imei": "356719110352635"
+  }
+}

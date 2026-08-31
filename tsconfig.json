@@ -18,6 +18,7 @@
   },
   "include": [
     "config/**/*.ts",
+    "data/flagship-data/generator/sku-from-csv.ts",
     "test/**/*.ts",
     "wdio.conf.ts"
   ],

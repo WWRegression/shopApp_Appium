@@ -20,7 +20,7 @@ const REPORT_DB = {
   password: '',
 } as const;
 
-export type ReportStatus = 'Pass' | 'Fail' | 'N/A' | 'Exception' | 'Planned';
+export type ReportStatus = 'Pass' | 'Fail' | 'N/A' | 'Exception' | 'Planned' | 'OOS';
 
 export interface ShopAppResultPayload {
   tcId: string;
@@ -172,7 +172,10 @@ export function mapTestStatus(
   if (reason.toUpperCase().includes('[SKIPPED]')) {
     return { status: 'N/A', reason };
   }
-  if (reason.includes('[SETUP_ERROR]')) {
+  if (/\[OOS\]/i.test(reason)) {
+    return { status: 'OOS', reason };
+  }
+  if (reason.includes('[SETUP_ERROR]') || /\[Planned\]/i.test(reason)) {
     return { status: 'Planned', reason };
   }
   return { status: 'Fail', reason };

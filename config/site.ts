@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import tcExclusionsFile from './tc-exclusions.json';
+import siteFeaturesFile from './site-features.json';
 import { getResolvedSkuCache } from '../test/helpers/product-api.helper';
 
 export type ApkRegion = 'CN' | 'IN' | 'US' | 'GLOBAL';
@@ -50,7 +51,7 @@ export type SiteFeatureName =
 
 export type SiteFeatures = Partial<Record<SiteFeatureName, boolean>>;
 
-/** Default feature flags. Site JSON may override only differences. */
+/** Default feature flags. site-features.json may override only differences. */
 export const DEFAULT_SITE_FEATURES: Required<SiteFeatures> = {
   tradeIn: true,
   tradeUp: true,
@@ -62,16 +63,14 @@ export const DEFAULT_SITE_FEATURES: Required<SiteFeatures> = {
 };
 
 /**
- * Site test data = config/sites/{SITE}.json
- * Features = DEFAULT_SITE_FEATURES + sites/{SITE}.json features override
+ * Site fixtures = data/sites-data/{SITE}.json
+ * Features / searchApiPath = DEFAULT_* + config/site-features.json
  * Exclusions = config/tc-exclusions.json
  */
 export interface Site {
   siteCode: string;
   countryName?: string;
   phoneCountryCode?: string;
-  searchApiPath?: string;
-  features?: SiteFeatures;
   excludedTcs?: string[];
   menus?: Record<string, boolean>;
   customer: {
@@ -144,18 +143,39 @@ export type LoadedSite = Site & {
   apkRegion: ApkRegion;
   appPackage: string;
   appActivity: string;
+  searchApiPath: string;
   features: SiteFeatures;
   excludedTcs: string[];
 };
 
-const SITES_DIR = path.join(__dirname, 'sites');
+const SITES_DIR = path.join(__dirname, '../data/sites-data');
+const DEFAULT_SEARCH_API_PATH = 'global';
 
 type ExclusionFile = {
   _comment?: string;
   [siteCode: string]: string[] | string | undefined;
 };
 
+type SiteFeaturesOverride = {
+  searchApiPath?: string;
+  features?: SiteFeatures;
+};
+
+type SiteFeaturesFile = {
+  _comment?: string;
+  [siteCode: string]: SiteFeaturesOverride | string | undefined;
+};
+
 const exclusionFile = tcExclusionsFile as ExclusionFile;
+const featuresFile = siteFeaturesFile as SiteFeaturesFile;
+
+function getSiteFeaturesOverride(siteCode: string): SiteFeaturesOverride {
+  const raw = featuresFile[siteCode];
+  if (!raw || typeof raw === 'string') {
+    return {};
+  }
+  return raw;
+}
 
 export function getApkRegion(siteCode: string): ApkRegion {
   const code = siteCode.toUpperCase();
@@ -177,11 +197,15 @@ export function getAppActivity(siteCode: string): string {
   return getAppIdentity(siteCode).activity;
 }
 
-export function resolveFeatures(siteJsonFeatures?: SiteFeatures): SiteFeatures {
+export function resolveFeatures(siteCode: string): SiteFeatures {
   return {
     ...DEFAULT_SITE_FEATURES,
-    ...(siteJsonFeatures ?? {}),
+    ...(getSiteFeaturesOverride(siteCode).features ?? {}),
   };
+}
+
+export function resolveSearchApiPath(siteCode: string): string {
+  return getSiteFeaturesOverride(siteCode).searchApiPath ?? DEFAULT_SEARCH_API_PATH;
 }
 
 function resolveExcludedTcs(siteCode: string, siteJsonExcluded?: string[]): string[] {
@@ -233,7 +257,8 @@ export function loadSite(siteCode: string): LoadedSite {
     apkRegion,
     appPackage: apkIdentity.packageName,
     appActivity: apkIdentity.activity,
-    features: resolveFeatures(data.features),
+    searchApiPath: resolveSearchApiPath(code),
+    features: resolveFeatures(code),
     excludedTcs: resolveExcludedTcs(code, data.excludedTcs),
     product: resolveProduct(resolvedCache, data.product),
     search: resolveSearch(resolvedCache, data.search),

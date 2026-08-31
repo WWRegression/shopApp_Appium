@@ -1,0 +1,30 @@
+{
+  "siteCode": "US",
+  "customer": {
+    "firstName": "KK",
+    "lastName": "Katalon",
+    "mobile": "7187881839"
+  },
+  "shipping": {
+    "address1": "F Rolling Way",
+    "district": "AZ",
+    "postalCode": "85004",
+    "town": "Phoenix",
+    "searchText": "AZ"
+  },
+  "product": {
+    "sku": "SM-S948UZVAVZW",
+    "deviceName": "Galaxy S26 Ultra",
+    "color": "Cobalt Violet",
+    "storage": "256GB"
+  },
+  "search": {
+    "keyword": "smart watch",
+    "haSku": "RF70H30GERAA",
+    "vdSku": "QN77S85FAEXZA"
+  },
+  "tradeIn": {
+    "brand": "Samsung",
+    "device": "Galaxy Z Flip6"
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "siteCode": "PH",
+  "countryName": "Philippines (English)",
+  "customer": {
+    "firstName": "KK",
+    "lastName": "Katalon",
+    "mobile": "9123456789"
+  },
+  "shipping": {
+    "address1": "1 King",
+    "district": "Caloocan City",
+    "landmark": "Barangay 1",
+    "searchText": "Metro Manila"
+  },
+  "product": {
+    "sku": "SM-S948BZKCPHL",
+    "deviceName": "Galaxy S26 Ultra",
+    "color": "Black",
+    "storage": "512 GB"
+  },
+  "search": {
+    "keyword": "smart watch",
+    "haSku": "RT22FARBDS9/TC",
+    "vdSku": "QA83S90HAEXXP"
+  },
+  "tradeIn": {
+    "brand": "Apple",
+    "category": "Smartphone",
+    "model": "iPhone 14 Pro Max 5G",
+    "device": "iPhone 14 Pro Max 5G",
+    "storage": "1TB",
+    "imei": "355086754092336",
+    "zipCode": "1400"
+  }
+}

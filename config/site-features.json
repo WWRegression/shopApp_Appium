@@ -1,0 +1,169 @@
+{
+  "_comment": "Per-site capability overrides. features merge onto DEFAULT_SITE_FEATURES. searchApiPath defaults to global.",
+  "AE": {
+    "features": {
+      "wishlist": false
+    }
+  },
+  "AE_AR": {
+    "features": {
+      "wishlist": false
+    }
+  },
+  "AT": {
+    "searchApiPath": "hybris",
+    "features": {
+      "sim": true
+    }
+  },
+  "AU": {
+    "features": {
+      "sim": true
+    }
+  },
+  "BE": {
+    "searchApiPath": "newhybris"
+  },
+  "BE_FR": {
+    "searchApiPath": "newhybris"
+  },
+  "CA": {
+    "features": {
+      "tradeUp": false
+    }
+  },
+  "CA_FR": {
+    "features": {
+      "tradeUp": false
+    }
+  },
+  "CL": {
+    "searchApiPath": "newhybris"
+  },
+  "CN": {
+    "searchApiPath": "newhybris",
+    "features": {
+      "eup": true
+    }
+  },
+  "CO": {
+    "searchApiPath": "newhybris",
+    "features": {
+      "scPlus": false
+    }
+  },
+  "CZ": {
+    "searchApiPath": "newhybris"
+  },
+  "DE": {
+    "searchApiPath": "newhybris",
+    "features": {
+      "tradeUp": false,
+      "sim": true
+    }
+  },
+  "FR": {
+    "searchApiPath": "newhybris",
+    "features": {
+      "sim": true
+    }
+  },
+  "HU": {
+    "features": {
+      "scPlus": false
+    }
+  },
+  "ID": {
+    "searchApiPath": "newhybris",
+    "features": {
+      "tradeUp": false
+    }
+  },
+  "IL": {
+    "features": {
+      "tradeIn": false,
+      "tradeUp": false,
+      "scPlus": false,
+      "rewards": false
+    }
+  },
+  "IN": {
+    "searchApiPath": "gpv2"
+  },
+  "JP": {
+    "features": {
+      "tradeUp": false,
+      "scPlus": false
+    }
+  },
+  "MX": {
+    "searchApiPath": "newhybris"
+  },
+  "NL": {
+    "searchApiPath": "newhybris"
+  },
+  "PE": {
+    "searchApiPath": "newhybris",
+    "features": {
+      "scPlus": false
+    }
+  },
+  "PH": {
+    "searchApiPath": "newhybris"
+  },
+  "PL": {
+    "searchApiPath": "newhybris"
+  },
+  "RO": {
+    "searchApiPath": "newhybris"
+  },
+  "SA": {
+    "features": {
+      "tradeUp": false,
+      "wishlist": false
+    }
+  },
+  "SA_EN": {
+    "features": {
+      "tradeUp": false,
+      "wishlist": false
+    }
+  },
+  "SE": {
+    "features": {
+      "eup": true,
+      "sim": true
+    }
+  },
+  "TR": {
+    "searchApiPath": "newhybris",
+    "features": {
+      "tradeUp": false
+    }
+  },
+  "TW": {
+    "features": {
+      "scPlus": false,
+      "wishlist": false
+    }
+  },
+  "UK": {
+    "searchApiPath": "newhybris",
+    "features": {
+      "sim": true
+    }
+  },
+  "US": {
+    "features": {
+      "tradeUp": false,
+      "sim": true,
+      "wishlist": false
+    }
+  },
+  "ZA": {
+    "features": {
+      "tradeIn": false,
+      "tradeUp": false
+    }
+  }
+}
