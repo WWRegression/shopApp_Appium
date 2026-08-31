@@ -16,3 +16,4 @@ coverage/
 .wdio/
 tmp/
 config/_tmp/
+config/cache/

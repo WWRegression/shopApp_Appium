@@ -45,6 +45,7 @@ export const config: WebdriverIO.Config = {
       'appium:autoGrantPermissions': true,
       'appium:newCommandTimeout': 240,
       'appium:autoWebview': false,
+      'appium:autoLaunch': false,
     } as WebdriverIO.Capabilities,
   ],
 
@@ -74,7 +75,12 @@ export const config: WebdriverIO.Config = {
     timeout: 120000,
   },
 
-  before: async () => {
+  before: async (_capabilities, specs) => {
+    // API-only specs (e.g. _call-api.spec.ts) skip launching it
+    const skipAppLaunch = specs.length === 1 && specs[0].includes('_call-api.spec.ts');
+    if (skipAppLaunch) {
+      return;
+    }
     await driver.activateApp(site.appPackage);
   },
   /**

@@ -23,7 +23,7 @@ export class BcPage extends BasePage {
   readonly sim = new BcSimService();
   readonly galaxyClub = new BcGalaxyClubService();
 
-  /** cart.page.ts의 prepareCartPage()와 동일한 패턴 — webview 전환 + url 매칭 + bcLayout 렌더 확인. */
+
   async prepareBcPage(): Promise<boolean> {
     return prepareWebViewPage('bc', this.locator.bcLayout);
   }

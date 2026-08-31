@@ -19,6 +19,10 @@ export interface TestCaseMeta {
  * - requiresFeatures: site feature gate (DEFAULT_SITE_FEATURES + sites/{SITE}.json)
  */
 export const testCaseCatalog: TestCaseMeta[] = [
+  // Runs first (see test/specs/regression/_call-api.spec.ts filename) — resolves a
+  // valid IM/VD/HA sku per site via API so the rest of the suite picks it up.
+  { tcId: 'CALL_API', suites: ['sanity', 'phase3'], description: 'Resolve valid IM/VD/HA sku per site via API' },
+
   // Sanity + Phase3 shared
   { tcId: 'PROD_HOME_01', suites: ['sanity', 'phase3'], description: 'Guest onboarding / TrustArc cookie' },
   { tcId: 'PROD_HOME_02', suites: ['sanity', 'phase3'], description: 'Registered auto-login / TrustArc cookie' },
