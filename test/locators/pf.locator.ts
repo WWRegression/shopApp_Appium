@@ -1,16 +1,8 @@
 export class PfLocator {
+  /** Scoped to the scrollable list; matches on the wrapping View since the ImageView's own content-desc can lag during image load. */
   get productGrid() {
-    return $$('//android.widget.ImageView[@content-desc]');
-  }
-
-  /** Katalon Search.groovy getMatchingPfCardCount / collectProductsInfo와 동일한 패턴. */
-  get firstProductCard() {
-    return $('(//android.widget.ImageView[@content-desc and string-length(@content-desc) > 9])[1]');
-  }
-
-  productCardContaining(text: string) {
-    return $(
-      `(//android.widget.ImageView[@content-desc and contains(@content-desc, "${text}")])[1]`
+    return $$(
+      "//android.view.View[@scrollable='true']//android.view.View[@content-desc and .//android.widget.ImageView]"
     );
   }
 }

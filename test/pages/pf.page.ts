@@ -1,25 +1,113 @@
 import { BasePage } from './base.page';
 import { PfLocator } from '../locators/pf.locator';
 import { switchToNative } from '../helpers/context.helper';
+import { scrollDown } from '../helpers/gesture.helper';
+import { currentSiteCode } from '../helpers/tc-filter.helper';
+import { normalizeText, isExactTokenMatch, stripMarkerText } from '../helpers/data.helper';
 
 export type PfTabTarget = { tab: string } | { product: string };
 export type WishState = 'add' | 'remove';
 
+/**
+ * Matching intent for a PF card, not a product type — the caller (spec) picks the mode,
+ * PfPage only knows how to scroll+tap, and matchPfCard only knows how to compare text.
+ * Katalon pfcardScrollandClick/matchesPfCard.
+ */
+export type PfCardQuery =
+  | { mode: 'first' }
+  | { mode: 'contains'; text: string }
+  | { mode: 'exact'; product: string; exclusiveOnly?: boolean }
+  | { mode: 'watch'; device: string; connectivity?: string; caseSize?: string };
+
+/** Katalon LOCALIZE_ONLINE_EXCLUSIVE_TEXT — site → the "Online Exclusive" phrase shown on PF cards. */
+const ONLINE_EXCLUSIVE_TEXT_BY_SITE: Record<string, string> = {
+  AE_AR: 'فقط عبر samsung.com',
+  BE: 'Online Exclusive',
+  BE_FR: 'Online Exclusive',
+  NL: 'Online Exclusive',
+  CA_FR: 'Uniquement sur Samsung.com',
+  PL: 'ekskluzywnym kolorze tylko',
+  CL: 'Exclusivo en Samsung.com',
+  CN: '专属色',
+  CZ: 'Pouze na samsung.cz',
+  ES: 'Exclusivo Online',
+  FR: 'Couleur exclusive',
+  HK: '網上商店限定',
+  HU: 'Online exkluzív',
+  NZ: 'Online Channel Exclusive',
+  IN: 'Special Colour',
+  MX: 'Disponible solo en Samsung.com',
+  PE: 'Disponible solo en Samsung.com',
+  PT: 'Exclusivo Samsung.com',
+  TR: "Samsung.com'a özel",
+  TW: '三星商城限定',
+  VN: 'chỉ có tại Samsung.com',
+  JP: 'Samsung.com限定',
+  SA: 'حصرياً عبر الإنترنت',
+  RO: 'Exclusiv pe Samsung.com',
+};
+
 export class PfPage extends BasePage {
   private readonly locator = new PfLocator();
 
-  async selectPfCard(criteria?: string): Promise<void> {
+  /** Scrolls the PF list and taps the first card matching query. Katalon pfcardScrollandClick. */
+  async selectPfCard(query: PfCardQuery, maxScrolls = 30): Promise<void> {
     await switchToNative();
-    const card = criteria
-      ? this.locator.productCardContaining(criteria)
-      : this.locator.firstProductCard;
 
-    await card.waitForDisplayed({ timeout: 20000 });
-    await card.click();
+    for (let attempt = 0; attempt < maxScrolls; attempt += 1) {
+      const cards = await this.locator.productGrid;
+      for (const card of cards) {
+        const desc = (await card.getAttribute('content-desc').catch(() => '')) ?? '';
+        if (this.matchPfCard(desc, query)) {
+          await card.click();
+          return;
+        }
+      }
+      await scrollDown();
+    }
+
+    throw new Error(`PF card not matched: ${JSON.stringify(query)}`);
   }
 
-  async selectPfCardExcluding(_keywords: string[]): Promise<void> {
-    // TODO: Implement PF card selection excluding keywords
+  /** Pure text match — no Appium. desc is a PF card's raw content-desc. */
+  private matchPfCard(rawDesc: string, query: PfCardQuery): boolean {
+    const desc = normalizeText(rawDesc);
+    if (!desc) return false;
+
+    switch (query.mode) {
+      case 'first':
+        return true;
+
+      case 'contains':
+        return desc.includes(normalizeText(query.text));
+
+      case 'watch': {
+        const descNoSpace = desc.replace(/\s+/g, '');
+        const device = normalizeText(query.device).replace(/\s+/g, '');
+        const connectivity = query.connectivity ? normalizeText(query.connectivity).replace(/\s+/g, '') : '';
+        const caseSize = query.caseSize ? normalizeText(query.caseSize).replace(/\s+/g, '') : '';
+
+        let ok = Boolean(device) && descNoSpace.includes(device);
+        if (connectivity) ok = ok && descNoSpace.includes(connectivity);
+        if (caseSize) ok = ok && descNoSpace.includes(caseSize);
+        return ok;
+      }
+
+      case 'exact': {
+        const product = normalizeText(query.product);
+        if (!query.exclusiveOnly) {
+          return isExactTokenMatch(desc, product);
+        }
+        const exclusiveText = normalizeText(this.getOnlineExclusiveText(currentSiteCode()));
+        if (!exclusiveText || !desc.includes(exclusiveText)) return false;
+        return isExactTokenMatch(stripMarkerText(desc, exclusiveText), product);
+      }
+    }
+  }
+
+  /** Falls back to the English phrase for sites not in the table (Katalon does the same). */
+  private getOnlineExclusiveText(siteCode: string): string {
+    return ONLINE_EXCLUSIVE_TEXT_BY_SITE[siteCode.toUpperCase()] ?? 'Samsung.com only';
   }
 
   async selectFilterOption(_option: string): Promise<void> {

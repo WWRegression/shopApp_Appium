@@ -17,7 +17,7 @@ describe('PROD_CART_01', () => {
       await cartPage.clearCart();
 
       await searchPage.searchByKeyword(site.product.sku);
-      await pfPage.selectPfCard();
+      await pfPage.selectPfCard({ mode: 'first' });
 
       await bcPage.selectOptions(site.product); 
       await bcPage.galaxyClub.selectNoForService();
