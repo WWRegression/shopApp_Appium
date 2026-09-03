@@ -1,9 +1,14 @@
+import { getRunConfig } from "../../config/run.config";
+
 /**
  * Buy Configurator (WebView) locators.
  * CSS는 Hybris BC 기준. 앱 변경 시 Inspector로 보정.
  */
 export class BcLocator {
   get bcLayout() {
+    if (getRunConfig().site === 'US') {
+      return $(`#headerWrapper .MobileViewHeader_header__title__9zKbO`);
+    }
     return $('div .bc-cross-navigation-wrap, section.watch-bc');
   }
 
@@ -165,5 +170,12 @@ export class BcLocator {
 
   get simNoButton() {
     return $('[an-la*="sim" i][an-la*="no" i]');
+  }
+
+  get bcProductName() {
+    if (getRunConfig().site === 'US') {
+      return $(`div[class*='ProductTitle_product'] h1`);
+    }
+    return $(`.hubble-price-bar__detail-title, .sg-product-display-name, .watch-bc-price-bar__headline`);
   }
 }

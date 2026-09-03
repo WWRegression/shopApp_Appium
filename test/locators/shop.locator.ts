@@ -1,3 +1,5 @@
+import { getRunConfig } from '../../config/run.config';
+
 /** Katalon Shop.CATEGORY_MAP — L0 category tab content-desc, all locales. */
 const CATEGORY_MOBILES_L0 = `//android.widget.ImageView[
 	@content-desc='Mobiles' or
@@ -152,15 +154,44 @@ const SITE_STEPS_OVERRIDE: Record<string, Partial<Record<ShopCategory, CategoryS
 };
 
 export class ShopLocator {
-  get categoryList() {
-    return $('~YOUR_SHOP_CATEGORY_LIST_SELECTOR');
-  }
-
-  get firstProduct() {
-    return $('~YOUR_SHOP_FIRST_PRODUCT_SELECTOR');
-  }
+  private readonly site = getRunConfig().site;
 
   categorySteps(siteCode: string, category: ShopCategory): CategorySteps {
     return SITE_STEPS_OVERRIDE[siteCode.toUpperCase()]?.[category] ?? DEFAULT_STEPS[category];
   }
+
+  get L0Categories() {
+    if (this.site === 'JP') {
+      return $$(`//android.widget.FrameLayout[@resource-id='android:id/content']
+        /android.widget.FrameLayout/android.widget.FrameLayout
+        /android.view.View/android.view.View/android.view.View/android.view.View[2]
+        /android.view.View/android.view.View/android.view.View/android.view.View/android.view.View[1]
+        //android.view.View[@content-desc]`);
+    }
+    
+    return $$(`//android.widget.ScrollView/android.view.View/android.view.View[1]
+      /android.view.View[@content-desc]`);
+  }
+
+  get L1Categories() {
+    return $$(`//android.widget.ScrollView/android.view.View[2]//android.widget.ImageView[@content-desc]
+      , //android.widget.ImageView[@content-desc]`);
+  }
+
+  categoryTitleByName(categoryTitle: string) {
+    return $(`//android.widget.ScrollView/android.view.View/android.view.View[1]/android.view.View[@content-desc='${categoryTitle}'] 
+      | 
+      //android.widget.ImageView[@content-desc='${categoryTitle}']
+      | 
+      //android.view.View[@content-desc='${categoryTitle}']`); 
+  }
+
+  pageTitleByName(pageTitle: string) {
+    return $(`(//android.view.View[@content-desc='${pageTitle}' and not(@clickable='true')])[1]`);
+  }
+
+  pageTitle() {
+    return $(`(//android.view.View[@content-desc and not(@clickable='true')])[1]`);
+  }
 }
+

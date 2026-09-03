@@ -434,6 +434,9 @@ function isPdUrl(href: string, siteCode: string): boolean {
   if (segs[3] === 'buy') {
     return true;
   }
+  if (siteCode === 'US') {
+    return !segs.includes('buy') && segs.length >= 2;
+  }
   return !segs.includes('buy') && segs.length >= 3;
 }
 

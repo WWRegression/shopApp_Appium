@@ -5,8 +5,7 @@ import { BcScPlusService } from '../services/scplus/bc-scplus.service';
 import { BcEupService } from '../services/eup/bc-eup.service';
 import { BcSimService } from '../services/sim/bc-sim.service';
 import { BcGalaxyClubService } from '../services/galaxyclub/bc-galaxyclub.service';
-import { switchToWebView, prepareWebViewPage, isCurrentWebViewPage } from '../helpers/context.helper';
-import { scrollElementToCenter } from '../helpers/gesture.helper';
+import { switchToWebView, prepareWebViewPage, isCurrentWebViewPage, switchToWindowByPage } from '../helpers/context.helper';
 
 export interface BcProductOptions {
   deviceName: string;
@@ -112,4 +111,11 @@ export class BcPage extends BasePage {
     // TODO: Implement option section visibility check
     return false;
   }
+
+  async getBcProductName(): Promise<string> {
+    await switchToWebView();
+     await switchToWindowByPage('bc');
+    return await this.locator.bcProductName.getText();
+  }
+
 }

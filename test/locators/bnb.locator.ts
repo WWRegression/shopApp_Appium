@@ -61,6 +61,7 @@ export class BnbLocator {
       or (contains(@content-desc, "Magazin online") and contains(@content-desc, "Fila 2"))
       or (contains(@content-desc, "Mağaza") and contains(@content-desc, "Sekme 2"))
       or (contains(@content-desc, "ショップ") and contains(@content-desc, "タブ"))
+      or (contains(@content-desc, "חנות") and contains(@content-desc, "כרטיסייה 2"))
      ]`
     );
   }

@@ -4,6 +4,10 @@ import { switchToNative } from '../helpers/context.helper';
 import { scrollDown } from '../helpers/gesture.helper';
 import { currentSiteCode } from '../helpers/tc-filter.helper';
 import { normalizeText, isExactTokenMatch, stripMarkerText } from '../helpers/data.helper';
+import { ShopPage } from './shop.page';
+import { BcPage } from './bc.page';
+import { PdPage } from './pd.page';
+import { normalizeProductName } from '../helpers/data.helper'
 
 export type PfTabTarget = { tab: string } | { product: string };
 export type WishState = 'add' | 'remove';
@@ -48,18 +52,22 @@ const ONLINE_EXCLUSIVE_TEXT_BY_SITE: Record<string, string> = {
 };
 
 export class PfPage extends BasePage {
-  private readonly locator = new PfLocator();
+  private readonly pflocator = new PfLocator();
+
+  shopPage = new ShopPage();
+  bcPage = new BcPage();
+  pdPage = new PdPage();
 
   /** Scrolls the PF list and taps the first card matching query. Katalon pfcardScrollandClick. */
   async selectPfCard(query: PfCardQuery, maxScrolls = 30): Promise<void> {
     await switchToNative();
 
     for (let attempt = 0; attempt < maxScrolls; attempt += 1) {
-      const cards = await this.locator.productGrid;
+      const cards = await this.pflocator.productGrid;
       for (const card of cards) {
         const desc = (await card.getAttribute('content-desc').catch(() => '')) ?? '';
         if (this.matchPfCard(desc, query)) {
-          await this.locator.cardImage(card).click();
+          await this.pflocator.cardImage(card).click();
           return;
         }
       }
@@ -68,6 +76,7 @@ export class PfPage extends BasePage {
 
     throw new Error(`PF card not matched: ${JSON.stringify(query)}`);
   }
+
 
   /** Pure text match — no Appium. desc is a PF card's raw content-desc. */
   private matchPfCard(rawDesc: string, query: PfCardQuery): boolean {
@@ -108,6 +117,41 @@ export class PfPage extends BasePage {
   /** Falls back to the English phrase for sites not in the table (Katalon does the same). */
   private getOnlineExclusiveText(siteCode: string): string {
     return ONLINE_EXCLUSIVE_TEXT_BY_SITE[siteCode.toUpperCase()] ?? 'Samsung.com only';
+  }
+
+  async getPfProductName(query: PfCardQuery): Promise<string | null> {
+    await switchToNative();
+
+    const cards = await this.pflocator.productGrid;
+    for (const card of cards) {
+      const desc = (await card.getAttribute('content-desc').catch(() => '')) ?? '';
+      if (this.matchPfCard(desc, query)) {
+        return desc;
+      }
+    }
+    return null;
+  }
+
+  async getPfNameselectPf(): Promise<string | null> {
+    if (!(await this.isPfCardDisplayed())) {
+      return null;
+    }
+    const pfProductName = normalizeProductName(await this.getPfProductName({ mode: 'first' }));
+    await this.selectPfCard({ mode: 'first' });
+    return pfProductName;
+  }
+
+  async isPfCardDisplayed(): Promise<boolean> {
+    try {
+      await this.pflocator.productGrid[0].waitForDisplayed({ timeout: 5000 });
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  async selectPfCardExcluding(_keywords: string[]): Promise<void> {
+    // TODO: Implement PF card selection excluding keywords
   }
 
   async selectFilterOption(_option: string): Promise<void> {

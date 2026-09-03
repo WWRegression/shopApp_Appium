@@ -62,3 +62,104 @@ export function stripMarkerText(text: string, marker: string): string {
     .replace(/\s+/g, ' ')
     .trim();
 }
+
+export function findFirstSpecialCharIndex(str: string, chars: string[]): number {
+  let minIndex = -1;
+  for (const char of chars) {
+    const idx = str.indexOf(char);
+    if (idx !== -1 && (minIndex === -1 || idx < minIndex)) {
+      minIndex = idx;
+    }
+  }
+  return minIndex;
+}
+
+export function normalizeProductName(rawProductData: string | null | undefined): string {
+  if (!rawProductData) return '';
+
+  // Split into lines
+  const originalLines = rawProductData.split('\n');
+
+  // Filter out marketing/brand lines
+  const filteredLines = originalLines.filter((line) => {
+    const trimmed = line?.trim();
+    if (!trimmed) return false;
+
+    // Condition 1: All-uppercase
+    const isAllUpper = /^[A-Z0-9\s]+$/.test(trimmed);
+
+    // Condition 2: Starts with special character (non-alphanumeric, Unicode-aware)
+    const startsWithSpecialChar = /^[^\p{L}\p{N}]/u.test(trimmed);
+
+    // Remove if marketing-like
+    return !(isAllUpper || startsWithSpecialChar);
+  });
+
+  if (filteredLines.length === 0) {
+    console.log('======filteredLines.isEmpty========');
+    return '';
+  }
+
+  // Choose the line to normalize
+  let productName: string;
+
+  if (filteredLines.length >= 3) {
+    // Case: 3 or more lines → always use the second line
+    productName = filteredLines[1].toLowerCase().trim();
+  } else if (filteredLines.length === 2) {
+    const firstLine = filteredLines[0].toLowerCase().trim();
+    const secondLine = filteredLines[1].toLowerCase().trim();
+
+    const firstHasDigit = /\d/.test(firstLine);
+    const secondHasDigit = /\d/.test(secondLine);
+
+    if (firstHasDigit && !secondHasDigit) {
+      // Case: Only the first line has digits → use the first line
+      productName = firstLine;
+    } else if (firstHasDigit && secondHasDigit) {
+      // Case: Both lines have digits → use the second line
+      productName = secondLine;
+    } else if (!firstHasDigit && !secondHasDigit) {
+      // Case: Neither line has digits → use the longer line
+      productName = firstLine.length >= secondLine.length ? firstLine : secondLine;
+    } else {
+      // Fallback: use the second line
+      productName = secondLine;
+    }
+  } else {
+    // Case: Only one line available → use it directly
+    productName = filteredLines[0].toLowerCase().trim();
+  }
+
+  let normalizedName = productName;
+
+  // Remove if "and" exists, truncate at "and"
+  const andIdx = normalizedName.indexOf(' and ');
+  if (andIdx >= 0) {
+    normalizedName = normalizedName.substring(0, andIdx).trim();
+  }
+
+  // Remove leading "galaxy"
+  if (normalizedName.startsWith('galaxy ')) {
+    normalizedName = normalizedName.replace(/^galaxy\s*/, '');
+  }
+
+  // Remove memory info like 128GB, 1TB, 16 Go
+  normalizedName = normalizedName.replace(/\d+(gb|tb|go)\b/i, '');
+
+  // Remove trailing "..." or "…"
+  normalizedName = normalizedName.replace(/(…|\.{3}).*$/, '');
+
+  // Truncate at first special delimiter
+  const cutIndex = findFirstSpecialCharIndex(normalizedName, ['(', ',', '-', ':']);
+  if (cutIndex > -1) {
+    normalizedName = normalizedName.substring(0, cutIndex);
+  }
+
+  // Remove all whitespace and trim
+  normalizedName = normalizedName.replace(/[\s\u00A0]+/g, '').trim();
+
+  console.log('[normalizeProductName] Normalized productName:', normalizedName);
+
+  return normalizedName;
+}
