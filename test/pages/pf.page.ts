@@ -59,7 +59,7 @@ export class PfPage extends BasePage {
       for (const card of cards) {
         const desc = (await card.getAttribute('content-desc').catch(() => '')) ?? '';
         if (this.matchPfCard(desc, query)) {
-          await card.click();
+          await this.locator.cardImage(card).click();
           return;
         }
       }
