@@ -1,7 +1,7 @@
 import { getRunConfig } from '../../config/run.config';
 
-/** Katalon Shop.CATEGORY_MAP — L0 category tab content-desc, all locales. */
-const CATEGORY_MOBILES_L0 = `//android.widget.ImageView[
+/** Shop L0 (Mobiles / Phones / …), all locales. */
+const MOBILE_L0 = `//android.widget.ImageView[
 	@content-desc='Mobiles' or
 	@content-desc='Mobile' or
 	@content-desc='Phones' or
@@ -51,7 +51,7 @@ const CATEGORY_MOBILES_L0 = `//android.widget.ImageView[
 	@content-desc='Dispositivos móviles'
 ]`;
 
-const CATEGORY_WEARABLES_L0 = `//*[@class = 'android.view.View' and (
+const WEARABLE_L0 = `//*[@class = 'android.view.View' and (
 	@content-desc = '穿戴式裝置' or
 	@content-desc = 'Wearables' or
 	@content-desc = '智能穿戴' or
@@ -60,8 +60,8 @@ const CATEGORY_WEARABLES_L0 = `//*[@class = 'android.view.View' and (
 	@content-desc = 'Watches'
 )]`;
 
-/** L1 subcategory tab content-desc, all locales. */
-const SUBCATEGORY_SMARTPHONES_L1 = `//*[@class = 'android.view.View']/descendant::*[@class = 'android.widget.ImageView' and (
+/** Shop L1 (Smartphones / …), all locales. */
+const SMARTPHONE_L1 = `//*[@class = 'android.view.View']/descendant::*[@class = 'android.widget.ImageView' and (
 	@content-desc='Smartphones' or
 	@content-desc='Smartphone' or
 	@content-desc='Smartphones Galaxy' or
@@ -99,7 +99,7 @@ const SUBCATEGORY_SMARTPHONES_L1 = `//*[@class = 'android.view.View']/descendant
 	@content-desc='Điện thoại thông minh Galaxy'
 ]`;
 
-const SUBCATEGORY_WATCHS_L1 = `//android.widget.ImageView[
+const WATCH_L1 = `//android.widget.ImageView[
 	contains(@content-desc, 'Watches') or
 	@content-desc='Chytré hodinky' or
 	@content-desc='Smartwatches' or
@@ -122,8 +122,8 @@ const SUBCATEGORY_WATCHS_L1 = `//android.widget.ImageView[
 	contains(@content-desc, 'Watch')
 ]`;
 
-/** US-only: single "See All X" button replaces the L1 subcategory tab. */
-const SUBCATEGORY_VIEW_ALL_L1 = `//android.widget.ImageView[
+/** US-only: "See All X" instead of a named L1 tab. */
+const VIEW_ALL_L1 = `//android.widget.ImageView[
 	@content-desc="See All Phones" or
 	@content-desc="See All TVs" or
 	@content-desc="See All Watches"
@@ -131,33 +131,33 @@ const SUBCATEGORY_VIEW_ALL_L1 = `//android.widget.ImageView[
 
 export type ShopCategory = 'mobile' | 'watch';
 
-interface CategorySteps {
-  l0: string;
-  l1: string;
+/** L0 banner xpath + L1 tab xpath to reach PF for a shop category. */
+interface ShopCategoryPath {
+  L0: string;
+  L1: string;
 }
 
-const DEFAULT_STEPS: Record<ShopCategory, CategorySteps> = {
-  mobile: { l0: CATEGORY_MOBILES_L0, l1: SUBCATEGORY_SMARTPHONES_L1 },
-  watch: { l0: CATEGORY_MOBILES_L0, l1: SUBCATEGORY_WATCHS_L1 },
+const DEFAULT_CATEGORY_PATH: Record<ShopCategory, ShopCategoryPath> = {
+  mobile: { L0: MOBILE_L0, L1: SMARTPHONE_L1 },
+  watch: { L0: MOBILE_L0, L1: WATCH_L1 },
 };
 
-/** Katalon Shop.CATEGORY_MAP site overrides. */
-const SITE_STEPS_OVERRIDE: Record<string, Partial<Record<ShopCategory, CategorySteps>>> = {
-  HK: { watch: { l0: CATEGORY_WEARABLES_L0, l1: SUBCATEGORY_WATCHS_L1 } },
-  HK_EN: { watch: { l0: CATEGORY_WEARABLES_L0, l1: SUBCATEGORY_WATCHS_L1 } },
-  MX: { watch: { l0: CATEGORY_WEARABLES_L0, l1: SUBCATEGORY_WATCHS_L1 } },
-  CN: { watch: { l0: CATEGORY_WEARABLES_L0, l1: SUBCATEGORY_WATCHS_L1 } },
+const SITE_CATEGORY_PATH: Record<string, Partial<Record<ShopCategory, ShopCategoryPath>>> = {
+  HK: { watch: { L0: WEARABLE_L0, L1: WATCH_L1 } },
+  HK_EN: { watch: { L0: WEARABLE_L0, L1: WATCH_L1 } },
+  MX: { watch: { L0: WEARABLE_L0, L1: WATCH_L1 } },
+  CN: { watch: { L0: WEARABLE_L0, L1: WATCH_L1 } },
   US: {
-    mobile: { l0: CATEGORY_MOBILES_L0, l1: SUBCATEGORY_VIEW_ALL_L1 },
-    watch: { l0: CATEGORY_WEARABLES_L0, l1: SUBCATEGORY_VIEW_ALL_L1 },
+    mobile: { L0: MOBILE_L0, L1: VIEW_ALL_L1 },
+    watch: { L0: WEARABLE_L0, L1: VIEW_ALL_L1 },
   },
 };
 
 export class ShopLocator {
   private readonly site = getRunConfig().site;
 
-  categorySteps(siteCode: string, category: ShopCategory): CategorySteps {
-    return SITE_STEPS_OVERRIDE[siteCode.toUpperCase()]?.[category] ?? DEFAULT_STEPS[category];
+  categoryPath(siteCode: string, category: ShopCategory): ShopCategoryPath {
+    return SITE_CATEGORY_PATH[siteCode.toUpperCase()]?.[category] ?? DEFAULT_CATEGORY_PATH[category];
   }
 
   get L0Categories() {
@@ -192,6 +192,14 @@ export class ShopLocator {
 
   pageTitle() {
     return $(`(//android.view.View[@content-desc and not(@clickable='true')])[1]`);
+  }
+
+  L0(siteCode: string, category: ShopCategory) {
+    return $(this.categoryPath(siteCode, category).L0);
+  }
+
+  L1(siteCode: string, category: ShopCategory) {
+    return $(this.categoryPath(siteCode, category).L1);
   }
 }
 

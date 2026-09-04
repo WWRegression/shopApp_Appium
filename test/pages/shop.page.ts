@@ -3,19 +3,27 @@ import { ShopLocator, ShopCategory } from '../locators/shop.locator';
 import { gestureByBoundary } from '../helpers/gesture.helper'
 import { switchToNative, getCurrentWebViewPage, hasAppWebViewContext } from '../helpers/context.helper';
 import { currentSiteCode } from '../helpers/tc-filter.helper';
-
+import { clickElement } from '../helpers/element.helper';
 export type CategoryMismatch = string;
 
 export class ShopPage extends BasePage {
 	private readonly shoplocator = new ShopLocator();
-  basePage = new BasePage();
+
+  /** Shop → L0 → L1. Lands on PF. */
+  async openCategory(category: ShopCategory): Promise<void> {
+    await this.selectBnbMenu('shop');
+
+    const site = currentSiteCode();
+    await clickElement(this.shoplocator.L0(site, category), { timeout: 15000 });
+    await clickElement(this.shoplocator.L1(site, category), { timeout: 15000 });
+  }
 
   /** Shop tab -> L0 category -> L1 subcategory, down to the PF list. Katalon moveToPF. */
   async openPfList(category: ShopCategory): Promise<void> {
     await this.selectBnbMenu('shop');
 
-    const steps = this.shoplocator.categorySteps(currentSiteCode(), category);
-    for (const xpath of [steps.l0, steps.l1]) {
+    const path = this.shoplocator.categoryPath(currentSiteCode(), category);
+    for (const xpath of [path.L0, path.L1]) {
       const el = $(xpath);
       if (await el.isDisplayed().catch(() => false)) {
         await el.click();

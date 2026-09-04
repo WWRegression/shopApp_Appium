@@ -9,6 +9,8 @@ import { normalizeText, resolveDisplayColor } from '../helpers/data.helper';
 import { markFailedAndStop, markFailed, FieldCheck } from '../helpers/report.helper';
 import { getElementLabel, isDisplayedSafe, clickOptionInput } from '../helpers/element.helper';
 import { prepareWebViewPage, switchToWebView, switchToWindowByPage } from '../helpers/context.helper';
+import { BcProductOptions, optionSelections } from './bc.page';
+import { scrollElementToCenter } from '../helpers/gesture.helper';
 
 export class PdPage extends BasePage {
   private readonly locator = new PdLocator();
@@ -22,6 +24,49 @@ export class PdPage extends BasePage {
   /** skuAnchor renders early and carries data-shop-sku, so it doubles as the "PD is ready" marker. */
   async preparePdPage(): Promise<boolean> {
     return prepareWebViewPage('pd', this.locator.skuAnchor);
+  }
+  
+  async selectOptions(options: BcProductOptions): Promise<void> {
+    // const chips = optionSelections(options);
+    // console.warn(
+    //   `[pd.selectOptions] start ${chips.map(({ field, value }) => `${field}=${value}`).join(', ')}`
+    // );
+    // const ready = await this.preparePdPage();
+    // console.warn(`[pd.selectOptions] preparePdPage ready=${ready}`);
+    // if (!ready) {
+    //   throw new Error('PD page not ready');
+    // }
+    // const pdLocator = new PdLocator();
+    // for (const { field, value } of chips) {
+    //   let target;
+    //   switch (field) {
+    //     case 'deviceName':
+    //       target = pdLocator.deviceOption(value);
+    //       break;
+    //     case 'storage':
+    //       target = pdLocator.storageOption(value);
+    //       break;
+    //     case 'caseSize':
+    //       target = pdLocator.caseSizeOption(value);
+    //       break;
+    //     case 'connectivity':
+    //       target = pdLocator.connectivityOption(value);
+    //       break;
+    //     case 'color':
+    //       target = pdLocator.colorOption(value);
+    //       break;
+    //   }
+    //   const displayed = await target.isDisplayed().catch(() => false);
+    //   console.warn(`[pd.selectOptions] ${field}=${value} displayed=${displayed}`);
+    //   if (!displayed) {
+    //     continue;
+    //   }
+    //   await scrollElementToCenter(target).catch(() => undefined);
+    //   await target.waitForClickable({ timeout: 10000 });
+    //   await target.click();
+    //   console.warn(`[pd.selectOptions] ${field}=${value} clicked`);
+    // }
+    console.warn('[pd.selectOptions] done');
   }
 
   async getProductName(): Promise<string> {

@@ -79,6 +79,32 @@ export class BcLocator {
     );
   }
 
+  caseSizeOption(size: string) {
+    const value = size.replace(/\s+/g, '');
+    return $(
+      [
+        `.s-option-size :has(> input[data-englishname*="${value}" i])`,
+        `.s-option-size :has(> input[data-displayname*="${value}" i])`,
+        `.s-option-case-size :has(> input[data-englishname*="${value}" i])`,
+        `.wearable-option.size :has(> input[data-englishname*="${value}" i])`,
+        `[an-la="size:${value}" i]`,
+        `[an-la*="case size" i][an-la*="${value}" i]`,
+      ].join(', ')
+    );
+  }
+
+  connectivityOption(value: string) {
+    const v = value.replace(/\s+/g, '');
+    return $(
+      [
+        `.s-option-connectivity :has(> input[data-englishname*="${v}" i])`,
+        `.s-option-connectivity :has(> input[data-displayname*="${v}" i])`,
+        `[an-la*="connect" i][an-la*="${v}" i]`,
+        `[role="button"][data-englishname*="${v}" i]`,
+      ].join(', ')
+    );
+  }
+
   colorOption(color: string) {
     return $(
       [
@@ -88,6 +114,86 @@ export class BcLocator {
         `[an-la="color:${color}" i]`,
       ].join(', ')
     );
+  }
+
+  get summaryDeviceName() {
+    return $$(
+      [
+        '.hubble-product__summary .hubble-product__summary-head .s-option-title',
+        '.summary__product-wrap .summary__product-name',
+        '.wearable-bc-summary-structure-wrap .wearable-bc-price .wearable-bc-price__headline',
+        'div[class*="SummaryHeader_productTitleInfo"] > span:first-child',
+        'div[data-comp-name="watchBcOrderSummary"] .dvice-name',
+      ].join(', ')
+    );
+  }
+
+  get summarySku() {
+    return $$(
+      [
+        '.hubble-product__summary-product .s-option-summary',
+        'span.pd-info__sku-code',
+        'span.pdd39-anchor-nav__info-sku',
+        '.pdd39-anchor-nav__info-sub > span.pdd39-anchor-nav__info-sku',
+        '.wearable-bc-summary-structure-wrap .wearable-bc-price .wearable-bc-price__description',
+        'div[class*="SummaryHeader_modelCode"] div[class*="ModelInfo_modalInfo"] span',
+        'div[data-comp-name="watchBcOrderSummary"] .model-code',
+      ].join(', ')
+    );
+  }
+
+  get summaryOptions() {
+    return $$(
+      [
+        '#deviceSummary .s-option-choice',
+        '.wearable-bc-summary-structure-wrap .wearable-bc-price__list-item--title:not(.band-price)',
+        '[class*="SummaryHeader_productTitleInfo"] span:nth-of-type(2)',
+        '.summary__subTitle',
+        '.total-summary__price-list',
+        '.hdd02-buying-tool__summary .summary__select-option-wrap',
+      ].join(', ')
+    );
+  }
+
+  get summaryServicePrice() {
+    return $$(
+      [
+        '.hubble-product__summary-product-price:not(.device-price-info)',
+        'div[class*="affectedTotalsSection"]',
+        '.s-tradein-summary .s-trade-price',
+      ].join(', ')
+    );
+  }
+
+  /** Visible selected label in the option section (color is often localized). */
+  optionSelectedResult(field: 'deviceName' | 'storage' | 'caseSize' | 'color' | 'connectivity') {
+    const section = this.optionSectionSelector(field);
+    return $(
+      [
+        `${section} .s-select`,
+        `${section} .s-selected`,
+        `${section} em.s-select`,
+        `${section} [class*="selected-name"]`,
+        `${section} .hubble-product__options-title em`,
+      ].join(', ')
+    );
+  }
+
+  optionSectionSelector(
+    field: 'deviceName' | 'storage' | 'caseSize' | 'color' | 'connectivity'
+  ): string {
+    switch (field) {
+      case 'deviceName':
+        return '.s-option-device';
+      case 'storage':
+        return '.s-option-storage';
+      case 'caseSize':
+        return '.s-option-size, .s-option-case-size, .wearable-option.size';
+      case 'connectivity':
+        return '.s-option-connectivity';
+      case 'color':
+        return '.s-option-color-special, .hubble-pd-radio, [id="#color_container"]';
+    }
   }
 
   // ---- Flagship: phone BC (hubble-product template) ----

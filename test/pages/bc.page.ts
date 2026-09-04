@@ -13,16 +13,51 @@ import { normalizeText, stripToAlnum, resolveDisplayColor } from '../helpers/dat
 import { markFailedAndStop, markFailed, FieldCheck } from '../helpers/report.helper';
 import { getElementLabel } from '../helpers/element.helper';
 
-export interface BcProductOptions {
-  sku: string;
+/** Regression `site.product` chip fields. */
+export interface SiteProduct {
   deviceName: string;
   storage: string;
   color: string;
 }
 
-type BcSelectInput = FlagshipProduct | BcProductOptions;
+export type BcProductOptions = SiteProduct | FlagshipProduct;
 
-function isFlagshipProduct(input: BcSelectInput): input is FlagshipProduct {
+export type OptionChip = 'deviceName' | 'storage' | 'caseSize' | 'color' | 'connectivity';
+type OptionSelection = { field: OptionChip; value: string };
+
+export type SummaryPart = 'deviceName' | 'sku' | 'options' | 'servicePrice';
+export type SummaryDetails = Record<SummaryPart, string>;
+
+function optionTextMatches(actual: string, expected: string): boolean {
+  const a = actual.replace(/\s+/g, '').toLowerCase();
+  const b = expected.replace(/\s+/g, '').toLowerCase();
+  return Boolean(a) && Boolean(b) && (a.includes(b) || b.includes(a));
+}
+
+export function optionSelections(options: BcProductOptions): OptionSelection[] {
+  if ('kind' in options && options.kind === 'watch') {
+    return [
+      { field: 'deviceName', value: options.device },
+      { field: 'caseSize', value: options.caseSize },
+      { field: 'color', value: options.color },
+      { field: 'connectivity', value: options.connectivity },
+    ];
+  }
+  if ('kind' in options && options.kind === 'phone') {
+    return [
+      { field: 'deviceName', value: options.device },
+      { field: 'storage', value: options.storage },
+      { field: 'color', value: options.color },
+    ];
+  }
+  return [
+    { field: 'deviceName', value: options.deviceName },
+    { field: 'storage', value: options.storage },
+    { field: 'color', value: options.color },
+  ];
+}
+
+function isFlagshipProduct(input: BcProductOptions): input is FlagshipProduct {
   return 'kind' in input;
 }
 
@@ -67,25 +102,101 @@ export class BcPage extends BasePage {
     return this.lastSelection;
   }
 
-  async selectOptions(input: BcSelectInput): Promise<void> {
-    const product = isFlagshipProduct(input) ? input : toFlagshipPhoneProduct(input);
-
-    if (product.kind === 'watch' && (await this.resolveWatchPage(5000)) === 'pd') {
-      this.lastSelection = undefined;
-      await this.pdPage.preparePdPage();
-      await this.pdPage.selectWatchOptions(product);
-      return;
-    }
-
+  async selectOptions(options: BcProductOptions): Promise<void> {
     await this.prepareBcPage();
     await this.dismissOverlays();
 
-    this.lastSelection =
-      product.kind === 'phone' ? await this.selectPhoneOptions(product) : await this.selectWatchBcOptions(product);
-
+    const chips = optionSelections(options);
+    console.warn(`[bc.selectOptions] start ${chips.map(({ field, value }) => `${field}=${value}`).join(', ')}` );
+    
+    for (const { field, value } of chips) {
+      let target;
+      switch (field) {
+        case 'deviceName':
+          target = this.locator.deviceOption(value);
+          break;
+        case 'storage':
+          target = this.locator.storageOption(value);
+          break;
+        case 'caseSize':
+          target = this.locator.caseSizeOption(value);
+          break;
+        case 'connectivity':
+          target = this.locator.connectivityOption(value);
+          break;
+        case 'color':
+          target = this.locator.colorOption(value);
+          break;
+      }
+      const displayed = await target.isDisplayed().catch(() => false);
+      if (!displayed) {
+        console.warn(`[bc.selectOptions] ${field}=${value} displayed=${displayed}`);
+        continue;
+      }
+      await scrollElementToCenter(target).catch(() => undefined);
+      await target.waitForClickable({ timeout: 1000 });
+      await target.click();
+      console.warn(`[bc.selectOptions] ${field}=${value} clicked`);
+    }
     await this.dismissOverlays();
+    console.warn('[bc.selectOptions] done');
   }
 
+  async verifyOptions(options: BcProductOptions): Promise<void> {
+    const summary = await this.readSummaryDetails();
+    console.warn( `[bc.verifyOptions] deviceName=${summary.deviceName} options=${summary.options}` );
+
+    if (!summary.deviceName && !summary.options) {
+      throw new Error('BC/PD summary not found');
+    }
+
+    for (const { field, value } of optionSelections(options)) {
+      const expected = await this.expectedSummaryValue(field, value);
+      const actual = field === 'deviceName' ? summary.deviceName : summary.options;
+      console.warn(`[bc.verifyOptions] ${field} input=${value} expected=${expected} actual=${actual}`);
+      if (!optionTextMatches(actual, expected)) {
+        throw new Error(
+          `BC/PD summary mismatch field=${field} expected=${expected} actual=${actual}`
+        );
+      }
+    }
+  }
+  
+  /** Color (and other chips) may show a localized label; summary uses that, not the English input. */
+  private async expectedSummaryValue(field: OptionChip, input: string): Promise<string> {
+    const shown = await this.readOptionSelectedResult(field);
+    if (field === 'color') {
+      const fromChecked = await this.readCheckedColorDisplayName();
+      return shown || fromChecked || input;
+    }
+    return shown || input;
+  }
+
+  private async readOptionSelectedResult(field: OptionChip): Promise<string> {
+    const el = this.locator.optionSelectedResult(field);
+    if (!(await el.isDisplayed().catch(() => false))) {
+      return '';
+    }
+    return ((await el.getText().catch(() => '')) ?? '').trim();
+  }
+
+  private async readCheckedColorDisplayName(): Promise<string> {
+    const checked = $(
+      '.s-option-color-special input:checked, .hubble-pd-radio input:checked, [an-la^="color:"][aria-pressed="true"]'
+    );
+    if (!(await checked.isExisting().catch(() => false))) {
+      return '';
+    }
+    return (
+      ((await checked.getAttribute('data-displayname').catch(() => '')) ?? '').trim() ||
+      ((await checked.getText().catch(() => '')) ?? '').trim()
+    );
+  }
+
+  async verifyPrice(_kind: string): Promise<void> {
+    // TODO: Implement price verification
+  }
+  
   async verifySku(input: BcSelectInput): Promise<void> {
     const product = isFlagshipProduct(input) ? input : toFlagshipPhoneProduct(input);
 
@@ -101,19 +212,31 @@ export class BcPage extends BasePage {
     }
   }
 
-  async verifyOptions(input: BcSelectInput): Promise<void> {
-    const product = isFlagshipProduct(input) ? input : toFlagshipPhoneProduct(input);
+  private async readSummaryDetails(): Promise<SummaryDetails> {
+    return {
+      deviceName: await this.readDisplayedText(this.locator.summaryDeviceName),
+      sku: await this.readDisplayedText(this.locator.summarySku),
+      options: await this.readDisplayedText(this.locator.summaryOptions, true),
+      servicePrice: await this.readDisplayedText(this.locator.summaryServicePrice, true),
+    };
+  }
 
-    if (product.kind === 'watch' && (await this.resolveWatchPage()) === 'pd') {
-      await this.pdPage.verifyOptions(product);
-      return;
+  private async readDisplayedText(nodes: ReturnType<typeof $$>, joinAll = false): Promise<string> {
+    const parts: string[] = [];
+    for (const node of await nodes) {
+      if (!(await node.isDisplayed().catch(() => false))) {
+        continue;
+      }
+      const text = ((await node.getText().catch(() => '')) ?? '').trim();
+      if (!text) {
+        continue;
+      }
+      if (!joinAll) {
+        return text;
+      }
+      parts.push(text);
     }
-
-    if (product.kind === 'phone') {
-      await this.verifyPhoneOptions(product, this.lastSelection);
-    } else {
-      await this.verifyWatchBcOptions(product, this.lastSelection);
-    }
+    return parts.join(' ');
   }
 
   async isBcPage(): Promise<boolean> {
@@ -287,10 +410,6 @@ export class BcPage extends BasePage {
       checks.push({ label, pass: summary.includes(normalizeText(value)), detail: `expected "${value}"` });
     }
     markFailed(checks, '[BC][watch] options');
-  }
-
-  async verifyPrice(_kind: string): Promise<void> {
-    // TODO: Implement price verification
   }
 
   async getSummaryPrice(_kind: string): Promise<string> {

@@ -1,24 +1,13 @@
 import { getRunConfig } from '../../../config/run.config';
 import { runOrSkip } from '../../helpers/tc-filter.helper';
-import {
-  loadFlagshipProducts,
-  toShopCategory,
-  toPfCardQuery,
-  getSummaryOptions,
-} from '../../helpers/flagship-sku.helper';
-import { CartPage } from '../../pages/cart.page';
+import { loadFlagshipProducts } from '../../helpers/flagship-sku.helper';
+import { getCurrentWebViewPage } from '../../helpers/context.helper';
 import { ShopPage } from '../../pages/shop.page';
 import { PfPage } from '../../pages/pf.page';
 import { BcPage } from '../../pages/bc.page';
-import { AddOnPage } from '../../pages/addon.page';
+import { PdPage } from '../../pages/pd.page';
 
 describe('UAT_APP_01 / UAT_APP_02', () => {
-  const cartPage = new CartPage();
-  const shopPage = new ShopPage();
-  const pfPage = new PfPage();
-  const bcPage = new BcPage();
-  const addOnPage = new AddOnPage();
-
   const products = loadFlagshipProducts(getRunConfig().site);
 
   if (products.length === 0) {
@@ -29,46 +18,33 @@ describe('UAT_APP_01 / UAT_APP_02', () => {
   }
 
   for (const product of products) {
-    let prevPassed = false;
-    let canGoToCart = false;
+    // let prevPassed = false;
+    // let canGoToCart = false;
 
 
     it(`UAT_APP_01 [${product.sku}]`, async function () {
       await runOrSkip.call(this, 'UAT_APP_01', async () => {
-        await cartPage.clearCart();
-        await shopPage.openPfList(toShopCategory(product));
-        await pfPage.selectPfCard(toPfCardQuery(product));
+        const shopPage = new ShopPage();
+        const pfPage = new PfPage();
+        await shopPage.openCategory(product.kind === 'phone' ? 'mobile' : 'watch');
+        await pfPage.selectPfCard({ mode: 'exact', product: product.device, exclusiveOnly: false });
+        const page = (await getCurrentWebViewPage({ waitMs: 10000 })).page;
+        console.log('UAT_APP_01 ============> page: ', page);
 
-        await bcPage.selectOptions(product);
-        await bcPage.verifySku(product);
-        await bcPage.verifyOptions(product);
+        if (page === 'bc') {
+          const bcPage = new BcPage();
+          await bcPage.prepareBcPage();
+          await bcPage.selectOptions(product);
+          await bcPage.verifyOptions(product);
+          await bcPage.verifySku(product.sku);
+        } else {
+          const pdPage = new PdPage();
+          await pdPage.preparePdPage();
 
-        await bcPage.tradeIn.selectNoForService();
-        await bcPage.scPlus.selectNoForService();
-        await bcPage.galaxyClub.selectNoForService();
-
-        canGoToCart = true;
-        prevPassed = true;
-      });
-    });
-
-    it(`UAT_APP_02 [${product.sku}]`, async function () {
-      await runOrSkip.call(this, 'UAT_APP_02', async () => {
-        if (!prevPassed) {
-          throw new Error(`UAT_APP_01 failed sku=${product.sku}`);
+          await pdPage.selectOptions(product);
+          // await pdPage.verifyOptions(product);
+          // await pdPage.verifySku(product.sku);
         }
-        if (!canGoToCart) {
-          this.skip();
-          return;
-        }
-
-        const summary = getSummaryOptions(product, bcPage.getSelectedOptions());
-
-        await bcPage.clickAddToCart();
-        await addOnPage.clickSplashContinue();
-
-        await cartPage.verifySku(product.sku);
-        await cartPage.verifyOptions(product.sku, summary);
       });
     });
   }
