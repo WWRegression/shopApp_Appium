@@ -1,4 +1,5 @@
 import { getRunConfig } from '../../config/run.config';
+import { storageLabelVariants } from '../helpers/data.helper';
 
 /**
  * Buy Configurator (WebView) locators.
@@ -69,13 +70,15 @@ export class BcLocator {
   }
 
   storageOption(storage: string) {
-    const value = storage.replace(/\s+/g, '');
+    const variants = storageLabelVariants(storage);
     return $(
-      [
-        `.s-option-storage :has(> input[data-englishname*="${value}" i])`,
-        `.s-option-storage :has(> input[data-displayname*="${value}" i])`,
-        `#device_info [role="button"][data-modeldisplay*="${value}" i]`,
-      ].join(', ')
+      variants
+        .flatMap((value) => [
+          `.s-option-storage :has(> input[data-englishname*="${value}" i])`,
+          `.s-option-storage :has(> input[data-displayname*="${value}" i])`,
+          `#device_info [role="button"][data-modeldisplay*="${value}" i]`,
+        ])
+        .join(', ')
     );
   }
 
@@ -116,6 +119,18 @@ export class BcLocator {
     );
   }
 
+  /** Visible color label on the checked swatch (localized). */
+  get selectedColorVisibleName() {
+    return $(
+      [
+        '.hubble-pd-radio.is-checked .s-color-name',
+        '.js-radio-wrap.is-checked .s-color-name',
+        '.s-option-color-special input:checked + label .s-color-name',
+        '.hubble-pd-radio:has(> input:checked) .s-color-name',
+      ].join(', ')
+    );
+  }
+
   get summaryDeviceName() {
     return $$(
       [
@@ -129,7 +144,7 @@ export class BcLocator {
   }
 
   get summarySku() {
-    return $$(
+    return $(
       [
         '.hubble-product__summary-product .s-option-summary',
         'span.pd-info__sku-code',

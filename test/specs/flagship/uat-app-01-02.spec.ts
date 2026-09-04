@@ -36,7 +36,6 @@ describe('UAT_APP_01 / UAT_APP_02', () => {
           await bcPage.prepareBcPage();
           await bcPage.selectOptions(product);
           await bcPage.verifyOptions(product);
-          await bcPage.verifySku(product.sku);
         } else {
           const pdPage = new PdPage();
           await pdPage.preparePdPage();

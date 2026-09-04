@@ -71,6 +71,44 @@ export function stripToAlnum(text: string): string {
   return text.toLowerCase().replace(/[^a-z0-9]/g, '');
 }
 
+/** "256GB" | "256 GB" | "256 Go" → amount + gb/tb/mb. */
+export function parseStorageSize(raw: string): { amount: string; unit: 'gb' | 'tb' | 'mb' } | undefined {
+  const match = raw.trim().match(/^(\d+(?:\.\d+)?)\s*(gb|tb|mb|go|to)\b/i);
+  if (!match) {
+    return undefined;
+  }
+  const unitRaw = match[2].toLowerCase();
+  const unit = unitRaw === 'go' || unitRaw === 'gb' ? 'gb' : unitRaw === 'to' || unitRaw === 'tb' ? 'tb' : 'mb';
+  return { amount: match[1], unit };
+}
+
+/** CSS / display variants: spaced or not, GB↔Go, TB↔To. */
+export function storageLabelVariants(raw: string): string[] {
+  const parsed = parseStorageSize(raw);
+  if (!parsed) {
+    const compact = raw.replace(/\s+/g, '');
+    return [...new Set([raw.trim(), compact])];
+  }
+  const units = parsed.unit === 'gb' ? ['GB', 'Go'] : parsed.unit === 'tb' ? ['TB', 'To'] : ['MB'];
+  const variants: string[] = [];
+  for (const unit of units) {
+    variants.push(`${parsed.amount}${unit}`, `${parsed.amount} ${unit}`);
+  }
+  return variants;
+}
+
+/** Unify FR Go/To with GB/TB after stripping spaces/punctuation. */
+export function normalizeStorageAlnum(text: string): string {
+  return stripToAlnum(text).replace(/go/g, 'gb').replace(/to/g, 'tb');
+}
+
+/** Summary/chip text may be "256 GB", "256GB", or "256 Go". */
+export function storageCapacityMatches(actual: string, expected: string): boolean {
+  const a = normalizeStorageAlnum(actual);
+  const b = normalizeStorageAlnum(expected);
+  return Boolean(a) && Boolean(b) && (a.includes(b) || b.includes(a));
+}
+
 type ColorMap = Record<string, string>;
 
 /** Per-site color name overrides. "common" applies to both device types; "watch"/"mobile" override it. */

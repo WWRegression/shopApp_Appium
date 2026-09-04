@@ -9,7 +9,7 @@ import { normalizeText, resolveDisplayColor } from '../helpers/data.helper';
 import { markFailedAndStop, markFailed, FieldCheck } from '../helpers/report.helper';
 import { getElementLabel, isDisplayedSafe, clickOptionInput } from '../helpers/element.helper';
 import { prepareWebViewPage, switchToWebView, switchToWindowByPage } from '../helpers/context.helper';
-import { BcProductOptions, optionSelections } from './bc.page';
+import { BcProductOptions } from './bc.page';
 import { scrollElementToCenter } from '../helpers/gesture.helper';
 
 export class PdPage extends BasePage {
