@@ -4,7 +4,7 @@
     {
       "kind": "phone",
       "sku": "SM-F776BLGJLTM",
-      "device": "Galaxy Z Flip8",
+      "deviceName": "Galaxy Z Flip8",
       "color": "Mint",
       "storage": "256GB",
       "ram": "12GB",
@@ -13,7 +13,7 @@
     {
       "kind": "phone",
       "sku": "SM-F776BLGKLTM",
-      "device": "Galaxy Z Flip8",
+      "deviceName": "Galaxy Z Flip8",
       "color": "Mint",
       "storage": "512GB",
       "ram": "12GB",
@@ -22,7 +22,7 @@
     {
       "kind": "phone",
       "sku": "SM-F776BLIJLTM",
-      "device": "Galaxy Z Flip8",
+      "deviceName": "Galaxy Z Flip8",
       "color": "Pink",
       "storage": "256GB",
       "ram": "12GB",
@@ -31,7 +31,7 @@
     {
       "kind": "phone",
       "sku": "SM-F776BLIKLTM",
-      "device": "Galaxy Z Flip8",
+      "deviceName": "Galaxy Z Flip8",
       "color": "Pink",
       "storage": "512GB",
       "ram": "12GB",
@@ -40,7 +40,7 @@
     {
       "kind": "phone",
       "sku": "SM-F776BZKJLTM",
-      "device": "Galaxy Z Flip8",
+      "deviceName": "Galaxy Z Flip8",
       "color": "Graphite",
       "storage": "256GB",
       "ram": "12GB",
@@ -49,7 +49,7 @@
     {
       "kind": "phone",
       "sku": "SM-F776BZKKLTM",
-      "device": "Galaxy Z Flip8",
+      "deviceName": "Galaxy Z Flip8",
       "color": "Graphite",
       "storage": "512GB",
       "ram": "12GB",
@@ -58,7 +58,7 @@
     {
       "kind": "phone",
       "sku": "SM-F776BZWJLTM",
-      "device": "Galaxy Z Flip8",
+      "deviceName": "Galaxy Z Flip8",
       "color": "Cream",
       "storage": "256GB",
       "ram": "12GB",
@@ -67,7 +67,7 @@
     {
       "kind": "phone",
       "sku": "SM-F776BZWKLTM",
-      "device": "Galaxy Z Flip8",
+      "deviceName": "Galaxy Z Flip8",
       "color": "Cream",
       "storage": "512GB",
       "ram": "12GB",
@@ -76,7 +76,7 @@
     {
       "kind": "phone",
       "sku": "SM-F971BLVLLTM",
-      "device": "Galaxy Z Fold8",
+      "deviceName": "Galaxy Z Fold8",
       "color": "Lavender",
       "storage": "256GB",
       "ram": "12GB",
@@ -85,7 +85,7 @@
     {
       "kind": "phone",
       "sku": "SM-F971BLVMLTM",
-      "device": "Galaxy Z Fold8",
+      "deviceName": "Galaxy Z Fold8",
       "color": "Lavender",
       "storage": "512GB",
       "ram": "12GB",
@@ -94,7 +94,7 @@
     {
       "kind": "phone",
       "sku": "SM-F971BLVVLTM",
-      "device": "Galaxy Z Fold8",
+      "deviceName": "Galaxy Z Fold8",
       "color": "Lavender",
       "storage": "1TB",
       "ram": "16GB",
@@ -103,7 +103,7 @@
     {
       "kind": "phone",
       "sku": "SM-F971BZGLLTM",
-      "device": "Galaxy Z Fold8",
+      "deviceName": "Galaxy Z Fold8",
       "color": "Pistachio",
       "storage": "256GB",
       "ram": "12GB",
@@ -112,7 +112,7 @@
     {
       "kind": "phone",
       "sku": "SM-F971BZGMLTM",
-      "device": "Galaxy Z Fold8",
+      "deviceName": "Galaxy Z Fold8",
       "color": "Pistachio",
       "storage": "512GB",
       "ram": "12GB",
@@ -121,7 +121,7 @@
     {
       "kind": "phone",
       "sku": "SM-F971BZGVLTM",
-      "device": "Galaxy Z Fold8",
+      "deviceName": "Galaxy Z Fold8",
       "color": "Pistachio",
       "storage": "1TB",
       "ram": "16GB",
@@ -130,7 +130,7 @@
     {
       "kind": "phone",
       "sku": "SM-F971BZKLLTM",
-      "device": "Galaxy Z Fold8",
+      "deviceName": "Galaxy Z Fold8",
       "color": "Graphite",
       "storage": "256GB",
       "ram": "12GB",
@@ -139,7 +139,7 @@
     {
       "kind": "phone",
       "sku": "SM-F971BZKMLTM",
-      "device": "Galaxy Z Fold8",
+      "deviceName": "Galaxy Z Fold8",
       "color": "Graphite",
       "storage": "512GB",
       "ram": "12GB",
@@ -148,7 +148,7 @@
     {
       "kind": "phone",
       "sku": "SM-F971BZKVLTM",
-      "device": "Galaxy Z Fold8",
+      "deviceName": "Galaxy Z Fold8",
       "color": "Graphite",
       "storage": "1TB",
       "ram": "16GB",
@@ -157,7 +157,7 @@
     {
       "kind": "phone",
       "sku": "SM-F971BZWLLTM",
-      "device": "Galaxy Z Fold8",
+      "deviceName": "Galaxy Z Fold8",
       "color": "Cream",
       "storage": "256GB",
       "ram": "12GB",
@@ -166,7 +166,7 @@
     {
       "kind": "phone",
       "sku": "SM-F971BZWMLTM",
-      "device": "Galaxy Z Fold8",
+      "deviceName": "Galaxy Z Fold8",
       "color": "Cream",
       "storage": "512GB",
       "ram": "12GB",
@@ -175,7 +175,7 @@
     {
       "kind": "phone",
       "sku": "SM-F971BZWVLTM",
-      "device": "Galaxy Z Fold8",
+      "deviceName": "Galaxy Z Fold8",
       "color": "Cream",
       "storage": "1TB",
       "ram": "16GB",
@@ -184,7 +184,7 @@
     {
       "kind": "phone",
       "sku": "SM-F976BDGLLTM",
-      "device": "Galaxy Z Fold8 Ultra",
+      "deviceName": "Galaxy Z Fold8 Ultra",
       "color": "Green Shadow",
       "storage": "256GB",
       "ram": "12GB",
@@ -193,7 +193,7 @@
     {
       "kind": "phone",
       "sku": "SM-F976BDGMLTM",
-      "device": "Galaxy Z Fold8 Ultra",
+      "deviceName": "Galaxy Z Fold8 Ultra",
       "color": "Green Shadow",
       "storage": "512GB",
       "ram": "12GB",
@@ -202,7 +202,7 @@
     {
       "kind": "phone",
       "sku": "SM-F976BDGVLTM",
-      "device": "Galaxy Z Fold8 Ultra",
+      "deviceName": "Galaxy Z Fold8 Ultra",
       "color": "Green Shadow",
       "storage": "1TB",
       "ram": "16GB",
@@ -211,7 +211,7 @@
     {
       "kind": "phone",
       "sku": "SM-F976BZKLLTM",
-      "device": "Galaxy Z Fold8 Ultra",
+      "deviceName": "Galaxy Z Fold8 Ultra",
       "color": "Graphite",
       "storage": "256GB",
       "ram": "12GB",
@@ -220,7 +220,7 @@
     {
       "kind": "phone",
       "sku": "SM-F976BZKMLTM",
-      "device": "Galaxy Z Fold8 Ultra",
+      "deviceName": "Galaxy Z Fold8 Ultra",
       "color": "Graphite",
       "storage": "512GB",
       "ram": "12GB",
@@ -229,7 +229,7 @@
     {
       "kind": "phone",
       "sku": "SM-F976BZKVLTM",
-      "device": "Galaxy Z Fold8 Ultra",
+      "deviceName": "Galaxy Z Fold8 Ultra",
       "color": "Graphite",
       "storage": "1TB",
       "ram": "16GB",
@@ -238,7 +238,7 @@
     {
       "kind": "phone",
       "sku": "SM-F976BZVLLTM",
-      "device": "Galaxy Z Fold8 Ultra",
+      "deviceName": "Galaxy Z Fold8 Ultra",
       "color": "Violet Shadow",
       "storage": "256GB",
       "ram": "12GB",
@@ -247,7 +247,7 @@
     {
       "kind": "phone",
       "sku": "SM-F976BZVMLTM",
-      "device": "Galaxy Z Fold8 Ultra",
+      "deviceName": "Galaxy Z Fold8 Ultra",
       "color": "Violet Shadow",
       "storage": "512GB",
       "ram": "12GB",
@@ -256,7 +256,7 @@
     {
       "kind": "phone",
       "sku": "SM-F976BZVVLTM",
-      "device": "Galaxy Z Fold8 Ultra",
+      "deviceName": "Galaxy Z Fold8 Ultra",
       "color": "Violet Shadow",
       "storage": "1TB",
       "ram": "16GB",
@@ -265,7 +265,7 @@
     {
       "kind": "phone",
       "sku": "SM-F976BZWLLTM",
-      "device": "Galaxy Z Fold8 Ultra",
+      "deviceName": "Galaxy Z Fold8 Ultra",
       "color": "Cream",
       "storage": "256GB",
       "ram": "12GB",
@@ -274,7 +274,7 @@
     {
       "kind": "phone",
       "sku": "SM-F976BZWMLTM",
-      "device": "Galaxy Z Fold8 Ultra",
+      "deviceName": "Galaxy Z Fold8 Ultra",
       "color": "Cream",
       "storage": "512GB",
       "ram": "12GB",
@@ -283,7 +283,7 @@
     {
       "kind": "phone",
       "sku": "SM-F976BZWVLTM",
-      "device": "Galaxy Z Fold8 Ultra",
+      "deviceName": "Galaxy Z Fold8 Ultra",
       "color": "Cream",
       "storage": "1TB",
       "ram": "16GB",
@@ -292,7 +292,7 @@
     {
       "kind": "watch",
       "sku": "SM-L340NZEAMXO",
-      "device": "Galaxy Watch9",
+      "deviceName": "Galaxy Watch9",
       "color": "Cream",
       "caseSize": "40mm",
       "connectivity": "BLUETOOTH",
@@ -302,7 +302,7 @@
     {
       "kind": "watch",
       "sku": "SM-L340NZKAMXO",
-      "device": "Galaxy Watch9",
+      "deviceName": "Galaxy Watch9",
       "color": "Graphite",
       "caseSize": "40mm",
       "connectivity": "BLUETOOTH",
@@ -312,7 +312,7 @@
     {
       "kind": "watch",
       "sku": "SM-L350NZKAMXO",
-      "device": "Galaxy Watch9",
+      "deviceName": "Galaxy Watch9",
       "color": "Graphite",
       "caseSize": "44mm",
       "connectivity": "BLUETOOTH",
@@ -322,7 +322,7 @@
     {
       "kind": "watch",
       "sku": "SM-L350NZSAMXO",
-      "device": "Galaxy Watch9",
+      "deviceName": "Galaxy Watch9",
       "color": "Silver",
       "caseSize": "44mm",
       "connectivity": "BLUETOOTH",
@@ -332,7 +332,7 @@
     {
       "kind": "watch",
       "sku": "SM-L715FZKAMXO",
-      "device": "Galaxy Watch Ultra2",
+      "deviceName": "Galaxy Watch Ultra2",
       "color": "Titanium Gray",
       "caseSize": "47mm",
       "connectivity": "LTE",
@@ -342,7 +342,7 @@
     {
       "kind": "watch",
       "sku": "SM-L715FZSAMXO",
-      "device": "Galaxy Watch Ultra2",
+      "deviceName": "Galaxy Watch Ultra2",
       "color": "Titanium Silver",
       "caseSize": "47mm",
       "connectivity": "LTE",

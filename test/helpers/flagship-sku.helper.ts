@@ -10,7 +10,7 @@ const SKUS_DIR = path.join(__dirname, '../../data/flagship-data/skus');
 export type FlagshipPhoneProduct = {
   kind: 'phone';
   sku: string;
-  device: string;
+  deviceName: string;
   color: string;
   storage: string;
   ram: string;
@@ -20,7 +20,7 @@ export type FlagshipPhoneProduct = {
 export type FlagshipWatchProduct = {
   kind: 'watch';
   sku: string;
-  device: string;
+  deviceName: string;
   color: string;
   caseSize: string;
   connectivity: string;
@@ -65,20 +65,20 @@ export function toShopCategory(product: FlagshipProduct): ShopCategory {
 }
 
 /** Watch Ultra PF cards only show the product name, no separate connectivity/caseSize cards. */
-function isWatchUltra(device: string): boolean {
-  return device.toLowerCase().includes('ultra');
+function isWatchUltra(deviceName: string): boolean {
+  return deviceName.toLowerCase().includes('ultra');
 }
 
 export function toPfCardQuery(product: FlagshipProduct): PfCardQuery {
-  if (product.kind === 'watch' && !isWatchUltra(product.device)) {
+  if (product.kind === 'watch' && !isWatchUltra(product.deviceName)) {
     return {
       mode: 'watch',
-      device: product.device,
+      device: product.deviceName,
       connectivity: product.connectivity,
       caseSize: product.caseSize,
     };
   }
-  return { mode: 'exact', product: product.device };
+  return { mode: 'exact', product: product.deviceName };
 }
 
 /** BC summary options to compare against cart. `selected` falls back to product data when unset (e.g. watch PD). */
@@ -88,14 +88,14 @@ export function getSummaryOptions(
 ): CartItemOptions {
   if (product.kind === 'watch') {
     return {
-      device: selected?.device ?? product.device,
+      device: selected?.device ?? product.deviceName,
       connectivity: selected?.connectivity ?? product.connectivity,
       caseSize: selected?.caseSize ?? product.caseSize,
       color: selected?.color ?? product.color,
     };
   }
   return {
-    device: selected?.device ?? product.device,
+    device: selected?.device ?? product.deviceName,
     storage: product.storage, // cart shows capacity only, never BC's combined "256 GB｜12 GB" text
     color: selected?.color ?? product.color,
   };

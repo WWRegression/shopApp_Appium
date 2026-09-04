@@ -101,7 +101,7 @@ export class PdPage extends BasePage {
       return;
     }
 
-    const device = normalizeText(product.device).replace(/\s+/g, '');
+    const device = normalizeText(product.deviceName).replace(/\s+/g, '');
     const caseSize = normalizeText(product.caseSize).replace(/\s+/g, '');
     const candidates = [...(await this.locator.deviceOptionCandidates)];
 
@@ -111,12 +111,12 @@ export class PdPage extends BasePage {
       if (normalized.includes(device) && normalized.includes(caseSize)) {
         await markFailedAndStop(
           () => clickOptionInput(el),
-          `[PD][watch] device option not selectable: "${product.device} ${product.caseSize}"`
+          `[PD][watch] device option not selectable: "${product.deviceName} ${product.caseSize}"`
         );
         return;
       }
     }
-    throw new Error(`[PD][watch] device section shown but no option matched "${product.device} ${product.caseSize}"`);
+    throw new Error(`[PD][watch] device section shown but no option matched "${product.deviceName} ${product.caseSize}"`);
   }
 
   private async selectConnectivityIfShown(product: FlagshipWatchProduct): Promise<void> {
@@ -163,7 +163,7 @@ export class PdPage extends BasePage {
       },
     ];
     const fields: [string, string][] = [
-      ['device', product.device],
+      ['device', product.deviceName],
       ['connectivity', product.connectivity],
       ['caseSize', product.caseSize],
     ];

@@ -176,17 +176,10 @@ export class BcPage extends BasePage {
   private optionSelections(options: BcProductOptions): OptionSelection[] {
     if ('kind' in options && options.kind === 'watch') {
       return [
-        { field: 'deviceName', value: options.device },
+        { field: 'deviceName', value: options.deviceName },
         { field: 'caseSize', value: options.caseSize },
         { field: 'color', value: options.color },
         { field: 'connectivity', value: options.connectivity },
-      ];
-    }
-    if ('kind' in options && options.kind === 'phone') {
-      return [
-        { field: 'deviceName', value: options.device },
-        { field: 'storage', value: options.storage },
-        { field: 'color', value: options.color },
       ];
     }
     return [

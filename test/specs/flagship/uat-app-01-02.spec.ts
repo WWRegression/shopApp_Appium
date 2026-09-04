@@ -27,7 +27,7 @@ describe('UAT_APP_01 / UAT_APP_02', () => {
         const shopPage = new ShopPage();
         const pfPage = new PfPage();
         await shopPage.openCategory(product.kind === 'phone' ? 'mobile' : 'watch');
-        await pfPage.selectPfCard({ mode: 'exact', product: product.device, exclusiveOnly: false });
+        await pfPage.selectPfCard({ mode: 'exact', product: product.deviceName, exclusiveOnly: false });
         const page = (await getCurrentWebViewPage({ waitMs: 10000 })).page;
         console.log('UAT_APP_01 ============> page: ', page);
 

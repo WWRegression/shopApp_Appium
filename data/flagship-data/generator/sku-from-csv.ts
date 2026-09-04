@@ -83,7 +83,7 @@ function toProduct(row: CsvRow): { siteCode: string; product: FlagshipProduct } 
     throw new Error(`Row missing Site (sku=${sku})`);
   }
 
-  const device = cell(row, 'Device');
+  const deviceName = cell(row, 'Device');
   const color = cell(row, 'Color');
   const isPFDefaultSKU = isPfDefault(cell(row, 'isDefault', 'isPFDefaultSKU'));
 
@@ -93,7 +93,7 @@ function toProduct(row: CsvRow): { siteCode: string; product: FlagshipProduct } 
       product: {
         kind: 'watch',
         sku,
-        device,
+        deviceName,
         color,
         caseSize: caseSizeFromWatchSku(sku),
         connectivity: cell(row, 'Connectivity') || cell(row, 'Storage'),
@@ -108,7 +108,7 @@ function toProduct(row: CsvRow): { siteCode: string; product: FlagshipProduct } 
     product: {
       kind: 'phone',
       sku,
-      device,
+      deviceName,
       color,
       storage: cell(row, 'Storage'),
       ram: cell(row, 'RAM'),
