@@ -1,5 +1,6 @@
 import { BasePage } from './base.page';
 import { CartLocator } from '../locators/cart.locator';
+import { CheckoutLocator } from '../locators/checkout.locator';
 import { CartTradeInService } from '../services/tradein/cart-tradein.service';
 import { CartScPlusService } from '../services/scplus/cart-scplus.service';
 import { CartEupService } from '../services/eup/cart-eup.service';
@@ -7,34 +8,37 @@ import { CartSimService } from '../services/sim/cart-sim.service';
 import { switchToNative, prepareWebViewPage } from '../helpers/context.helper';
 import { getElementLabel, dispatchTouchStart } from '../helpers/element.helper';
 import { assertEqual } from '../helpers/validation.helper';
+import { stripToAlnum } from '../helpers/data.helper';
+
+export interface CartItemOptions {
+  device?: string;
+  storage?: string;
+  color?: string;
+  connectivity?: string;
+  caseSize?: string;
+}
 
 export class CartPage extends BasePage {
   private readonly locator = new CartLocator();
+  private readonly checkoutLocator = new CheckoutLocator();
 
   readonly tradeIn = new CartTradeInService();
   readonly scPlus = new CartScPlusService();
   readonly eup = new CartEupService();
   readonly sim = new CartSimService();
 
-  /**
-   * Katalon Cart.verifyCartLoad() 대응 — switchToWindowByPage('cart')는 window URL만
-   * 보므로, 실제 카트 페이지 URL로 바뀌었지만 DOM은 아직 안 그려진 순간에도 전환이
-   * 끝날 수 있다. cartLayout이 뜰 때까지 마저 기다려야 그 뒤 로직(예: clearCart의
-   * remove 버튼 탐색)이 "아직 안 그려짐"을 "원래 비어있음"으로 오인하지 않는다.
-   */
+  /** Waits for the cart URL AND the cart layout to render — the URL can change before the DOM catches up. */
   async prepareCartPage(): Promise<boolean> {
     return prepareWebViewPage('cart', this.locator.cartLayout);
   }
 
-  async proceedToCheckout(): Promise<void> {
-    await this.prepareCartPage();
+  /** Clicks checkout and waits for the checkout page to load. */
+  async clickContinueToCheckout(): Promise<void> {
     await this.locator.checkoutButton.click();
+    await prepareWebViewPage('checkout', this.checkoutLocator.activeStep);
   }
 
-  /**
-   * Katalon Cart.clearCart() — remove 아이콘이 안 보일 때까지 반복 제거.
-   * 개수 상한 없음: mochaOpts.timeout(120s)이 이미 전체 테스트 단위의 무한루프 방지막 역할.
-   */
+  /** Removes items one by one until the cart is empty. No iteration cap — mochaOpts.timeout guards runaway loops. */
   async clearCart(): Promise<void> {
     await this.selectBnbMenu('cart');
     await this.prepareCartPage();
@@ -55,7 +59,8 @@ export class CartPage extends BasePage {
 
       const confirmButton = this.locator.removeConfirmButton;
       if (await confirmButton.isDisplayed().catch(() => false)) {
-        await confirmButton.click();
+        // Modal can close on its own between the check above and the click below.
+        await driver.execute('arguments[0].click();', await confirmButton).catch(() => undefined);
         await confirmButton.waitForDisplayed({ timeout: 3000, reverse: true }).catch(() => undefined);
       }
     }
@@ -87,8 +92,8 @@ export class CartPage extends BasePage {
     return first;
   }
 
-  /** Katalon Cart.verifySKUSelectedInCart() */
-  async verifySkuInCart(sku: string): Promise<void> {
+  /** Verifies a sku is present in the cart. */
+  async verifySku(sku: string): Promise<void> {
     const skus = await this.getCartItemSkus();
     const target = sku.toLowerCase();
     assertEqual(
@@ -116,10 +121,7 @@ export class CartPage extends BasePage {
     return total;
   }
 
-  /**
-   * Katalon Cart.addQuantityCart() — one button handles both the stepper + and buy-one-more.
-   * Stepper buttons only respond to a touchstart dispatch, not plain click() (verified on device).
-   */
+  /** Increments quantity via the stepper + button. Only responds to a touchstart dispatch, not click(). */
   async addQuantity(sku: string): Promise<void> {
     await this.prepareCartPage();
     const before = await this.getSkuQuantity(sku);
@@ -135,10 +137,7 @@ export class CartPage extends BasePage {
     assertEqual(await this.getSkuQuantity(sku), before + 1);
   }
 
-  /**
-   * Katalon Cart.reduceQuantityCart() — clicks the stepper - button if present,
-   * otherwise removes the row itself and confirms (row-per-unit variant).
-   */
+  /** Decrements quantity via the stepper - button, or removes the row itself when there's no stepper. */
   async reduceQuantity(sku: string): Promise<void> {
     await this.prepareCartPage();
     const before = await this.getSkuQuantity(sku);
@@ -163,7 +162,7 @@ export class CartPage extends BasePage {
     assertEqual(await this.getSkuQuantity(sku), before - 1);
   }
 
-  /** Katalon Cart.getCartIconQuantity() — leading number in the BNB cart tab's content-desc. */
+  /** Reads the item count from the BNB cart tab's content-desc (leading number). */
   async getCartIconQuantity(): Promise<number> {
     await this.prepareHeaderBnb();
     const desc = await getElementLabel(this.bnbLocator.menu('cart'));
@@ -172,8 +171,34 @@ export class CartPage extends BasePage {
     return match ? parseInt(match[0], 10) : 0;
   }
 
-  /** Katalon Cart.verifyCartIconQty() */
   async verifyCartIconQuantity(expected: number): Promise<void> {
     assertEqual(await this.getCartIconQuantity(), expected);
+  }
+
+  /**
+   * Verifies each given field's value appears somewhere in that cart item's name/sku/options
+   * text. Plain strings in, not tied to any product model — reusable outside flagship specs too.
+   */
+  async verifyOptions(sku: string, options: CartItemOptions): Promise<void> {
+    await this.prepareCartPage();
+    await this.locator.cartItemSku(sku).waitForDisplayed({ timeout: 10000 }).catch(() => undefined);
+
+    const name = await getElementLabel(this.locator.cartItemName(sku));
+    const skuText = await getElementLabel(this.locator.cartItemSku(sku));
+    const optionEls = [...(await this.locator.cartItemOptions(sku))];
+    const optionTexts = await Promise.all(optionEls.map((el) => el.getText()));
+    const combined = stripToAlnum(`${name} ${skuText} ${optionTexts.join(' ')}`);
+
+    console.log(`[Cart] item raw: name="${name}" sku="${skuText}" options=${JSON.stringify(optionTexts)}`);
+
+    for (const [label, value] of Object.entries(options)) {
+      if (!value) {
+        console.log(`[Cart] check ${label}: skipped (no value)`);
+        continue;
+      }
+      const found = combined.includes(stripToAlnum(value));
+      console.log(`[Cart] check ${label}: expected="${value}" -> found=${found}`);
+      assertEqual(found, true);
+    }
   }
 }

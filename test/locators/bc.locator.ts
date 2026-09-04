@@ -1,4 +1,4 @@
-import { getRunConfig } from "../../config/run.config";
+import { getRunConfig } from '../../config/run.config';
 
 /**
  * Buy Configurator (WebView) locators.
@@ -7,7 +7,7 @@ import { getRunConfig } from "../../config/run.config";
 export class BcLocator {
   get bcLayout() {
     if (getRunConfig().site === 'US') {
-      return $(`#headerWrapper .MobileViewHeader_header__title__9zKbO`);
+      return $('#headerWrapper .MobileViewHeader_header__title__9zKbO');
     }
     return $('div .bc-cross-navigation-wrap, section.watch-bc');
   }
@@ -88,6 +88,83 @@ export class BcLocator {
         `[an-la="color:${color}" i]`,
       ].join(', ')
     );
+  }
+
+  // ---- Flagship: phone BC (hubble-product template) ----
+
+  phoneDeviceOption(label: string) {
+    return $(`input[data-englishname="${label}" i], input[data-displayname="${label}" i]`);
+  }
+
+  /** Candidates for storage+RAM matching — caller compares data-displayname (format varies: "512 GB | 12 GB"). */
+  get phoneStorageOptionCandidates() {
+    return $$('input[data-displayname]');
+  }
+
+  /**
+   * Color is selected by target SKU, not name — avoids color-name localization mismatches.
+   * Scoped to an-la="(special) color:*" since data-modelcode alone can also match the
+   * device/storage option that currently resolves to the same SKU. Limited/premium colors
+   * use "special color:*" instead of "color:*".
+   */
+  phoneColorOptionBySku(sku: string) {
+    return $(
+      [
+        `input[an-la^="color:" i][data-modelcode="${sku}" i]`,
+        `input[an-la^="special color:" i][data-modelcode="${sku}" i]`,
+      ].join(', ')
+    );
+  }
+
+  get phoneSummaryDevice() {
+    return $('#deviceSummary .s-option-title');
+  }
+
+  get phoneSummarySku() {
+    return $('#deviceSummary .s-option-summary');
+  }
+
+  get phoneSummaryChoices() {
+    return $$('#deviceSummary .s-option-choice .s-product-opiton');
+  }
+
+  // ---- Flagship: watch BC ----
+
+  watchDeviceOption(label: string) {
+    return $(`input.input-device[data-modeldisplay="${label}" i]`);
+  }
+
+  watchCaseSizeOption(size: string) {
+    return $(`input.input-case-size[data-modeldisplay="${size}" i]`);
+  }
+
+  watchConnectivityOption(value: string) {
+    return $(`input.input-connectivity[data-modeldisplay="${value}" i]`);
+  }
+
+  watchColorOption(value: string) {
+    return $(`input.input-case-color[data-modeldisplay="${value}" i]`);
+  }
+
+  /**
+   * Bespoke SKUs default to the "default band" model — an extra click on any other,
+   * available band-type option is required to reach the bespoke target SKU
+   * (Katalon: BC.selectNoneDefaultBand). First not-checked/not-disabled/not-oos match wins.
+   */
+  get watchNonDefaultBandOption() {
+    return $('input.input-band-type:not(:checked):not([disabled]):not([is-oos="true" i])');
+  }
+
+  get watchSummaryDevice() {
+    return $('.total-summary .dvice-name');
+  }
+
+  get watchSummarySku() {
+    return $('.total-summary .model-code');
+  }
+
+  get watchSummaryChoices() {
+    return $$('.summary-main-product strong');
   }
 
   get addToCartButton() {
@@ -174,8 +251,8 @@ export class BcLocator {
 
   get bcProductName() {
     if (getRunConfig().site === 'US') {
-      return $(`div[class*='ProductTitle_product'] h1`);
+      return $("div[class*='ProductTitle_product'] h1");
     }
-    return $(`.hubble-price-bar__detail-title, .sg-product-display-name, .watch-bc-price-bar__headline`);
+    return $('.hubble-price-bar__detail-title, .sg-product-display-name, .watch-bc-price-bar__headline');
   }
 }

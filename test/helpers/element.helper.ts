@@ -1,8 +1,10 @@
+import { scrollElementToCenter } from './gesture.helper';
 import { getCurrentWebViewPage } from './context.helper';
 import { normalizeProductName } from './data.helper';
 import type { CategoryMismatch } from '../pages/shop.page';
 
 const DEFAULT_TIMEOUT_MS = 10000;
+
 /** isDisplayed() that never throws. */
 export async function isDisplayedSafe(element: ChainablePromiseElement): Promise<boolean> {
   return element.isDisplayed().catch(() => false);
@@ -28,6 +30,12 @@ export async function getElementLabel(element: ChainablePromiseElement): Promise
   }
   const desc = await element.getAttribute('content-desc').catch(() => '');
   return (desc ?? '').trim();
+}
+
+/** Option radios are visually hidden behind a styled label — native click gets intercepted. */
+export async function clickOptionInput(el: ChainablePromiseElement | WebdriverIO.Element): Promise<void> {
+  await scrollElementToCenter(el as ChainablePromiseElement).catch(() => undefined);
+  await driver.execute('arguments[0].click();', await el);
 }
 
 /** For widgets that only respond to touchstart, not click() (e.g. cart quantity stepper). */

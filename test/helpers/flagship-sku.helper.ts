@@ -1,5 +1,9 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { ShopCategory } from '../locators/shop.locator';
+import { PfCardQuery } from '../pages/pf.page';
+import { SelectedDisplayValues } from '../pages/bc.page';
+import { CartItemOptions } from '../pages/cart.page';
 
 const SKUS_DIR = path.join(__dirname, '../../data/flagship-data/skus');
 
@@ -54,4 +58,45 @@ export function loadFlagshipProducts(siteCode: string): FlagshipProduct[] {
   const products = payload.products ?? [];
   cache.set(code, products);
   return products;
+}
+
+export function toShopCategory(product: FlagshipProduct): ShopCategory {
+  return product.kind === 'watch' ? 'watch' : 'mobile';
+}
+
+/** Watch Ultra PF cards only show the product name, no separate connectivity/caseSize cards. */
+function isWatchUltra(device: string): boolean {
+  return device.toLowerCase().includes('ultra');
+}
+
+export function toPfCardQuery(product: FlagshipProduct): PfCardQuery {
+  if (product.kind === 'watch' && !isWatchUltra(product.device)) {
+    return {
+      mode: 'watch',
+      device: product.device,
+      connectivity: product.connectivity,
+      caseSize: product.caseSize,
+    };
+  }
+  return { mode: 'exact', product: product.device };
+}
+
+/** BC summary options to compare against cart. `selected` falls back to product data when unset (e.g. watch PD). */
+export function getSummaryOptions(
+  product: FlagshipProduct,
+  selected: SelectedDisplayValues | undefined
+): CartItemOptions {
+  if (product.kind === 'watch') {
+    return {
+      device: selected?.device ?? product.device,
+      connectivity: selected?.connectivity ?? product.connectivity,
+      caseSize: selected?.caseSize ?? product.caseSize,
+      color: selected?.color ?? product.color,
+    };
+  }
+  return {
+    device: selected?.device ?? product.device,
+    storage: product.storage, // cart shows capacity only, never BC's combined "256 GB｜12 GB" text
+    color: selected?.color ?? product.color,
+  };
 }

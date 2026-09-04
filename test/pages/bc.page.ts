@@ -1,20 +1,55 @@
 import { BasePage } from './base.page';
 import { BcLocator } from '../locators/bc.locator';
+import { PdPage } from './pd.page';
 import { BcTradeInService } from '../services/tradein/bc-tradein.service';
 import { BcScPlusService } from '../services/scplus/bc-scplus.service';
 import { BcEupService } from '../services/eup/bc-eup.service';
 import { BcSimService } from '../services/sim/bc-sim.service';
 import { BcGalaxyClubService } from '../services/galaxyclub/bc-galaxyclub.service';
 import { switchToWebView, prepareWebViewPage, isCurrentWebViewPage, switchToWindowByPage } from '../helpers/context.helper';
+import { scrollElementToCenter } from '../helpers/gesture.helper';
+import { FlagshipProduct, FlagshipPhoneProduct, FlagshipWatchProduct } from '../helpers/flagship-sku.helper';
+import { normalizeText, stripToAlnum, resolveDisplayColor } from '../helpers/data.helper';
+import { markFailedAndStop, markFailed, FieldCheck } from '../helpers/report.helper';
+import { getElementLabel } from '../helpers/element.helper';
 
 export interface BcProductOptions {
+  sku: string;
   deviceName: string;
   storage: string;
   color: string;
 }
 
+type BcSelectInput = FlagshipProduct | BcProductOptions;
+
+function isFlagshipProduct(input: BcSelectInput): input is FlagshipProduct {
+  return 'kind' in input;
+}
+
+function toFlagshipPhoneProduct(input: BcProductOptions): FlagshipPhoneProduct {
+  return {
+    kind: 'phone',
+    sku: input.sku,
+    device: input.deviceName,
+    color: input.color,
+    storage: input.storage,
+    ram: '',
+    isPFDefaultSKU: false,
+  };
+}
+
+export interface SelectedDisplayValues {
+  device: string;
+  color: string;
+  storage?: string;
+  caseSize?: string;
+  connectivity?: string;
+}
+
 export class BcPage extends BasePage {
   private readonly locator = new BcLocator();
+  private readonly pdPage = new PdPage();
+  private lastSelection: SelectedDisplayValues | undefined;
 
   readonly tradeIn = new BcTradeInService();
   readonly scPlus = new BcScPlusService();
@@ -27,57 +62,231 @@ export class BcPage extends BasePage {
     return prepareWebViewPage('bc', this.locator.bcLayout);
   }
 
-  async selectOptions(options: BcProductOptions): Promise<void> {
+  /** Display values from the last selectOptions() call. Undefined for watch PD. */
+  getSelectedOptions(): SelectedDisplayValues | undefined {
+    return this.lastSelection;
+  }
+
+  async selectOptions(input: BcSelectInput): Promise<void> {
+    const product = isFlagshipProduct(input) ? input : toFlagshipPhoneProduct(input);
+
+    if (product.kind === 'watch' && (await this.resolveWatchPage(5000)) === 'pd') {
+      this.lastSelection = undefined;
+      await this.pdPage.preparePdPage();
+      await this.pdPage.selectWatchOptions(product);
+      return;
+    }
+
     await this.prepareBcPage();
     await this.dismissOverlays();
 
-    await this.selectOption('deviceName', options.deviceName);
-    await this.selectOption('storage', options.storage);
-    await this.selectOption('color', options.color);
+    this.lastSelection =
+      product.kind === 'phone' ? await this.selectPhoneOptions(product) : await this.selectWatchBcOptions(product);
+
     await this.dismissOverlays();
   }
 
-  async selectOption(field: keyof BcProductOptions, value: string): Promise<void> {
-    await switchToWebView();
+  async verifySku(input: BcSelectInput): Promise<void> {
+    const product = isFlagshipProduct(input) ? input : toFlagshipPhoneProduct(input);
 
-    const target =
-      field === 'deviceName'
-        ? this.locator.deviceOption(value)
-        : field === 'storage'
-          ? this.locator.storageOption(value)
-          : this.locator.colorOption(value);
+    if (product.kind === 'watch' && (await this.resolveWatchPage()) === 'pd') {
+      await this.pdPage.verifySku(product);
+      return;
+    }
 
-    if (await target.isDisplayed().catch(() => false)) {
-      await scrollElementToCenter(target).catch(() => undefined);
-      await target.waitForClickable({ timeout: 10000 });
-      await target.click();
+    if (product.kind === 'phone') {
+      await this.verifyPhoneSku(product);
+    } else {
+      await this.verifyWatchBcSku(product);
     }
   }
 
-  /**
-   * True when getCurrentWebViewPage() resolves to BC (Native context OK).
-   * Prefer calling after BC entry (e.g. selectOptions / prepareBcPage).
-   */
+  async verifyOptions(input: BcSelectInput): Promise<void> {
+    const product = isFlagshipProduct(input) ? input : toFlagshipPhoneProduct(input);
+
+    if (product.kind === 'watch' && (await this.resolveWatchPage()) === 'pd') {
+      await this.pdPage.verifyOptions(product);
+      return;
+    }
+
+    if (product.kind === 'phone') {
+      await this.verifyPhoneOptions(product, this.lastSelection);
+    } else {
+      await this.verifyWatchBcOptions(product, this.lastSelection);
+    }
+  }
+
   async isBcPage(): Promise<boolean> {
     return isCurrentWebViewPage('bc');
   }
 
-  async verifyOptions(): Promise<void> {
-    // TODO: Implement selected options verification
+  /** Detect watch BC vs PD by URL before either page renders. */
+  private async resolveWatchPage(waitMs = 0): Promise<'bc' | 'pd'> {
+    return (await isCurrentWebViewPage('pd', { waitMs })) ? 'pd' : 'bc';
   }
 
-  async getSelectedOption(_field: keyof BcProductOptions): Promise<string> {
-    // TODO: Implement selected option readback
-    return '';
+  /** JS click — native click is intercepted by the styled label over the radio. */
+  private async clickOption(el: ChainablePromiseElement | WebdriverIO.Element): Promise<void> {
+    await scrollElementToCenter(el as ChainablePromiseElement).catch(() => undefined);
+    await driver.execute('arguments[0].click();', await el);
   }
 
-  async verifySku(_sku: string): Promise<void> {
-    // TODO: Implement SKU verification
+  /** Read displayed value from data-displayname/data-modeldisplay, then click. Do not use an-la/data-englishname. */
+  private async selectOption(
+    opt: ChainablePromiseElement,
+    attr: 'data-displayname' | 'data-modeldisplay',
+    fallback: string,
+    label: string
+  ): Promise<string> {
+    await opt.waitForDisplayed({ timeout: 10000 }).catch(() => undefined);
+    const value = (await opt.getAttribute(attr).catch(() => '')) || fallback;
+    console.log(`[BC]${label}: expected="${fallback}" displayed="${value}"`);
+    await markFailedAndStop(() => this.clickOption(opt), `[BC]${label} option not selectable: "${fallback}"`);
+    return value;
   }
 
-  async getSummaryDetails(part?: string): Promise<string | Record<string, string>> {
-    // TODO: Implement summary details readback (e.g. getSummaryDetails('SKU'))
-    return part ? '' : {};
+  private async selectPhoneOptions(product: FlagshipPhoneProduct): Promise<SelectedDisplayValues> {
+    const deviceOpt = this.locator.phoneDeviceOption(product.device);
+    const device = await this.selectOption(deviceOpt, 'data-displayname', product.device, '[phone] device');
+
+    const storage = await this.selectPhoneStorage(product.storage, product.ram);
+    console.log(`[BC][phone] storage: expected="${product.storage}${product.ram}" displayed="${storage}"`);
+
+    const colorOpt = this.locator.phoneColorOptionBySku(product.sku);
+    const color = await this.selectOption(colorOpt, 'data-displayname', product.color, '[phone] color');
+
+    return { device, storage, color };
+  }
+
+  /** Match storage by alnum text. Prefix-only when ram is unknown. */
+  private async selectPhoneStorage(storage: string, ram: string): Promise<string> {
+    const target = stripToAlnum(`${storage}${ram}`);
+    const storageOnly = stripToAlnum(storage);
+    const candidates = [...(await this.locator.phoneStorageOptionCandidates)];
+
+    for (const el of candidates) {
+      const raw = (await el.getAttribute('data-displayname').catch(() => '')) ?? '';
+      if (!raw) continue;
+      const normalized = stripToAlnum(raw);
+      const matches = ram ? normalized === target : normalized.startsWith(storageOnly);
+      if (matches) {
+        await markFailedAndStop(() => this.clickOption(el), `[BC][phone] storage option not selectable: "${storage}${ram}"`);
+        return raw;
+      }
+    }
+    throw new Error(`[BC][phone] storage option not found: "${storage}${ram}"`);
+  }
+
+  private async selectWatchBcOptions(product: FlagshipWatchProduct): Promise<SelectedDisplayValues> {
+    const device = await this.selectOption(
+      this.locator.watchDeviceOption(product.device),
+      'data-modeldisplay',
+      product.device,
+      '[watch] device'
+    );
+    const caseSize = await this.selectOption(
+      this.locator.watchCaseSizeOption(product.caseSize),
+      'data-modeldisplay',
+      product.caseSize,
+      '[watch] case size'
+    );
+    const connectivity = await this.selectOption(
+      this.locator.watchConnectivityOption(product.connectivity),
+      'data-modeldisplay',
+      product.connectivity,
+      '[watch] connectivity'
+    );
+
+    const displayColor = resolveDisplayColor(product.color, product.sku, 'watch');
+    const color = await this.selectOption(
+      this.locator.watchColorOption(displayColor),
+      'data-modeldisplay',
+      displayColor,
+      '[watch] color'
+    );
+
+    if (product.isBespokeSKU) {
+      const bandOpt = this.locator.watchNonDefaultBandOption;
+      await bandOpt.waitForDisplayed({ timeout: 10000 }).catch(() => undefined);
+      await markFailedAndStop(() => this.clickOption(bandOpt), `[BC][watch] non-default band option not selectable`);
+    }
+
+    return { device, caseSize, connectivity, color };
+  }
+
+  private async verifyPhoneSku(product: FlagshipPhoneProduct): Promise<void> {
+    await this.locator.phoneSummarySku.waitForDisplayed({ timeout: 10000 }).catch(() => undefined);
+    const summarySku = await getElementLabel(this.locator.phoneSummarySku);
+    const found = normalizeText(summarySku).includes(normalizeText(product.sku));
+    console.log(`[BC][phone] check sku: expected="${product.sku}" summary="${summarySku}" -> found=${found}`);
+    if (!found) {
+      throw new Error(`[BC][phone] sku verification failed: expected "${product.sku}", summary was "${summarySku}"`);
+    }
+  }
+
+  private async verifyPhoneOptions(
+    product: FlagshipPhoneProduct,
+    selected: SelectedDisplayValues | undefined
+  ): Promise<void> {
+    await this.locator.phoneSummarySku.waitForDisplayed({ timeout: 10000 }).catch(() => undefined);
+    const choices = [...(await this.locator.phoneSummaryChoices)];
+    const choiceTexts = await Promise.all(choices.map((el) => el.getText()));
+    const summary = normalizeText(choiceTexts.join(' '));
+
+    console.log(`[BC][phone] selected (displayed on screen): ${JSON.stringify(selected)}`);
+    console.log(`[BC][phone] summary choices: ${JSON.stringify(choiceTexts)}`);
+
+    // Device skipped: title hides after re-select. SKU already covers the combination.
+    const expected: [string, string | undefined][] = [
+      ['storage', selected?.storage ?? product.storage],
+      ['color', selected?.color ?? product.color],
+    ];
+    const checks: FieldCheck[] = [];
+    for (const [label, value] of expected) {
+      if (!value) {
+        console.log(`[BC][phone] check ${label}: skipped (no value)`);
+        continue;
+      }
+      const found = summary.includes(normalizeText(value));
+      console.log(`[BC][phone] check ${label}: expected="${value}" -> found=${found}`);
+      checks.push({ label, pass: found, detail: `expected "${value}"` });
+    }
+    markFailed(checks, '[BC][phone] options');
+  }
+
+  private async verifyWatchBcSku(product: FlagshipWatchProduct): Promise<void> {
+    await this.locator.watchSummarySku.waitForDisplayed({ timeout: 10000 }).catch(() => undefined);
+    const summarySku = await getElementLabel(this.locator.watchSummarySku);
+    const found = normalizeText(summarySku).includes(normalizeText(product.sku));
+    console.log(`[BC][watch] check sku: expected="${product.sku}" summary="${summarySku}" -> found=${found}`);
+    if (!found) {
+      throw new Error(`[BC][watch] sku verification failed: expected "${product.sku}", summary was "${summarySku}"`);
+    }
+  }
+
+  private async verifyWatchBcOptions(
+    product: FlagshipWatchProduct,
+    selected: SelectedDisplayValues | undefined
+  ): Promise<void> {
+    // Wait for the summary panel to settle after the last option click.
+    await this.locator.watchSummaryDevice.waitForDisplayed({ timeout: 10000 }).catch(() => undefined);
+    const summaryDevice = await getElementLabel(this.locator.watchSummaryDevice);
+    const choices = [...(await this.locator.watchSummaryChoices)];
+    const choiceTexts = await Promise.all(choices.map((el) => el.getText()));
+    const summary = normalizeText(`${summaryDevice} ${choiceTexts.join(' ')}`);
+
+    const fields: [string, string | undefined][] = [
+      ['device', selected?.device ?? product.device],
+      ['caseSize', selected?.caseSize ?? product.caseSize],
+      ['connectivity', selected?.connectivity ?? product.connectivity],
+      ['color', selected?.color ?? product.color],
+    ];
+    const checks: FieldCheck[] = [];
+    for (const [label, value] of fields) {
+      if (!value) continue;
+      checks.push({ label, pass: summary.includes(normalizeText(value)), detail: `expected "${value}"` });
+    }
+    markFailed(checks, '[BC][watch] options');
   }
 
   async verifyPrice(_kind: string): Promise<void> {
@@ -89,33 +298,25 @@ export class BcPage extends BasePage {
     return '';
   }
 
-  /**
-   * 클릭만 한다 — cart 도달 확인은 여기서 안 함.
-   * add-on 화면은 URL이 그대로 /buy/라서, 여기서 switchToWindowByPage('cart')를 먼저 불러버리면
-   * (아직 add-on 창은 안 잡히고) 이전 실행에서 남아있는 오래된 cart 탭을 잘못 찾아
-   * 거기로 전환해버릴 수 있다. cart 도달 확인은 add-on 컨티뉴까지 다 끝난 뒤
-   * cartPage.prepareCartPage()에서 한다.
-   */
+  /** Click Add to Cart only. Cart arrival is confirmed later by cartPage.prepareCartPage(). */
   async clickAddToCart(): Promise<void> {
     await switchToWebView();
     await scrollElementToCenter(this.locator.addToCartButton).catch(() => undefined);
 
-    // Sticky bar buttons are position:fixed — WebdriverIO's native clickability
-    // check can time out on them, so click via JS (Katalon does the same here).
+    // JS click: sticky bar is position:fixed and native clickability can time out.
     const button = this.locator.addToCartButton;
     await button.waitForExist({ timeout: 15000 });
     await driver.execute('arguments[0].click();', await button);
+  }
+
+  async getBcProductName(): Promise<string> {
+    await switchToWebView();
+    await switchToWindowByPage('bc');
+    return await this.locator.bcProductName.getText();
   }
 
   async isOptionSectionVisible(_field: keyof BcProductOptions): Promise<boolean> {
     // TODO: Implement option section visibility check
     return false;
   }
-
-  async getBcProductName(): Promise<string> {
-    await switchToWebView();
-     await switchToWindowByPage('bc');
-    return await this.locator.bcProductName.getText();
-  }
-
 }

@@ -75,6 +75,19 @@ export class CartLocator {
     return $(`.cart-item[data-modelcode="${sku}"] button[data-an-la="remove item"]`);
   }
 
+  cartItemName(sku: string) {
+    return $(`.cart-item[data-modelcode="${sku}" i] .cart-item__name`);
+  }
+
+  cartItemSku(sku: string) {
+    return $(`.cart-item[data-modelcode="${sku}" i] .cart-item__sku`);
+  }
+
+  /** Storage/color etc, split across multiple spans (e.g. "Pistachio", ", ", "1 TB"). */
+  cartItemOptions(sku: string) {
+    return $$(`.cart-item[data-modelcode="${sku}" i] .cart-item__options`);
+  }
+
   get tradeInRemoveButton() {
     return $(
       [
@@ -106,8 +119,8 @@ export class CartLocator {
   get checkoutButton() {
     return $(
       [
-        '[an-la*="checkout" i]',
-        '[an-la*="go to checkout" i]',
+        '[data-an-la*="checkout" i]',
+        '[data-an-tr*="checkout" i]',
         'button[class*="checkout"]',
         'a[href*="checkout"]',
       ].join(', ')

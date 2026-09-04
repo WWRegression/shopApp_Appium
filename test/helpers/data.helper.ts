@@ -1,3 +1,5 @@
+import { currentSiteCode } from './tc-filter.helper';
+
 // "$1,234.56" -> 1234.56
 export function parsePriceToNumber(priceText: string): number {
   const normalized = priceText.replace(/[^0-9.-]/g, '');
@@ -61,6 +63,135 @@ export function stripMarkerText(text: string, marker: string): string {
     .replace(new RegExp(`\\(?\\s*${escaped}\\s*\\)?`, 'g'), ' ')
     .replace(/\s+/g, ' ')
     .trim();
+}
+
+/** lowercase, strip everything but letters/digits — for comparing values with inconsistent spacing/punctuation. */
+// stripToAlnum("512 GB | 12 GB") -> "512gb12gb" / stripToAlnum("512GB") + stripToAlnum("12GB") -> same string
+export function stripToAlnum(text: string): string {
+  return text.toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+
+type ColorMap = Record<string, string>;
+
+/** Per-site color name overrides. "common" applies to both device types; "watch"/"mobile" override it. */
+const SITE_COLOR_MAPS: Record<string, { common?: ColorMap; watch?: ColorMap; mobile?: ColorMap }> = {
+  SE: { common: { 'Titanium Silverblue': 'Titanium Silverblue' } },
+  CN: { watch: { Black: '月陨黑', White: '星系白', Silver: '远空银', Graphite: '岩影灰', Cream: '云凝白' } },
+  TW: { common: { Jetblack: 'Jet Black', Coralred: 'Coral Red' } },
+  IT: { common: { Jetblack: 'Jet black', Coralred: 'Coral Red' } },
+  CL: { common: { 'Silver Shadow': 'Silver  Shadow', Silver: 'Plata', Black: 'Negro' } },
+  HK: { watch: { Graphite: '黑', Silver: '銀', White: '白', Black: '黑' } },
+  PL: {
+    common: { Lavender: 'Levander' },
+    watch: { Graphite: 'Grafitowy', Silver: 'Srebrny', Black: 'Czarny', White: 'Biały', Cream: 'Kremowy' },
+  },
+  CA_FR: {
+    common: { Cream: 'cream' },
+    watch: { Black: 'Noir', White: 'Blanc', Silver: 'Argenté' },
+  },
+  ES: { watch: { Graphite: 'Gris Oscuro', Silver: 'Plateado', Black: 'Negro', White: 'Blanco' } },
+  FR: {
+    watch: { Silver: 'Argent', Black: 'Noir', White: 'Blanc', Cream: 'Crème' },
+  },
+  PT: { watch: { Graphite: 'Grafite', Silver: 'Prateado', Black: 'Preto', White: 'Branco', Cream: 'Creme' } },
+  MX: { watch: { Graphite: 'Grafito', Silver: 'Plata' } },
+  TR: { watch: { Silver: 'Gümüş', Graphite: 'Koyu Gri', Black: 'Siyah', White: 'Beyaz' } },
+};
+
+/**
+ * Watch Ultra (SM-L7 SKUs) has its own color-naming scheme, unrelated to SITE_COLOR_MAPS above.
+ * "default" always applies first — every site needs the short→full name expansion below, even
+ * sites with no further override — then a site entry, if any, overrides on top of it.
+ */
+const WATCH_ULTRA_COLOR_MAPS: Record<string, ColorMap> = {
+  default: {
+    'Absolute White': 'Titanium White',
+    Gray: 'Titanium Gray',
+    Blue: 'Titanium Blue',
+    Silver: 'Titanium Silver',
+  },
+  // Both "Gray" and the already-expanded "Titanium Gray" are mapped since our data stores the
+  // expanded form, but keep the raw short form covered too.
+  AU: { 'Titanium Gray': 'Titanium Grey', Gray: 'Titanium Grey' },
+  UK: { 'Titanium Gray': 'Titanium Grey' },
+  CN: {
+    'Absolute White': '钛瓷白',
+    Gray: '钛岩灰',
+    Blue: '钛屿蓝',
+    Silver: '钛铂银',
+    'Titanium Silver': '钛霜银',
+    'Titanium Gray': '钛影灰',
+  },
+  HK: { 'Absolute White': '鈦金白', Gray: '鈦金灰', Blue: '鈦金藍', Silver: '鈦金銀' },
+  CA_FR: {
+    Gray: 'Gris titane',
+    Blue: 'Bleu titane',
+    Silver: 'Argenté titane',
+    'Titanium Silver': 'Argent titane',
+    'Titanium Gray': 'Gris titane',
+  },
+  ES: {
+    'Absolute White': 'Blanco Titanio',
+    Blue: 'Azul Titanio',
+    Silver: 'Plateado Titanio',
+    'Titanium Gray': 'Gris Titanio',
+    'Titanium Silver': 'Plateado Titanio',
+  },
+  PL: {
+    'Absolute White': 'Tytanowy biały',
+    Gray: 'Tytanowy szary',
+    Blue: 'Tytanowy niebieski',
+    Silver: 'Tytanowy srebrny',
+    'Titanium Gray': 'Tytanowy szary',
+    'Titanium Silver': 'Tytanowy srebrny',
+  },
+  FR: {
+    'Absolute White': 'Blanc Titane',
+    Gray: 'Gris Titane',
+    Blue: 'Bleu Titane',
+    Silver: 'Argent Titane',
+    'Titanium Gray': 'Noir Titane',
+    'Titanium Silver': 'Argent Titane',
+  },
+  PT: {
+    'Absolute White': 'Branco Titânio',
+    Gray: 'Cinzento',
+    Blue: 'Azul Titânio',
+    Silver: 'Prateado',
+    'Titanium Gray': 'Cinzento',
+    'Titanium Silver': 'Prateado',
+  },
+  SG: { 'Titanium Gray': 'Titanium Grey', Gray: 'Titanium Grey' },
+  MX: { Gray: 'Gris Titanio', Blue: 'Azul Titanio', Silver: 'Plata Titanio' },
+  TR: { Gray: 'Gri Titanyum', Blue: 'Mavi Titanyum', Silver: 'Titanyum' },
+};
+
+function isWatchUltraSku(sku: string): boolean {
+  return sku.toUpperCase().includes('SM-L7');
+}
+
+function mergeColorMaps(...maps: (ColorMap | undefined)[]): ColorMap {
+  return Object.assign({}, ...maps);
+}
+
+/** Maps a raw binding color (e.g. "Gray") to what's actually shown on screen for this site/device/SKU. */
+export function resolveDisplayColor(
+  color: string,
+  sku: string,
+  deviceKind: 'phone' | 'watch',
+  site: string = currentSiteCode()
+): string {
+  const siteCode = site.toUpperCase();
+
+  if (isWatchUltraSku(sku)) {
+    const map = mergeColorMaps(WATCH_ULTRA_COLOR_MAPS.default, WATCH_ULTRA_COLOR_MAPS[siteCode]);
+    return map[color] ?? color;
+  }
+
+  const siteMap = SITE_COLOR_MAPS[siteCode];
+  const deviceType = deviceKind === 'watch' ? 'watch' : 'mobile';
+  const map = mergeColorMaps(siteMap?.common, siteMap?.[deviceType]);
+  return map[color] ?? color;
 }
 
 export function findFirstSpecialCharIndex(str: string, chars: string[]): number {

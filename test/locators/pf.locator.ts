@@ -1,7 +1,7 @@
 export class PfLocator {
   /**
-   * PF cards in the scrollable list. Match the wrapping View — ImageView content-desc
-   * can lag while the image loads.
+   * Anchored to the "Total N" header (all-locale), then structurally down to the card views.
+   * ImageView fallback covers cases where the Total-header path misses a card.
    */
   get productGrid() {
     return $$(
