@@ -1,18 +1,13 @@
 import { ShopPage, CategoryMismatch } from '../../../pages/shop.page';
 import { PfPage } from '../../../pages/pf.page';
-import { PdPage } from '../../../pages/pd.page';
-import { BcPage } from '../../../pages/bc.page';
-import { getBcPdProductName, verifyProductNameMatch } from '../../../helpers/element.helper';
 
 describe('Shop L0/L1 Category Navigation', () => {
 	it('L0/L1 카테고리를 순회하며 title과 상품명을 검증한다', async () => {
 
 		const shopPage = new ShopPage();
 		const pfPage = new PfPage();
-		const pdPage = new PdPage();
-		const bcPage = new BcPage();
 		const mismatches: CategoryMismatch[] = [];
-
+    
 		await shopPage.selectBnbMenu('shop');
 
 		const L0Categories = await shopPage.getCategories('L0');
@@ -26,8 +21,8 @@ describe('Shop L0/L1 Category Navigation', () => {
 			const L1Categories = await shopPage.getCategories('L1');
 			if (L1Categories.length === 0) {
 				const pfProductName = await pfPage.getPfNameselectPf();
-				const bcPdProductName = await getBcPdProductName({ pd: pdPage, bc: bcPage }, pfProductName);
-				verifyProductNameMatch(mismatches, pfProductName, bcPdProductName, L0category);
+				const bcPdProductName = await pfPage.getBcPdProductName(pfProductName);
+				pfPage.verifyProductNameMatch(mismatches, pfProductName, bcPdProductName, L0category);
 				await shopPage.goToPreviousPage(mismatches, 'L0', L0category, L0Categories);
 				continue;
 			}
@@ -40,8 +35,8 @@ describe('Shop L0/L1 Category Navigation', () => {
 				}
 				if (i === 0) {
 					const pfProductName = await pfPage.getPfNameselectPf();
-					const bcPdProductName = await getBcPdProductName({ pd: pdPage, bc: bcPage }, pfProductName);
-					verifyProductNameMatch(mismatches, pfProductName, bcPdProductName, L0category, L1category);
+					const bcPdProductName = await pfPage.getBcPdProductName(pfProductName);
+					pfPage.verifyProductNameMatch(mismatches, pfProductName, bcPdProductName, L0category, L1category);
 				}
 				await shopPage.goToPreviousPage(mismatches, 'L1', L0category, L0Categories, L1Categories);
 			}

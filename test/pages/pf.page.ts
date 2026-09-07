@@ -1,13 +1,13 @@
 import { BasePage } from './base.page';
 import { PfLocator } from '../locators/pf.locator';
-import { switchToNative } from '../helpers/context.helper';
+import { switchToNative, getCurrentWebViewPage } from '../helpers/context.helper';
 import { scrollDown } from '../helpers/gesture.helper';
 import { currentSiteCode } from '../helpers/tc-filter.helper';
-import { normalizeText, isExactTokenMatch, stripMarkerText } from '../helpers/data.helper';
-import { ShopPage } from './shop.page';
+import { normalizeText, isExactTokenMatch, stripMarkerText, normalizeProductName } from '../helpers/data.helper';
+import { matchesText } from '../helpers/element.helper';
+import { ShopPage, type CategoryMismatch } from './shop.page';
 import { BcPage } from './bc.page';
 import { PdPage } from './pd.page';
-import { normalizeProductName } from '../helpers/data.helper'
 
 export type PfTabTarget = { tab: string } | { product: string };
 export type WishState = 'add' | 'remove';
@@ -67,7 +67,7 @@ export class PfPage extends BasePage {
       for (const card of cards) {
         const desc = (await card.getAttribute('content-desc').catch(() => '')) ?? '';
         if (this.matchPfCard(desc, query)) {
-          await this.pflocator.cardImage(card).click();
+          await (card).click({ x: 150 });
           return;
         }
       }
@@ -139,6 +139,43 @@ export class PfPage extends BasePage {
     const pfProductName = normalizeProductName(await this.getPfProductName({ mode: 'first' }));
     await this.selectPfCard({ mode: 'first' });
     return pfProductName;
+  }
+
+  async getBcPdProductName(productName?: string | null): Promise<string | null> {
+    const { page } = await getCurrentWebViewPage({ waitMs: 5000 });
+
+    if (page === 'pd') {
+      return normalizeProductName(await this.pdPage.getPdProductName(productName));
+    }
+    if (page === 'bc') {
+      return normalizeProductName(await this.bcPage.getBcProductName());
+    }
+
+    return null;
+  }
+
+  verifyProductNameMatch(
+    mismatches: CategoryMismatch[],
+    pfName: string | null,
+    bcPdName: string | null,
+    L0Title: string,
+    L1Title?: string,
+  ): void {
+    if (pfName === null || bcPdName === null) {
+      mismatches.push(
+        `PF/PD product name not compared: ${L0Title} > ${L1Title} (PF: "${pfName}", BC/PD: "${bcPdName}")`
+      );
+      return;
+    }
+
+    if (matchesText(pfName, bcPdName)) {
+      console.log(`PF/PD product name match: ${L0Title} > ${L1Title} (PF: "${pfName}", BC/PD: "${bcPdName}")`);
+      return;
+    }
+
+    mismatches.push(
+      `PF/PD product name mismatch: ${L0Title} > ${L1Title} (PF: "${pfName}", BC/PD: "${bcPdName}")`
+    );
   }
 
   async isPfCardDisplayed(): Promise<boolean> {

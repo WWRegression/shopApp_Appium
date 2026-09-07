@@ -5,7 +5,7 @@ import { BcScPlusService } from '../services/scplus/bc-scplus.service';
 import { BcEupService } from '../services/eup/bc-eup.service';
 import { BcSimService } from '../services/sim/bc-sim.service';
 import { BcGalaxyClubService } from '../services/galaxyclub/bc-galaxyclub.service';
-import { switchToWebView, prepareWebViewPage, isCurrentWebViewPage, switchToWindowByPage } from '../helpers/context.helper';
+import { switchToWebView, prepareWebViewPage, isCurrentWebViewPage } from '../helpers/context.helper';
 import { scrollElementToCenter } from '../helpers/gesture.helper';
 import { FlagshipProduct } from '../helpers/flagship-sku.helper';
 import { storageCapacityMatches } from '../helpers/data.helper';
@@ -226,9 +226,8 @@ export class BcPage extends BasePage {
   }
 
   async getBcProductName(): Promise<string> {
-    await switchToWebView();
-    await switchToWindowByPage('bc');
-    return await this.locator.bcProductName.getText();
+    await this.prepareBcPage();
+    return await this.locator.bcSummaryProductName.getText();
   }
 
   async isOptionSectionVisible(_field: keyof BcProductOptions): Promise<boolean> {

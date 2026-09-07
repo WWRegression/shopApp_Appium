@@ -8,14 +8,13 @@ import { FlagshipWatchProduct } from '../helpers/flagship-sku.helper';
 import { normalizeText, resolveDisplayColor } from '../helpers/data.helper';
 import { markFailedAndStop, markFailed, FieldCheck } from '../helpers/report.helper';
 import { getElementLabel, isDisplayedSafe, clickOptionInput } from '../helpers/element.helper';
-import { prepareWebViewPage, switchToWebView, switchToWindowByPage } from '../helpers/context.helper';
+import { prepareWebViewPage, switchToNative } from '../helpers/context.helper';
 import { BcProductOptions } from './bc.page';
 import { scrollElementToCenter } from '../helpers/gesture.helper';
 
 export class PdPage extends BasePage {
   private readonly locator = new PdLocator();
   private selectedColor = '';
-
   readonly tradeIn = new PdTradeInService();
   readonly scPlus = new PdScPlusService();
   readonly eup = new PdEupService();
@@ -66,20 +65,21 @@ export class PdPage extends BasePage {
     //   await target.click();
     //   console.warn(`[pd.selectOptions] ${field}=${value} clicked`);
     // }
-    console.warn('[pd.selectOptions] done');
+    // console.warn('[pd.selectOptions] done');
   }
 
   async getProductName(): Promise<string> {
     return await this.locator.productName.getText();
   }
 
-  async getPdProductName(): Promise<string> {
-    await switchToWebView();
-    await switchToWindowByPage('pd');
-    return await this.locator.pdProductName.getText();
-  }
-
-  async getNativePdProductName(productName: string): Promise<string> {
+  async getPdProductName(productName?: string | null): Promise<string> {
+    if (await this.preparePdPage()) {
+      return await this.locator.pdSummaryProductName.getText();
+    }
+    if (!productName) {
+      return '';
+    }
+    await switchToNative();
     return await this.locator.nativePdProductName(productName).getText();
   }
 

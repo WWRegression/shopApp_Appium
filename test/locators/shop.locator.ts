@@ -187,11 +187,15 @@ export class ShopLocator {
   }
 
   pageTitleByName(pageTitle: string) {
-    return $(`(//android.view.View[@content-desc='${pageTitle}' and not(@clickable='true')])[1]`);
+    return $(`//android.widget.Button[contains(@content-desc, '${pageTitle}')],
+      (//android.view.View[@content-desc='${pageTitle}' and not(@clickable='true')])[1]`);
   }
 
   pageTitle() {
-    return $(`(//android.view.View[@content-desc and not(@clickable='true')])[1]`);
+    if (this.site === 'CN') {
+      return $(`(//android.view.View[@content-desc and not(@clickable='true')])[1]`);
+    }
+    return $(`(//android.view.View[@index='0']//android.view.View[@index='1']//android.widget.Button)[1]`);
   }
 
   L0(siteCode: string, category: ShopCategory) {

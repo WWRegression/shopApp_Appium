@@ -66,6 +66,10 @@ export class ShopPage extends BasePage {
 			}
 
 			const lastcategory = categoryList[categoryList.length - 1];
+			if (!lastcategory) {
+				await browser.pause(500);
+				continue;
+			}
 			const currentLastcategoryY = (await lastcategory.getLocation()).y;
 
 			if (currentLastcategoryY === previousLastcategoryY) {
@@ -151,7 +155,10 @@ export class ShopPage extends BasePage {
       const pageTitle = this.shoplocator.pageTitle();
       const isTitleDisplayed = await pageTitle.waitForDisplayed({ timeout }).catch(() => false);
       if (isTitleDisplayed) {
-        const pageTitleContentDesc = await pageTitle.getAttribute('content-desc');
+        const pageTitleContentDesc = (await pageTitle.getAttribute('content-desc'))
+          ?.split('\n')
+          .pop()
+          ?.trim() ?? '';
         if (pageTitleContentDesc) {
           if ((!targetPage || targetPage === 'pf') && L1CategoryList?.includes(pageTitleContentDesc)) {
             return 'pf';

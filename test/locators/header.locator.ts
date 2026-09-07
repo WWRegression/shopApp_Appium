@@ -11,6 +11,8 @@ export class HeaderLocator {
         `//android.widget.Button[@content-desc = 'Back']
         /following-sibling::android.view.View
         |
+        //android.widget.Button[@content-desc='Samsung']/android.view.View
+        |
         //android.widget.FrameLayout[1]
         //android.view.View[1]
         //android.view.View[1]
