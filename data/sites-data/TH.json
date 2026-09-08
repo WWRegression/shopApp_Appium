@@ -3,7 +3,8 @@
   "countryName": "ประเทศไทย (ไทย)",
   "customer": {
     "firstName": "KK Katalon",
-    "mobile": "661234567"
+    "mobile": "661234567",
+    "email": "wwautoguest@gmail.com"
   },
   "shipping": {
     "address1": "111",

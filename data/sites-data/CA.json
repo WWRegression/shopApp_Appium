@@ -4,7 +4,8 @@
   "customer": {
     "firstName": "ww",
     "lastName": "Katalon",
-    "mobile": "0410231234"
+    "mobile": "0410231234",
+    "email": "wwautoguest@gmail.com"
   },
   "shipping": {
     "address1": "100 Queen Street West",

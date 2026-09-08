@@ -5,7 +5,8 @@
   "customer": {
     "firstName": "KK",
     "lastName": "Katalon",
-    "mobile": "0410231234"
+    "mobile": "0410231234",
+    "email": "wwautoguest@gmail.com"
   },
   "shipping": {
     "address1": "Buckingham Palace",

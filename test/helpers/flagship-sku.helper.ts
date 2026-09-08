@@ -88,14 +88,14 @@ export function getSummaryOptions(
 ): CartItemOptions {
   if (product.kind === 'watch') {
     return {
-      device: selected?.device ?? product.deviceName,
+      deviceName: selected?.device ?? product.deviceName,
       connectivity: selected?.connectivity ?? product.connectivity,
       caseSize: selected?.caseSize ?? product.caseSize,
       color: selected?.color ?? product.color,
     };
   }
   return {
-    device: selected?.device ?? product.deviceName,
+    deviceName: selected?.device ?? product.deviceName,
     storage: product.storage, // cart shows capacity only, never BC's combined "256 GB｜12 GB" text
     color: selected?.color ?? product.color,
   };

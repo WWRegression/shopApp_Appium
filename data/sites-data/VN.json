@@ -3,7 +3,8 @@
   "countryName": "Việt Nam (Tiếng Việt)",
   "customer": {
     "firstName": "KK Katalon",
-    "mobile": "0912345678"
+    "mobile": "0912345678",
+    "email": "wwautoguest@gmail.com"
   },
   "shipping": {
     "address1": "Lê Văn Lương",

@@ -4,7 +4,8 @@
   "customer": {
     "firstName": "KK",
     "lastName": "Katalon",
-    "mobile": "7036789000"
+    "mobile": "7036789000",
+    "email": "wwautoguest@gmail.com"
   },
   "shipping": {
     "address1": "南麻布",

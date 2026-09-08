@@ -65,9 +65,9 @@ export function stripMarkerText(text: string, marker: string): string {
     .trim();
 }
 
-/** lowercase, strip everything but letters/digits — for comparing values with inconsistent spacing/punctuation. */
-// stripToAlnum("512 GB | 12 GB") -> "512gb12gb" / stripToAlnum("512GB") + stripToAlnum("12GB") -> same string
-export function stripToAlnum(text: string): string {
+/** lowercase, remove everything but letters/digits — for comparing values with inconsistent spacing/punctuation. */
+// removeNonWordChars("512 GB | 12 GB") -> "512gb12gb"
+export function removeNonWordChars(text: string): string {
   return text.toLowerCase().replace(/[^a-z0-9]/g, '');
 }
 
@@ -99,7 +99,7 @@ export function storageLabelVariants(raw: string): string[] {
 
 /** Unify FR Go/To with GB/TB after stripping spaces/punctuation. */
 export function normalizeStorageAlnum(text: string): string {
-  return stripToAlnum(text).replace(/go/g, 'gb').replace(/to/g, 'tb');
+  return removeNonWordChars(text).replace(/go/g, 'gb').replace(/to/g, 'tb');
 }
 
 /** Summary/chip text may be "256 GB", "256GB", or "256 Go". */

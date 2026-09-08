@@ -4,7 +4,8 @@
   "customer": {
     "firstName": "KK",
     "lastName": "Katalon",
-    "mobile": "1234567890"
+    "mobile": "1234567890",
+    "email": "wwautoguest@gmail.com"
   },
   "shipping": {
     "address1": "1 King",

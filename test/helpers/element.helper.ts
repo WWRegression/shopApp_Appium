@@ -29,10 +29,15 @@ export async function getElementLabel(element: ChainablePromiseElement): Promise
   return (desc ?? '').trim();
 }
 
+/** Clicks in the DOM instead of tapping — for elements a native click can't reach (overlaid, position:fixed). */
+export async function jsClick(el: ChainablePromiseElement | WebdriverIO.Element): Promise<void> {
+  await driver.execute('arguments[0].click();', await el);
+}
+
 /** Option radios are visually hidden behind a styled label — native click gets intercepted. */
 export async function clickOptionInput(el: ChainablePromiseElement | WebdriverIO.Element): Promise<void> {
   await scrollElementToCenter(el as ChainablePromiseElement).catch(() => undefined);
-  await driver.execute('arguments[0].click();', await el);
+  await jsClick(el);
 }
 
 /** For widgets that only respond to touchstart, not click() (e.g. cart quantity stepper). */

@@ -76,6 +76,7 @@ export interface Site {
   customer: {
     firstName: string;
     lastName?: string;
+    email?: string;
     mobile: string;
     birthYear?: string;
     documentType?: string;

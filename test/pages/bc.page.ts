@@ -227,7 +227,7 @@ export class BcPage extends BasePage {
 
   async getBcProductName(): Promise<string> {
     await this.prepareBcPage();
-    return await this.locator.bcSummaryProductName.getText();
+    return this.locator.summaryDeviceName[0].getText();
   }
 
   async isOptionSectionVisible(_field: keyof BcProductOptions): Promise<boolean> {

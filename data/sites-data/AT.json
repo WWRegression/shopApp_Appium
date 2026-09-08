@@ -5,7 +5,8 @@
   "customer": {
     "firstName": "KK",
     "lastName": "Katalon",
-    "mobile": "6766615964"
+    "mobile": "6766615964",
+    "email": "wwautoguest@gmail.com"
   },
   "shipping": {
     "address1": "MÖTSCHENDORF",

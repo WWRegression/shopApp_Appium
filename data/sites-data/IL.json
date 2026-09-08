@@ -4,7 +4,8 @@
   "customer": {
     "firstName": "KK",
     "lastName": "Katalon",
-    "mobile": "0502020444"
+    "mobile": "0502020444",
+    "email": "wwautoguest@gmail.com"
   },
   "shipping": {
     "address1": "אבו גווייעד שבט",
