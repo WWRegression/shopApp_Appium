@@ -30,7 +30,8 @@ wdio CLI 기동
   ▼
 wdio.conf.ts 로드
   │  1) getRunConfig()
-  │       CLI(--site/--env/--release/--report-db) > env(SITE/APP_ENV/…) > defaults
+  │       CLI(--site/--env/--release/--report-db/--udid/--appium-port/…)
+  │         > env(SITE/APP_ENV/UDID/APPIUM_PORT/…) > defaults
   │  2) loadSite(siteCode)
   │       getAppIdentity → package/activity
   │       data/sites-data/{SITE}.json → 테스트 픽스처
@@ -39,7 +40,8 @@ wdio.conf.ts 로드
   │       sanity/phase3 → test/specs/regression/**
   │       flagship      → test/specs/flagship/**
   │       (--spec 있으면 해당 파일만)
-  │  4) capabilities에 appPackage / appActivity 설정
+  │  4) capabilities에 appPackage / appActivity / (선택) udid / systemPort
+  │     Appium service port = appiumPort (기본 4723)
   ▼
 Appium service 기동  (@wdio/appium-service)
   ▼
@@ -101,7 +103,7 @@ npm.cmd run test:spec -- test/specs/sample/test-debug.spec.ts --site AT
 
 ```text
 config/
-  run.config.ts          ← site / testType / environment / releaseName
+  run.config.ts          ← site / testType / environment / releaseName / 기기·포트
   site.ts                ← package/activity, loadSite
   site-features.json     ← site별 features · searchApiPath override
   tc-exclusions.json
@@ -146,6 +148,10 @@ test/specs/
 | `environment` | `stg` (Flagship UAT) / `prod` (PostUnpack·Sanity) |
 | `releaseName` | DB releaseName |
 | `reportDb` | 결과 DB 업로드 on/off |
+| `udid` | 대상 기기. 같은 PC에서 여러 대면 **필수** |
+| `appiumPort` | Appium 서버 포트. 기본 `4723` |
+| `systemPort` | UiAutomator2 `systemPort`. 기본 `8200` |
+| `chromedriverPort` | WebView Chromedriver 포트. 기본 `8000` |
 
 APK identity: `config/site.ts`의 `getAppIdentity(site)` → region별 **package + activity**.
 
@@ -168,7 +174,16 @@ npm run test:flagship:uat -- --site US --env prod
 
 # 단일 파일
 npm run test:spec -- test/specs/sample/sample-pf-bc-cart.spec.ts --site AU
+
+# 기기 1대 (포트 생략 = 4723 / 8200 / 8000)
+npm run test:sanity -- --site DE --udid R5CTxxxx
+
+# 같은 PC에서 여러 대 동시 실행 — 터미널을 기기마다 열고, udid·포트를 모두 다르게
+npm run test:sanity -- --site DE --udid DEVICE_A --appium-port 4723 --system-port 8200 --chromedriver-port 8000
+npm run test:sanity -- --site FR --udid DEVICE_B --appium-port 4725 --system-port 8201 --chromedriver-port 8001
 ```
+
+한 WDIO 프로세스는 기기 1대입니다 (`maxInstances: 1`). 병렬은 **프로세스(터미널)를 여러 개** 띄우는 방식입니다. 각 프로세스마다 Appium을 따로 띄우므로 `appium-port` / `system-port` / `chromedriver-port` / `udid`가 겹치면 안 됩니다.
 
 ### STG (WDS) 로그인
 

@@ -1,15 +1,10 @@
 /**
- * 실행 설정 (Katalon GlobalVariable.SITE / ReleaseName / Environment 대응).
+ * 실행 설정. 우선순위: CLI > env > defaults
  *
- * 우선순위: CLI > env(선택) > defaults
  * TEST_TYPE / APP_ENV는 npm script의 cross-env로 전달됩니다.
  *
- * 예:
- *   npm run test:sanity
- *   npm run test:sanity -- --site DE --release 30RC1_SENH
- *   npm run test:phase3 -- --site=US --release 30RC1_SENH --report-db
  *   npm run test:flagship:uat -- --site DE --release 30RC1_SENH
- *   npm run test:flagship:postunpack -- --site=US --release 30RC1_SENH --report-db
+ *   npm run test:sanity -- --udid R5CTxxxx --appium-port 4725 --system-port 8201 --chromedriver-port 9516
  */
 export type TestType = 'sanity' | 'phase3' | 'flagship';
 
@@ -24,9 +19,14 @@ export interface RunConfig {
   reportDb: boolean;
   /** UAT(stg): false → 장바구니 불가 시 Planned. true → Fail. */
   flagshipSetupDone: boolean;
+  /** 생략 시 연결된 기기 중 하나. 여러 대면 필수. */
+  udid?: string;
+  appiumPort: number;
+  systemPort: number;
+  chromedriverPort: number;
 }
 
-/** 여기만 고쳐도 실행됩니다. (매 리그레이션마다 releaseName 갱신) */
+/** 매 리그레이션마다 releaseName만 갱신하면 됩니다. */
 const defaults: RunConfig = {
   site: 'AU',
   testType: 'sanity',
@@ -34,6 +34,9 @@ const defaults: RunConfig = {
   releaseName: '30RC1_SENH',
   reportDb: false,
   flagshipSetupDone: false,
+  appiumPort: 4723,
+  systemPort: 8200,
+  chromedriverPort: 9515,
 };
 
 function readArg(argv: string[], name: string): string | undefined {
@@ -77,13 +80,21 @@ function parseEnvironment(raw?: string): AppEnvironment | undefined {
   throw new Error(`Unsupported APP_ENV / --env: ${raw} (use stg|prod)`);
 }
 
+function parsePort(raw: string | undefined, flag: string): number | undefined {
+  if (raw === undefined || raw === '') return undefined;
+  const value = Number.parseInt(raw, 10);
+  if (!Number.isInteger(value) || value < 1 || value > 65535) {
+    throw new Error(`Invalid ${flag}: ${raw} (use 1–65535)`);
+  }
+  return value;
+}
+
 function parseEnvFlag(raw?: string): boolean | undefined {
   if (raw === undefined || raw === '') return undefined;
   return raw.toLowerCase() === 'true';
 }
 
 function defaultEnvironmentFor(testType: TestType): AppEnvironment {
-  // Flagship default = UAT(STG). Sanity/Phase3 = PROD.
   return testType === 'flagship' ? 'stg' : 'prod';
 }
 
@@ -102,7 +113,8 @@ export function getRunConfig(): RunConfig {
       : undefined;
 
   const testType = parseTestType(process.env.TEST_TYPE) ?? defaults.testType;
-  const environment = parseEnvironment(readArg(argv, 'env') ?? process.env.APP_ENV) ?? defaultEnvironmentFor(testType);
+  const environment =
+    parseEnvironment(readArg(argv, 'env') ?? process.env.APP_ENV) ?? defaultEnvironmentFor(testType);
 
   cached = {
     site: (readArg(argv, 'site') ?? process.env.SITE ?? defaults.site).trim().toUpperCase(),
@@ -119,12 +131,23 @@ export function getRunConfig(): RunConfig {
       hasFlag(argv, 'setup-done') ||
       parseEnvFlag(process.env.FLAGSHIP_SETUP_DONE) === true ||
       defaults.flagshipSetupDone,
+    udid: (readArg(argv, 'udid') ?? process.env.UDID)?.trim() || undefined,
+    appiumPort:
+      parsePort(readArg(argv, 'appium-port') ?? process.env.APPIUM_PORT, '--appium-port') ??
+      defaults.appiumPort,
+    systemPort:
+      parsePort(readArg(argv, 'system-port') ?? process.env.SYSTEM_PORT, '--system-port') ??
+      defaults.systemPort,
+    chromedriverPort:
+      parsePort(
+        readArg(argv, 'chromedriver-port') ?? process.env.CHROMEDRIVER_PORT,
+        '--chromedriver-port'
+      ) ?? defaults.chromedriverPort,
   };
 
   return cached;
 }
 
-/** sanity/phase3 → regression specs, flagship → flagship specs */
 export function getSpecsForTestType(testType: TestType): string[] {
   if (testType === 'flagship') {
     return ['./test/specs/flagship/**/*.ts'];
