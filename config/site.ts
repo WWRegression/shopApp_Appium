@@ -4,40 +4,17 @@ import tcExclusionsFile from './tc-exclusions.json';
 import siteFeaturesFile from './site-features.json';
 import { getResolvedSkuCache } from '../test/helpers/product-api.helper';
 
-export type ApkRegion = 'CN' | 'IN' | 'US' | 'GLOBAL';
-
-/** Package + Activity는 APK region 단위로 함께 관리 (Katalon Launch.groovy 대응). */
 export interface AppIdentity {
   packageName: string;
   activity: string;
 }
 
-export const appIdentityByRegion: Record<ApkRegion, AppIdentity> = {
-  CN: {
-    packageName: 'com.jv.samsungeshop',
-    activity: 'com.samsung.ecomm.global.shop_app.MainActivity',
-  },
-  IN: {
-    packageName: 'com.samsung.ecomm.global.in',
-    activity: 'com.samsung.ecomm.global.shop_app.MainActivity',
-  },
-  US: {
-    packageName: 'com.samsung.ecomm',
-    // Katalon: com.samsung.ecomm/.global.shop_app.MainActivity
-    activity: 'com.samsung.ecomm.global.shop_app.MainActivity',
-  },
-  GLOBAL: {
-    packageName: 'com.samsung.ecomm.global.gbr',
-    activity: 'com.samsung.ecomm.global.shop_app.MainActivity',
-  },
-};
-
-/** @deprecated use getAppIdentity().packageName — 호환용 */
-export const appPackageMap: Record<ApkRegion, string> = {
-  CN: appIdentityByRegion.CN.packageName,
-  IN: appIdentityByRegion.IN.packageName,
-  US: appIdentityByRegion.US.packageName,
-  GLOBAL: appIdentityByRegion.GLOBAL.packageName,
+/** 사이트별 APK. CN/IN/US가 아니면 GLOBAL. */
+export const appBySite: Record<'CN' | 'IN' | 'US' | 'GLOBAL', AppIdentity> = {
+  CN: { packageName: 'com.jv.samsungeshop', activity: 'com.jv.samsungeshop.MainActivity' },
+  IN: { packageName: 'com.samsung.ecomm.global.in', activity: 'com.samsung.ecomm.global.shop_app.MainActivity' },
+  US: { packageName: 'com.samsung.ecomm', activity: 'com.samsung.ecomm.global.shop_app.MainActivity' },
+  GLOBAL: { packageName: 'com.samsung.ecomm.global.gbr', activity: 'com.samsung.ecomm.global.shop_app.MainActivity' },
 };
 
 export type SiteFeatureName =
@@ -76,7 +53,7 @@ export interface Site {
   customer: {
     firstName: string;
     lastName?: string;
-    email?: string;
+    email: string;
     mobile: string;
     birthYear?: string;
     documentType?: string;
@@ -141,7 +118,6 @@ export interface Site {
 }
 
 export type LoadedSite = Site & {
-  apkRegion: ApkRegion;
   appPackage: string;
   appActivity: string;
   searchApiPath: string;
@@ -178,16 +154,12 @@ function getSiteFeaturesOverride(siteCode: string): SiteFeaturesOverride {
   return raw;
 }
 
-export function getApkRegion(siteCode: string): ApkRegion {
+export function getAppIdentity(siteCode: string): AppIdentity {
   const code = siteCode.toUpperCase();
   if (code === 'CN' || code === 'IN' || code === 'US') {
-    return code;
+    return appBySite[code];
   }
-  return 'GLOBAL';
-}
-
-export function getAppIdentity(siteCode: string): AppIdentity {
-  return appIdentityByRegion[getApkRegion(siteCode)];
+  return appBySite.GLOBAL;
 }
 
 export function getAppPackage(siteCode: string): string {
@@ -239,30 +211,36 @@ function resolveSearch(
   };
 }
 
+const loadedSites = new Map<string, LoadedSite>();
+
 export function loadSite(siteCode: string): LoadedSite {
   const code = siteCode.toUpperCase();
-  const filePath = path.join(SITES_DIR, `${code}.json`);
+  let site = loadedSites.get(code);
 
-  if (!fs.existsSync(filePath)) {
-    throw new Error(`Site data not found: ${code} (${filePath})`);
+  if (!site) {
+    const filePath = path.join(SITES_DIR, `${code}.json`);
+    if (!fs.existsSync(filePath)) {
+      throw new Error(`Site data not found: ${code} (${filePath})`);
+    }
+
+    const data = JSON.parse(fs.readFileSync(filePath, 'utf8')) as Site;
+    site = {
+      ...data,
+      siteCode: code,
+      appPackage: getAppPackage(code),
+      appActivity: getAppActivity(code),
+      searchApiPath: resolveSearchApiPath(code),
+      features: resolveFeatures(code),
+      excludedTcs: resolveExcludedTcs(code, data.excludedTcs),
+    };
+    loadedSites.set(code, site);
   }
 
-  const data = JSON.parse(fs.readFileSync(filePath, 'utf8')) as Site;
-  const apkRegion = getApkRegion(code);
-  const apkIdentity = getAppIdentity(code);
-  const resolvedCache = getResolvedSkuCache(code);
-
+  const skuCache = getResolvedSkuCache(code);
   return {
-    ...data,
-    siteCode: code,
-    apkRegion,
-    appPackage: apkIdentity.packageName,
-    appActivity: apkIdentity.activity,
-    searchApiPath: resolveSearchApiPath(code),
-    features: resolveFeatures(code),
-    excludedTcs: resolveExcludedTcs(code, data.excludedTcs),
-    product: resolveProduct(resolvedCache, data.product),
-    search: resolveSearch(resolvedCache, data.search),
+    ...site,
+    product: resolveProduct(skuCache, site.product),
+    search: resolveSearch(skuCache, site.search),
   };
 }
 

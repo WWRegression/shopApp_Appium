@@ -5,7 +5,6 @@
  * Flagship PostUnpack → environment: prod
  */
 import { getRunConfig, type AppEnvironment, type TestType } from '../../config/run.config';
-import { getApkRegion } from '../../config/site';
 
 export function currentTestType(): TestType {
   return getRunConfig().testType;
@@ -55,8 +54,7 @@ export function getShopBaseUrl(siteCode = getRunConfig().site): string {
  * Shop HTML/simple product API는 getShopBaseUrl() 사용.
  */
 export function getProductApiBase(siteCode = getRunConfig().site): string {
-  const region = getApkRegion(siteCode);
-  if (region === 'CN') {
+  if (siteCode.toUpperCase() === 'CN') {
     return 'https://p1-smz-api-cdn.shop.samsung.com.cn';
   }
   return 'https://api.shop.samsung.com';

@@ -1,8 +1,10 @@
-import { execFile } from 'node:child_process';
+import { execFile, execFileSync } from 'node:child_process';
 import { promisify } from 'node:util';
+import { getRunConfig } from '../../config/run.config';
 import { targetPackage } from './context.helper';
 
 const execFileAsync = promisify(execFile);
+const ADB_TIMEOUT_MS = 15000;
 
 /**
  * Browser page snapshot (id, url, title).
@@ -14,15 +16,47 @@ export interface BrowserPageInfo {
   title: string;
 }
 
-function deviceArgs(): string[] {
-  const udid = (browser.capabilities as WebdriverIO.Capabilities & { deviceUDID?: string }).deviceUDID;
-  return udid ? ['-s', udid] : [];
+function deviceUdid(explicit?: string): string | undefined {
+  if (explicit) {
+    return explicit;
+  }
+
+  let fromCapabilities: string | undefined;
+  if (typeof browser !== 'undefined') {
+    try {
+      fromCapabilities = (browser.capabilities as WebdriverIO.Capabilities & { deviceUDID?: string })
+        ?.deviceUDID;
+    } catch {
+      fromCapabilities = undefined;
+    }
+  }
+
+  return fromCapabilities || getRunConfig().udid;
+}
+
+function adbArgv(args: string[], udid?: string): string[] {
+  const serial = deviceUdid(udid);
+  return serial ? ['-s', serial, ...args] : args;
+}
+
+function adbSync(args: string[], udid?: string): string {
+  return execFileSync('adb', adbArgv(args, udid), {
+    encoding: 'utf8',
+    timeout: ADB_TIMEOUT_MS,
+  }).trim();
+}
+
+async function adbAsync(args: string[], udid?: string): Promise<string> {
+  const { stdout } = await execFileAsync('adb', adbArgv(args, udid), {
+    encoding: 'utf8',
+    timeout: ADB_TIMEOUT_MS,
+  });
+  return stdout.trim();
 }
 
 /** Runs an adb command against the connected device and returns stdout. */
 export async function adb(...args: string[]): Promise<string> {
-  const { stdout } = await execFileAsync('adb', [...deviceArgs(), ...args]);
-  return stdout.trim();
+  return adbAsync(args);
 }
 
 /** Process id of the given app package (defaults to the current site's target package). */
@@ -72,24 +106,14 @@ export async function getBrowserPages(): Promise<BrowserPageInfo[]> {
 /** adb dumpsys package → versionName(versionCode) */
 export async function getPackageVersion(
   appPackage: string,
-  deviceUdid?: string
+  udid?: string
 ): Promise<string> {
   if (!appPackage) {
     return '';
   }
 
   try {
-    const adbArgs = [
-      ...(deviceUdid ? ['-s', deviceUdid] : []),
-      'shell',
-      'dumpsys',
-      'package',
-      appPackage,
-    ];
-    const { stdout } = await execFileAsync('adb', adbArgs, {
-      encoding: 'utf8',
-      timeout: 15000,
-    });
+    const stdout = await adbAsync(['shell', 'dumpsys', 'package', appPackage], udid);
 
     const versionName = extractDumpValue(stdout, 'versionName');
     const versionCode = extractDumpValue(stdout, 'versionCode');
@@ -106,4 +130,19 @@ function extractDumpValue(output: string, key: string): string {
   const re = new RegExp(`${key}=([^\\s]+)`);
   const match = output.match(re);
   return match?.[1] ?? 'Not Found';
+}
+
+/**
+ * adb dumpsys account → Google 계정 email (`type=com.google`, `name=wwautokr`).
+ */
+export function getGoogleAccountEmail(udid?: string): string {
+  try {
+    const stdout = adbSync(
+      ['shell', 'dumpsys account | grep type=com.google | grep name=wwautokr'],
+      udid
+    );
+    return stdout.match(/name=([^,}]+)/)?.[1]?.trim() ?? '';
+  } catch {
+    return '';
+  }
 }

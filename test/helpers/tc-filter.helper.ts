@@ -1,5 +1,5 @@
 import { getRunConfig } from '../../config/run.config';
-import { loadSite, LoadedSite, SiteFeatureName } from '../../config/site';
+import { loadSite, LoadedSite } from '../../config/site';
 import {
   TestCaseMeta,
   TestSuite,
@@ -19,20 +19,14 @@ export function getSite(): LoadedSite {
   return loadSite(currentSiteCode());
 }
 
-function isFeatureEnabled(site: LoadedSite, feature: SiteFeatureName): boolean {
-  return site.features[feature] !== false;
-}
-
-export function shouldRunTestCase(siteCode: string, meta: TestCaseMeta): boolean {
-  const site = loadSite(siteCode);
-
+export function shouldRunTestCase(site: LoadedSite, meta: TestCaseMeta): boolean {
   if (site.excludedTcs.includes(meta.tcId)) {
     return false;
   }
 
   if (meta.requiresFeatures) {
     for (const feature of meta.requiresFeatures) {
-      if (!isFeatureEnabled(site, feature)) {
+      if (site.features[feature] === false) {
         return false;
       }
     }
@@ -51,22 +45,23 @@ export async function runOrSkip(
   fn: (site: LoadedSite, meta: TestCaseMeta) => Promise<void>
 ): Promise<void> {
   const meta = getTestCaseMeta(tcId);
-  const siteCode = currentSiteCode();
 
   if (!meta.suites.includes(currentSuite())) {
     this.skip();
   }
 
-  if (!shouldRunTestCase(siteCode, meta)) {
+  const site = getSite();
+  if (!shouldRunTestCase(site, meta)) {
     this.skip();
   }
 
-  await fn(getSite(), meta);
+  await fn(site, meta);
 }
 
 export function getRunnableTestCases(
   suite: TestSuite = currentSuite(),
   siteCode: string = currentSiteCode()
 ): TestCaseMeta[] {
-  return listTestCasesForSuite(suite).filter((meta) => shouldRunTestCase(siteCode, meta));
+  const site = loadSite(siteCode);
+  return listTestCasesForSuite(suite).filter((meta) => shouldRunTestCase(site, meta));
 }

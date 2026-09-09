@@ -33,7 +33,7 @@ wdio.conf.ts 로드
   │       CLI(--site/--env/--release/--report-db/--udid/--appium-port/…)
   │         > env(SITE/APP_ENV/UDID/APPIUM_PORT/…) > defaults
   │  2) loadSite(siteCode)
-  │       getAppIdentity → package/activity
+  │       getAppIdentity(site) → 기본 global APK, CN/IN/US만 package/activity 오버라이드
   │       data/sites-data/{SITE}.json → 테스트 픽스처
   │       site-features.json → features / searchApiPath
   │  3) getSpecsForTestType(testType)
@@ -153,7 +153,7 @@ test/specs/
 | `systemPort` | UiAutomator2 `systemPort`. 기본 `8200` |
 | `chromedriverPort` | WebView Chromedriver 포트. 기본 `8000` |
 
-APK identity: `config/site.ts`의 `getAppIdentity(site)` → region별 **package + activity**.
+APK: 기본 global 패키지+activity. CN / IN / US만 `appBySite`에서 오버라이드 (`activity` 생략 시 기본 activity).
 
 ## 실행
 

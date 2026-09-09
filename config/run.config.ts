@@ -139,10 +139,8 @@ export function getRunConfig(): RunConfig {
       parsePort(readArg(argv, 'system-port') ?? process.env.SYSTEM_PORT, '--system-port') ??
       defaults.systemPort,
     chromedriverPort:
-      parsePort(
-        readArg(argv, 'chromedriver-port') ?? process.env.CHROMEDRIVER_PORT,
-        '--chromedriver-port'
-      ) ?? defaults.chromedriverPort,
+      parsePort(readArg(argv, 'chromedriver-port') ?? process.env.CHROMEDRIVER_PORT, '--chromedriver-port') ??
+      defaults.chromedriverPort,
   };
 
   return cached;

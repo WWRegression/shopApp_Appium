@@ -2,6 +2,7 @@ import { BasePage } from './base.page';
 import { LoginLocator } from '../locators/login.locator';
 import { isStgEnvironment } from '../helpers/env.helper';
 import { switchToNative, switchToWebView } from '../helpers/context.helper';
+import { getGoogleAccountEmail } from '../helpers/device.helper';
 
 /** STG(WDS) 로그인 계정 — 팀 계정에 맞게 수정 (Katalon WDS_ID/PW 대응). */
 const WDS_CREDENTIALS = {
@@ -12,8 +13,16 @@ const WDS_CREDENTIALS = {
 export class LoginPage extends BasePage {
   private readonly locator = new LoginLocator();
 
+  /** 기기 Google 계정 email */
+  shopCredentials(): { email: string; password: string } {
+    return {
+      email: getGoogleAccountEmail(),
+      password: 'wise1004!',
+    };
+  }
+
   async loginWithEmailSso(): Promise<void> {
-    // TODO: Implement Email SSO login flow
+    // TODO: Implement Email SSO login flow using this.shopCredentials()
     await this.locator.emailSsoButton.click();
   }
 
