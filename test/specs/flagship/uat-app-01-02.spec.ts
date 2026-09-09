@@ -8,7 +8,7 @@ import { BcPage } from '../../pages/bc.page';
 import { PdPage } from '../../pages/pd.page';
 
 describe('UAT_APP_01 / UAT_APP_02', () => {
-  const products = loadFlagshipProducts(getRunConfig().site);
+  const products = loadFlagshipProducts(getRunConfig().siteCode);
 
   if (products.length === 0) {
     it('no flagship SKUs for this site', function () {

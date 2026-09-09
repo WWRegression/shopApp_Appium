@@ -1,4 +1,4 @@
-import { getSite } from '../../helpers/tc-filter.helper';
+import { getSiteData } from '../../../config/site';
 import { SearchPage } from '../../pages/search.page';
 import { PfPage } from '../../pages/pf.page';
 import { BcPage } from '../../pages/bc.page';
@@ -20,15 +20,15 @@ describe('SAMPLE_PF_BC_CART', () => {
   const addOnPage = new AddOnPage();
 
   it('search product, select BC options, decline service, reach cart', async function () {
-    const site = getSite();
+    const site = getSiteData();
 
     await cartPage.clearCart();
 
     await searchPage.searchByKeyword('Galaxy Z Fold8');
-    await pfPage.selectPfCard();
+    await pfPage.selectPfCard({ mode: 'first' });
 
     await bcPage.selectOptions(site.product);
-  
+
     await bcPage.galaxyClub.selectNoForService();
     await bcPage.tradeIn.selectNoForService();
     await bcPage.scPlus.selectNoForService();

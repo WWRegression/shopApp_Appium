@@ -154,7 +154,7 @@ const SITE_CATEGORY_PATH: Record<string, Partial<Record<ShopCategory, ShopCatego
 };
 
 export class ShopLocator {
-  private readonly site = getRunConfig().site;
+  private readonly site = getRunConfig().siteCode;
 
   categoryPath(siteCode: string, category: ShopCategory): ShopCategoryPath {
     return SITE_CATEGORY_PATH[siteCode.toUpperCase()]?.[category] ?? DEFAULT_CATEGORY_PATH[category];

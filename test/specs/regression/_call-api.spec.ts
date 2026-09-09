@@ -3,7 +3,7 @@ import { resolveProduct, getTypesForSite, writeResolvedSkuEntry } from '../../he
 
 /**
  * Resolves a valid IM/VD/HA sku per site via API and caches it, so every other TC's
- * getSite() picks up fresh data. Filename is prefixed with `_` to run first in the suite.
+ * getSiteData() picks up fresh data. Filename is prefixed with `_` to run first in the suite.
  */
 describe('CALL_API', () => {
   it('resolve a valid sku per product type via API', async function () {

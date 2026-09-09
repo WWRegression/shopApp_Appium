@@ -32,7 +32,7 @@ export function isFlagshipStg(): boolean {
  * Shop web base URL (product info API 등).
  * Katalon API.isSkuInfoAvailable baseUrl 대응.
  */
-export function getShopBaseUrl(siteCode = getRunConfig().site): string {
+export function getShopBaseUrl(siteCode = getRunConfig().siteCode): string {
   const code = siteCode.toLowerCase();
   if (isStgEnvironment()) {
     if (code === 'cn') {
@@ -53,7 +53,7 @@ export function getShopBaseUrl(siteCode = getRunConfig().site): string {
  * 현재 Katalon STG/PROD 모두 api.shop.samsung.com 을 쓰는 구간이 있어 host는 동일.
  * Shop HTML/simple product API는 getShopBaseUrl() 사용.
  */
-export function getProductApiBase(siteCode = getRunConfig().site): string {
+export function getProductApiBase(siteCode = getRunConfig().siteCode): string {
   if (siteCode.toUpperCase() === 'CN') {
     return 'https://p1-smz-api-cdn.shop.samsung.com.cn';
   }
@@ -62,7 +62,7 @@ export function getProductApiBase(siteCode = getRunConfig().site): string {
 
 export function getSimpleProductInfoUrl(
   sku: string,
-  siteCode = getRunConfig().site
+  siteCode = getRunConfig().siteCode
 ): string {
   const base = getShopBaseUrl(siteCode);
   const code = siteCode.toLowerCase();

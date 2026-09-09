@@ -1,4 +1,4 @@
-import { getSite } from '../../helpers/tc-filter.helper';
+import { getSiteData } from '../../../config/site';
 import { MypagePage } from '../../pages/mypage.page';
 
 /**
@@ -12,7 +12,7 @@ describe('SAMPLE_BNB_MENU_TOUR', () => {
   const mypagePage = new MypagePage();
 
   it('Verify MyPage > Support sub-menu', async function () {
-    const site = getSite();
+    const site = getSiteData();
     if (!site.mypageMenuList?.support) {
       return;
     }

@@ -12,7 +12,7 @@ export type TestType = 'sanity' | 'phase3' | 'flagship';
 export type AppEnvironment = 'stg' | 'prod';
 
 export interface RunConfig {
-  site: string;
+  siteCode: string;
   testType: TestType;
   environment: AppEnvironment;
   releaseName: string;
@@ -28,7 +28,7 @@ export interface RunConfig {
 
 /** 매 리그레이션마다 releaseName만 갱신하면 됩니다. */
 const defaults: RunConfig = {
-  site: 'AU',
+  siteCode: 'AU',
   testType: 'sanity',
   environment: 'prod',
   releaseName: '30RC1_SENH',
@@ -94,10 +94,6 @@ function parseEnvFlag(raw?: string): boolean | undefined {
   return raw.toLowerCase() === 'true';
 }
 
-function defaultEnvironmentFor(testType: TestType): AppEnvironment {
-  return testType === 'flagship' ? 'stg' : 'prod';
-}
-
 let cached: RunConfig | undefined;
 
 export function getRunConfig(): RunConfig {
@@ -112,35 +108,17 @@ export function getRunConfig(): RunConfig {
       ? false
       : undefined;
 
-  const testType = parseTestType(process.env.TEST_TYPE) ?? defaults.testType;
-  const environment =
-    parseEnvironment(readArg(argv, 'env') ?? process.env.APP_ENV) ?? defaultEnvironmentFor(testType);
-
   cached = {
-    site: (readArg(argv, 'site') ?? process.env.SITE ?? defaults.site).trim().toUpperCase(),
-    testType,
-    environment,
-    releaseName: (
-      readArg(argv, 'release') ??
-      readArg(argv, 'release-name') ??
-      process.env.RELEASE_NAME ??
-      defaults.releaseName
-    ).trim(),
+    siteCode: (readArg(argv, 'site') ?? process.env.SITE ?? defaults.siteCode).trim().toUpperCase(),
+    testType: parseTestType(process.env.TEST_TYPE) ?? defaults.testType,
+    environment: parseEnvironment(readArg(argv, 'env') ?? process.env.APP_ENV) ?? defaults.environment,
+    releaseName: (readArg(argv, 'release') ?? process.env.RELEASE_NAME ?? defaults.releaseName).trim(),
     reportDb: cliReportDb ?? parseEnvFlag(process.env.REPORT_DB) ?? defaults.reportDb,
-    flagshipSetupDone:
-      hasFlag(argv, 'setup-done') ||
-      parseEnvFlag(process.env.FLAGSHIP_SETUP_DONE) === true ||
-      defaults.flagshipSetupDone,
+    flagshipSetupDone: hasFlag(argv, 'setup-done') || parseEnvFlag(process.env.FLAGSHIP_SETUP_DONE) === true || defaults.flagshipSetupDone,
     udid: (readArg(argv, 'udid') ?? process.env.UDID)?.trim() || undefined,
-    appiumPort:
-      parsePort(readArg(argv, 'appium-port') ?? process.env.APPIUM_PORT, '--appium-port') ??
-      defaults.appiumPort,
-    systemPort:
-      parsePort(readArg(argv, 'system-port') ?? process.env.SYSTEM_PORT, '--system-port') ??
-      defaults.systemPort,
-    chromedriverPort:
-      parsePort(readArg(argv, 'chromedriver-port') ?? process.env.CHROMEDRIVER_PORT, '--chromedriver-port') ??
-      defaults.chromedriverPort,
+    appiumPort: parsePort(readArg(argv, 'appium-port') ?? process.env.APPIUM_PORT, '--appium-port') ?? defaults.appiumPort,
+    systemPort: parsePort(readArg(argv, 'system-port') ?? process.env.SYSTEM_PORT, '--system-port') ?? defaults.systemPort,
+    chromedriverPort: parsePort(readArg(argv, 'chromedriver-port') ?? process.env.CHROMEDRIVER_PORT, '--chromedriver-port') ?? defaults.chromedriverPort,
   };
 
   return cached;

@@ -56,7 +56,7 @@ export interface GetCurrentWebViewPageOptions {
 /** App package for the current site (or capability fallback). */
 export function targetPackage(): string {
   return (
-    getAppPackage(getRunConfig().site) ||
+    getAppPackage(getRunConfig().siteCode) ||
     (browser.capabilities as WebdriverIO.Capabilities)['appium:appPackage'] ||
     ''
   );
@@ -258,7 +258,7 @@ export async function switchToWindowByPage(
     throw new Error('switchToWindowByPage: not in WebView context');
   }
 
-  const siteCode = getRunConfig().site;
+  const siteCode = getRunConfig().siteCode;
   const currentHref = await getCurrentWindowUrl();
   if (currentHref && matchPageByUrl(currentHref, page, siteCode)) {
     return;
@@ -313,7 +313,7 @@ export async function prepareWebViewPage(
  * waitMs > 0 polls until a match or timeout (e.g. after PF card tap).
  */
 async function detectWebViewPageFromContexts(waitMs = 0): Promise<WebViewPage | 'unknown'> {
-  const siteCode = getRunConfig().site;
+  const siteCode = getRunConfig().siteCode;
   const deadline = Date.now() + waitMs;
 
   do {
@@ -340,7 +340,7 @@ export async function getCurrentWebViewPage(
 ): Promise<WebViewPageResult> {
   const waitMs = options?.waitMs ?? 0;
   const context = await recoverToNativeIfStale();
-  const siteCode = getRunConfig().site;
+  const siteCode = getRunConfig().siteCode;
 
   if (context === 'webview') {
     const href = (await getCurrentWindowUrl()) ?? '';

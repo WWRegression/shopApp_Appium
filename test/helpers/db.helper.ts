@@ -95,12 +95,12 @@ export async function insertShopAppResult(
 
   try {
     const run = getRunConfig();
-    const site = (payload.site ?? run.site).toUpperCase();
+    const site = (payload.site ?? run.siteCode).toUpperCase();
     const testType = payload.testType ?? run.testType;
     const releaseName = payload.releaseName ?? run.releaseName;
     const agentIp = payload.agentIp ?? resolveAgentIp();
     const appPackage =
-      getAppPackage(run.site) ||
+      getAppPackage(run.siteCode) ||
       ((browser.capabilities as WebdriverIO.Capabilities)['appium:appPackage'] as
         | string
         | undefined) ||

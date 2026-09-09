@@ -1,5 +1,5 @@
 import { getRunConfig } from '../../config/run.config';
-import { loadSite, LoadedSite } from '../../config/site';
+import { getSiteData, loadSite, LoadedSite } from '../../config/site';
 import {
   TestCaseMeta,
   TestSuite,
@@ -8,15 +8,11 @@ import {
 } from '../../config/test-case.catalog';
 
 export function currentSiteCode(): string {
-  return getRunConfig().site;
+  return getRunConfig().siteCode;
 }
 
 export function currentSuite(): TestSuite {
   return getRunConfig().testType;
-}
-
-export function getSite(): LoadedSite {
-  return loadSite(currentSiteCode());
 }
 
 export function shouldRunTestCase(site: LoadedSite, meta: TestCaseMeta): boolean {
@@ -50,7 +46,7 @@ export async function runOrSkip(
     this.skip();
   }
 
-  const site = getSite();
+  const site = getSiteData();
   if (!shouldRunTestCase(site, meta)) {
     this.skip();
   }

@@ -98,7 +98,7 @@ export class PdLocator {
   }
 
   get pdProductName() {
-    if (getRunConfig().site === 'US') {
+    if (getRunConfig().siteCode === 'US') {
       return $("div[class*='ProductNameReview_header__title__tag'] h1, div[class*='ProductTitle_product'] h1");
     }
     return $(
@@ -111,7 +111,7 @@ export class PdLocator {
   }
 
   get pdLayout() {
-    if (getRunConfig().site === 'US') {
+    if (getRunConfig().siteCode === 'US') {
       return $('.SubHeader_productNavigation__NwEe4');
     }
     return $('div.pdd39-anchor-nav');

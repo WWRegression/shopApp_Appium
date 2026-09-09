@@ -32,10 +32,9 @@ wdio.conf.ts 로드
   │  1) getRunConfig()
   │       CLI(--site/--env/--release/--report-db/--udid/--appium-port/…)
   │         > env(SITE/APP_ENV/UDID/APPIUM_PORT/…) > defaults
-  │  2) loadSite(siteCode)
-  │       getAppIdentity(site) → 기본 global APK, CN/IN/US만 package/activity 오버라이드
-  │       data/sites-data/{SITE}.json → 테스트 픽스처
-  │       site-features.json → features / searchApiPath
+  │  2) loadSite(siteCode)  — JSON을 메모리에 올림 (파일은 사이트당 1번)
+  │       getAppIdentity → 기본 GLOBAL APK, CN/IN/US만 다름
+  │       이후 spec/helper는 getSiteData()로 같은 객체를 읽음
   │  3) getSpecsForTestType(testType)
   │       sanity/phase3 → test/specs/regression/**
   │       flagship      → test/specs/flagship/**
@@ -82,7 +81,7 @@ npm install
 # 기기 연결 확인
 adb devices
 
-# 기본 site는 config/run.config.ts (CLI로 덮어쓰기 가능)
+# 기본 siteCode는 config/run.config.ts (CLI --site 로 덮어쓰기)
 npm run test:sanity -- --site DE
 
 # 단일 spec
@@ -103,8 +102,8 @@ npm.cmd run test:spec -- test/specs/sample/test-debug.spec.ts --site AT
 
 ```text
 config/
-  run.config.ts          ← site / testType / environment / releaseName / 기기·포트
-  site.ts                ← package/activity, loadSite
+  run.config.ts          ← siteCode / testType / environment / releaseName / 기기·포트
+  site.ts                ← package/activity, loadSite(최초), getSiteData(참조)
   site-features.json     ← site별 features · searchApiPath override
   tc-exclusions.json
 data/
@@ -143,7 +142,7 @@ test/specs/
 
 | 필드 | 설명 |
 |------|------|
-| `site` | 대상 사이트 (DE, US, AT, …) |
+| `siteCode` | 대상 사이트 (DE, US, AT, …). CLI는 `--site` |
 | `testType` | sanity / phase3 / flagship |
 | `environment` | `stg` (Flagship UAT) / `prod` (PostUnpack·Sanity) |
 | `releaseName` | DB releaseName |

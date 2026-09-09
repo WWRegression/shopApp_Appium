@@ -7,7 +7,7 @@ import { storageLabelVariants } from '../helpers/data.helper';
  */
 export class BcLocator {
   get bcLayout() {
-    if (getRunConfig().site === 'US') {
+    if (getRunConfig().siteCode === 'US') {
       return $('#headerWrapper .MobileViewHeader_header__title__9zKbO');
     }
     return $('div .bc-cross-navigation-wrap, section.watch-bc');
@@ -371,7 +371,7 @@ export class BcLocator {
   }
 
   get bcProductName() {
-    if (getRunConfig().site === 'US') {
+    if (getRunConfig().siteCode === 'US') {
       return $("div[class*='ProductTitle_product'] h1");
     }
     return $('.hubble-price-bar__detail-title, .sg-product-display-name, .watch-bc-price-bar__headline');

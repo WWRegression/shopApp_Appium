@@ -4,9 +4,9 @@ import { reportTestResult } from './test/helpers/report.helper';
 
 const run = getRunConfig();
 
-if (run.site === 'ALL') {
+if (run.siteCode === 'ALL') {
   throw new Error(
-    'SITE=ALL requires the work-queue runner. Set site to one code in config/run.config.ts (e.g. DE).'
+    'SITE=ALL requires the work-queue runner. Set siteCode to one code in config/run.config.ts (e.g. DE).'
   );
 }
 
@@ -16,10 +16,10 @@ if (run.reportDb && !run.releaseName) {
   );
 }
 
-const site = loadSite(run.site);
+const site = loadSite(run.siteCode);
 
 console.log(
-  `[run] site=${run.site} testType=${run.testType} env=${run.environment} ` +
+  `[run] site=${run.siteCode} testType=${run.testType} env=${run.environment} ` +
     `releaseName=${run.releaseName || '(none)'} reportDb=${run.reportDb} ` +
     `package=${site.appPackage} udid=${run.udid || '(auto)'} ` +
     `appiumPort=${run.appiumPort} systemPort=${run.systemPort} ` +

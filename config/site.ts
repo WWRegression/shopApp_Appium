@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import tcExclusionsFile from './tc-exclusions.json';
 import siteFeaturesFile from './site-features.json';
+import { getRunConfig } from './run.config';
 import { getResolvedSkuCache } from '../test/helpers/product-api.helper';
 
 export interface AppIdentity {
@@ -213,35 +214,53 @@ function resolveSearch(
 
 const loadedSites = new Map<string, LoadedSite>();
 
-export function loadSite(siteCode: string): LoadedSite {
+function loadSiteJson(siteCode: string): LoadedSite {
   const code = siteCode.toUpperCase();
-  let site = loadedSites.get(code);
-
-  if (!site) {
-    const filePath = path.join(SITES_DIR, `${code}.json`);
-    if (!fs.existsSync(filePath)) {
-      throw new Error(`Site data not found: ${code} (${filePath})`);
-    }
-
-    const data = JSON.parse(fs.readFileSync(filePath, 'utf8')) as Site;
-    site = {
-      ...data,
-      siteCode: code,
-      appPackage: getAppPackage(code),
-      appActivity: getAppActivity(code),
-      searchApiPath: resolveSearchApiPath(code),
-      features: resolveFeatures(code),
-      excludedTcs: resolveExcludedTcs(code, data.excludedTcs),
-    };
-    loadedSites.set(code, site);
+  const cached = loadedSites.get(code);
+  if (cached) {
+    return cached;
   }
 
-  const skuCache = getResolvedSkuCache(code);
+  const filePath = path.join(SITES_DIR, `${code}.json`);
+  if (!fs.existsSync(filePath)) {
+    throw new Error(`Site data not found: ${code} (${filePath})`);
+  }
+
+  const data = JSON.parse(fs.readFileSync(filePath, 'utf8')) as Site;
+  const site: LoadedSite = {
+    ...data,
+    siteCode: code,
+    appPackage: getAppPackage(code),
+    appActivity: getAppActivity(code),
+    searchApiPath: resolveSearchApiPath(code),
+    features: resolveFeatures(code),
+    excludedTcs: resolveExcludedTcs(code, data.excludedTcs),
+  };
+  loadedSites.set(code, site);
+  return site;
+}
+
+/** JSON SKU 위에 `_call-api` 캐시가 있으면 덮어 반환합니다. */
+function withResolvedSku(site: LoadedSite): LoadedSite {
+  const skuCache = getResolvedSkuCache(site.siteCode);
   return {
     ...site,
     product: resolveProduct(skuCache, site.product),
     search: resolveSearch(skuCache, site.search),
   };
+}
+
+/** 파일을 읽어 메모리에 올립니다. wdio.conf 시작 시 한 번 호출합니다. */
+export function loadSite(siteCode: string): LoadedSite {
+  return withResolvedSku(loadSiteJson(siteCode));
+}
+
+/**
+ * 이미 로드된 현재 실행 사이트. JSON은 다시 읽지 않습니다.
+ * (워커에서 아직 loadSite가 안 불렸으면 그때 한 번 로드합니다.)
+ */
+export function getSiteData(): LoadedSite {
+  return loadSite(getRunConfig().siteCode);
 }
 
 export function listSiteCodes(): string[] {
