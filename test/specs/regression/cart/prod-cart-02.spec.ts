@@ -10,8 +10,8 @@ describe('PROD_CART_02', () => {
     await runOrSkip.call(this, 'PROD_CART_02', async (site) => {
       void site.tradeIn;
       await cartPage.tradeIn.addService();
-      await cartPage.proceedToCheckout();
-      await checkoutPage.verifyOnCheckout();
+      await cartPage.clickContinueToCheckout();
+      await checkoutPage.prepareCheckoutPage();
     });
   });
 });

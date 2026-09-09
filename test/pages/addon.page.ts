@@ -1,27 +1,30 @@
 import { BasePage } from './base.page';
 import { AddOnLocator } from '../locators/addon.locator';
+import { jsClick } from '../helpers/element.helper';
 
 export class AddOnPage extends BasePage {
   private readonly locator = new AddOnLocator();
 
   /**
-   * Clicks through any splash screens after add-to-cart (free gift, evoucher, add-on, etc.)
-   * until none remain. Checks for a popup skip button each loop, since an open popup can
-   * overlay and intercept clicks on the continue button.
+   * Clicks through splash screens after add-to-cart until none remain.
+   * Splash can take several seconds to render; sticky continue needs a JS click.
    */
   async clickSplashContinue(): Promise<void> {
     for (;;) {
-      if (await this.locator.popupSkipButton.isDisplayed().catch(() => false)) {
-        await this.locator.popupSkipButton.click();
+      const skip = this.locator.popupSkipButton;
+      if (await skip.isDisplayed().catch(() => false)) {
+        await jsClick(skip);
+        await driver.pause(800);
         continue;
       }
 
       const button = this.locator.continueButton;
-      const shown = await button.waitForDisplayed({ timeout: 5000 }).catch(() => false);
+      const shown = await button.waitForDisplayed({ timeout: 15000 }).catch(() => false);
       if (!shown) {
         break;
       }
-      await button.click();
+      await jsClick(button);
+      await driver.pause(800);
     }
   }
 }

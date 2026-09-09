@@ -10,8 +10,8 @@ describe('PROD_CHECKOUT_03', () => {
     await runOrSkip.call(this, 'PROD_CHECKOUT_03', async (site) => {
       void site.customer;
       // TODO: reimplement using new BcPage API
-      await cartPage.proceedToCheckout();
-      await checkoutPage.verifyOnCheckout();
+      await cartPage.clickContinueToCheckout();
+      await checkoutPage.prepareCheckoutPage();
     });
   });
 });

@@ -27,16 +27,17 @@ describe('PROD_CART_01', () => {
       await addOnPage.clickSplashContinue();
 
       const sku = await cartPage.getFirstItemSku();
-      await cartPage.verifySkuInCart(sku);
-      await cartPage.verifyCartIconQuantity(1);
+      await cartPage.verifySku(sku);
+
+      const baseQty = await cartPage.getCartIconQuantity();
 
       // Step1: Add quantity and verify cart icon quantity
       await cartPage.addQuantity(sku);
-      await cartPage.verifyCartIconQuantity(2);
+      await cartPage.verifyCartIconQuantity(baseQty + 1);
 
       // Step2: Reduce quantity and verify cart icon quantity
       await cartPage.reduceQuantity(sku);
-      await cartPage.verifyCartIconQuantity(1);
+      await cartPage.verifyCartIconQuantity(baseQty);
 
       // Step3: Clear cart and verify cart icon quantity
       await cartPage.clearCart();

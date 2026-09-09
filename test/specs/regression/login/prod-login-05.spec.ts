@@ -6,7 +6,7 @@ describe('PROD_LOGIN_05', () => {
 
   it('Guest - auto login via Continue to checkout CTA', async function () {
     await runOrSkip.call(this, 'PROD_LOGIN_05', async () => {
-      await cartPage.proceedToCheckout();
+      await cartPage.clickContinueToCheckout();
     });
   });
 });

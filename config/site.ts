@@ -3,7 +3,7 @@ import path from 'node:path';
 import tcExclusionsFile from './tc-exclusions.json';
 import siteFeaturesFile from './site-features.json';
 import { getRunConfig } from './run.config';
-import { getResolvedSkuCache } from '../test/helpers/product-api.helper';
+import { getResolvedSkuCache } from '../test/helpers/api.helper';
 
 export interface AppIdentity {
   packageName: string;

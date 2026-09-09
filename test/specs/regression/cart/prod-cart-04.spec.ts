@@ -9,8 +9,8 @@ describe('PROD_CART_04', () => {
   it('add EUP on cart and go to payment', async function () {
     await runOrSkip.call(this, 'PROD_CART_04', async () => {
       await cartPage.eup.addService();
-      await cartPage.proceedToCheckout();
-      await checkoutPage.verifyOnCheckout();
+      await cartPage.clickContinueToCheckout();
+      await checkoutPage.prepareCheckoutPage();
     });
   });
 });

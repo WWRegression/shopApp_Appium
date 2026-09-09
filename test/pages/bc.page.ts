@@ -9,6 +9,7 @@ import { switchToWebView, prepareWebViewPage, isCurrentWebViewPage } from '../he
 import { scrollElementToCenter } from '../helpers/gesture.helper';
 import { FlagshipProduct } from '../helpers/flagship-sku.helper';
 import { storageCapacityMatches } from '../helpers/data.helper';
+import { jsClick } from '../helpers/element.helper';
 
 /** Regression `site.product` chip fields. */
 export interface SiteProduct {
@@ -222,7 +223,7 @@ export class BcPage extends BasePage {
     // JS click: sticky bar is position:fixed and native clickability can time out.
     const button = this.locator.addToCartButton;
     await button.waitForExist({ timeout: 15000 });
-    await driver.execute('arguments[0].click();', await button);
+    await jsClick(button);
   }
 
   async getBcProductName(): Promise<string> {

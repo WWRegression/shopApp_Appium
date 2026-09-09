@@ -9,8 +9,8 @@ describe('PROD_CHECKOUT_02', () => {
   it('multi products (IM, VD, HA) to cart then payment', async function () {
     await runOrSkip.call(this, 'PROD_CHECKOUT_02', async (site) => {
       void site.search;
-      await cartPage.proceedToCheckout();
-      await checkoutPage.verifyOnCheckout();
+      await cartPage.clickContinueToCheckout();
+      await checkoutPage.prepareCheckoutPage();
     });
   });
 });

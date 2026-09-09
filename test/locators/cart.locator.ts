@@ -1,14 +1,6 @@
 export class CartLocator {
   get cartLayout() {
-    return $(
-      [
-        'cx-page-layout.CartPageTemplate.ng-star-inserted',
-        'div[class*="cart-page-container"]',
-        'main > div.container',
-        'cx-page-layout[class*="CartPageTemplateV2"]',
-        'cx-page-layout.CartPageTemplate',
-      ].join(', ')
-    );
+    return $('cx-page-layout.CartPageTemplateV2, div.cart-details-wrapper');
   }
 
   get removeItemButton() {

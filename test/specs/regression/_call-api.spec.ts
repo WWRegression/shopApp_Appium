@@ -1,5 +1,5 @@
 import { runOrSkip } from '../../helpers/tc-filter.helper';
-import { resolveProduct, getTypesForSite, writeResolvedSkuEntry } from '../../helpers/product-api.helper';
+import { resolveProduct, getTypesForSite, writeResolvedSkuEntry } from '../../helpers/api.helper';
 
 /**
  * Resolves a valid IM/VD/HA sku per site via API and caches it, so every other TC's

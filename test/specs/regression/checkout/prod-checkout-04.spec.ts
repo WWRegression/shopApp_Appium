@@ -6,7 +6,7 @@ describe('PROD_CHECKOUT_04', () => {
 
   it('Edit buttons navigate back to Order Summary/Contact/Delivery', async function () {
     await runOrSkip.call(this, 'PROD_CHECKOUT_04', async () => {
-      await checkoutPage.verifyOnCheckout();
+      await checkoutPage.prepareCheckoutPage();
       await checkoutPage.editOrderSummary();
       await checkoutPage.editContactDetails();
       await checkoutPage.editDeliveryMode();

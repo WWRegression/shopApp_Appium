@@ -9,8 +9,8 @@ describe('PROD_CART_03', () => {
   it('add SC+ on cart and go to payment', async function () {
     await runOrSkip.call(this, 'PROD_CART_03', async () => {
       await cartPage.scPlus.addService();
-      await cartPage.proceedToCheckout();
-      await checkoutPage.verifyOnCheckout();
+      await cartPage.clickContinueToCheckout();
+      await checkoutPage.prepareCheckoutPage();
     });
   });
 });

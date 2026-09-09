@@ -10,7 +10,6 @@ import { markFailedAndStop, markFailed, FieldCheck } from '../helpers/report.hel
 import { getElementLabel, isDisplayedSafe, clickOptionInput } from '../helpers/element.helper';
 import { prepareWebViewPage, switchToNative } from '../helpers/context.helper';
 import { BcProductOptions } from './bc.page';
-import { scrollElementToCenter } from '../helpers/gesture.helper';
 
 export class PdPage extends BasePage {
   private readonly locator = new PdLocator();
@@ -25,7 +24,7 @@ export class PdPage extends BasePage {
     return prepareWebViewPage('pd', this.locator.skuAnchor);
   }
   
-  async selectOptions(options: BcProductOptions): Promise<void> {
+  async selectOptions(_options: BcProductOptions): Promise<void> {
     // const chips = optionSelections(options);
     // console.warn(
     //   `[pd.selectOptions] start ${chips.map(({ field, value }) => `${field}=${value}`).join(', ')}`
@@ -74,7 +73,7 @@ export class PdPage extends BasePage {
 
   async getPdProductName(productName?: string | null): Promise<string> {
     if (await this.preparePdPage()) {
-      return await this.locator.pdSummaryProductName.getText();
+      return await this.locator.summaryProductName.getText();
     }
     if (!productName) {
       return '';

@@ -1,17 +1,17 @@
 import { BasePage } from './base.page';
 import { CartLocator } from '../locators/cart.locator';
-import { CheckoutLocator } from '../locators/checkout.locator';
 import { CartTradeInService } from '../services/tradein/cart-tradein.service';
 import { CartScPlusService } from '../services/scplus/cart-scplus.service';
 import { CartEupService } from '../services/eup/cart-eup.service';
 import { CartSimService } from '../services/sim/cart-sim.service';
 import { switchToNative, prepareWebViewPage } from '../helpers/context.helper';
-import { getElementLabel, dispatchTouchStart } from '../helpers/element.helper';
+import { getElementLabel, dispatchTouchStart, jsClick } from '../helpers/element.helper';
 import { assertEqual } from '../helpers/validation.helper';
-import { stripToAlnum } from '../helpers/data.helper';
+import { markFailed, markFailedAndStop, FieldCheck } from '../helpers/report.helper';
+import { removeNonWordChars } from '../helpers/data.helper';
 
 export interface CartItemOptions {
-  device?: string;
+  deviceName?: string;
   storage?: string;
   color?: string;
   connectivity?: string;
@@ -20,7 +20,6 @@ export interface CartItemOptions {
 
 export class CartPage extends BasePage {
   private readonly locator = new CartLocator();
-  private readonly checkoutLocator = new CheckoutLocator();
 
   readonly tradeIn = new CartTradeInService();
   readonly scPlus = new CartScPlusService();
@@ -28,14 +27,14 @@ export class CartPage extends BasePage {
   readonly sim = new CartSimService();
 
   /** Waits for the cart URL AND the cart layout to render — the URL can change before the DOM catches up. */
-  async prepareCartPage(): Promise<boolean> {
-    return prepareWebViewPage('cart', this.locator.cartLayout);
+  async prepareCartPage(): Promise<void> {
+    const ready = await prepareWebViewPage('cart', this.locator.cartLayout);
+    markFailed([{ label: 'cart page reached', pass: ready }], 'prepareCartPage');
   }
 
   /** Clicks checkout and waits for the checkout page to load. */
   async clickContinueToCheckout(): Promise<void> {
     await this.locator.checkoutButton.click();
-    await prepareWebViewPage('checkout', this.checkoutLocator.activeStep);
   }
 
   /** Removes items one by one until the cart is empty. No iteration cap — mochaOpts.timeout guards runaway loops. */
@@ -51,7 +50,7 @@ export class CartPage extends BasePage {
       }
 
       try {
-        await driver.execute('arguments[0].click();', await removeButton);
+        await jsClick(removeButton);
       } catch {
         // Element can go stale between isDisplayed() and click() — retry with a fresh query.
         continue;
@@ -60,7 +59,7 @@ export class CartPage extends BasePage {
       const confirmButton = this.locator.removeConfirmButton;
       if (await confirmButton.isDisplayed().catch(() => false)) {
         // Modal can close on its own between the check above and the click below.
-        await driver.execute('arguments[0].click();', await confirmButton).catch(() => undefined);
+        await jsClick(confirmButton).catch(() => undefined);
         await confirmButton.waitForDisplayed({ timeout: 3000, reverse: true }).catch(() => undefined);
       }
     }
@@ -71,6 +70,10 @@ export class CartPage extends BasePage {
   /** All sku (data-modelcode) values currently in the cart, original case preserved. */
   private async getCartItemSkus(): Promise<string[]> {
     await this.prepareCartPage();
+    // Item rows can still be rendering right after the cart page itself becomes ready.
+    await driver
+      .waitUntil(async () => (await this.locator.itemLines.length) > 0, { timeout: 8000, interval: 300 })
+      .catch(() => undefined);
     const items = await this.locator.itemLines;
 
     const skus: string[] = [];
@@ -86,9 +89,7 @@ export class CartPage extends BasePage {
   /** Sku of the first cart item. */
   async getFirstItemSku(): Promise<string> {
     const [first] = await this.getCartItemSkus();
-    if (!first) {
-      throw new Error('Cart: no items found');
-    }
+    markFailed([{ label: 'cart has items', pass: Boolean(first) }], 'getFirstItemSku');
     return first;
   }
 
@@ -96,9 +97,9 @@ export class CartPage extends BasePage {
   async verifySku(sku: string): Promise<void> {
     const skus = await this.getCartItemSkus();
     const target = sku.toLowerCase();
-    assertEqual(
-      skus.some((code) => code.toLowerCase() === target),
-      true
+    await markFailedAndStop(
+      async () => assertEqual(skus.some((code) => code.toLowerCase() === target), true),
+      `verifySku: expected "${sku}" not found in cart (found: ${skus.join(', ') || 'none'})`
     );
   }
 
@@ -128,9 +129,7 @@ export class CartPage extends BasePage {
 
     const elements = await this.locator.quantityAddButton(sku);
     const target = elements[0];
-    if (!target) {
-      throw new Error(`Cart: no add-quantity control found for sku=${sku}`);
-    }
+    markFailed([{ label: 'add-quantity control found', pass: Boolean(target), detail: `sku=${sku}` }], 'addQuantity');
     await dispatchTouchStart(target);
     await driver.pause(1500);
 
@@ -150,7 +149,7 @@ export class CartPage extends BasePage {
     } else {
       const rowRemove = this.locator.rowRemoveButton(sku);
       await rowRemove.waitForDisplayed({ timeout: 5000 });
-      await driver.execute('arguments[0].click();', await rowRemove);
+      await jsClick(rowRemove);
 
       const confirmButton = this.locator.removeConfirmButton;
       if (await confirmButton.isDisplayed().catch(() => false)) {
@@ -187,18 +186,20 @@ export class CartPage extends BasePage {
     const skuText = await getElementLabel(this.locator.cartItemSku(sku));
     const optionEls = [...(await this.locator.cartItemOptions(sku))];
     const optionTexts = await Promise.all(optionEls.map((el) => el.getText()));
-    const combined = stripToAlnum(`${name} ${skuText} ${optionTexts.join(' ')}`);
+    const combined = removeNonWordChars(`${name} ${skuText} ${optionTexts.join(' ')}`);
 
     console.log(`[Cart] item raw: name="${name}" sku="${skuText}" options=${JSON.stringify(optionTexts)}`);
 
+    const checks: FieldCheck[] = [];
     for (const [label, value] of Object.entries(options)) {
       if (!value) {
         console.log(`[Cart] check ${label}: skipped (no value)`);
         continue;
       }
-      const found = combined.includes(stripToAlnum(value));
+      const found = combined.includes(removeNonWordChars(value));
       console.log(`[Cart] check ${label}: expected="${value}" -> found=${found}`);
-      assertEqual(found, true);
+      checks.push({ label, pass: found, detail: `expected "${value}"` });
     }
+    markFailed(checks, 'verifyOptions');
   }
 }

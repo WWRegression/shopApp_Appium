@@ -9,8 +9,8 @@ describe('PROD_BUY_09', () => {
   it('Price/Special Price consistent across PF/BC/Cart/Checkout', async function () {
     await runOrSkip.call(this, 'PROD_BUY_09', async () => {
       // TODO: reimplement using new PfPage/BcPage API
-      await cartPage.proceedToCheckout();
-      await checkoutPage.verifyOnCheckout();
+      await cartPage.clickContinueToCheckout();
+      await checkoutPage.prepareCheckoutPage();
     });
   });
 });
