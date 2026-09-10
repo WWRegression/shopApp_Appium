@@ -10,6 +10,7 @@ import { scrollElementToCenter } from '../helpers/gesture.helper';
 import { FlagshipProduct } from '../helpers/flagship-sku.helper';
 import { storageCapacityMatches } from '../helpers/data.helper';
 import { jsClick } from '../helpers/element.helper';
+import type { CartItemOptions } from './cart.page';
 
 /** Regression `site.product` chip fields. */
 export interface SiteProduct {
@@ -25,6 +26,12 @@ export type OptionChip = 'deviceName' | 'storage' | 'caseSize' | 'color' | 'conn
 
 export type SummaryPart = 'deviceName' | 'sku' | 'options' | 'servicePrice';
 export type SummaryDetails = Record<SummaryPart, string>;
+
+/** CartItemOptions fields as actually displayed on screen (not the input data) — see BcPage.verifyOptions(). */
+export interface VerifiedFieldValues extends CartItemOptions {
+  sku: string;
+  deviceName: string;
+}
 
 export interface SelectedDisplayValues {
   device: string;
@@ -89,7 +96,7 @@ export class BcPage extends BasePage {
     console.warn('[BC.selectOptions] Done');
   }
 
-  async verifyOptions(options: BcProductOptions): Promise<void> {
+  async verifyOptions(options: BcProductOptions): Promise<VerifiedFieldValues> {
     const summary = await this.readSummaryDetails();
     console.warn(
       `[BC.verifyOptions] deviceName=${summary.deviceName} || sku=${summary.sku} || options=${summary.options}`
@@ -99,6 +106,8 @@ export class BcPage extends BasePage {
       throw new Error('BC/PD summary not found');
     }
 
+    const verified: VerifiedFieldValues = { sku: summary.sku, deviceName: summary.deviceName };
+
     for (const { field, value } of [{ field: 'sku' as const, value: options.sku }, ...this.optionSelections(options)]) {
       const expected = await this.expectedSummaryValue(field, value);
       const actual = this.summaryActual(field, summary);
@@ -106,7 +115,12 @@ export class BcPage extends BasePage {
       if (!this.summaryMatches(field, actual, expected)) {
         throw new Error(`BC/PD summary mismatch : field=${field} || expected=${expected} || actual=${actual}`);
       }
+      if (field !== 'sku' && field !== 'deviceName') {
+        verified[field] = expected;
+      }
     }
+
+    return verified;
   }
   
   /** Color: summary must match displayed name on the checked swatch, not data-englishname. */

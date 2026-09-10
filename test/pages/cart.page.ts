@@ -4,11 +4,19 @@ import { CartTradeInService } from '../services/tradein/cart-tradein.service';
 import { CartScPlusService } from '../services/scplus/cart-scplus.service';
 import { CartEupService } from '../services/eup/cart-eup.service';
 import { CartSimService } from '../services/sim/cart-sim.service';
-import { switchToNative, prepareWebViewPage } from '../helpers/context.helper';
+import {
+  switchToNative,
+  prepareWebViewPage,
+  hasAppWebViewContext,
+  switchToWebView,
+  getCurrentWindowUrl,
+} from '../helpers/context.helper';
+import { getRunConfig } from '../../config/run.config';
 import { getElementLabel, dispatchTouchStart, jsClick } from '../helpers/element.helper';
 import { assertEqual } from '../helpers/validation.helper';
 import { markFailed, markFailedAndStop, FieldCheck } from '../helpers/report.helper';
 import { removeNonWordChars } from '../helpers/data.helper';
+import { deleteCart } from '../helpers/api.helper';
 
 export interface CartItemOptions {
   deviceName?: string;
@@ -64,6 +72,27 @@ export class CartPage extends BasePage {
     }
 
     await switchToNative();
+  }
+
+  /**
+   * Deletes the cart via the OCC API instead of clicking each remove button. prod only — see
+   * api.helper's deleteCart(). Reuses an already-open WebView only if it's already on the
+   * current run's site — otherwise a leftover WebView from a different site would make the API
+   * call target the wrong country's cart while reporting success.
+   */
+  async deleteCart(): Promise<void> {
+    let onCorrectSite = false;
+    if (await hasAppWebViewContext()) {
+      await switchToWebView();
+      const href = (await getCurrentWindowUrl())?.toLowerCase() ?? '';
+      onCorrectSite = href.includes(`${getRunConfig().siteCode.toLowerCase()}/`);
+    }
+
+    if (!onCorrectSite) {
+      await this.selectBnbMenu('cart');
+      await this.prepareCartPage();
+    }
+    await deleteCart();
   }
 
   /** All sku (data-modelcode) values currently in the cart, original case preserved. */

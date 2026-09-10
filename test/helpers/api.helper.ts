@@ -2,17 +2,13 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { AppEnvironment, getRunConfig } from '../../config/run.config';
 import { LoadedSite, SiteFeatureName } from '../../config/site';
 import { testCaseCatalog } from '../../config/test-case.catalog';
 import { switchToNative, switchToWebView, getCurrentWindowUrl } from './context.helper';
 import { markFailed } from './report.helper';
 
-/**
- * Samsung shop API calls: product/sku resolution (Node-side) and cart/address
- * setup+clearing (runs in the app WebView, needs its session cookies).
- * Public API: resolveProduct, getTypesForSite, addToCartViaApi, clearCartViaApi,
- * clearSavedAddresses — everything else is internal.
- */
+/** Samsung shop API calls: product/sku resolution (Node-side) + cart/address ops (WebView, needs session cookies). */
 
 export type ProductType = 'IM' | 'VD' | 'HA';
 
@@ -42,8 +38,17 @@ const SERVICE_FEATURES_BY_TYPE: Record<ProductType, SiteFeatureName[]> = {
   HA: [],
 };
 
-const PRODUCT_API_BASE = 'https://api.shop.samsung.com/tokocommercewebservices/v2';
 const SEARCH_API_BASE = 'https://searchapi.samsung.com/v6/front/b2c/product/';
+
+/** OCC API domain per environment. stg uses the storefront host itself (verified live); DELETE is blocked there — see deleteCart(). */
+const PRODUCT_API_BASE_BY_ENV: Record<AppEnvironment, string> = {
+  prod: 'https://api.shop.samsung.com/tokocommercewebservices/v2',
+  stg: 'https://stg2.shop.samsung.com/tokocommercewebservices/v2',
+};
+
+function productApiBase(): string {
+  return PRODUCT_API_BASE_BY_ENV[getRunConfig().environment];
+}
 
 // === 2) API response shapes ===
 
@@ -200,7 +205,7 @@ async function hasNoWarrantyAddOn(site: LoadedSite, type: 'VD' | 'HA', sku: stri
 
 async function fetchSkuStatus(site: LoadedSite, sku: string): Promise<SkuStatus> {
   const siteCode = site.siteCode.toLowerCase();
-  const url = `${PRODUCT_API_BASE}/${siteCode}/products/${sku}?fields=SIMPLE_INFO`;
+  const url = `${productApiBase()}/${siteCode}/products/${sku}?fields=SIMPLE_INFO`;
   const data = await fetchJson<ProductInfoResponse>(url);
   const services = new Set([
     ...normalizeServices(data.addedServices),
@@ -209,10 +214,7 @@ async function fetchSkuStatus(site: LoadedSite, sku: string): Promise<SkuStatus>
   return { sku, stockLevel: data.stock?.stockLevel ?? 0, salesStatus: data.salesStatus, services };
 }
 
-/**
- * Picks the first sku (caller orders the current sku first, so it's kept when still valid)
- * with enough stock and the right services. Falls back to the first in-stock sku otherwise.
- */
+/** Prefers the current sku (ordered first by caller) if still valid; else the first in-stock candidate with the right services. */
 async function findValidSku(site: LoadedSite, type: ProductType, skuList: string[]): Promise<string | undefined> {
   const expected = getExpectedServices(site, type);
   const threshold = STOCK_THRESHOLD_BY_TYPE[type];
@@ -316,10 +318,7 @@ export async function isSkuInStock(site: LoadedSite, sku: string): Promise<boole
 
 // === 6) Local cache (config/cache/resolved-sku.json) ===
 
-/**
- * Local cache of resolved products (config/cache, gitignored), keyed by site then type:
- * { AU: { IM, VD, HA }, DE: {...} }. Falls back to data/sites-data/{SITE}.json — see site.ts.
- */
+/** Local cache of resolved products (config/cache, gitignored) — falls back to data/sites-data/{SITE}.json. */
 const CACHE_FILE = path.join(__dirname, '..', '..', 'config', 'cache', 'resolved-sku.json');
 
 export type ResolvedSkuCache = Partial<Record<ProductType, ResolvedProduct>>;
@@ -404,11 +403,7 @@ function clearAddressesScript(base: string, done: (result: ClearAddressesResult)
     .catch(() => done(result));
 }
 
-/**
- * Deletes every saved address for the currently logged-in user via the OCC API.
- * Site is read from the live WebView URL (not run config), so it always matches
- * whichever country the app is actually on.
- */
+/** Deletes every saved address via the OCC API — site is read from the live WebView URL. */
 export async function clearSavedAddresses(): Promise<ClearAddressesResult> {
   const webviewReady = await switchToWebView(5000);
   markFailed([{ label: 'webview context', pass: webviewReady }], 'clearSavedAddresses');
@@ -416,15 +411,13 @@ export async function clearSavedAddresses(): Promise<ClearAddressesResult> {
   const href = (await getCurrentWindowUrl()) ?? '';
   const site = href ? new URL(href).pathname.split('/').filter(Boolean)[0] : undefined;
   markFailed([{ label: 'site from url', pass: Boolean(site), detail: href }], 'clearSavedAddresses');
-  const base = `${PRODUCT_API_BASE}/${site}`;
+  const base = `${productApiBase()}/${site}`;
 
   await driver.setTimeout({ script: 120000 });
   const result = await driver.executeAsync<ClearAddressesResult, [string]>(clearAddressesScript, base);
 
-  // The app's own state only reflects backend changes made through its own UI — reload to pick this up.
+  // Reload to sync the app's own state with the change made behind its back.
   await driver.refresh().catch(() => undefined);
-  // Give the reload a moment to settle before switching away — the native header can be briefly
-  // unresponsive mid-reload.
   await driver.pause(2000);
   await switchToNative();
 
@@ -435,16 +428,16 @@ export async function clearSavedAddresses(): Promise<ClearAddressesResult> {
   return result;
 }
 
-// === 8) Cart clearing (OCC API via WebView) ===
+// === 8) Cart deletion (OCC API via WebView) ===
 
-export interface ClearCartResult {
+export interface DeleteCartResult {
   deleted: number[];
   failed: number[];
 }
 
 /** Runs in the WebView: reads the current cart's entries, then DELETEs each one. */
-function clearCartScript(base: string, done: (result: ClearCartResult) => void): void {
-  const result: ClearCartResult = { deleted: [], failed: [] };
+function deleteCartScript(base: string, done: (result: DeleteCartResult) => void): void {
+  const result: DeleteCartResult = { deleted: [], failed: [] };
 
   fetch(`${base}/users/current/carts/current?fields=FULL`, { credentials: 'include', headers: { Accept: 'application/json' } })
     .then((res) => res.json())
@@ -479,34 +472,32 @@ function clearCartScript(base: string, done: (result: ClearCartResult) => void):
     .catch(() => done(result));
 }
 
-/**
- * Clears the current cart via the OCC API instead of clicking through the remove-item UI.
- * Site is read from the live WebView URL, so it always matches whichever country the app is on.
- * Use this only as a fast precondition — TCs that verify the removal UI itself must still use
- * CartPage.clearCart().
- */
-export async function clearCartViaApi(): Promise<ClearCartResult> {
+/** Deletes every cart entry via the OCC API — fast precondition only; use CartPage.clearCart() to test the removal UI itself. */
+export async function deleteCart(): Promise<DeleteCartResult> {
+  const environment = getRunConfig().environment;
+  if (environment !== 'prod') {
+    throw new Error(`deleteCart: only supported on prod (got '${environment}'). Use CartPage.clearCart() on stg.`);
+  }
+
   const webviewReady = await switchToWebView(5000);
-  markFailed([{ label: 'webview context', pass: webviewReady }], 'clearCartViaApi');
+  markFailed([{ label: 'webview context', pass: webviewReady }], 'deleteCart');
 
   const href = (await getCurrentWindowUrl()) ?? '';
   const site = href ? new URL(href).pathname.split('/').filter(Boolean)[0] : undefined;
-  markFailed([{ label: 'site from url', pass: Boolean(site), detail: href }], 'clearCartViaApi');
-  const base = `${PRODUCT_API_BASE}/${site}`;
+  markFailed([{ label: 'site from url', pass: Boolean(site), detail: href }], 'deleteCart');
+  const base = `${productApiBase()}/${site}`;
 
   await driver.setTimeout({ script: 120000 });
-  const result = await driver.executeAsync<ClearCartResult, [string]>(clearCartScript, base);
+  const result = await driver.executeAsync<DeleteCartResult, [string]>(deleteCartScript, base);
 
-  // The app's own state only reflects backend changes made through its own UI — reload to pick this up.
+  // Reload to sync the app's own state with the change made behind its back.
   await driver.refresh().catch(() => undefined);
-  // Give the reload a moment to settle before switching away — the native header can be briefly
-  // unresponsive mid-reload.
   await driver.pause(2000);
   await switchToNative();
 
   markFailed(
     [{ label: 'cart fully cleared', pass: result.failed.length === 0, detail: JSON.stringify(result.failed) }],
-    'clearCartViaApi'
+    'deleteCart'
   );
   return result;
 }
@@ -541,20 +532,15 @@ function addToCartScript(
     .catch((err) => done({ ok: false, body: String(err) }));
 }
 
-/**
- * Adds one product to the current cart via the OCC API instead of the BC/PD add-to-cart UI.
- * Site is read from the live WebView URL, so it always matches whichever country the app is on.
- * Use this only as a fast precondition — TCs that verify the BC/PD add-to-cart flow itself must
- * still go through the real UI.
- */
-export async function addToCartViaApi(sku: string, quantity = 1): Promise<AddToCartResult> {
+/** Adds one product to the cart via the OCC API — fast precondition only; use the real BC/PD UI to test that flow itself. */
+export async function addToCart(sku: string, quantity = 1): Promise<AddToCartResult> {
   const webviewReady = await switchToWebView(5000);
-  markFailed([{ label: 'webview context', pass: webviewReady }], 'addToCartViaApi');
+  markFailed([{ label: 'webview context', pass: webviewReady }], 'addToCart');
 
   const href = (await getCurrentWindowUrl()) ?? '';
   const site = href ? new URL(href).pathname.split('/').filter(Boolean)[0] : undefined;
-  markFailed([{ label: 'site from url', pass: Boolean(site), detail: href }], 'addToCartViaApi');
-  const base = `${PRODUCT_API_BASE}/${site}`;
+  markFailed([{ label: 'site from url', pass: Boolean(site), detail: href }], 'addToCart');
+  const base = `${productApiBase()}/${site}`;
 
   await driver.setTimeout({ script: 60000 });
   const result = await driver.executeAsync<AddToCartResult, [string, string, number]>(
@@ -564,13 +550,68 @@ export async function addToCartViaApi(sku: string, quantity = 1): Promise<AddToC
     quantity
   );
 
-  // The app's own state only reflects backend changes made through its own UI — reload to pick this up.
+  // Reload to sync the app's own state with the change made behind its back.
   await driver.refresh().catch(() => undefined);
-  // Give the reload a moment to settle before switching away — the native header can be briefly
-  // unresponsive mid-reload.
   await driver.pause(2000);
   await switchToNative();
 
-  markFailed([{ label: 'entry added', pass: result.ok, detail: JSON.stringify(result) }], 'addToCartViaApi');
+  markFailed([{ label: 'entry added', pass: result.ok, detail: JSON.stringify(result) }], 'addToCart');
+  return result;
+}
+
+// === 10) Add multiple to cart (IM+HA+VD in one call) ===
+
+export interface AddMultipleToCartResult {
+  ok: boolean;
+  status?: number;
+  body?: string;
+}
+
+/** Runs in the WebView: the OCC bulk-add endpoint, one line item per sku. */
+function addMultipleToCartScript(
+  base: string,
+  skus: string[],
+  done: (result: AddMultipleToCartResult) => void
+): void {
+  const items = skus.map((sku) => ({ productCode: sku, qty: 1 }));
+
+  fetch(`${base}/addToCart/multi/?fields=BASIC`, {
+    method: 'POST',
+    headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+    body: JSON.stringify(items),
+    credentials: 'include',
+  })
+    .then((res) =>
+      res
+        .text()
+        .then((body) => done({ ok: res.ok, status: res.status, body: body.slice(0, 500) }))
+        .catch(() => done({ ok: res.ok, status: res.status }))
+    )
+    .catch((err) => done({ ok: false, body: String(err) }));
+}
+
+/** Adds several products (e.g. site.product.sku + site.search.haSku/vdSku) to the cart in one call via the OCC bulk-add endpoint. */
+export async function addMultipleToCart(skus: string[]): Promise<AddMultipleToCartResult> {
+  const webviewReady = await switchToWebView(5000);
+  markFailed([{ label: 'webview context', pass: webviewReady }], 'addMultipleToCart');
+
+  const href = (await getCurrentWindowUrl()) ?? '';
+  const site = href ? new URL(href).pathname.split('/').filter(Boolean)[0] : undefined;
+  markFailed([{ label: 'site from url', pass: Boolean(site), detail: href }], 'addMultipleToCart');
+  const base = `${productApiBase()}/${site}`;
+
+  await driver.setTimeout({ script: 60000 });
+  const result = await driver.executeAsync<AddMultipleToCartResult, [string, string[]]>(
+    addMultipleToCartScript,
+    base,
+    skus
+  );
+
+  // Reload to sync the app's own state with the change made behind its back.
+  await driver.refresh().catch(() => undefined);
+  await driver.pause(2000);
+  await switchToNative();
+
+  markFailed([{ label: 'entries added', pass: result.ok, detail: JSON.stringify(result) }], 'addMultipleToCart');
   return result;
 }

@@ -107,6 +107,11 @@ export class CheckoutLocator {
     return $("input[name='addressOptionShipping'][value='NEW_ADDRESS']:not(:checked)");
   }
 
+  /** Switches the address search box to manual line1/town/postcode fields (first-time checkout, no saved address). */
+  get enterAddressManuallyLink() {
+    return $('button.enter-address-method');
+  }
+
   /** Rewards opt-in checkbox — should never be shown (verifyNoRewardOptIn asserts on this). */
   get rewardOptIn() {
     return $('app-rewards-opt-in input[type="checkbox"], app-rewards-opt-in-v2 input[type="checkbox"]');
@@ -148,5 +153,36 @@ export class CheckoutLocator {
   /** All button/div elements marking the submit-order loader for whichever payment method is expanded. */
   get submitOrderButtonLoaders() {
     return $$(SUBMIT_ORDER_BUTTON_LOADER_SELECTOR);
+  }
+
+  get editCustomerDetailsButton() {
+    return $('[data-an-la="checkout:customer details:edit"]');
+  }
+
+  get editDeliveryOptionsButton() {
+    return $('[data-an-la="checkout:delivery options:edit"]');
+  }
+
+  /** Address shown on the payment step — compared against savedAddressInfo after an Edit-button navigation. */
+  get paymentPreviewAddress() {
+    return $('.details__shipping-address, .address__formatted-address, .delivery-address-fullname');
+  }
+
+  get savedAddressInfo() {
+    return $('.address-box label');
+  }
+
+  /** Collapsed-by-default Order Summary expand toggle. */
+  get viewOrderToggle() {
+    return $('mat-icon[data-an-la="view more"]');
+  }
+
+  get editOrderSummaryButton() {
+    return $('[data-an-la="order summary:edit"], [data-an-la="order summary:edit cart"]');
+  }
+
+  /** Confirmation button on the "leave checkout?" modal shown when editing Order Summary. */
+  get leaveCheckoutConfirmButton() {
+    return $('[data-an-la="leave the checkout page:yes"]');
   }
 }

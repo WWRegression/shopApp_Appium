@@ -4,9 +4,23 @@ import { BasePage } from './base.page';
 import { CheckoutLocator, CHECKOUT_FORMS } from '../locators/checkout.locator';
 import { prepareWebViewPage } from '../helpers/context.helper';
 import { getSiteData as getSite } from '../../config/site';
-import { clickOptionInput, getElementLabel, jsClick } from '../helpers/element.helper';
+import { clickOptionInput, getElementLabel, isDisplayedSafe, jsClick } from '../helpers/element.helper';
+import { scrollDown } from '../helpers/gesture.helper';
 import { markFailed } from '../helpers/report.helper';
 import type { LoadedSite } from '../../config/site';
+
+/** Katalon Checkout.handleCheckoutEditButton() per-site sequence. */
+const EDIT_SEQUENCE_BY_SITE: Record<string, Array<'customer' | 'delivery'>> = {
+  default: ['customer'],
+  SE: ['customer', 'delivery'],
+  US: ['delivery'],
+};
+
+/** Sites where the Customer Details step also shows a saved address to compare against payment. */
+const ADDRESS_MATCH_SITES_CUSTOMER = ['SE', 'DE', 'ES', 'AT', 'AU', 'HU', 'ID', 'SG', 'TH', 'VN', 'UK'];
+
+/** Sites where the Delivery step also shows a saved address to compare against payment. */
+const ADDRESS_MATCH_SITES_DELIVERY = ['SE', 'DE', 'ES', 'BE', 'BE_FR', 'AT', 'AU', 'HU', 'ID', 'SG', 'TH', 'UK', 'VN'];
 
 export type CheckoutFormId = (typeof CHECKOUT_FORMS)[number];
 
@@ -29,7 +43,7 @@ export class CheckoutPage extends BasePage {
   };
 
   async prepareCheckoutPage(): Promise<void> {
-    const ready = await prepareWebViewPage('checkout', this.locator.checkoutLayout);
+    const ready = await prepareWebViewPage('checkout', this.locator.checkoutLayout, 20000);
     markFailed([{ label: 'checkout page reached', pass: ready }], 'prepareCheckoutPage');
   }
 
@@ -209,10 +223,14 @@ export class CheckoutPage extends BasePage {
   }
 
   async fillAddressInfo(formId: CheckoutFormId, overrides?: Partial<LoadedSite['shipping']>): Promise<void> {
-    // Actually deleting a saved address lives on a separate account screen (out of scope here) —
-    // picking "New address" whenever it's offered is the checkout-screen-only equivalent.
     if (await this.locator.newAddressRadio.isExisting().catch(() => false)) {
       await clickOptionInput(this.locator.newAddressRadio).catch(() => undefined);
+    }
+
+    // No saved address defaults to a search box — switch to manual fields if they're not rendered yet.
+    const hasManualFields = (await this.getFieldDescriptors(formId)).some((d) => d.key === 'line1');
+    if (!hasManualFields && (await this.locator.enterAddressManuallyLink.isExisting().catch(() => false))) {
+      await clickOptionInput(this.locator.enterAddressManuallyLink).catch(() => undefined);
     }
 
     const data = { ...getSite().shipping, ...overrides };
@@ -300,6 +318,94 @@ export class CheckoutPage extends BasePage {
     }
 
     markFailed([{ label: 'submit-order loader matched title', pass: matched, detail: title }], 'checkPaymentMethod');
+  }
+
+  /** The active step's data-activestepname, e.g. CHECKOUT_STEP_CONTACT_INFO / _DELIVERY / _PAYMENT. */
+  async getCurrentCheckoutStep(): Promise<string> {
+    return (await this.locator.activeStep.getAttribute('data-activestepname').catch(() => '')) ?? '';
+  }
+
+  private normalizeAddress(text: string): string {
+    return text.replace(/[,\s]+/g, '').toLowerCase().trim();
+  }
+
+  async getAddressInfoFromPayment(): Promise<string> {
+    return this.normalizeAddress(await getElementLabel(this.locator.paymentPreviewAddress));
+  }
+
+  async getSavedAddressInfo(): Promise<string> {
+    return this.normalizeAddress(await getElementLabel(this.locator.savedAddressInfo));
+  }
+
+  private verifyAddressMatch(paymentAddress: string, savedAddress: string): void {
+    const matches =
+      Boolean(paymentAddress) &&
+      Boolean(savedAddress) &&
+      (paymentAddress.includes(savedAddress) || savedAddress.includes(paymentAddress));
+    markFailed(
+      [{ label: 'saved address matches payment preview', pass: matches, detail: `payment="${paymentAddress}" saved="${savedAddress}"` }],
+      'verifyAddressMatch'
+    );
+  }
+
+  /** Katalon Checkout.verifyEditInCustomerDetails() — Edit button must land back on the Contact Info step. */
+  async verifyEditInCustomerDetails(paymentAddress?: string): Promise<void> {
+    await clickOptionInput(this.locator.editCustomerDetailsButton);
+    const step = await this.getCurrentCheckoutStep();
+    markFailed(
+      [{ label: 'edit navigated to contact info step', pass: step === 'CHECKOUT_STEP_CONTACT_INFO', detail: step }],
+      'verifyEditInCustomerDetails'
+    );
+
+    if (paymentAddress && ADDRESS_MATCH_SITES_CUSTOMER.includes(getSite().siteCode)) {
+      this.verifyAddressMatch(paymentAddress, await this.getSavedAddressInfo());
+    }
+  }
+
+  /** Katalon Checkout.verifyEditInDeliveryOptions() — Edit button must land back on the Delivery step. */
+  async verifyEditInDeliveryOptions(paymentAddress?: string): Promise<void> {
+    await clickOptionInput(this.locator.editDeliveryOptionsButton);
+    const step = await this.getCurrentCheckoutStep();
+    markFailed(
+      [{ label: 'edit navigated to delivery step', pass: step === 'CHECKOUT_STEP_DELIVERY', detail: step }],
+      'verifyEditInDeliveryOptions'
+    );
+
+    if (paymentAddress && ADDRESS_MATCH_SITES_DELIVERY.includes(getSite().siteCode)) {
+      this.verifyAddressMatch(paymentAddress, await this.getSavedAddressInfo());
+    }
+  }
+
+  /** Katalon Checkout.handleCheckoutEditButton() — which Edit button(s) to check varies by site. */
+  async handleCheckoutEditButton(paymentAddress?: string): Promise<void> {
+    const sequence = EDIT_SEQUENCE_BY_SITE[getSite().siteCode] ?? EDIT_SEQUENCE_BY_SITE.default;
+    for (const type of sequence) {
+      if (type === 'customer') await this.verifyEditInCustomerDetails(paymentAddress);
+      if (type === 'delivery') await this.verifyEditInDeliveryOptions(paymentAddress);
+    }
+  }
+
+  /**
+   * Katalon Checkout.verifyEditInOrderSummary() — editing Order Summary leaves checkout entirely
+   * and returns to Cart (unlike the Customer/Delivery edit buttons, which stay inside checkout).
+   * CN has no Order Summary section. Caller must verify the Cart landing (e.g. cartPage.prepareCartPage()).
+   */
+  async verifyEditInOrderSummary(): Promise<void> {
+    if (getSite().siteCode === 'CN') {
+      return;
+    }
+
+    await scrollDown();
+    if (await isDisplayedSafe(this.locator.viewOrderToggle)) {
+      await clickOptionInput(this.locator.viewOrderToggle);
+    }
+
+    if (await isDisplayedSafe(this.locator.editOrderSummaryButton)) {
+      await clickOptionInput(this.locator.editOrderSummaryButton);
+      if (await isDisplayedSafe(this.locator.leaveCheckoutConfirmButton)) {
+        await clickOptionInput(this.locator.leaveCheckoutConfirmButton);
+      }
+    }
   }
 
   /** Every pass: fill whatever's visible (handlers skip fields already filled), then try to advance. */
