@@ -9,6 +9,465 @@
       "storage": "256GB",
       "ram": "12GB",
       "isPFDefaultSKU": true
+    },
+    {
+      "kind": "phone",
+      "sku": "SM-F776BLGEATS",
+      "deviceName": "Galaxy Z Flip8",
+      "color": "Mint",
+      "storage": "512GB",
+      "ram": "12GB",
+      "isPFDefaultSKU": false
+    },
+    {
+      "kind": "phone",
+      "sku": "SM-F776BLIAATS",
+      "deviceName": "Galaxy Z Flip8",
+      "color": "Pink",
+      "storage": "256GB",
+      "ram": "12GB",
+      "isPFDefaultSKU": true
+    },
+    {
+      "kind": "phone",
+      "sku": "SM-F776BLIEATS",
+      "deviceName": "Galaxy Z Flip8",
+      "color": "Pink",
+      "storage": "512GB",
+      "ram": "12GB",
+      "isPFDefaultSKU": false
+    },
+    {
+      "kind": "phone",
+      "sku": "SM-F776BZKAATS",
+      "deviceName": "Galaxy Z Flip8",
+      "color": "Graphite",
+      "storage": "256GB",
+      "ram": "12GB",
+      "isPFDefaultSKU": false
+    },
+    {
+      "kind": "phone",
+      "sku": "SM-F776BZKEATS",
+      "deviceName": "Galaxy Z Flip8",
+      "color": "Graphite",
+      "storage": "512GB",
+      "ram": "12GB",
+      "isPFDefaultSKU": false
+    },
+    {
+      "kind": "phone",
+      "sku": "SM-F776BZWAATS",
+      "deviceName": "Galaxy Z Flip8",
+      "color": "Cream",
+      "storage": "256GB",
+      "ram": "12GB",
+      "isPFDefaultSKU": false
+    },
+    {
+      "kind": "phone",
+      "sku": "SM-F776BZWEATS",
+      "deviceName": "Galaxy Z Flip8",
+      "color": "Cream",
+      "storage": "512GB",
+      "ram": "12GB",
+      "isPFDefaultSKU": false
+    },
+    {
+      "kind": "phone",
+      "sku": "SM-F971BLVDATS",
+      "deviceName": "Galaxy Z Fold8",
+      "color": "Lavender",
+      "storage": "256GB",
+      "ram": "12GB",
+      "isPFDefaultSKU": true
+    },
+    {
+      "kind": "phone",
+      "sku": "SM-F971BLVGATS",
+      "deviceName": "Galaxy Z Fold8",
+      "color": "Lavender",
+      "storage": "512GB",
+      "ram": "12GB",
+      "isPFDefaultSKU": false
+    },
+    {
+      "kind": "phone",
+      "sku": "SM-F971BLVHATS",
+      "deviceName": "Galaxy Z Fold8",
+      "color": "Lavender",
+      "storage": "1TB",
+      "ram": "16GB",
+      "isPFDefaultSKU": false
+    },
+    {
+      "kind": "phone",
+      "sku": "SM-F971BZGDATS",
+      "deviceName": "Galaxy Z Fold8",
+      "color": "Pistachio",
+      "storage": "256GB",
+      "ram": "12GB",
+      "isPFDefaultSKU": true
+    },
+    {
+      "kind": "phone",
+      "sku": "SM-F971BZGGATS",
+      "deviceName": "Galaxy Z Fold8",
+      "color": "Pistachio",
+      "storage": "512GB",
+      "ram": "12GB",
+      "isPFDefaultSKU": false
+    },
+    {
+      "kind": "phone",
+      "sku": "SM-F971BZGHATS",
+      "deviceName": "Galaxy Z Fold8",
+      "color": "Pistachio",
+      "storage": "1TB",
+      "ram": "16GB",
+      "isPFDefaultSKU": false
+    },
+    {
+      "kind": "phone",
+      "sku": "SM-F971BZKDATS",
+      "deviceName": "Galaxy Z Fold8",
+      "color": "Graphite",
+      "storage": "256GB",
+      "ram": "12GB",
+      "isPFDefaultSKU": false
+    },
+    {
+      "kind": "phone",
+      "sku": "SM-F971BZKGATS",
+      "deviceName": "Galaxy Z Fold8",
+      "color": "Graphite",
+      "storage": "512GB",
+      "ram": "12GB",
+      "isPFDefaultSKU": false
+    },
+    {
+      "kind": "phone",
+      "sku": "SM-F971BZKHATS",
+      "deviceName": "Galaxy Z Fold8",
+      "color": "Graphite",
+      "storage": "1TB",
+      "ram": "16GB",
+      "isPFDefaultSKU": false
+    },
+    {
+      "kind": "phone",
+      "sku": "SM-F971BZWDATS",
+      "deviceName": "Galaxy Z Fold8",
+      "color": "Cream",
+      "storage": "256GB",
+      "ram": "12GB",
+      "isPFDefaultSKU": false
+    },
+    {
+      "kind": "phone",
+      "sku": "SM-F971BZWGATS",
+      "deviceName": "Galaxy Z Fold8",
+      "color": "Cream",
+      "storage": "512GB",
+      "ram": "12GB",
+      "isPFDefaultSKU": false
+    },
+    {
+      "kind": "phone",
+      "sku": "SM-F971BZWHATS",
+      "deviceName": "Galaxy Z Fold8",
+      "color": "Cream",
+      "storage": "1TB",
+      "ram": "16GB",
+      "isPFDefaultSKU": false
+    },
+    {
+      "kind": "phone",
+      "sku": "SM-F976BDGDATS",
+      "deviceName": "Galaxy Z Fold8 Ultra",
+      "color": "Green Shadow",
+      "storage": "256GB",
+      "ram": "12GB",
+      "isPFDefaultSKU": true
+    },
+    {
+      "kind": "phone",
+      "sku": "SM-F976BDGGATS",
+      "deviceName": "Galaxy Z Fold8 Ultra",
+      "color": "Green Shadow",
+      "storage": "512GB",
+      "ram": "12GB",
+      "isPFDefaultSKU": false
+    },
+    {
+      "kind": "phone",
+      "sku": "SM-F976BDGHATS",
+      "deviceName": "Galaxy Z Fold8 Ultra",
+      "color": "Green Shadow",
+      "storage": "1TB",
+      "ram": "16GB",
+      "isPFDefaultSKU": false
+    },
+    {
+      "kind": "phone",
+      "sku": "SM-F976BZKDATS",
+      "deviceName": "Galaxy Z Fold8 Ultra",
+      "color": "Graphite",
+      "storage": "256GB",
+      "ram": "12GB",
+      "isPFDefaultSKU": false
+    },
+    {
+      "kind": "phone",
+      "sku": "SM-F976BZKGATS",
+      "deviceName": "Galaxy Z Fold8 Ultra",
+      "color": "Graphite",
+      "storage": "512GB",
+      "ram": "12GB",
+      "isPFDefaultSKU": false
+    },
+    {
+      "kind": "phone",
+      "sku": "SM-F976BZKHATS",
+      "deviceName": "Galaxy Z Fold8 Ultra",
+      "color": "Graphite",
+      "storage": "1TB",
+      "ram": "16GB",
+      "isPFDefaultSKU": false
+    },
+    {
+      "kind": "phone",
+      "sku": "SM-F976BZVDATS",
+      "deviceName": "Galaxy Z Fold8 Ultra",
+      "color": "Violet Shadow",
+      "storage": "256GB",
+      "ram": "12GB",
+      "isPFDefaultSKU": true
+    },
+    {
+      "kind": "phone",
+      "sku": "SM-F976BZVGATS",
+      "deviceName": "Galaxy Z Fold8 Ultra",
+      "color": "Violet Shadow",
+      "storage": "512GB",
+      "ram": "12GB",
+      "isPFDefaultSKU": false
+    },
+    {
+      "kind": "phone",
+      "sku": "SM-F976BZVHATS",
+      "deviceName": "Galaxy Z Fold8 Ultra",
+      "color": "Violet Shadow",
+      "storage": "1TB",
+      "ram": "16GB",
+      "isPFDefaultSKU": false
+    },
+    {
+      "kind": "phone",
+      "sku": "SM-F976BZWDATS",
+      "deviceName": "Galaxy Z Fold8 Ultra",
+      "color": "Cream",
+      "storage": "256GB",
+      "ram": "12GB",
+      "isPFDefaultSKU": false
+    },
+    {
+      "kind": "phone",
+      "sku": "SM-F976BZWGATS",
+      "deviceName": "Galaxy Z Fold8 Ultra",
+      "color": "Cream",
+      "storage": "512GB",
+      "ram": "12GB",
+      "isPFDefaultSKU": false
+    },
+    {
+      "kind": "phone",
+      "sku": "SM-F976BZWHATS",
+      "deviceName": "Galaxy Z Fold8 Ultra",
+      "color": "Cream",
+      "storage": "1TB",
+      "ram": "16GB",
+      "isPFDefaultSKU": false
+    },
+    {
+      "kind": "watch",
+      "sku": "SM-L340NZEAXSA",
+      "deviceName": "Galaxy Watch9",
+      "color": "Cream",
+      "caseSize": "40mm",
+      "connectivity": "BLUETOOTH",
+      "isPFDefaultSKU": true,
+      "isBespokeSKU": false
+    },
+    {
+      "kind": "watch",
+      "sku": "SM-L340NZEDXSA",
+      "deviceName": "Galaxy Watch9",
+      "color": "Cream",
+      "caseSize": "40mm",
+      "connectivity": "BLUETOOTH",
+      "isPFDefaultSKU": true,
+      "isBespokeSKU": true
+    },
+    {
+      "kind": "watch",
+      "sku": "SM-L340NZKAXSA",
+      "deviceName": "Galaxy Watch9",
+      "color": "Graphite",
+      "caseSize": "40mm",
+      "connectivity": "BLUETOOTH",
+      "isPFDefaultSKU": false,
+      "isBespokeSKU": false
+    },
+    {
+      "kind": "watch",
+      "sku": "SM-L340NZKDXSA",
+      "deviceName": "Galaxy Watch9",
+      "color": "Graphite",
+      "caseSize": "40mm",
+      "connectivity": "BLUETOOTH",
+      "isPFDefaultSKU": false,
+      "isBespokeSKU": true
+    },
+    {
+      "kind": "watch",
+      "sku": "SM-L345FZEAXSA",
+      "deviceName": "Galaxy Watch9",
+      "color": "Cream",
+      "caseSize": "40mm",
+      "connectivity": "LTE",
+      "isPFDefaultSKU": true,
+      "isBespokeSKU": false
+    },
+    {
+      "kind": "watch",
+      "sku": "SM-L345FZEDXSA",
+      "deviceName": "Galaxy Watch9",
+      "color": "Cream",
+      "caseSize": "40mm",
+      "connectivity": "LTE",
+      "isPFDefaultSKU": true,
+      "isBespokeSKU": true
+    },
+    {
+      "kind": "watch",
+      "sku": "SM-L345FZKAXSA",
+      "deviceName": "Galaxy Watch9",
+      "color": "Graphite",
+      "caseSize": "40mm",
+      "connectivity": "LTE",
+      "isPFDefaultSKU": false,
+      "isBespokeSKU": false
+    },
+    {
+      "kind": "watch",
+      "sku": "SM-L345FZKDXSA",
+      "deviceName": "Galaxy Watch9",
+      "color": "Graphite",
+      "caseSize": "40mm",
+      "connectivity": "LTE",
+      "isPFDefaultSKU": false,
+      "isBespokeSKU": true
+    },
+    {
+      "kind": "watch",
+      "sku": "SM-L350NZKAXSA",
+      "deviceName": "Galaxy Watch9",
+      "color": "Graphite",
+      "caseSize": "44mm",
+      "connectivity": "BLUETOOTH",
+      "isPFDefaultSKU": true,
+      "isBespokeSKU": false
+    },
+    {
+      "kind": "watch",
+      "sku": "SM-L350NZKDXSA",
+      "deviceName": "Galaxy Watch9",
+      "color": "Graphite",
+      "caseSize": "44mm",
+      "connectivity": "BLUETOOTH",
+      "isPFDefaultSKU": true,
+      "isBespokeSKU": true
+    },
+    {
+      "kind": "watch",
+      "sku": "SM-L350NZSAXSA",
+      "deviceName": "Galaxy Watch9",
+      "color": "Silver",
+      "caseSize": "44mm",
+      "connectivity": "BLUETOOTH",
+      "isPFDefaultSKU": false,
+      "isBespokeSKU": false
+    },
+    {
+      "kind": "watch",
+      "sku": "SM-L350NZSDXSA",
+      "deviceName": "Galaxy Watch9",
+      "color": "Silver",
+      "caseSize": "44mm",
+      "connectivity": "BLUETOOTH",
+      "isPFDefaultSKU": false,
+      "isBespokeSKU": true
+    },
+    {
+      "kind": "watch",
+      "sku": "SM-L355FZKAXSA",
+      "deviceName": "Galaxy Watch9",
+      "color": "Graphite",
+      "caseSize": "44mm",
+      "connectivity": "LTE",
+      "isPFDefaultSKU": true,
+      "isBespokeSKU": false
+    },
+    {
+      "kind": "watch",
+      "sku": "SM-L355FZKDXSA",
+      "deviceName": "Galaxy Watch9",
+      "color": "Graphite",
+      "caseSize": "44mm",
+      "connectivity": "LTE",
+      "isPFDefaultSKU": true,
+      "isBespokeSKU": true
+    },
+    {
+      "kind": "watch",
+      "sku": "SM-L355FZSAXSA",
+      "deviceName": "Galaxy Watch9",
+      "color": "Silver",
+      "caseSize": "44mm",
+      "connectivity": "LTE",
+      "isPFDefaultSKU": false,
+      "isBespokeSKU": false
+    },
+    {
+      "kind": "watch",
+      "sku": "SM-L355FZSDXSA",
+      "deviceName": "Galaxy Watch9",
+      "color": "Silver",
+      "caseSize": "44mm",
+      "connectivity": "LTE",
+      "isPFDefaultSKU": false,
+      "isBespokeSKU": true
+    },
+    {
+      "kind": "watch",
+      "sku": "SM-L715FZKAXSA",
+      "deviceName": "Galaxy Watch Ultra2",
+      "color": "Titanium Gray",
+      "caseSize": "47mm",
+      "connectivity": "LTE",
+      "isPFDefaultSKU": false,
+      "isBespokeSKU": false
+    },
+    {
+      "kind": "watch",
+      "sku": "SM-L715FZSAXSA",
+      "deviceName": "Galaxy Watch Ultra2",
+      "color": "Titanium Silver",
+      "caseSize": "47mm",
+      "connectivity": "LTE",
+      "isPFDefaultSKU": true,
+      "isBespokeSKU": false
     }
   ]
 }

@@ -2,49 +2,49 @@ import { getRunConfig, getSpecsForTestType } from './config/run.config';
 import { loadSite } from './config/site';
 import { reportTestResult } from './test/helpers/report.helper';
 
-const run = getRunConfig();
+const runConfig = getRunConfig();
 
-if (run.siteCode === 'ALL') {
+if (runConfig.siteCode === 'ALL') {
   throw new Error(
     'SITE=ALL requires the work-queue runner. Set siteCode to one code in config/run.config.ts (e.g. DE).'
   );
 }
 
-if (run.reportDb && !run.releaseName) {
+if (runConfig.reportDb && !runConfig.releaseName) {
   throw new Error(
     'releaseName is required when reportDb is enabled. Set it in config/run.config.ts or pass --release Rxx'
   );
 }
 
-const site = loadSite(run.siteCode);
+const siteData = loadSite(runConfig.siteCode);
 
 console.log(
-  `[run] site=${run.siteCode} testType=${run.testType} env=${run.environment} ` +
-    `releaseName=${run.releaseName || '(none)'} reportDb=${run.reportDb} ` +
-    `package=${site.appPackage} udid=${run.udid || '(auto)'} ` +
-    `appiumPort=${run.appiumPort} systemPort=${run.systemPort} ` +
-    `chromedriverPort=${run.chromedriverPort}`
+  `[run] site=${runConfig.siteCode} testType=${runConfig.testType} env=${runConfig.environment} ` +
+    `releaseName=${runConfig.releaseName || '(none)'} reportDb=${runConfig.reportDb} ` +
+    `package=${siteData.appPackage} udid=${runConfig.udid || '(auto)'} ` +
+    `appiumPort=${runConfig.appiumPort} systemPort=${runConfig.systemPort} ` +
+    `chromedriverPort=${runConfig.chromedriverPort}`
 );
 
 export const config: WebdriverIO.Config = {
   runner: 'local',
-  specs: getSpecsForTestType(run.testType),
+  specs: getSpecsForTestType(runConfig.testType),
   maxInstances: 1,
-  port: run.appiumPort,
+  port: runConfig.appiumPort,
   capabilities: [
     {
       platformName: 'Android',
       'appium:automationName': 'UiAutomator2',
-      'appium:appPackage': site.appPackage,
-      'appium:appActivity': site.appActivity,
+      'appium:appPackage': siteData.appPackage,
+      'appium:appActivity': siteData.appActivity,
       'appium:noReset': true,
       'appium:autoGrantPermissions': true,
       'appium:newCommandTimeout': 240,
       'appium:autoWebview': false,
       'appium:autoLaunch': false,
-      'appium:systemPort': run.systemPort,
-      'appium:chromedriverPort': run.chromedriverPort,
-      ...(run.udid ? { 'appium:udid': run.udid } : {}),
+      'appium:systemPort': runConfig.systemPort,
+      'appium:chromedriverPort': runConfig.chromedriverPort,
+      ...(runConfig.udid ? { 'appium:udid': runConfig.udid } : {}),
     } as WebdriverIO.Capabilities,
   ],
   logLevel: 'warn',
@@ -56,7 +56,7 @@ export const config: WebdriverIO.Config = {
       'appium',
       {
         args: {
-          port: run.appiumPort,
+          port: runConfig.appiumPort,
           relaxedSecurity: true,
         },
       },
@@ -72,7 +72,7 @@ export const config: WebdriverIO.Config = {
     if (specs.length === 1 && specs[0].includes('_call-api.spec.ts')) {
       return;
     }
-    await driver.activateApp(site.appPackage);
+    await driver.activateApp(siteData.appPackage);
   },
   afterTest: async function (test, _context, result) {
     const parentTitle =
