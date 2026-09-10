@@ -7,10 +7,8 @@ import { storageLabelVariants } from '../helpers/data.helper';
  */
 export class BcLocator {
   get bcLayout() {
-    if (getRunConfig().siteCode === 'US') {
-      return $('#headerWrapper .MobileViewHeader_header__title__9zKbO');
-    }
-    return $('div .bc-cross-navigation-wrap, section.watch-bc');
+    return $(`div .bc-cross-navigation-wrap, section.watch-bc,
+      #headerWrapper .MobileViewHeader_header__title__9zKbO`);
   }
 
   tradeInYesOption() {
@@ -62,9 +60,9 @@ export class BcLocator {
   deviceOption(label: string) {
     return $(
       [
-        `.s-option-device :has(> input[data-displayname="${label}" i])`,
         `.s-option-device :has(> input[data-englishname="${label}" i])`,
-        `[role="button"][an-la="device:${label}" i]`,
+        `.watch-bc-option__option-item:has(> input[data-modeldisplay="${label}" i])`,
+        `div[id="device_info"]:has(> div[data-modeldisplay="${label}" i])`
       ].join(', ')
     );
   }
@@ -74,8 +72,7 @@ export class BcLocator {
     return $(
       variants
         .flatMap((value) => [
-          `.s-option-storage :has(> input[data-englishname*="${value}" i])`,
-          `.s-option-storage :has(> input[data-displayname*="${value}" i])`,
+          `.s-option-storage :has(> input[data-englishname*="${value}" i])`, 
           `#device_info [role="button"][data-modeldisplay*="${value}" i]`,
         ])
         .join(', ')
@@ -86,12 +83,8 @@ export class BcLocator {
     const value = size.replace(/\s+/g, '');
     return $(
       [
-        `.s-option-size :has(> input[data-englishname*="${value}" i])`,
-        `.s-option-size :has(> input[data-displayname*="${value}" i])`,
-        `.s-option-case-size :has(> input[data-englishname*="${value}" i])`,
-        `.wearable-option.size :has(> input[data-englishname*="${value}" i])`,
-        `[an-la="size:${value}" i]`,
-        `[an-la*="case size" i][an-la*="${value}" i]`,
+        `.watch-bc-option__option-item:has([an-la*="case size:" i][an-la*="${value}" i])`,
+        `#capacity_info[an-la*="case size:" i][an-la*="${value}" i]`
       ].join(', ')
     );
   }
@@ -100,10 +93,8 @@ export class BcLocator {
     const v = value.replace(/\s+/g, '');
     return $(
       [
-        `.s-option-connectivity :has(> input[data-englishname*="${v}" i])`,
-        `.s-option-connectivity :has(> input[data-displayname*="${v}" i])`,
-        `[an-la*="connect" i][an-la*="${v}" i]`,
-        `[role="button"][data-englishname*="${v}" i]`,
+        `.watch-bc-option__option-item:has([an-la*="connectivity" i][an-la*="${v}" i])`,
+        `#watchConnectivity [an-la*="card:${v}" i]`
       ].join(', ')
     );
   }
@@ -112,9 +103,9 @@ export class BcLocator {
     return $(
       [
         `.s-option-color-special :has(> input[data-englishname="${color}" i])`,
-        `.hubble-pd-radio:has([data-englishname="${color}" i])`,
-        `div[id="#color_container"] [an-la="color:${color}" i]`,
-        `[an-la="color:${color}" i]`,
+        `.watch-bc-option__option-item:not(.is-disabled):has(> .input-case-color:is([data-modeldisplay*="${color}"i]))`,
+        `div[id="#color_container"] :has(> div[data-modeldisplay="${color}" i])`
+        
       ].join(', ')
     );
   }
@@ -124,9 +115,8 @@ export class BcLocator {
     return $(
       [
         '.hubble-pd-radio.is-checked .s-color-name',
-        '.js-radio-wrap.is-checked .s-color-name',
-        '.s-option-color-special input:checked + label .s-color-name',
-        '.hubble-pd-radio:has(> input:checked) .s-color-name',
+        `.watch-bc-option__option-item:has(> .input-case-color:checked) .option-select__title`,
+        `[class*="ColorTile_container"]:has([class*="ColorTile_selected"]) [class*="ColorTile_bottomText"]`,
       ].join(', ')
     );
   }
@@ -135,10 +125,8 @@ export class BcLocator {
     return $$(
       [
         '.hubble-product__summary .hubble-product__summary-head .s-option-title',
-        '.summary__product-wrap .summary__product-name',
-        '.wearable-bc-summary-structure-wrap .wearable-bc-price .wearable-bc-price__headline',
-        'div[class*="SummaryHeader_productTitleInfo"] > span:first-child',
         'div[data-comp-name="watchBcOrderSummary"] .dvice-name',
+        `div[class*='SummaryHeader_productTitleInfo'] > span:first-child`
       ].join(', ')
     );
   }
@@ -147,12 +135,8 @@ export class BcLocator {
     return $(
       [
         '.hubble-product__summary-product .s-option-summary',
-        'span.pd-info__sku-code',
-        'span.pdd39-anchor-nav__info-sku',
-        '.pdd39-anchor-nav__info-sub > span.pdd39-anchor-nav__info-sku',
-        '.wearable-bc-summary-structure-wrap .wearable-bc-price .wearable-bc-price__description',
-        'div[class*="SummaryHeader_modelCode"] div[class*="ModelInfo_modalInfo"] span',
         'div[data-comp-name="watchBcOrderSummary"] .model-code',
+        'div[class*="SummaryHeader_modelCode"] div[class*="ModelInfo_modalInfo"] span',
       ].join(', ')
     );
   }
@@ -161,11 +145,8 @@ export class BcLocator {
     return $$(
       [
         '#deviceSummary .s-option-choice',
-        '.wearable-bc-summary-structure-wrap .wearable-bc-price__list-item--title:not(.band-price)',
-        '[class*="SummaryHeader_productTitleInfo"] span:nth-of-type(2)',
-        '.summary__subTitle',
         '.total-summary__price-list',
-        '.hdd02-buying-tool__summary .summary__select-option-wrap',
+        '[class*="SummaryHeader_productTitleInfo"] span:nth-of-type(2)'
       ].join(', ')
     );
   }
@@ -173,24 +154,35 @@ export class BcLocator {
   get summaryServicePrice() {
     return $$(
       [
-        '.hubble-product__summary-product-price:not(.device-price-info)',
+        '.hubble-product__summary-product-price:not(.device-price-info)', 
+        `.total-summary__price-bundle-title .total-summary__price-bundle-price:not(:empty)`, 
         'div[class*="affectedTotalsSection"]',
-        '.s-tradein-summary .s-trade-price',
+        '.s-tradein-summary .s-trade-price, .s-trade-price-wrap > span',
+        `.tradein-option-selected .tradein-option-selected__option-price > strong`,
+        `.tradein-option-selected .tradein-option-selected__option-price:not(:has(> strong)) > span`
       ].join(', ')
     );
   }
 
   /** Visible selected label in the option section (color is often localized). */
   optionSelectedResult(field: 'deviceName' | 'storage' | 'caseSize' | 'color' | 'connectivity') {
-    const section = this.optionSectionSelector(field);
+    const parts = this.optionSectionSelector(field)
+      .split(',')
+      .map((part) => part.trim())
+      .filter(Boolean);
+    const complete = parts.filter((part) => part.startsWith('=')).map((part) => part.slice(1).trim());
+    const prefixes = parts.filter((part) => !part.startsWith('='));
+    const inSection = (suffix: string) => prefixes.map((part) => `${part}${suffix}`).join(', ');
+
     return $(
       [
-        `${section} .s-select`,
-        `${section} .s-selected`,
-        `${section} em.s-select`,
-        `${section} [class*="selected-name"]`,
-        `${section} .hubble-product__options-title em`,
-      ].join(', ')
+        inSection(' .is-checked'),
+        inSection('.is-checked'),
+        inSection(' [aria-checked="true"]'),
+        ...complete,
+      ]
+        .filter(Boolean)
+        .join(', ')
     );
   }
 
@@ -199,15 +191,15 @@ export class BcLocator {
   ): string {
     switch (field) {
       case 'deviceName':
-        return '.s-option-device';
+        return '.s-option-device, .watch-bc-option__option-item:has([name*="device"]), #device_info[aria-label="Device"]';
       case 'storage':
-        return '.s-option-storage';
+        return '=.s-option-storage .is-checked .s-rdo-name, =[an-la^="storage:"][class*="selected" i]';
       case 'caseSize':
-        return '.s-option-size, .s-option-case-size, .wearable-option.size';
+        return '.watch-bc-option__option-item:has([name*="case-size"]), =#capacity_info.Capacity_selected__8LHNQ';
       case 'connectivity':
-        return '.s-option-connectivity';
+        return '.watch-bc-option__option-item:has([name*="connectivity"]), =#watchConnectivity [class*="selected" i]';
       case 'color':
-        return '.s-option-color-special, .hubble-pd-radio, [id="#color_container"]';
+        return '=.s-option-color-special .is-checked .s-color-name, =.watch-bc-option__option-item:has(> .input-case-color:checked) .option-select__title, =[class*="ColorTile_container"]:has([class*="ColorTile_selected"]) [class*="ColorTile_bottomText"]';
     }
   }
 
