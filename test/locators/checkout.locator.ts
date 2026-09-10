@@ -24,13 +24,13 @@ export const CHECKOUT_FORMS = [
 ] as const;
 
 /** Input/select fields eligible for auto-fill. */
-const FIELD_SELECTOR = [
+const FIELD_SELECTOR_PARTS = [
   "input[name]:not([type='checkbox']):not([type='radio']):not([disabled])",
   "input[formcontrolname]:not([type='checkbox'])",
   'select[name]',
   'mat-select[name]',
   'mat-select[formcontrolname]',
-].join(', ');
+];
 
 /** Payment-method title elements — collapsed by default, one per available payment method. */
 const PAYMENT_METHOD_TITLE_SELECTOR = [
@@ -62,7 +62,7 @@ export class CheckoutLocator {
 
   /** Fillable fields inside a given form component. */
   fieldsIn(formTag: string) {
-    return $$(`${formTag} ${FIELD_SELECTOR}`);
+    return $$(FIELD_SELECTOR_PARTS.map((s) => `${formTag} ${s}`).join(', '));
   }
 
   /** Validation errors left over after trying to advance a step. */

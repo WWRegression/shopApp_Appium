@@ -124,17 +124,28 @@ export async function switchToWebView(waitTimeMs = 5000): Promise<boolean> {
   if (!pkg) {
     return false;
   }
-  try {
-    if (await isWebViewContext()) {
-      return true;
+
+  const deadline = Date.now() + waitTimeMs;
+  for (;;) {
+    try {
+      if (await isWebViewContext()) {
+        return true;
+      }
+      const remaining = Math.max(0, deadline - Date.now());
+      if (await hasAppWebViewContext(remaining)) {
+        await driver.switchContext(`WEBVIEW_${pkg}`);
+        if (await isWebViewContext()) {
+          return true;
+        }
+      }
+    } catch {
+      // WebView can be torn down/recreated mid-transition ("no such window") — retry below if time remains.
     }
-    if (!(await hasAppWebViewContext(waitTimeMs))) {
+
+    if (Date.now() >= deadline) {
       return false;
     }
-    await driver.switchContext(`WEBVIEW_${pkg}`);
-    return isWebViewContext();
-  } catch {
-    return false;
+    await driver.pause(300);
   }
 }
 
@@ -230,22 +241,6 @@ async function findWindowByPage(
   return undefined;
 }
 
-async function waitForWindowByPage(
-  page: PageUrlKey,
-  siteCode: string,
-  timeoutMs = 5000
-): Promise<MatchedWebViewPage | undefined> {
-  const deadline = Date.now() + timeoutMs;
-  while (Date.now() < deadline) {
-    const match = await findWindowByPage(page, siteCode);
-    if (match) {
-      return match;
-    }
-    await driver.pause(300);
-  }
-  return undefined;
-}
-
 /**
  * Focus the WebView window whose URL matches `page`.
  * Requires WebView context. Throws if no matching window is found.
@@ -259,24 +254,27 @@ export async function switchToWindowByPage(
   }
 
   const siteCode = getRunConfig().siteCode;
-  const currentHref = await getCurrentWindowUrl();
-  if (currentHref && matchPageByUrl(currentHref, page, siteCode)) {
-    return;
+  const deadline = Date.now() + waitTimeMs;
+
+  for (;;) {
+    const match = await findWindowByPage(page, siteCode);
+    if (match) {
+      try {
+        await driver.switchToWindow(match.webviewPageId);
+        const href = await getCurrentWindowUrl();
+        if (href && matchPageByUrl(href, page, siteCode)) {
+          return;
+        }
+      } catch {
+        // Window can close between being found and being switched to — retry below if time remains.
+      }
+    }
+
+    if (Date.now() >= deadline) {
+      throw new Error(`switchToWindowByPage: no browser page matched page=${page}`);
+    }
+    await driver.pause(300);
   }
-
-  const match = await waitForWindowByPage(page, siteCode, waitTimeMs);
-  if (!match) {
-    throw new Error(`switchToWindowByPage: no browser page matched page=${page}`);
-  }
-
-  await driver.switchToWindow(match.webviewPageId);
-
-  const href = await getCurrentWindowUrl();
-  if (href && matchPageByUrl(href, page, siteCode)) {
-    return;
-  }
-
-  throw new Error(`switchToWindowByPage: switched but URL did not match page=${page}`);
 }
 
 // ===========================================================================
@@ -293,15 +291,33 @@ export async function prepareWebViewPage(
   layout: ChainablePromiseElement,
   timeout = 10000
 ): Promise<boolean> {
-  if (!(await switchToWebView(timeout))) {
-    return false;
+  const deadline = Date.now() + timeout;
+
+  for (;;) {
+    const remaining = Math.max(0, deadline - Date.now());
+    if (remaining === 0) {
+      return false;
+    }
+
+    if (await switchToWebView(remaining)) {
+      try {
+        await switchToWindowByPage(page, Math.max(0, deadline - Date.now()));
+        const displayed = await layout
+          .waitForDisplayed({ timeout: Math.max(0, deadline - Date.now()) })
+          .catch(() => false);
+        if (displayed) {
+          return true;
+        }
+      } catch {
+        // Window/context can flip again mid-check ("no such window") — fall through to retry below.
+      }
+    }
+
+    if (Date.now() >= deadline) {
+      return false;
+    }
+    await driver.pause(300);
   }
-  try {
-    await switchToWindowByPage(page, timeout);
-  } catch {
-    return false;
-  }
-  return layout.waitForDisplayed({ timeout }).catch(() => false);
 }
 
 // ===========================================================================

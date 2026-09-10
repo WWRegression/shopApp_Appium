@@ -12,7 +12,10 @@ export class SearchPage extends BasePage {
   async search(keyword: string): Promise<void> {
     await switchToNative();
     await this.locator.searchInput.waitForDisplayed({ timeout: 10000 });
-    await this.locator.searchInput.setValue(keyword);
+    await this.locator.searchInput.click();
+    // Synthetic accessibility node, not a real EditText — setValue() is a no-op; real key events are required.
+    await driver.waitUntil(() => driver.isKeyboardShown(), { timeout: 5000, interval: 300 }).catch(() => undefined);
+    await driver.keys(keyword.split(''));
 
     if (await this.locator.searchSubmitButton.isDisplayed().catch(() => false)) {
       await this.locator.searchSubmitButton.click();

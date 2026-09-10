@@ -26,7 +26,6 @@ export class CartPage extends BasePage {
   readonly eup = new CartEupService();
   readonly sim = new CartSimService();
 
-  /** Waits for the cart URL AND the cart layout to render — the URL can change before the DOM catches up. */
   async prepareCartPage(): Promise<void> {
     const ready = await prepareWebViewPage('cart', this.locator.cartLayout);
     markFailed([{ label: 'cart page reached', pass: ready }], 'prepareCartPage');

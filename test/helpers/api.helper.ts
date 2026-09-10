@@ -423,6 +423,9 @@ export async function clearSavedAddresses(): Promise<ClearAddressesResult> {
 
   // The app's own state only reflects backend changes made through its own UI — reload to pick this up.
   await driver.refresh().catch(() => undefined);
+  // Give the reload a moment to settle before switching away — the native header can be briefly
+  // unresponsive mid-reload.
+  await driver.pause(2000);
   await switchToNative();
 
   markFailed(
@@ -496,6 +499,9 @@ export async function clearCartViaApi(): Promise<ClearCartResult> {
 
   // The app's own state only reflects backend changes made through its own UI — reload to pick this up.
   await driver.refresh().catch(() => undefined);
+  // Give the reload a moment to settle before switching away — the native header can be briefly
+  // unresponsive mid-reload.
+  await driver.pause(2000);
   await switchToNative();
 
   markFailed(
@@ -560,6 +566,9 @@ export async function addToCartViaApi(sku: string, quantity = 1): Promise<AddToC
 
   // The app's own state only reflects backend changes made through its own UI — reload to pick this up.
   await driver.refresh().catch(() => undefined);
+  // Give the reload a moment to settle before switching away — the native header can be briefly
+  // unresponsive mid-reload.
+  await driver.pause(2000);
   await switchToNative();
 
   markFailed([{ label: 'entry added', pass: result.ok, detail: JSON.stringify(result) }], 'addToCartViaApi');

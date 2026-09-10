@@ -15,15 +15,15 @@
     "town": "Warsaw"
   },
   "product": {
-    "sku": "SM-F966BZKBEUE",
-    "deviceName": "Galaxy Z Fold7",
-    "color": "JETBLACK",
+    "sku": "SM-F976BZKBEUE",
+    "deviceName": "Galaxy Z Fold8 Ultra",
+    "color": "graphite",
     "storage": "256GB"
   },
   "search": {
     "keyword": "inteligentny zegarek",
-    "haSku": "RB38C776CB1/EF",
-    "vdSku": "QE55QN80FAUXXH"
+    "haSku": "RB34C603CS9/EF",
+    "vdSku": "QE75QN77FATXXH"
   },
   "tradeIn": {
     "brand": "Apple",

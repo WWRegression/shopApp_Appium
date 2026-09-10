@@ -3,7 +3,7 @@
 import { BasePage } from './base.page';
 import { CheckoutLocator, CHECKOUT_FORMS } from '../locators/checkout.locator';
 import { prepareWebViewPage } from '../helpers/context.helper';
-import { getSite } from '../helpers/tc-filter.helper';
+import { getSiteData as getSite } from '../../config/site';
 import { clickOptionInput, getElementLabel, jsClick } from '../helpers/element.helper';
 import { markFailed } from '../helpers/report.helper';
 import type { LoadedSite } from '../../config/site';
