@@ -16,6 +16,23 @@ export async function clickElement(
   await element.click();
 }
 
+/** Clicks in the DOM instead of tapping — overlay / position:fixed / hidden input. */
+export async function jsClick(el: ChainablePromiseElement | WebdriverIO.Element): Promise<void> {
+  await driver.execute('arguments[0].click();', await el);
+}
+
+/**
+ * WebView control: visible → native tap, hidden → jsClick.
+ */
+export async function clickWebViewElement(el: ChainablePromiseElement): Promise<void> {
+  await scrollElementToCenter(el).catch(() => undefined);
+  if (await el.isDisplayed().catch(() => false)) {
+    await el.click();
+    return;
+  }
+  await jsClick(el);
+}
+
 /** Prefer getText(); fall back to content-desc. */
 export async function getElementLabel(element: ChainablePromiseElement): Promise<string> {
   if (!(await isDisplayedSafe(element))) {
@@ -27,17 +44,6 @@ export async function getElementLabel(element: ChainablePromiseElement): Promise
   }
   const desc = await element.getAttribute('content-desc').catch(() => '');
   return (desc ?? '').trim();
-}
-
-/** Clicks in the DOM instead of tapping — for elements a native click can't reach (overlaid, position:fixed). */
-export async function jsClick(el: ChainablePromiseElement | WebdriverIO.Element): Promise<void> {
-  await driver.execute('arguments[0].click();', await el);
-}
-
-/** Option radios are visually hidden behind a styled label — native click gets intercepted. */
-export async function clickOptionInput(el: ChainablePromiseElement | WebdriverIO.Element): Promise<void> {
-  await scrollElementToCenter(el as ChainablePromiseElement).catch(() => undefined);
-  await jsClick(el);
 }
 
 /** For widgets that only respond to touchstart, not click() (e.g. cart quantity stepper). */

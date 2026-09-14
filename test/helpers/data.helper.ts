@@ -102,6 +102,12 @@ export function normalizeStorageAlnum(text: string): string {
   return removeNonWordChars(text).replace(/go/g, 'gb').replace(/to/g, 'tb');
 }
 
+/** Chip text may include a price line ("256GB\\n$1,199.99") — keep the capacity token only. */
+export function pickStorageLabel(raw: string): string {
+  const match = raw.match(/(\d+(?:\.\d+)?)\s*(gb|tb|mb|go|to)\b/i);
+  return match ? match[0].replace(/\s+/g, ' ').trim() : raw.trim();
+}
+
 /** Summary/chip text may be "256 GB", "256GB", or "256 Go". */
 export function storageCapacityMatches(actual: string, expected: string): boolean {
   const a = normalizeStorageAlnum(actual);

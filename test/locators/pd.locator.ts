@@ -74,6 +74,11 @@ export class PdLocator {
     return $(`#option-color input.option-input[data-colorname="${value}" i]`);
   }
 
+  /** Same as BC: first other in-stock band (bespoke SKU is not the default band). */
+  get watchNonDefaultBandOption() {
+    return $('input.input-band-type:not(:checked):not([disabled]):not([is-oos="true" i])');
+  }
+
   /** Currently selected color, as displayed (not the data-colorname attribute). */
   get selectedColorText() {
     return $('#multiColorText');

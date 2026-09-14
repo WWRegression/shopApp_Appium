@@ -15,6 +15,8 @@ export type FlagshipPhoneProduct = {
   storage: string;
   ram: string;
   isPFDefaultSKU: boolean;
+  /** US carrier chip from sku-from-csv (XAA/VZW/ATT/XAU). */
+  connectivity?: string;
 };
 
 export type FlagshipWatchProduct = {

@@ -6,154 +6,138 @@ import { BcEupService } from '../services/eup/bc-eup.service';
 import { BcSimService } from '../services/sim/bc-sim.service';
 import { BcGalaxyClubService } from '../services/galaxyclub/bc-galaxyclub.service';
 import { switchToWebView, prepareWebViewPage, isCurrentWebViewPage } from '../helpers/context.helper';
-import { scrollElementToCenter } from '../helpers/gesture.helper';
-import { FlagshipProduct } from '../helpers/flagship-sku.helper';
-import { storageCapacityMatches } from '../helpers/data.helper';
-import { jsClick } from '../helpers/element.helper';
-import type { CartItemOptions } from './cart.page';
+import { scrollElementToCenter, scrollWebViewDown } from '../helpers/gesture.helper';
+import { storageCapacityMatches, pickStorageLabel } from '../helpers/data.helper';
+import { jsClick, clickWebViewElement } from '../helpers/element.helper';
 
-/** Regression `site.product` chip fields. */
-export interface SiteProduct {
+/**
+ * BC가 받는 입력. 사이트 JSON / Flagship phone / Flagship watch 모두 이 필드만 사용한다.
+ * kind, ram, isPFDefaultSKU 는 카탈로그 전용 — select/verify 대상 아님.
+ */
+export type ProductOptionFields = {
   sku: string;
   deviceName: string;
-  storage: string;
-  color: string;
-}
-
-export type BcProductOptions = SiteProduct | FlagshipProduct;
-
-export type OptionChip = 'deviceName' | 'storage' | 'caseSize' | 'color' | 'connectivity';
-
-export type SummaryPart = 'deviceName' | 'sku' | 'options' | 'servicePrice';
-export type SummaryDetails = Record<SummaryPart, string>;
-
-/** CartItemOptions fields as actually displayed on screen (not the input data) — see BcPage.verifyOptions(). */
-export interface VerifiedFieldValues extends CartItemOptions {
-  sku: string;
-  deviceName: string;
-}
-
-export interface SelectedDisplayValues {
-  device: string;
   color: string;
   storage?: string;
   caseSize?: string;
   connectivity?: string;
+  isBespokeSKU?: boolean;
+};
+
+/** 클릭 가능한 옵션. isBespokeSKU 는 밴드 클릭만 하고 비교할 값이 없다. */
+export const Options = ['deviceName', 'storage', 'caseSize', 'color', 'connectivity', 'isBespokeSKU'] as const;
+export type OptionChip = (typeof Options)[number];
+type ValuedChip = Exclude<OptionChip, 'isBespokeSKU'>;
+
+/** sku 는 input, 나머지는 선택 칩 라벨. connectivity 는 watch(caseSize)만. price 는 추후. */
+export const verifyOptionFields = ['sku', 'deviceName', 'storage', 'caseSize', 'color', 'connectivity'] as const;
+export type VerifyField = (typeof verifyOptionFields)[number];
+
+export interface SelectedDisplayValues {
+  device: string;
+  storage?: string;
+  caseSize?: string;
+  color: string;
+  connectivity?: string;
 }
 
-type VerifyField = OptionChip | 'sku';
-type OptionSelection = { field: OptionChip; value: string };
+export type SummaryPart = 'deviceName' | 'sku' | 'options' | 'servicePrice';
+export type SummaryDetails = Record<SummaryPart, string>;
 
 export class BcPage extends BasePage {
   private readonly locator = new BcLocator();
-
   readonly tradeIn = new BcTradeInService();
   readonly scPlus = new BcScPlusService();
   readonly eup = new BcEupService();
   readonly sim = new BcSimService();
   readonly galaxyClub = new BcGalaxyClubService();
 
-
   async prepareBcPage(): Promise<boolean> {
     return prepareWebViewPage('bc', this.locator.bcLayout);
     // await this.dismissOverlays();
   }
 
-  async selectOptions(options: BcProductOptions): Promise<void> {
-    const chips = this.optionSelections(options);
-    console.warn(`[BC.selectOptions] Start: ${chips.map(({ field, value }) => `${field}=${value}`).join(' || ')}` );
-    
-    for (const { field, value } of chips) {
+  private buildOptionList(options: ProductOptionFields) {
+    return Options.flatMap((field) => {
+      const value = options[field];
+      return value ? [{ field, value: String(value) }] : [];
+    });
+  }
+  
+  async selectOptions(options: ProductOptionFields): Promise<void> {
+    const chips = this.buildOptionList(options);
+    console.warn(
+      `[BC.selectOptions] Start: ${chips
+        .map((chip) => `${chip.field}=${chip.value}`)
+        .join(' || ')}`
+    );
+
+    for (const chip of chips) {
       let target;
-      switch (field) {
+      switch (chip.field) {
         case 'deviceName':
-          target = this.locator.deviceOption(value);
+          target = this.locator.deviceOption(chip.value);
           break;
         case 'storage':
-          target = this.locator.storageOption(value);
+          target = this.locator.storageOption(chip.value);
           break;
         case 'caseSize':
-          target = this.locator.caseSizeOption(value);
+          target = this.locator.caseSizeOption(chip.value);
           break;
         case 'connectivity':
-          target = this.locator.connectivityOption(value);
+          target = this.locator.connectivityOption(chip.value);
           break;
         case 'color':
-          target = this.locator.colorOption(value);
+          target = this.locator.colorOption(chip.value);
+          break;
+        case 'isBespokeSKU':
+          target = this.locator.watchNonDefaultBandOption;
           break;
       }
-      const displayed = await target.isDisplayed().catch(() => false);
-      if (!displayed) {
-        console.warn(`[BC.selectOptions] Skip: ${field}=${value} displayed=${displayed}`);
+      if (!(await this.revealInWebView(target))) {
+        console.warn(`[BC.selectOptions] Skip: ${chip.field} not in DOM after scroll`);
         continue;
       }
-      await scrollElementToCenter(target).catch(() => undefined);
-      await target.waitForClickable({ timeout: 1000 });
-      await target.click();
-      console.warn(`[BC.selectOptions] Click: ${field}=${value}`);
+      await clickWebViewElement(target);
+      console.warn(`[BC.selectOptions] Click: ${chip.field}`);
     }
     await this.dismissOverlays();
     console.warn('[BC.selectOptions] Done');
   }
 
-  async verifyOptions(options: BcProductOptions): Promise<VerifiedFieldValues> {
+  async verifyOptions(options: ProductOptionFields): Promise<void> {
     const summary = await this.readSummaryDetails();
-    console.warn(
-      `[BC.verifyOptions] deviceName=${summary.deviceName} || sku=${summary.sku} || options=${summary.options}`
-    );
+    console.warn(`[BC.verifyOptions] summary=${JSON.stringify(summary)}`);
 
-    if (!summary.deviceName && !summary.options && !summary.sku) {
-      throw new Error('BC/PD summary not found');
-    }
-
-    const verified: VerifiedFieldValues = { sku: summary.sku, deviceName: summary.deviceName };
-
-    for (const { field, value } of [{ field: 'sku' as const, value: options.sku }, ...this.optionSelections(options)]) {
-      const expected = await this.expectedSummaryValue(field, value);
+    for (const field of verifyOptionFields) {
+      if (!options[field]) {
+        continue;
+      }
+      const expected = await this.expectedSummaryValue(field, String(options[field]));
       const actual = this.summaryActual(field, summary);
-      console.warn(`[BC.verifyOptions] ${field} : input=${value} || expected=${expected} || actual=${actual}`);
+      console.warn(`[BC.verifyOptions] ${field} : expected=${expected} || actual=${actual}`);
       if (!this.summaryMatches(field, actual, expected)) {
         throw new Error(`BC/PD summary mismatch : field=${field} || expected=${expected} || actual=${actual}`);
       }
-      if (field !== 'sku' && field !== 'deviceName') {
-        verified[field] = expected;
-      }
     }
-
-    return verified;
   }
-  
-  /** Color: summary must match displayed name on the checked swatch, not data-englishname. */
-  private async expectedSummaryValue(field: VerifyField, input: string): Promise<string> {
+
+  /** sku: input. 그 외: 선택된 옵션에 보이는 라벨, 없으면 input. */
+  private async expectedSummaryValue(field: VerifyField, inputData: string): Promise<string> {
     if (field === 'sku') {
-      return input;
-    }
-    if (field === 'color') {
-      const visibleName = await this.readSelectedColorVisibleName();
-      return visibleName || input;
+      return inputData;
     }
     const shown = await this.readOptionSelectedResult(field);
-    return shown || input;
+    return shown || inputData || '';
   }
 
-  private async readSelectedColorVisibleName(): Promise<string> {
-    const el = this.locator.selectedColorVisibleName;
-    if (!(await el.isDisplayed().catch(() => false))) {
-      return '';
-    }
-    return ((await el.getText().catch(() => '')) ?? '').trim();
-  }
-
-  private async readOptionSelectedResult(field: OptionChip): Promise<string> {
+  private async readOptionSelectedResult(field: ValuedChip): Promise<string> {
     const el = this.locator.optionSelectedResult(field);
     if (!(await el.isDisplayed().catch(() => false))) {
       return '';
     }
-    return ((await el.getText().catch(() => '')) ?? '').trim();
-  }
-
-  async verifyPrice(_kind: string): Promise<void> {
-    // TODO: Implement price verification
+    const text = ((await el.getText().catch(() => '')) ?? '').trim();
+    return field === 'storage' ? pickStorageLabel(text) : text;
   }
 
   private async readSummaryDetails(): Promise<SummaryDetails> {
@@ -165,48 +149,61 @@ export class BcPage extends BasePage {
     };
   }
 
+  /** Locator가 DOM에 없으면 WebView를 내린다. 화면 중앙 이동은 clickWebViewElement({ scroll: true }). */
+  private async revealInWebView(target: ChainablePromiseElement, maxAttempts = 6): Promise<boolean> {
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      if (await target.isExisting().catch(() => false)) {
+        return true;
+      }
+      console.warn(`[BC.revealInWebView] not found, scroll down attempt=${attempt + 1}`);
+      await scrollWebViewDown();
+    }
+    return target.isExisting().catch(() => false);
+  }
+
+  /**
+   * `$$`/`$`를 먼저 resolve하면 미존재 시 빈 배열이라 스크롤 기회가 없다.
+   * 텍스트를 못 읽으면 스크롤한 뒤 locator를 다시 조회한다.
+   */
   private async readDisplayedText(
     nodes: ReturnType<typeof $$> | ReturnType<typeof $>,
     joinAll = false
   ): Promise<string> {
-    const resolved = await nodes;
-    const list = Array.isArray(resolved) ? resolved : [resolved];
-    const parts: string[] = [];
-    for (const node of list) {
-      if (!(await node.isDisplayed().catch(() => false))) {
-        continue;
-      }
-      const text = ((await node.getText().catch(() => '')) ?? '').trim();
-      if (!text) {
-        continue;
-      }
-      if (!joinAll) {
-        return text;
-      }
-      parts.push(text);
-    }
-    return parts.join(' ');
-  }
+    for (let attempt = 0; attempt < 6; attempt++) {
+      const resolved = await nodes;
+      const list = Array.isArray(resolved) ? resolved : [resolved];
+      const parts: string[] = [];
 
-  private optionSelections(options: BcProductOptions): OptionSelection[] {
-    if ('kind' in options && options.kind === 'watch') {
-      return [
-        { field: 'deviceName', value: options.deviceName },
-        { field: 'caseSize', value: options.caseSize },
-        { field: 'color', value: options.color },
-        { field: 'connectivity', value: options.connectivity },
-      ];
+      for (const node of list) {
+        if (!(await node.isExisting().catch(() => false))) {
+          continue;
+        }
+        if (!(await node.isDisplayed().catch(() => false))) {
+          continue;
+        }
+        const text = ((await node.getText().catch(() => '')) ?? '').trim();
+        if (!text) {
+          continue;
+        }
+        if (!joinAll) {
+          return text;
+        }
+        parts.push(text);
+      }
+
+      if (parts.length > 0) {
+        return parts.join(' ');
+      }
+      console.warn(`[BC.readDisplayedText] no text, scroll down attempt=${attempt + 1}`);
+      await scrollWebViewDown();
     }
-    return [
-      { field: 'deviceName', value: options.deviceName },
-      { field: 'storage', value: options.storage },
-      { field: 'color', value: options.color },
-    ];
+    return '';
   }
 
   private summaryActual(field: VerifyField, summary: SummaryDetails): string {
     if (field === 'sku') return summary.sku;
     if (field === 'deviceName') return summary.deviceName;
+    // if (field === 'price') return summary.price;
     return summary.options;
   }
 
@@ -245,8 +242,4 @@ export class BcPage extends BasePage {
     return this.locator.summaryDeviceName[0].getText();
   }
 
-  async isOptionSectionVisible(_field: keyof BcProductOptions): Promise<boolean> {
-    // TODO: Implement option section visibility check
-    return false;
-  }
 }

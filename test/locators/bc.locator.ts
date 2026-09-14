@@ -94,7 +94,8 @@ export class BcLocator {
     return $(
       [
         `.watch-bc-option__option-item:has([an-la*="connectivity" i][an-la*="${v}" i])`,
-        `#watchConnectivity [an-la*="card:${v}" i]`
+        `#watchConnectivity [an-la*="card:${v}" i]`,
+        `#carrier_info [an-la*="connectivity" i][an-la*="${v}" i]`
       ].join(', ')
     );
   }
@@ -105,20 +106,9 @@ export class BcLocator {
         `.s-option-color-special :has(> input[data-englishname="${color}" i])`,
         `.watch-bc-option__option-item:not(.is-disabled):has(> .input-case-color:is([data-modeldisplay*="${color}"i]))`,
         `div[id="#color_container"] :has(> div[data-modeldisplay="${color}" i])`
-        
       ].join(', ')
     );
-  }
 
-  /** Visible color label on the checked swatch (localized). */
-  get selectedColorVisibleName() {
-    return $(
-      [
-        '.hubble-pd-radio.is-checked .s-color-name',
-        `.watch-bc-option__option-item:has(> .input-case-color:checked) .option-select__title`,
-        `[class*="ColorTile_container"]:has([class*="ColorTile_selected"]) [class*="ColorTile_bottomText"]`,
-      ].join(', ')
-    );
   }
 
   get summaryDeviceName() {
@@ -126,7 +116,7 @@ export class BcLocator {
       [
         '.hubble-product__summary .hubble-product__summary-head .s-option-title',
         'div[data-comp-name="watchBcOrderSummary"] .dvice-name',
-        `div[class*='SummaryHeader_productTitleInfo'] > span:first-child`
+        'div[class*="SummaryHeader_productTitleInfo"] > span:first-child'
       ].join(', ')
     );
   }

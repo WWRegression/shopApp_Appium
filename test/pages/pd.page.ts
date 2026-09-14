@@ -7,9 +7,9 @@ import { PdSimService } from '../services/sim/pd-sim.service';
 import { FlagshipWatchProduct } from '../helpers/flagship-sku.helper';
 import { normalizeText, resolveDisplayColor } from '../helpers/data.helper';
 import { markFailedAndStop, markFailed, FieldCheck } from '../helpers/report.helper';
-import { getElementLabel, isDisplayedSafe, clickOptionInput } from '../helpers/element.helper';
+import { getElementLabel, isDisplayedSafe, clickWebViewElement } from '../helpers/element.helper';
 import { prepareWebViewPage, switchToNative } from '../helpers/context.helper';
-import { BcProductOptions } from './bc.page';
+import { ProductOptionFields } from './bc.page';
 
 export class PdPage extends BasePage {
   private readonly locator = new PdLocator();
@@ -24,8 +24,8 @@ export class PdPage extends BasePage {
     return prepareWebViewPage('pd', this.locator.skuAnchor);
   }
   
-  async selectOptions(_options: BcProductOptions): Promise<void> {
-    // const chips = optionSelections(options);
+  async selectOptions(_options: ProductOptionFields): Promise<void> {
+    // const chips = buildOptionList(options);
     // console.warn(
     //   `[pd.selectOptions] start ${chips.map(({ field, value }) => `${field}=${value}`).join(', ')}`
     // );
@@ -91,6 +91,9 @@ export class PdPage extends BasePage {
     await this.selectDeviceIfShown(product);
     await this.selectConnectivityIfShown(product);
     await this.selectColor(product);
+    if (product.isBespokeSKU) {
+      await this.selectNonDefaultBand();
+    }
   }
 
   /** Options here show a combined "Device (Connectivity, Size)" label, so match on device + case size together. */
@@ -109,7 +112,7 @@ export class PdPage extends BasePage {
       const normalized = normalizeText(raw).replace(/\s+/g, '');
       if (normalized.includes(device) && normalized.includes(caseSize)) {
         await markFailedAndStop(
-          () => clickOptionInput(el),
+          () => clickWebViewElement(el),
           `[PD][watch] device option not selectable: "${product.deviceName} ${product.caseSize}"`
         );
         return;
@@ -126,7 +129,7 @@ export class PdPage extends BasePage {
 
     const connOpt = this.locator.connectivityOption(product.connectivity);
     await markFailedAndStop(
-      () => clickOptionInput(connOpt),
+      () => clickWebViewElement(connOpt),
       `[PD][watch] connectivity option not selectable: "${product.connectivity}"`
     );
   }
@@ -135,8 +138,20 @@ export class PdPage extends BasePage {
     const displayColor = resolveDisplayColor(product.color, product.sku, 'watch');
     const colorOpt = this.locator.watchColorOption(displayColor);
     await colorOpt.waitForDisplayed({ timeout: 10000 }).catch(() => undefined);
-    await markFailedAndStop(() => clickOptionInput(colorOpt), `[PD][watch] color option not selectable: "${displayColor}"`);
+    await markFailedAndStop(() => clickWebViewElement(colorOpt), `[PD][watch] color option not selectable: "${displayColor}"`);
     this.selectedColor = (await getElementLabel(this.locator.selectedColorText)) || displayColor;
+  }
+
+  private async selectNonDefaultBand(): Promise<void> {
+    const band = this.locator.watchNonDefaultBandOption;
+    if (!(await isDisplayedSafe(band))) {
+      console.log('[PD][watch] bespoke band option not shown');
+      return;
+    }
+    await markFailedAndStop(
+      () => clickWebViewElement(band),
+      '[PD][watch] non-default band not selectable (bespoke)'
+    );
   }
 
   async verifySku(product: FlagshipWatchProduct): Promise<void> {

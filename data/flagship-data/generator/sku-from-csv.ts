@@ -15,6 +15,14 @@ const WATCH_CASE_SIZE: Record<string, string> = {
   'SM-L71': '47mm',
 };
 
+/** US phone SKU suffix → BC carrier chip (not watch BT/LTE). */
+const US_SKU_CARRIER: Record<string, string> = {
+  XAA: 'unlocked',
+  VZW: 'verizon',
+  ATT: 'at&t',
+  XAU: 't-mobile',
+};
+
 type CsvRow = Record<string, unknown>;
 
 function cell(row: CsvRow, ...names: string[]): string {
@@ -103,6 +111,7 @@ function toProduct(row: CsvRow): { siteCode: string; product: FlagshipProduct } 
     };
   }
 
+  const connectivity = siteCode === 'US' ? US_SKU_CARRIER[sku.slice(-3)] : undefined;
   return {
     siteCode,
     product: {
@@ -113,6 +122,7 @@ function toProduct(row: CsvRow): { siteCode: string; product: FlagshipProduct } 
       storage: cell(row, 'Storage'),
       ram: cell(row, 'RAM'),
       isPFDefaultSKU,
+      ...(connectivity ? { connectivity } : {}),
     },
   };
 }

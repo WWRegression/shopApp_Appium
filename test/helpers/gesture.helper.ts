@@ -140,6 +140,19 @@ export async function scrollElementToCenter(
 }
 
 /**
+ * Scroll the WebView document down. Use when Hybris lazy-renders nodes
+ * that are not in the DOM until they approach the viewport.
+ * Native `mobile: scrollGesture` does not move the inner WebView scroller.
+ */
+export async function scrollWebViewDown(): Promise<void> {
+  await driver.execute(
+    `const root = document.scrollingElement || document.documentElement;
+     root.scrollBy(0, Math.floor(window.innerHeight * 0.55));`
+  );
+  await driver.pause(400);
+}
+
+/**
  * Tap a raw screen coordinate. Use when an element's real tap target isn't at its bounding-box
  * center (default .click() behavior) — e.g. a merged accessibility node.
  * Katalon: UI.tapAtCoordinates
