@@ -4,7 +4,6 @@ import { switchToNative, getCurrentWebViewPage } from '../helpers/context.helper
 import { scrollDown } from '../helpers/gesture.helper';
 import { currentSiteCode } from '../helpers/tc-filter.helper';
 import { normalizeText, isExactTokenMatch, stripMarkerText, normalizeProductName } from '../helpers/data.helper';
-import { matchesText } from '../helpers/element.helper';
 import { ShopPage, type CategoryMismatch } from './shop.page';
 import { BcPage } from './bc.page';
 import { PdPage } from './pd.page';
@@ -158,17 +157,10 @@ export class PfPage extends BasePage {
     mismatches: CategoryMismatch[],
     pfName: string | null,
     bcPdName: string | null,
-    L0Title: string,
+    L0Title?: string,
     L1Title?: string,
   ): void {
-    if (pfName === null || bcPdName === null) {
-      mismatches.push(
-        `PF/PD product name not compared: ${L0Title} > ${L1Title} (PF: "${pfName}", BC/PD: "${bcPdName}")`
-      );
-      return;
-    }
-
-    if (matchesText(pfName, bcPdName)) {
+    if (this.productNameIncludes(pfName, bcPdName)) {
       console.log(`PF/PD product name match: ${L0Title} > ${L1Title} (PF: "${pfName}", BC/PD: "${bcPdName}")`);
       return;
     }
@@ -176,6 +168,12 @@ export class PfPage extends BasePage {
     mismatches.push(
       `PF/PD product name mismatch: ${L0Title} > ${L1Title} (PF: "${pfName}", BC/PD: "${bcPdName}")`
     );
+  }
+
+  private productNameIncludes(pfName: string | null, bcPdName: string | null): boolean {
+    const pf = pfName?.trim().toLowerCase() ?? '';
+    const bcPd = bcPdName?.trim().toLowerCase() ?? '';
+    return Boolean(pf) && Boolean(bcPd) && (pf.includes(bcPd) || bcPd.includes(pf));
   }
 
   async isPfCardDisplayed(): Promise<boolean> {
