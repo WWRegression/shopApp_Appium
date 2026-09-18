@@ -21,12 +21,19 @@ export const CHECKOUT_FORMS = [
   'app-dpd-parcel-machine',
   'app-omniva-parcel-machine',
   'app-checkout-step-payment',
+  'app-payment-modes-flat',
+  'app-customer-info',
+  'app-customer-address-cn',
+  'app-billing-address-cn',
+  'app-delivery-info-cn'
 ] as const;
 
 /** Input/select fields eligible for auto-fill. */
 const FIELD_SELECTOR_PARTS = [
   "input[name]:not([type='checkbox']):not([type='radio']):not([disabled])",
   "input[formcontrolname]:not([type='checkbox'])",
+  'textarea[name]',
+  'textarea[formcontrolname]',
   'select[name]',
   'mat-select[name]',
   'mat-select[formcontrolname]',
@@ -34,16 +41,17 @@ const FIELD_SELECTOR_PARTS = [
 
 /** Payment-method title elements — collapsed by default, one per available payment method. */
 const PAYMENT_METHOD_TITLE_SELECTOR = [
-  'h2.payment-title',
-  'li[dtm-payment-analytics][accordion][class*="paymentMethodItem"] [role="button"]',
-  'div[class="payment-full_body"] app-payment-mode-flat-item',
-  'div[class="payment-step_body"] app-payment-mode-flat-item',
-]
-  .map((s) => `app-checkout-step-payment ${s}`)
-  .join(', ');
+  ...[
+    'h2.payment-title',
+    'li[dtm-payment-analytics][accordion][class*="paymentMethodItem"] [role="button"]',
+    'div[class="payment-full_body"] app-payment-mode-flat-item',
+    'div[class="payment-step_body"] app-payment-mode-flat-item',
+  ].map((s) => `app-checkout-step-payment ${s}`),
+  '.payment-banks .payment-mode',
+].join(', ');
 
 /** Marks the button/div that submits the order for the currently-expanded payment method. */
-const SUBMIT_ORDER_BUTTON_LOADER_SELECTOR = 'button[appsubmitorderbuttonloader], div[appsubmitorderbuttonloader]';
+const SUBMIT_ORDER_BUTTON_LOADER_SELECTOR = 'button[appsubmitorderbuttonloader], div[appsubmitorderbuttonloader], button[data-an-tr="checkout-payment-detail"], .express-payment-mode-wrapper > div, #samsungPayContainer > button, button.fe0yvp1';
 
 export class CheckoutLocator {
   /** The active step panel — proves the checkout page has loaded and started its flow. */
@@ -70,15 +78,19 @@ export class CheckoutLocator {
     return $$('.ng-invalid, ul.error, ul.error li, mat-error, .mat-mdc-form-field-error');
   }
 
-  /** "cart-to-checkout" deliberately excluded — that's the cart page's own button, not a step-continue button. */
+   /** "cart-to-checkout" deliberately excluded — that's the cart page's own button, not a step-continue button. */
   get moveToNextButton() {
     return $(
       [
         "button[id='checkout-page-order-btn']",
         "button[data-an-tr='checkout-order-detail']",
-        "button[class*='continue-btn']",
+        "button[class*='continue-btn']:not(.enter-address-method)",
       ].join(', ')
     );
+  }
+
+  get useThisAddressButton() {
+    return $('button[data-an-la*="use this address" i]');
   }
 
   /** The not-yet-selected delivery method tab. */
@@ -98,6 +110,7 @@ export class CheckoutLocator {
         "input[name*='CHECKOUT_OPTIONS']:not(:checked)",
         "input[type='checkbox'][required]:not(:checked)",
         "input[type='checkbox'][name*='save' i]:not([disabled]):not(:checked)",
+        "input[type='radio'][value*='GENERAL_INVOICE' i]:not([disabled]):not(:checked)"
       ].join(', ')
     );
   }
@@ -146,7 +159,7 @@ export class CheckoutLocator {
   /** Present once a payment method panel has expanded. */
   get paymentMethodExpanded() {
     return $(
-      '.payment-modes-type mat-expansion-panel-header.mat-expanded[role="button"], .accordion-toggle[aria-expanded="true"]'
+      '.payment-modes-type mat-expansion-panel-header.mat-expanded[role="button"], .accordion-toggle[aria-expanded="true"], .payment-banks .payment-mode.selected'
     );
   }
 
