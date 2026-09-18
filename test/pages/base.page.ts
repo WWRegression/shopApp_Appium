@@ -229,7 +229,7 @@ export class BasePage {
   /** Switch to Native, dismiss overlays, then scroll up. */
   async prepareHeaderBnb(): Promise<void> {
     await switchToNative();
-    await this.dismissOverlays();
+    // await this.dismissOverlays();
     await scrollUp();
   }
 

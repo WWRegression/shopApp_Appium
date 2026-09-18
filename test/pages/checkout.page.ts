@@ -4,7 +4,7 @@ import { BasePage } from './base.page';
 import { CheckoutLocator, CHECKOUT_FORMS } from '../locators/checkout.locator';
 import { prepareWebViewPage } from '../helpers/context.helper';
 import { getSiteData as getSite } from '../../config/site';
-import { clickWebViewElement, getElementLabel, isDisplayedSafe, jsClick } from '../helpers/element.helper';
+import { scrollAndJsClick, getElementLabel, isDisplayedSafe, jsClick } from '../helpers/element.helper';
 import { scrollDown } from '../helpers/gesture.helper';
 import { markFailed } from '../helpers/report.helper';
 import type { LoadedSite } from '../../config/site';
@@ -73,21 +73,21 @@ export class CheckoutPage extends BasePage {
     });
   }
 
-  /** Waits for the loading spinner/overlay to clear — polled, no fixed sleep. */
+  /** Waits for the loading spinner/overlay to clear ??polled, no fixed sleep. */
   private async waitForPageStable(timeoutMs = 8000): Promise<void> {
     await driver
       .waitUntil(async () => !(await this.isLoadingVisible()), { timeout: timeoutMs, interval: 300 })
       .catch(() => undefined);
   }
 
-  /** The outer cx-page-layout can render before its lazy-loaded step component mounts — wait for a real form to exist, not just the shell. */
+  /** The outer cx-page-layout can render before its lazy-loaded step component mounts ??wait for a real form to exist, not just the shell. */
   private async waitForAnyFormToExist(timeoutMs = 8000): Promise<void> {
     await driver
       .waitUntil(async () => (await this.locator.formElements.length) > 0, { timeout: timeoutMs, interval: 300 })
       .catch(() => undefined);
   }
 
-  /** Playwright ref nextStep() — after clicking, check *why* it didn't advance instead of clicking blind. */
+  /** Playwright ref nextStep() ??after clicking, check *why* it didn't advance instead of clicking blind. */
   private async clickMoveToNext(): Promise<void> {
     await this.locator.moveToNextButton.waitForClickable({ timeout: 10000 });
     await this.locator.moveToNextButton.click();
@@ -110,7 +110,7 @@ export class CheckoutPage extends BasePage {
     }
 
     if (invalidLabels.length > 0) {
-      console.log(`clickMoveToNext: form still invalid — ${JSON.stringify(invalidLabels)}`);
+      console.log(`clickMoveToNext: form still invalid ??${JSON.stringify(invalidLabels)}`);
     }
   }
 
@@ -141,7 +141,7 @@ export class CheckoutPage extends BasePage {
             : tagName === 'select'
               ? Boolean((el as HTMLSelectElement).value)
               : Boolean(el.querySelector('.mat-mdc-select-min-line')?.textContent?.trim());
-        // Search-style address field — same key fillAddressInfo() already fills across every site.
+        // Search-style address field ??same key fillAddressInfo() already fills across every site.
         const isAutocomplete = key === 'searchaddress';
 
         return { index, tag: tagName, key, required, hasValue, isAutocomplete };
@@ -150,8 +150,8 @@ export class CheckoutPage extends BasePage {
   }
 
   private async setInputValue(field: ChainablePromiseElement, value: string, isAutocomplete: boolean): Promise<void> {
-    // setValue() doesn't reliably flip this Angular form's validity state — use the native setter + dispatch events.
-    // A native tap can land on the floating label overlapping an empty field — click via JS instead.
+    // setValue() doesn't reliably flip this Angular form's validity state ??use the native setter + dispatch events.
+    // A native tap can land on the floating label overlapping an empty field ??click via JS instead.
     await jsClick(field).catch(() => undefined);
     await driver.execute(
       (el, val) => {
@@ -170,23 +170,23 @@ export class CheckoutPage extends BasePage {
       return;
     }
 
-    // A search-style input (e.g. address autocomplete) can drop a mat-option list — same primitive as a select.
+    // A search-style input (e.g. address autocomplete) can drop a mat-option list ??same primitive as a select.
     const suggestion = $('(//mat-option)[1]');
     const suggestionAppeared = await suggestion
       .waitForExist({ timeout: 3000 })
       .then(() => true)
       .catch(() => false);
     if (suggestionAppeared) {
-      await clickWebViewElement(suggestion).catch(() => undefined);
+      await scrollAndJsClick(suggestion).catch(() => undefined);
     }
   }
 
-  /** Pick `value` if given, else the first option — caller already knows the field is empty. */
+  /** Pick `value` if given, else the first option ??caller already knows the field is empty. */
   private async fillSelectField(field: ChainablePromiseElement, value: string | undefined): Promise<void> {
-    await clickWebViewElement(field).catch(() => undefined);
+    await scrollAndJsClick(field).catch(() => undefined);
     const match = value ? $(`//mat-option[contains(., "${value}")]`) : undefined;
     const target = match && (await match.isExisting().catch(() => false)) ? match : $('(//mat-option)[1]');
-    await clickWebViewElement(target).catch(() => undefined);
+    await scrollAndJsClick(target).catch(() => undefined);
   }
 
   /** Fills only the required fields in `formId` from `valueMap`, keyed by name/formcontrolname (lowercased). */
@@ -224,13 +224,13 @@ export class CheckoutPage extends BasePage {
 
   async fillAddressInfo(formId: CheckoutFormId, overrides?: Partial<LoadedSite['shipping']>): Promise<void> {
     if (await this.locator.newAddressRadio.isExisting().catch(() => false)) {
-      await clickWebViewElement(this.locator.newAddressRadio).catch(() => undefined);
+      await scrollAndJsClick(this.locator.newAddressRadio).catch(() => undefined);
     }
 
-    // No saved address defaults to a search box — switch to manual fields if they're not rendered yet.
+    // No saved address defaults to a search box ??switch to manual fields if they're not rendered yet.
     const hasManualFields = (await this.getFieldDescriptors(formId)).some((d) => d.key === 'line1');
     if (!hasManualFields && (await this.locator.enterAddressManuallyLink.isExisting().catch(() => false))) {
-      await clickWebViewElement(this.locator.enterAddressManuallyLink).catch(() => undefined);
+      await scrollAndJsClick(this.locator.enterAddressManuallyLink).catch(() => undefined);
     }
 
     const data = { ...getSite().shipping, ...overrides };
@@ -240,31 +240,31 @@ export class CheckoutPage extends BasePage {
       postalcode: data.postalCode,
       // "Suburb" is a select/autocomplete with formcontrolname "town" (confirmed on device).
       town: data.town,
-      // TODO: confirm real name/formcontrolname for "State" on device — best guess until verified.
+      // TODO: confirm real name/formcontrolname for "State" on device ??best guess until verified.
       state: data.district,
       searchaddress: data.searchText,
       phone: getSite().customer.mobile,
     });
   }
 
-  /** isExisting() not isDisplayed() — these radios report as not displayed despite being real. */
+  /** isExisting() not isDisplayed() ??these radios report as not displayed despite being real. */
   private async selectDeliveryOptionIfPresent(): Promise<void> {
     for (const el of [this.locator.deliveryMethodButton, this.locator.deliveryOptionButton]) {
       if (await el.isExisting().catch(() => false)) {
-        await clickWebViewElement(el).catch(() => undefined);
+        await scrollAndJsClick(el).catch(() => undefined);
       }
     }
   }
 
-  /** Page-wide, called once per runCheckout() pass rather than per form — the selector isn't form-scoped. */
+  /** Page-wide, called once per runCheckout() pass rather than per form ??the selector isn't form-scoped. */
   private async checkRequiredCheckboxes(): Promise<void> {
-    // Re-queried each time — :not(:checked) shrinks as each checkbox gets checked.
+    // Re-queried each time ??:not(:checked) shrinks as each checkbox gets checked.
     for (let i = 0; i < 5 && (await this.locator.autoCheckCheckbox.isExisting().catch(() => false)); i++) {
-      await clickWebViewElement(this.locator.autoCheckCheckbox).catch(() => undefined);
+      await scrollAndJsClick(this.locator.autoCheckCheckbox).catch(() => undefined);
     }
   }
 
-  /** Fallback for any step not in `formHandlers` — new countries only need an entry there for real data or bespoke interaction. */
+  /** Fallback for any step not in `formHandlers` ??new countries only need an entry there for real data or bespoke interaction. */
   private async fillGenericStep(formId: CheckoutFormId): Promise<void> {
     await this.fillFormFields(formId, {});
   }
@@ -295,7 +295,7 @@ export class CheckoutPage extends BasePage {
     markFailed([{ label: 'payment method title text', pass: title.length > 0 }], 'checkPaymentMethod');
 
     if (!(await this.locator.paymentMethodExpanded.isExisting().catch(() => false))) {
-      await clickWebViewElement(first);
+      await scrollAndJsClick(first);
     }
     await this.locator.paymentMethodExpanded.waitForExist({ timeout: 10000 });
     await this.waitForPageStable();
@@ -348,9 +348,9 @@ export class CheckoutPage extends BasePage {
     );
   }
 
-  /** Katalon Checkout.verifyEditInCustomerDetails() — Edit button must land back on the Contact Info step. */
+  /** Katalon Checkout.verifyEditInCustomerDetails() ??Edit button must land back on the Contact Info step. */
   async verifyEditInCustomerDetails(paymentAddress?: string): Promise<void> {
-    await clickWebViewElement(this.locator.editCustomerDetailsButton);
+    await scrollAndJsClick(this.locator.editCustomerDetailsButton);
     const step = await this.getCurrentCheckoutStep();
     markFailed(
       [{ label: 'edit navigated to contact info step', pass: step === 'CHECKOUT_STEP_CONTACT_INFO', detail: step }],
@@ -362,9 +362,9 @@ export class CheckoutPage extends BasePage {
     }
   }
 
-  /** Katalon Checkout.verifyEditInDeliveryOptions() — Edit button must land back on the Delivery step. */
+  /** Katalon Checkout.verifyEditInDeliveryOptions() ??Edit button must land back on the Delivery step. */
   async verifyEditInDeliveryOptions(paymentAddress?: string): Promise<void> {
-    await clickWebViewElement(this.locator.editDeliveryOptionsButton);
+    await scrollAndJsClick(this.locator.editDeliveryOptionsButton);
     const step = await this.getCurrentCheckoutStep();
     markFailed(
       [{ label: 'edit navigated to delivery step', pass: step === 'CHECKOUT_STEP_DELIVERY', detail: step }],
@@ -376,7 +376,7 @@ export class CheckoutPage extends BasePage {
     }
   }
 
-  /** Katalon Checkout.handleCheckoutEditButton() — which Edit button(s) to check varies by site. */
+  /** Katalon Checkout.handleCheckoutEditButton() ??which Edit button(s) to check varies by site. */
   async handleCheckoutEditButton(paymentAddress?: string): Promise<void> {
     const sequence = EDIT_SEQUENCE_BY_SITE[getSite().siteCode] ?? EDIT_SEQUENCE_BY_SITE.default;
     for (const type of sequence) {
@@ -386,7 +386,7 @@ export class CheckoutPage extends BasePage {
   }
 
   /**
-   * Katalon Checkout.verifyEditInOrderSummary() — editing Order Summary leaves checkout entirely
+   * Katalon Checkout.verifyEditInOrderSummary() ??editing Order Summary leaves checkout entirely
    * and returns to Cart (unlike the Customer/Delivery edit buttons, which stay inside checkout).
    * CN has no Order Summary section. Caller must verify the Cart landing (e.g. cartPage.prepareCartPage()).
    */
@@ -397,13 +397,13 @@ export class CheckoutPage extends BasePage {
 
     await scrollDown();
     if (await isDisplayedSafe(this.locator.viewOrderToggle)) {
-      await clickWebViewElement(this.locator.viewOrderToggle);
+      await scrollAndJsClick(this.locator.viewOrderToggle);
     }
 
     if (await isDisplayedSafe(this.locator.editOrderSummaryButton)) {
-      await clickWebViewElement(this.locator.editOrderSummaryButton);
+      await scrollAndJsClick(this.locator.editOrderSummaryButton);
       if (await isDisplayedSafe(this.locator.leaveCheckoutConfirmButton)) {
-        await clickWebViewElement(this.locator.leaveCheckoutConfirmButton);
+        await scrollAndJsClick(this.locator.leaveCheckoutConfirmButton);
       }
     }
   }

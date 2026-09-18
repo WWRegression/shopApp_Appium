@@ -1,5 +1,7 @@
 import { AemTradeInPopupLocator } from '../../locators/aem-tradein-popup.locator';
 import { scrollElementToCenter } from '../../helpers/gesture.helper';
+import { scrollAndJsClick, jsClick } from '../../helpers/element.helper';
+import { getRunConfig } from '../../../config/run.config';
 import {
   TradeInInput,
   TradeInStep,
@@ -7,8 +9,8 @@ import {
 } from './tradein.types';
 
 /**
- * Trade-In 팝업을 step 감지 방식으로 완료한다.
- * (고정 N회 next 클릭이 아니라 현재 UI 상태에 반응)
+ * Trade-In ?ì??step ê°ì? ë°©ì?¼ë¡ ?ë£?ë¤.
+ * (ê³ ì  N??next ?´ë¦­???ë???ì¬ UI ?í??ë°ì)
  */
 export class AemTradeInPopupService {
   private readonly locator = new AemTradeInPopupLocator();
@@ -48,7 +50,7 @@ export class AemTradeInPopupService {
   async completeTradeInFlow(input: TradeInInput = {}): Promise<void> {
     await this.waitForOpen();
 
-    for (let attempt = 1; attempt <= 8; attempt++) {
+    for (let attempt = 1; attempt <= 12; attempt++) {
       if (!(await this.isOpen())) {
         return;
       }
@@ -73,7 +75,9 @@ export class AemTradeInPopupService {
         await this.clickContinueOrApply();
         break;
       case 'check-condition':
+        await this.preAcceptDeviceConditionIfNeeded();
         await this.acceptAllConditions();
+        await this.acceptTermsIfNeeded();
         await this.clickContinueOrApply();
         break;
       case 'enter-imei':
@@ -106,23 +110,123 @@ export class AemTradeInPopupService {
 
     for (const value of values) {
       const option = this.locator.optionByValue(value);
-      if (await option.isDisplayed().catch(() => false)) {
-        await scrollElementToCenter(option).catch(() => undefined);
-        await option.click();
-        await driver.pause(400);
+      // isDisplayed can be true for occluded page elements; require existence in popup scope.
+      if (!(await option.isExisting().catch(() => false))) {
+        continue;
       }
+      await scrollElementToCenter(option).catch(() => undefined);
+      try {
+        await scrollAndJsClick(option);
+      } catch {
+        await jsClick(option);
+      }
+      await driver.pause(400);
     }
+  }
+
+  private shouldClickConditionIndex(siteCode: string, index: number): boolean {
+    const site = siteCode.toUpperCase();
+    const evenIndex = index % 2 === 0;
+    const oddIndex = index === 0 || (index !== 1 && index % 2 === 1);
+    const secondAndEven = index === 1 || (index !== 0 && index % 2 === 0);
+    const onlyOdd = index % 2 === 1;
+    const firstItem = index === 0;
+    const inSpecific = [0, 3, 5, 7, 8, 10].includes(index);
+
+    if (['TH', 'CN', 'HK', 'HK_EN'].includes(site)) return oddIndex;
+    if (site === 'PH') return secondAndEven;
+    if (['JP', 'NZ', 'SG'].includes(site)) return onlyOdd;
+    if (['AE', 'AE_AR', 'UK'].includes(site)) return firstItem;
+    if (site === 'IN') return inSpecific;
+    return evenIndex;
+  }
+
+  private async preAcceptDeviceConditionIfNeeded(): Promise<void> {
+    const good = this.locator.goodConditionOption;
+    if (!(await good.isExisting().catch(() => false))) {
+      return;
+    }
+    const selected = await good.isSelected().catch(() => false);
+    if (selected) {
+      return;
+    }
+    await scrollElementToCenter(good).catch(() => undefined);
+    await this.clickConditionTarget((await good) as unknown as WebdriverIO.Element);
   }
 
   private async acceptAllConditions(): Promise<void> {
     const inputs = await this.locator.conditionInputs;
     const count = await inputs.length;
+    const targets: WebdriverIO.Element[] = [];
+
     for (let i = 0; i < count; i++) {
-      const input = inputs[i];
-      if (await input.isDisplayed().catch(() => false)) {
-        await input.click().catch(() => undefined);
+      const el = (await inputs[i]) as unknown as WebdriverIO.Element;
+      if (await el.isDisplayed().catch(() => false)) {
+        targets.push(el as WebdriverIO.Element);
       }
     }
+    if (targets.length === 0) {
+      return;
+    }
+
+    const checklistTargets: WebdriverIO.Element[] = [];
+    for (const target of targets) {
+      const acceptData =
+        (await target.getAttribute('accept_data').catch(() => '')) ??
+        (await target.getAttribute('accept-data').catch(() => '')) ??
+        '';
+      // Summary accept radios (good / not good) are handled in preAcceptDeviceConditionIfNeeded.
+      if (acceptData === 'yes' || acceptData === 'no') {
+        continue;
+      }
+      checklistTargets.push(target);
+    }
+
+    if (checklistTargets.length === 0) {
+      return;
+    }
+
+    const siteCode = getRunConfig().siteCode;
+    let clicked = false;
+
+    for (let idx = 0; idx < checklistTargets.length; idx++) {
+      if (!this.shouldClickConditionIndex(siteCode, idx)) {
+        continue;
+      }
+      await this.clickConditionTarget(checklistTargets[idx]);
+      clicked = true;
+      await driver.pause(300);
+    }
+
+    if (!clicked) {
+      for (const target of checklistTargets) {
+        await this.clickConditionTarget(target);
+        await driver.pause(300);
+      }
+    }
+  }
+
+  private async clickConditionTarget(el: WebdriverIO.Element): Promise<void> {
+    const tag = ((await el.getTagName().catch(() => '')) ?? '').toLowerCase();
+
+    if (tag === 'input') {
+      const id = (await el.getAttribute('id').catch(() => '')) ?? '';
+      if (id) {
+        const label = await $(`label[for="${id.replace(/"/g, '\\"')}"]`);
+        if (await label.isExisting().catch(() => false)) {
+          await scrollElementToCenter(label).catch(() => undefined);
+          await jsClick(await label);
+          return;
+        }
+      }
+      await driver.execute(
+        'const el = arguments[0]; const parent = el.closest(".radio-v2, label"); (parent || el).click();',
+        el
+      );
+      return;
+    }
+
+    await jsClick(el);
   }
 
   private async enterImei(imei?: string): Promise<void> {
@@ -130,41 +234,66 @@ export class AemTradeInPopupService {
       return;
     }
     const field = this.locator.imeiInput;
-    if (!(await field.isDisplayed().catch(() => false))) {
+    if (!(await field.isExisting().catch(() => false))) {
       return;
     }
+    await scrollElementToCenter(field).catch(() => undefined);
     await field.clearValue().catch(() => undefined);
     await field.setValue(imei);
-    if (await this.locator.checkImeiButton.isDisplayed().catch(() => false)) {
-      await this.locator.checkImeiButton.click();
+
+    const checkBtn = this.locator.checkImeiButton;
+    if (await checkBtn.isExisting().catch(() => false)) {
+      await scrollAndJsClick(checkBtn);
+      // Wait for validation to enable Continue (avoid re-entering the same step blindly).
+      await this.locator.continueButton
+        .waitForDisplayed({ timeout: 10000 })
+        .catch(() => undefined);
+      await driver.pause(500);
     }
   }
 
   private async acceptTermsIfNeeded(): Promise<void> {
-    const checkbox = this.locator.termsCheckbox;
-    if (await checkbox.isDisplayed().catch(() => false)) {
+    const checkboxes = await $$(
+      [
+        'input[type="checkbox"][an-la*="term" i]',
+        '.trade-in-popup__apply-wrap input[type="checkbox"]',
+        '[class*="tnc"] input[type="checkbox"]',
+        '.trade-in-popup-v3 input[type="checkbox"]:not(:checked)',
+      ].join(', ')
+    );
+
+    for (const checkbox of checkboxes) {
+      if (!(await checkbox.isDisplayed().catch(() => false))) {
+        continue;
+      }
       const checked = await checkbox.isSelected().catch(() => false);
       if (!checked) {
-        await checkbox.click();
+        await jsClick(checkbox);
       }
     }
   }
 
   private async clickContinueOrApply(): Promise<void> {
-    if (await this.locator.applyButton.isDisplayed().catch(() => false)) {
-      await this.clickApply();
-      return;
+    if (await this.locator.applyButton.isExisting().catch(() => false)) {
+      const applyDisabled =
+        ((await this.locator.applyButton.getAttribute('class').catch(() => '')) ?? '').includes(
+          'cta--disabled'
+        );
+      if (!applyDisabled) {
+        await this.clickApply();
+        return;
+      }
     }
-    if (await this.locator.continueButton.isDisplayed().catch(() => false)) {
-      await scrollElementToCenter(this.locator.continueButton).catch(() => undefined);
-      await this.locator.continueButton.click();
+    const cont = this.locator.continueButton;
+    if (await cont.isExisting().catch(() => false)) {
+      await scrollElementToCenter(cont).catch(() => undefined);
+      await scrollAndJsClick(cont);
     }
   }
 
   private async clickApply(): Promise<void> {
     await this.acceptTermsIfNeeded();
     await scrollElementToCenter(this.locator.applyButton).catch(() => undefined);
-    await this.locator.applyButton.waitForClickable({ timeout: 10000 });
-    await this.locator.applyButton.click();
+    await scrollAndJsClick(this.locator.applyButton);
   }
 }

@@ -7,6 +7,28 @@ export async function isDisplayedSafe(element: ChainablePromiseElement): Promise
   return element.isDisplayed().catch(() => false);
 }
 
+/**
+ * WebView existence: prefer document.querySelector (CSS + execute/sync),
+ * fall back to Appium isExisting when selector is not CSS or execute fails.
+ */
+export async function isExistingInWebView(el: ChainablePromiseElement): Promise<boolean> {
+  try {
+    const resolved = await el;
+    const selector = typeof resolved.selector === 'string' ? resolved.selector : '';
+    if (selector) {
+      const found = await driver
+        .execute('return Boolean(document.querySelector(arguments[0]));', selector)
+        .catch(() => null);
+      if (found !== null) {
+        return Boolean(found);
+      }
+    }
+    return resolved.isExisting().catch(() => false);
+  } catch {
+    return false;
+  }
+}
+
 export async function clickElement(
   element: ChainablePromiseElement,
   options?: { timeout?: number }
@@ -21,16 +43,20 @@ export async function jsClick(el: ChainablePromiseElement | WebdriverIO.Element)
   await driver.execute('arguments[0].click();', await el);
 }
 
-/**
- * WebView control: visible → native tap, hidden → jsClick.
- */
-export async function clickWebViewElement(el: ChainablePromiseElement): Promise<void> {
+/** Scroll into view, then HTMLElement.click(). */
+export async function scrollAndJsClick(el: ChainablePromiseElement): Promise<void> {
+  await console.warn('[scrollAndJsClick] start');
   await scrollElementToCenter(el).catch(() => undefined);
-  if (await el.isDisplayed().catch(() => false)) {
-    await el.click();
-    return;
-  }
   await jsClick(el);
+  await console.warn('[scrollAndJsClick] jsClick done');
+}
+
+/**
+ * Scroll into view, then WDIO element.click() (for controls that ignore jsClick, e.g. SC+).
+ */
+export async function scrollAndWdioClick(el: ChainablePromiseElement): Promise<void> {
+  await scrollElementToCenter(el).catch(() => undefined);
+  await el.click();
 }
 
 /** Prefer getText(); fall back to content-desc. */

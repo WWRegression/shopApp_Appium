@@ -31,7 +31,11 @@ export class AemTradeInPopupLocator {
 
   get continueButton() {
     return $(
-      'div[class*="step--show"] button[an-la*="next"]:not(.cta--disabled), button[class*="bc-trade-in-popup__btn-continue"]:not(.cta--disabled), button[class*="trade-in-popup-v3__btn-continue"]'
+      [
+        'div[class*="step--show"] button[an-la*="next"]:not(.cta--disabled):not([an-la$="close"]):not([class*="btn-back"])',
+        'button[class*="bc-trade-in-popup__btn-continue"]:not(.cta--disabled)',
+        'button[class*="trade-in-popup-v3__btn-continue"]:not(.cta--disabled)',
+      ].join(', ')
     );
   }
 
@@ -57,13 +61,33 @@ export class AemTradeInPopupLocator {
   get conditionInputs() {
     return $$(
       [
+        '.trade-in-popup-v3__condition-list-item label.radio-v2__label',
+        '.trade-in-popup-v3__condition label.radio-v2__label',
+        '.trade-in-popup__condition-list label.radio-v2__label',
+        '.bc-trade-in-popup__condition-list label.radio-v2__label',
+        '.bc-exchange-popup__condition-list label.radio-v2__label',
+        'li.radio-v2.cn-trade-in-popup__condition-option-item label.radio-v2__label',
         '.trade-in-popup-v3__condition-list-item input',
         '.trade-in-popup-v3__condition input',
         '.trade-in-popup__condition-list input',
         '.bc-trade-in-popup__condition-list input',
-        '.bc-exchange-popup__condition-list label.radio-v2__label',
       ].join(', ')
     );
+  }
+
+  get goodConditionOption() {
+    return $(
+      [
+        '.trade-in-popup-v3 input[accept_data="yes"]',
+        '.trade-in-popup-v3 [an-la*="good condition" i]',
+        '.trade-in-popup__summary-accept input[accept_data="yes"]',
+        '#addconditionCheck0-1[name="jp-tradein-Q5"]',
+      ].join(', ')
+    );
+  }
+
+  get preAcceptYesButton() {
+    return $('.trade-in-popup__summary-accept input[accept_data="yes"]');
   }
 
   get imeiInput() {
@@ -79,20 +103,37 @@ export class AemTradeInPopupLocator {
   }
 
   get checkImeiButton() {
-    return $('button[an-la*="imei" i], button[class*="imei"], [an-la*="check imei" i]');
+    // Do NOT use bare [an-la*="imei"] — Back is an-la="trade-in:enter imei:close".
+    return $(
+      [
+        'button.js-validate-device-imei:not(.cta--disabled)',
+        'button[an-la*="check imei" i]:not([an-la$="close"]):not([class*="btn-back"])',
+        'button[an-la*="validate imei" i]:not([an-la$="close"]):not([class*="btn-back"])',
+        '.trade-in-popup__imei-form button[type="button"]:not([an-la$="close"]):not([class*="btn-back"]):not(.cta--disabled)',
+        '.trade-in-popup-v3__imei button[type="button"]:not([an-la$="close"]):not([class*="btn-back"]):not(.cta--disabled)',
+      ].join(', ')
+    );
   }
 
   optionByValue(optionValue: string) {
     const v = optionValue.replace(/"/g, '\\"');
+    // Keep selectors inside the Trade-In popup only.
+    // A bare [an-la*="512GB"] matches BC memory radios behind the overlay.
     return $(
       [
         `.trade-in-popup-v3__tradeIn-category-list input[value^="${v}" i] + label`,
+        `.trade-in-popup-v3__tradeIn-category-list input[value^="${v}" i]`,
         `.trade-in-popup__category-device-list input[value="${v}" i] + label`,
+        `.bc-exchange-popup__tradeIn-category-list input[an-la$="${v}" i] + label`,
+        `.bc-trade-in-popup__tradeIn-category-list input[value^="${v}" i] + label`,
         `.trade-in-select a[value="${v}" i]`,
         `.trade-in-select a[data-name="${v}" i]`,
-        `[data-testid="${v}" i]`,
-        `.js-dropbox-item[data-filter-info*="${v}" i]`,
-        `[an-la*="${v}" i]`,
+        `.trade-in-popup-v3 [data-testid="${v}" i]`,
+        `.trade-in-popup-v3 .js-dropbox-item[data-filter-info*="${v}" i]`,
+        `.trade-in-popup-v3 [an-la*="${v}" i]`,
+        `.bc-trade-in-popup [an-la*="${v}" i]`,
+        `.bc-exchange-popup [an-la*="${v}" i]`,
+        `[class*="TradeIn_tradein__instance"] [an-la*="${v}" i]`,
       ].join(', ')
     );
   }

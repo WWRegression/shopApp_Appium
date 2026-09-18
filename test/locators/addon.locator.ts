@@ -9,6 +9,9 @@ export class AddOnLocator {
       [
         '.confirm-popup__cta-wrap [an-tr~="skip"][an-la="evoucher:no addition:skip"]',
         '.confirm-popup__cta-wrap [id="skipGoCartAddOn"]',
+        '[id="skipGoCartAddOn"]',
+        '[an-la*="no addition:skip" i]',
+        '[an-la*="skip" i][an-la*="cart" i]',
       ].join(', ')
     );
   }
@@ -26,6 +29,9 @@ export class AddOnLocator {
         '[an-la="evoucher:below evoucher:continue"]',
         '[class*="AddOn_footerButton"][an-la*="evoucher:continue"]',
         '.hubble-addon-page__sticky [an-la*="evoucher:continue"]',
+        '.hubble-addon-page [an-la*="go to cart" i]',
+        '.hubble-addon-page [an-la*="continue" i]',
+        '[class*="AddOn"][an-la*="go to cart" i]',
       ].join(', ')
     );
   }

@@ -1,14 +1,28 @@
 import { getRunConfig } from '../../config/run.config';
 import { storageLabelVariants } from '../helpers/data.helper';
-
+import { OptionChip } from '../pages/bc.page';
 /**
  * Buy Configurator (WebView) locators.
  * CSS는 Hybris BC 기준. 앱 변경 시 Inspector로 보정.
  */
 export class BcLocator {
   get bcLayout() {
-    return $(`div .bc-cross-navigation-wrap, section.watch-bc,
-      #headerWrapper .MobileViewHeader_header__title__9zKbO`);
+    // Early-appearing BC anchors (Katalon BC/BCLayout + sticky/price bar).
+    return $(
+      [
+        '.bc-page',
+        '.st-page-pd',
+        '.wbc-page',
+        '.wbc-page-v2',
+        '#pdp-page',
+        '.bc-cross-navigation-wrap',
+        'section.watch-bc',
+        '.hubble-price-bar',
+        '.watch-bc-price-bar',
+        'cx-storefront',
+        'main[cxskiplink*="main"]',
+      ].join(', ')
+    );
   }
 
   tradeInYesOption() {
@@ -31,6 +45,7 @@ export class BcLocator {
         '.js-tradein-popup a[an-la="trade-in:no" i]',
         'input[an-la="trade-in:no" i] + label',
         '[class*="TradeInOptIn_tradein__select__card"] [role="button"][aria-label*="no" i]',
+        '.watch-bc-buyflow.trade-in-option .buyflow-option.no-option'
       ].join(', ')
     );
   }
@@ -155,8 +170,12 @@ export class BcLocator {
   }
 
   /** Visible selected label in the option section (color is often localized). */
-  optionSelectedResult(field: 'deviceName' | 'storage' | 'caseSize' | 'color' | 'connectivity') {
-    const parts = this.optionSectionSelector(field)
+  optionSelectedResult(field: string) {
+    const selector = this.optionSectionSelector(field);
+    if (!selector) {
+      return undefined;
+    }
+    const parts = selector
       .split(',')
       .map((part) => part.trim())
       .filter(Boolean);
@@ -176,21 +195,32 @@ export class BcLocator {
     );
   }
 
-  optionSectionSelector(
-    field: 'deviceName' | 'storage' | 'caseSize' | 'color' | 'connectivity'
-  ): string {
+  optionSectionSelector(field: string): string | undefined {
     switch (field) {
       case 'deviceName':
         return '.s-option-device, .watch-bc-option__option-item:has([name*="device"]), #device_info[aria-label="Device"]';
       case 'storage':
         return '=.s-option-storage .is-checked .s-rdo-name, =[an-la^="storage:"][class*="selected" i]';
       case 'caseSize':
-        return '.watch-bc-option__option-item:has([name*="case-size"]), =#capacity_info.Capacity_selected__8LHNQ';
+        // Title only — section .is-checked also matches "Color options may vary depending on the case size".
+        return [
+          '=.watch-bc-option__option-item:has(> .input-case-size:checked) .option-select__title',
+          '=#capacity_info.Capacity_selected__8LHNQ',
+        ].join(', ');
       case 'connectivity':
-        return '.watch-bc-option__option-item:has([name*="connectivity"]), =#watchConnectivity [class*="selected" i]';
+        return [
+          '=.watch-bc-option__option-item:has(> .input-connectivity:checked) .option-select__title',
+          '=#watchConnectivity [class*="selected" i]',
+        ].join(', ');
       case 'color':
-        return '=.s-option-color-special .is-checked .s-color-name, =.watch-bc-option__option-item:has(> .input-case-color:checked) .option-select__title, =[class*="ColorTile_container"]:has([class*="ColorTile_selected"]) [class*="ColorTile_bottomText"]';
+        // Watch case colour (not band colour): checked input-case-color label / phone / US tile.
+        return [
+          '=.watch-bc-option__option-item:has(> .input-case-color:checked) .option-select__title',
+          '=.s-option-color-special .is-checked .s-color-name',
+          '=[class*="ColorTile_container"]:has([class*="ColorTile_selected"]) [class*="ColorTile_bottomText"]',
+        ].join(', ');
     }
+    return undefined;
   }
 
   // ---- Flagship: phone BC (hubble-product template) ----
@@ -278,6 +308,7 @@ export class BcLocator {
         '[an-la="top sticky bar:buy now"].price-bar-cart-btn',
         'div.hubble-price-bar__price-cta .price-bar-cart-btn',
         '[an-la*="sticky bar" i][an-la*="cart" i]',
+        '.watch-bc-price-bar__cta button'
       ].join(', ')
     );
   }
@@ -311,13 +342,8 @@ export class BcLocator {
 
   get scPlusAddButton() {
     return $(
-      [
+      [        
         '.hubble-product__options-list-wrap:not([style*="hidden"]) .js-smc',
-        '.wearable-option.option-care li:not(.depth-two) button:not([an-la*="none"])',
-        '.smc-list .insurance__item--yes',
-        '.option-care .pd-select-option__item > .pd-option-selector:has([an-la="samsung care:yes"])',
-        '[id="#vipCumCarePlus"] #molecule_careplus_item',
-        '.watch-bc-buyflow.care-option:not([style*="none"]) button:not([an-la*="care:none"]):not([an-la*="care:no"])',
       ].join(', ')
     );
   }
@@ -336,6 +362,83 @@ export class BcLocator {
     );
   }
 
+  get scPlusPaymentOption() {
+    return $(
+      [
+        '.hubble-product__options-payment .s-option-box',
+        'label[for="pd-samsung-care-payment-0"]',
+      ].join(', ')
+    );
+  }
+
+  get scPlusModal() {
+    return $(
+      [
+        '.hubble-care-popup-new:not([style*="display: none"])',
+        'div.hubble-care-popup.smcpopup[role="dialog"][style*="display: block"]',
+        '.smc-modal',
+      ].join(', ')
+    );
+  }
+
+  get scPlusTypeOption() {
+    return $('.smc-modal :has(> [name="smc-types"]), .smc-modal [name="smc-types"]');
+  }
+
+  get scPlusDurationOption() {
+    return $('.smc-modal :has(> [name="smc-durations"]), .smc-modal [name="smc-durations"]');
+  }
+
+  get scPlusContinueButton() {
+    return $('.smc-modal [an-la="samsung care:continue"]');
+  }
+
+  get scPlusConfirmButton() {
+    return $(
+      [
+        'button[an-la="samsung care:confirm"]',
+        '[an-la*="samsung care"][an-la*="agree & close"]',
+        'a[an-la="samsung care:confirm"][aria-disabled="false"]',
+      ].join(', ')
+    );
+  }
+
+  get scPlusTermsCheckboxes() {
+    return $$(
+      [
+        '.hubble-care-popup-new__check-list .checkbox-radio input',
+        '.smc-modal .tandc__item',
+        '.js-added-services-container .added-services-terms .checkbox-square',
+        'mat-checkbox[formcontrolname="tnc"] input[required]',
+        '.hubble-care-popup__check-list.is-check-required input[id*="care-chk"]',
+      ].join(', ')
+    );
+  }
+
+  get scPlusPriceLabel() {
+    return $(
+      [
+        '#samsung-care div[class*="is-checked"][data-smc-price]',
+        '#samsung-care div[class*="is-checked"] .s-option-price',
+        '#samsung-care div[class*="is-checked"] .opt-option-price',
+        '[class*="CareOfferOption_selected"] span',
+      ].join(', ')
+    );
+  }
+
+  get scPlusAppliedLabel() {
+    return $(
+      [
+        '#lineSummary .hubble-product__summary-product-inner .hubble-product__summary-product-option',
+        '.total-summary__price-bundle .summary-care-title',
+        'ul[class*="samsung-care"]:has(li.pd-select-option__item.selected)',
+        '.hubble-product__summary-product-option',
+        '.wearable-bc-price__bundle-title',
+        '[class*="SummaryDetails_summary__details__two__row"] span',
+      ].join(', ')
+    );
+  }
+
   get eupAddButton() {
     return $('[an-la*="eup" i][an-la*="yes" i], [an-la*="upgrade" i]');
   }
@@ -345,11 +448,103 @@ export class BcLocator {
   }
 
   get simAddButton() {
-    return $('[an-la*="sim" i][an-la*="yes" i], [an-la*="add sim" i]');
+    return $(
+      [
+        '[an-la*="tariffs:vodafone"i]',
+      ].join(', ')
+    );
   }
 
   get simNoButton() {
-    return $('[an-la*="sim" i][an-la*="no" i]');
+    return $(
+      [
+        '[an-la*="sim" i][an-la*="no" i]',
+        '[an-la="tariff:no"]',
+        '[an-la="tariff:none"]',
+        '.s-option-tariff [an-la*="no" i]',
+      ].join(', ')
+    );
+  }
+
+  get simPurchaseOption() {
+    return $(
+      [
+        '[an-la*="tariffs:vodafone"i]',
+        '.contents-tariff__option-list',
+      ].join(', ')
+    );
+  }
+
+  get simInlinePlanOption() {
+    return $(
+      [
+        'div[data-tariff-carrier="vodafone"] label.hubble-pd-popup-opener[data-tariff-action="confirmation"]',
+      ].join(', ')
+    );
+  }
+
+  get simModal() {
+    return $('.tariff-popup__inner, .bc-popup__content-wrap');
+  }
+
+  get simPlanOption() {
+    return $(
+      [
+        '.tariff-popup__radio',
+        '#tariff-tab-panel-0 .contents-tariff__option-list:first-of-type label[data-tariff-action="confirmation"]',
+      ].join(', ')
+    );
+  }
+
+  get simNextButton() {
+    return $('.tariff-popup__btn-next');
+  }
+
+  get simConfirmButton() {
+    return $('.tariff-popup__btn-submit, #hubble-tariff-layer button[title="Confirm Popup"]');
+  }
+
+  get simTermsCheckboxes() {
+    return $$(
+      [
+        '.tariff-popup__checkbox:has(input[required]):not(.tariff-popup__checkbox--checked)',
+        '.bc-tariff-type1-popup__checkbox:has(input[required]):not(.tariff-popup__checkbox--checked)',
+        '.tariff-popup__checkbox input[required]:not(:checked)',
+      ].join(', ')
+    );
+  }
+
+  get simRemoveButton() {
+    return $(
+      [
+        '.is-delete[role="button"][an-la*="tariff:"]',
+      ].join(', ')
+    );
+  }
+
+  get simPriceLabel() {
+    return $(
+      [
+        '.tariff-popup__selected-spec-header .tariff-popup__selected-spec-value',
+        '.tariff-popup__selected-spec-price strong',
+        '.product_service_offers .s-selec-price',
+        '.s-tariff-summary__price',
+      ].join(', ')
+    );
+  }
+
+  get simAppliedLabel() {
+    return this.simRemoveButton;
+  }
+
+  usCarrierPurchaseOption(connectivity: string) {
+    const cleaned = connectivity.toLowerCase().trim().replace(/&/g, '-');
+    return $(
+      [
+        `[an-la*="purchase options:${cleaned}"]`,
+        `[an-la*="purchase options:${connectivity.toLowerCase().trim()}"]`,
+      ].join(', ')
+    );
   }
 
   get bcProductName() {

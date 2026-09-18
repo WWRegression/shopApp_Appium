@@ -6,10 +6,11 @@ export class CartLocator {
   get removeItemButton() {
     return $(
       [
-        '.mat-icon[class*="cart-item__remove"]',
-        '.cart-top-actions button[data-automation-id="removeEntry"]:first-of-type',
-        'button.data-omni-remove:first-of-type',
-        'span[data-an-tr="cart-product-remove"]',
+        '.cart-item .mat-icon[class*="cart-item__remove"]',
+        '.cart-item button[data-automation-id="removeEntry"]',
+        '.cart-item button.data-omni-remove',
+        '.cart-item button[data-an-la="remove item"]',
+        '.cart-top-actions button[data-automation-id="removeEntry"]',
       ].join(', ')
     );
   }
@@ -120,11 +121,33 @@ export class CartLocator {
   }
 
   get scPlusAddButton() {
-    return $('[an-la*="care+" i]');
+    return $(
+      [
+        '[data-an-la="add service:samsung care"]',
+        '[an-la*="care+" i]',
+        '[an-la*="samsung care" i][an-la*="add" i]',
+      ].join(', ')
+    );
   }
 
   get scPlusNoButton() {
     return $('[an-la*="care+" i][an-la*="no" i]');
+  }
+
+  get scPlusAppliedLabel() {
+    return $(
+      [
+        '[data-pvisubtype="samsung care"] .action-text',
+        '[data-pvisubtype="samsung mobile care"] .action-text',
+        '[data-pvisubtype="samsung-care"] .action-text',
+        '[data-modeldisplay*="Samsung Care+"] .action-text',
+        '[data-modelname*="SMC"] .action-text',
+        '.service-item__smc[data-modeldisplay="SMC"] .action-text',
+        '.service-item__smc[data-modeldisplay*="Care+"] .action-text',
+        '.service-item__smc .action-text',
+        '[data-pimsubtype="galaxy"] .action-text.smc',
+      ].join(', ')
+    );
   }
 
   get eupAddButton() {
@@ -136,10 +159,25 @@ export class CartLocator {
   }
 
   get simAddButton() {
-    return $('[an-la*="sim" i]');
+    return $(
+      [
+        '[data-an-la*="sim" i][data-an-la*="add" i]',
+        '[an-la*="sim" i]',
+        '[an-la*="tariff" i][an-la*="add" i]',
+      ].join(', ')
+    );
   }
 
   get simNoButton() {
     return $('[an-la*="sim" i][an-la*="no" i]');
+  }
+
+  get simAppliedLabel() {
+    return $(
+      [
+        '[data-modelcode*="SIM"] button[data-an-la*="remove"]',
+        '[data-modelcode*="SIM"] button[data-an-tr*="remove"]',
+      ].join(', ')
+    );
   }
 }

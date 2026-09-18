@@ -7,7 +7,7 @@ import { PdSimService } from '../services/sim/pd-sim.service';
 import { FlagshipWatchProduct } from '../helpers/flagship-sku.helper';
 import { normalizeText, resolveDisplayColor } from '../helpers/data.helper';
 import { markFailedAndStop, markFailed, FieldCheck } from '../helpers/report.helper';
-import { getElementLabel, isDisplayedSafe, clickWebViewElement } from '../helpers/element.helper';
+import { getElementLabel, isDisplayedSafe, scrollAndJsClick } from '../helpers/element.helper';
 import { prepareWebViewPage, switchToNative } from '../helpers/context.helper';
 import { ProductOptionFields } from './bc.page';
 
@@ -20,8 +20,11 @@ export class PdPage extends BasePage {
   readonly sim = new PdSimService();
 
   /** skuAnchor renders early and carries data-shop-sku, so it doubles as the "PD is ready" marker. */
-  async preparePdPage(): Promise<boolean> {
-    return prepareWebViewPage('pd', this.locator.skuAnchor);
+  async preparePdPage(): Promise<void> {
+    const ready = await prepareWebViewPage('pd', this.locator.skuAnchor);
+    if (!ready) {
+      throw new Error('preparePdPage: PD not ready within 10s');
+    }
   }
   
   async selectOptions(_options: ProductOptionFields): Promise<void> {
@@ -72,7 +75,8 @@ export class PdPage extends BasePage {
   }
 
   async getPdProductName(productName?: string | null): Promise<string> {
-    if (await this.preparePdPage()) {
+    const ready = await prepareWebViewPage('pd', this.locator.skuAnchor);
+    if (ready) {
       return await this.locator.summaryProductName.getText();
     }
     if (!productName) {
@@ -99,7 +103,7 @@ export class PdPage extends BasePage {
   /** Options here show a combined "Device (Connectivity, Size)" label, so match on device + case size together. */
   private async selectDeviceIfShown(product: FlagshipWatchProduct): Promise<void> {
     if (!(await isDisplayedSafe(this.locator.deviceSection))) {
-      console.log('[PD][watch] device section not shown — using bound value');
+      console.log('[PD][watch] device section not shown ??using bound value');
       return;
     }
 
@@ -112,7 +116,7 @@ export class PdPage extends BasePage {
       const normalized = normalizeText(raw).replace(/\s+/g, '');
       if (normalized.includes(device) && normalized.includes(caseSize)) {
         await markFailedAndStop(
-          () => clickWebViewElement(el),
+          () => scrollAndJsClick(el),
           `[PD][watch] device option not selectable: "${product.deviceName} ${product.caseSize}"`
         );
         return;
@@ -123,13 +127,13 @@ export class PdPage extends BasePage {
 
   private async selectConnectivityIfShown(product: FlagshipWatchProduct): Promise<void> {
     if (!(await isDisplayedSafe(this.locator.connectivitySection))) {
-      console.log('[PD][watch] connectivity section not shown — using bound value');
+      console.log('[PD][watch] connectivity section not shown ??using bound value');
       return;
     }
 
     const connOpt = this.locator.connectivityOption(product.connectivity);
     await markFailedAndStop(
-      () => clickWebViewElement(connOpt),
+      () => scrollAndJsClick(connOpt),
       `[PD][watch] connectivity option not selectable: "${product.connectivity}"`
     );
   }
@@ -138,7 +142,7 @@ export class PdPage extends BasePage {
     const displayColor = resolveDisplayColor(product.color, product.sku, 'watch');
     const colorOpt = this.locator.watchColorOption(displayColor);
     await colorOpt.waitForDisplayed({ timeout: 10000 }).catch(() => undefined);
-    await markFailedAndStop(() => clickWebViewElement(colorOpt), `[PD][watch] color option not selectable: "${displayColor}"`);
+    await markFailedAndStop(() => scrollAndJsClick(colorOpt), `[PD][watch] color option not selectable: "${displayColor}"`);
     this.selectedColor = (await getElementLabel(this.locator.selectedColorText)) || displayColor;
   }
 
@@ -149,7 +153,7 @@ export class PdPage extends BasePage {
       return;
     }
     await markFailedAndStop(
-      () => clickWebViewElement(band),
+      () => scrollAndJsClick(band),
       '[PD][watch] non-default band not selectable (bespoke)'
     );
   }

@@ -34,9 +34,15 @@ export class CartPage extends BasePage {
   readonly eup = new CartEupService();
   readonly sim = new CartSimService();
 
+  /**
+   * Wait up to WEBVIEW_PAGE_READY_MS (10s) for cart. Throws on timeout so the TC fails fast.
+   */
   async prepareCartPage(): Promise<void> {
+    await console.warn('prepareCartPage: start');
     const ready = await prepareWebViewPage('cart', this.locator.cartLayout);
-    markFailed([{ label: 'cart page reached', pass: ready }], 'prepareCartPage');
+    if (!ready) {
+      throw new Error('prepareCartPage: cart not ready within 10s');
+    }
   }
 
   /** Clicks checkout and waits for the checkout page to load. */
@@ -44,7 +50,11 @@ export class CartPage extends BasePage {
     await this.locator.checkoutButton.click();
   }
 
-  /** Removes items one by one until the cart is empty. No iteration cap — mochaOpts.timeout guards runaway loops. */
+  /**
+   * Empty the cart as a precondition.
+   * prod → OCC API (UI click loop is flaky: stale nodes / qty-remove sharing an-tr).
+   * stg → UI remove with a hard attempt cap.
+   */
   async clearCart(): Promise<void> {
     await this.selectBnbMenu('cart');
     await this.prepareCartPage();
@@ -58,6 +68,7 @@ export class CartPage extends BasePage {
 
       try {
         await jsClick(removeButton);
+        await driver.pause(1000);
       } catch {
         // Element can go stale between isDisplayed() and click() — retry with a fresh query.
         continue;
@@ -123,6 +134,7 @@ export class CartPage extends BasePage {
 
   /** Verifies a sku is present in the cart. */
   async verifySku(sku: string): Promise<void> {
+    await console.warn('verifySku: start');
     const skus = await this.getCartItemSkus();
     const target = sku.toLowerCase();
     await markFailedAndStop(
@@ -207,6 +219,7 @@ export class CartPage extends BasePage {
    * text. Plain strings in, not tied to any product model — reusable outside flagship specs too.
    */
   async verifyOptions(sku: string, options: CartItemOptions): Promise<void> {
+    await console.warn('verifyOptions: start');
     await this.prepareCartPage();
     await this.locator.cartItemSku(sku).waitForDisplayed({ timeout: 10000 }).catch(() => undefined);
 

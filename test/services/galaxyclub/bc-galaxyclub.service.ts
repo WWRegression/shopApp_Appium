@@ -1,7 +1,7 @@
 import { AddedService } from '../added-service.interface';
 import { BcLocator } from '../../locators/bc.locator';
 import { parsePriceToNumber } from '../../helpers/data.helper';
-import { scrollElementToCenter } from '../../helpers/gesture.helper';
+import { scrollAndJsClick, isExistingInWebView } from '../../helpers/element.helper';
 
 export class BcGalaxyClubService implements AddedService {
   private readonly locator = new BcLocator();
@@ -11,17 +11,13 @@ export class BcGalaxyClubService implements AddedService {
   }
 
   async selectNoForService(): Promise<void> {
-    if (!(await this.locator.galaxyClubBanner.isDisplayed().catch(() => false))) {
+    const no = this.locator.galaxyClubNoButton;
+    if (!(await isExistingInWebView(no))) {
+      await console.warn('[BC.GALAXYCLUB.selectNoForService] Galaxy Club section not exists');
       return;
     }
-
-    const no = this.locator.galaxyClubNoButton;
-    if (await no.isDisplayed().catch(() => false)) {
-      // Banner sits under the sticky price bar — scroll it clear first,
-      // otherwise the native click gets intercepted and burns ~3 retries.
-      await scrollElementToCenter(no);
-      await no.click();
-    }
+    await console.warn('[BC.GALAXYCLUB.selectNoForService] Galaxy Club section found No option');
+    await scrollAndJsClick(no);
   }
 
   async removeService(): Promise<void> {

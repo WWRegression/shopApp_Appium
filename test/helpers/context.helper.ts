@@ -117,7 +117,6 @@ export async function switchToNative(): Promise<void> {
 
 /**
  * Switch to WEBVIEW_<targetPackage> only.
- * Does not focus a window — use switchToWindowByPage for that.
  */
 export async function switchToWebView(waitTimeMs = 5000): Promise<boolean> {
   const pkg = targetPackage();
@@ -194,7 +193,7 @@ export async function getCurrentWindowUrl(): Promise<string | undefined> {
 }
 
 /** App WEBVIEW_<targetPackage> windows from detailed getContexts (no context switch). */
-async function getDetailedWebViewWindows(): Promise<MatchedWebViewPage[]> {
+export async function getDetailedWebViewWindows(): Promise<MatchedWebViewPage[]> {
   const expected = appWebViewContextName();
   if (!expected) {
     return [];
@@ -244,6 +243,11 @@ async function findWindowByPage(
 /**
  * Focus the WebView window whose URL matches `page`.
  * Requires WebView context. Throws if no matching window is found.
+ *
+ * Cheap path first: if the focused window already matches, skip detailed getContexts.
+ * Only then poll with returnDetailedContexts (expensive) every 500ms.
+ * Deadline is checked *before* each expensive call so one slow getContexts cannot
+ * silently overrun the caller's budget by tens of seconds.
  */
 export async function switchToWindowByPage(
   page: PageUrlKey = 'site',
@@ -254,26 +258,46 @@ export async function switchToWindowByPage(
   }
 
   const siteCode = getRunConfig().siteCode;
-  const deadline = Date.now() + waitTimeMs;
+  const deadline = Date.now() + Math.max(0, waitTimeMs);
 
   for (;;) {
+    if (deadline - Date.now() <= 0) {
+      throw new Error(`switchToWindowByPage: no browser page matched page=${page}`);
+    }
+
+    // 1) Cheap: focused window href (one executeScript) — no detailed contexts.
+    try {
+      const href = await getCurrentWindowUrl();
+      if (href && matchPageByUrl(href, page, siteCode)) {
+        await console.warn('[switchToWindowByPage] already on the page, href matches page');
+        return;
+      }
+    } catch {
+      // Focused window may be mid-navigation — fall through to detailed scan.
+    }
+
+    if (deadline - Date.now() <= 0) {
+      throw new Error(`switchToWindowByPage: no browser page matched page=${page}`);
+    }
+
+    // 2) Expensive: scan all WebView windows via detailed getContexts.
     const match = await findWindowByPage(page, siteCode);
     if (match) {
       try {
         await driver.switchToWindow(match.webviewPageId);
-        const href = await getCurrentWindowUrl();
-        if (href && matchPageByUrl(href, page, siteCode)) {
-          return;
-        }
+        await console.warn('[switchToWindowByPage] window switched');
+        return;
       } catch {
-        // Window can close between being found and being switched to — retry below if time remains.
+        await console.warn('[switchToWindowByPage] window switch failed');
       }
     }
 
     if (Date.now() >= deadline) {
+      await console.warn('[switchToWindowByPage] deadline reached');
       throw new Error(`switchToWindowByPage: no browser page matched page=${page}`);
     }
-    await driver.pause(300);
+    await driver.pause(Math.min(500, Math.max(0, deadline - Date.now())));
+    await console.warn('[switchToWindowByPage] paused');
   }
 }
 
@@ -283,31 +307,44 @@ export async function switchToWindowByPage(
 
 /**
  * Prepare a Hybris WebView page before actions:
- * switchToWebView + switchToWindowByPage + layout ready.
- * Returns false when context/window/layout is not ready (does not throw).
+  * Returns false when context/window/layout is not ready within `timeout` (default 10s).
  */
+export const WEBVIEW_PAGE_READY_MS = 10000;
+
 export async function prepareWebViewPage(
   page: PageUrlKey,
   layout: ChainablePromiseElement,
-  timeout = 10000
+  timeout = WEBVIEW_PAGE_READY_MS
 ): Promise<boolean> {
   const deadline = Date.now() + timeout;
+  const siteCode = getRunConfig().siteCode;
+
+  // Fast-path: already on the target WebView page with layout visible — skip switches.
+  if (await isWebViewContext()) {
+    const href = await getCurrentWindowUrl().catch(() => undefined);
+    if (href && matchPageByUrl(href, page, siteCode)) {
+      return true;
+    }
+  }
 
   for (;;) {
     const remaining = Math.max(0, deadline - Date.now());
     if (remaining === 0) {
       return false;
     }
-
+    
     if (await switchToWebView(remaining)) {
+      await console.warn(`[${page} prepareWebViewPage] webview context switched`);
+
+      const winBudget = Math.max(0, deadline - Date.now());
+      if (winBudget < 200) {
+        return false;
+      }
+
       try {
-        await switchToWindowByPage(page, Math.max(0, deadline - Date.now()));
-        const displayed = await layout
-          .waitForDisplayed({ timeout: Math.max(0, deadline - Date.now()) })
-          .catch(() => false);
-        if (displayed) {
-          return true;
-        }
+        await switchToWindowByPage(page, winBudget);
+        await console.warn(`[${page} prepareWebViewPage] window ${page} switched`);
+        return true;
       } catch {
         // Window/context can flip again mid-check ("no such window") — fall through to retry below.
       }
@@ -456,7 +493,7 @@ function isPdUrl(href: string, siteCode: string): boolean {
   return !segs.includes('buy') && segs.length >= 3;
 }
 
-/** True when href matches the given page. */
+/** True when href matches the given page. Pure sync — no I/O, so callers must not await. */
 function matchPageByUrl(href: string, page: PageUrlKey, siteCode: string): boolean {
   if (page === 'site') {
     return isOnSite(href, siteCode);

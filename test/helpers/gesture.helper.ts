@@ -130,13 +130,11 @@ export async function scrollByElement(
 export async function scrollElementToCenter(
   element: ChainablePromiseElement
 ): Promise<void> {
-  const resolved = await element;
   await driver.execute(
-    // runs in WebView browser context
-    'arguments[0].scrollIntoView({ behavior: "smooth", block: "center" });',
-    resolved
+    // instant: smooth animation returns before the element is actually centered
+    'arguments[0].scrollIntoView({ behavior: "instant", block: "center" });',
+    await element
   );
-  await driver.pause(300);
 }
 
 /**

@@ -83,22 +83,32 @@ export function toPfCardQuery(product: FlagshipProduct): PfCardQuery {
   return { mode: 'exact', product: product.deviceName };
 }
 
-/** BC summary options to compare against cart. `selected` falls back to product data when unset (e.g. watch PD). */
-export function getSummaryOptions(
+/** Cart line fields aligned with BC verifyOptionFields (sku checked separately via verifySku). */
+export function toCartItemOptions(
   product: FlagshipProduct,
-  selected: SelectedDisplayValues | undefined
+  selected?: SelectedDisplayValues
 ): CartItemOptions {
   if (product.kind === 'watch') {
     return {
       deviceName: selected?.device ?? product.deviceName,
-      connectivity: selected?.connectivity ?? product.connectivity,
-      caseSize: selected?.caseSize ?? product.caseSize,
       color: selected?.color ?? product.color,
+      caseSize: selected?.caseSize ?? product.caseSize,
+      connectivity: selected?.connectivity ?? product.connectivity,
     };
   }
   return {
     deviceName: selected?.device ?? product.deviceName,
-    storage: product.storage, // cart shows capacity only, never BC's combined "256 GB｜12 GB" text
     color: selected?.color ?? product.color,
+    storage: product.storage, // cart shows capacity only, not BC "256 GB｜12 GB"
+    ...(product.connectivity || selected?.connectivity
+      ? { connectivity: selected?.connectivity ?? product.connectivity }
+      : {}),
   };
+}
+
+export function getSummaryOptions(
+  product: FlagshipProduct,
+  selected: SelectedDisplayValues | undefined
+): CartItemOptions {
+  return toCartItemOptions(product, selected);
 }
