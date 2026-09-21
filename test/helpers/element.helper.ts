@@ -44,7 +44,9 @@ export async function jsClick(el: ChainablePromiseElement | WebdriverIO.Element)
 }
 
 /** Scroll into view, then HTMLElement.click(). */
-export async function scrollAndJsClick(el: ChainablePromiseElement): Promise<void> {
+export async function scrollAndJsClick(
+  el: ChainablePromiseElement | WebdriverIO.Element
+): Promise<void> {
   await console.warn('[scrollAndJsClick] start');
   await scrollElementToCenter(el).catch(() => undefined);
   await jsClick(el);

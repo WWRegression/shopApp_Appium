@@ -128,7 +128,7 @@ export async function scrollByElement(
 /** Scroll element into center via JS (WebView only — different mechanism than the
  * mobile:*Gesture commands above, since those don't reach into WebView DOM layout). */
 export async function scrollElementToCenter(
-  element: ChainablePromiseElement
+  element: ChainablePromiseElement | WebdriverIO.Element
 ): Promise<void> {
   await driver.execute(
     // instant: smooth animation returns before the element is actually centered

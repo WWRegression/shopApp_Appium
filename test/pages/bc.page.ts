@@ -10,10 +10,8 @@ import { scrollWebViewDown } from '../helpers/gesture.helper';
 import { storageCapacityMatches, pickStorageLabel } from '../helpers/data.helper';
 import { scrollAndJsClick, isExistingInWebView } from '../helpers/element.helper';
 
-/**
- * BC가 받는 ?�력. ?�이??JSON / Flagship phone / Flagship watch 모두 ???�드�??�용?�다.
- * kind, ram, isPFDefaultSKU ??카탈로그 ?�용 ??select/verify ?�???�님.
- */
+
+/** Fields BC accepts from site JSON / Flagship phone / watch. kind, ram, isPFDefaultSKU are catalog-only. */
 export type ProductOptionFields = {
   sku: string;
   deviceName: string;
@@ -24,11 +22,11 @@ export type ProductOptionFields = {
   isBespokeSKU?: boolean;
 };
 
-/** ?�릭 가?�한 ?�션. isBespokeSKU ??밴드 ?�릭�??�고 비교??값이 ?�다. */
+/** Clickable option chips. isBespokeSKU triggers band click only; its value is not compared. */
 export const Options = ['deviceName', 'storage', 'caseSize', 'connectivity', 'color', 'isBespokeSKU'] as const;
 export type OptionChip = (typeof Options)[number];
 
-/** sku ??input, ?�머지???�택 �??�벨. connectivity ??watch(caseSize)�? price ??추후. */
+/** sku from input; others from selected option labels. connectivity is watch(caseSize); price TBD. */
 export const verifyOptionFields = ['sku', 'deviceName', 'storage', 'caseSize', 'connectivity', 'color'] as const;
 export type VerifyField = (typeof verifyOptionFields)[number];
 
@@ -53,7 +51,7 @@ export class BcPage extends BasePage {
 
   /**
    * Wait up to 20s for BC after PF/search navigation (WebView + buy URL + layout).
-   * Longer than cart: PF?�BC often needs extra time for the buy window to appear.
+   * Longer than cart: PF to BC often needs extra time for the buy window to appear.
    */
   async prepareBcPage(): Promise<void> {
     const ready = await prepareWebViewPage('bc', this.locator.bcLayout, 20000);
@@ -99,16 +97,16 @@ export class BcPage extends BasePage {
           target = this.locator.watchNonDefaultBandOption;
           break;
       }
-      await console.warn(`[BC.selectOptions] target=` + chip.field);
+      console.warn(`[BC.selectOptions] target=` + chip.field);
       if (!(await this.revealInWebView(target))) {
-        await console.warn(`[BC.selectOptions] Skip: ${chip.field} not in DOM after scroll`);
+        console.warn(`[BC.selectOptions] Skip: ${chip.field} not in DOM after scroll`);
         continue;
       }
       await scrollAndJsClick(target);
-      await console.warn(`[BC.selectOptions] Click: ${chip.field}`);
+      console.warn(`[BC.selectOptions] Click: ${chip.field}`);
     }
-    // await this.dismissOverlays();
-    await console.warn('[BC.selectOptions] Done');
+    
+    console.warn('[BC.selectOptions] Done');
   }
 
   async verifyOptions(options: ProductOptionFields): Promise<SummaryDetails> {
@@ -139,7 +137,7 @@ export class BcPage extends BasePage {
         `BC summary SKU mismatch: expected=${expectedSku} || actual=${actual}`
       );
     }
-    await console.warn(`[BC.verifySku] Done: expected=${expectedSku} || actual=${actual}`);
+    console.warn(`[BC.verifySku] Done: expected=${expectedSku} || actual=${actual}`);
   }
 
   /** sku: input. The rest: label visible in the selected option, otherwise input. */
@@ -153,7 +151,7 @@ export class BcPage extends BasePage {
 
   private async readOptionSelectedResult(field: string): Promise<string> {
     // Watch BC (e.g. /uk/watches/.../buy/): case colour / size / connectivity are radios.
-    // Prefer data-modeldisplay on the checked input ??section .is-checked text often includes disclaimers.
+    // Prefer data-modeldisplay on the checked input — section .is-checked text often includes disclaimers.
     const watchInputClass: Partial<Record<string, string>> = {
       color: 'input-case-color',
       caseSize: 'input-case-size',
@@ -193,19 +191,19 @@ export class BcPage extends BasePage {
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
       // DOM querySelector path (CSS only); same Appium bridge cost as other execute calls.
       if (await isExistingInWebView(target)) {
-        await console.warn('[BC.revealInWebView] found, return true');
+        console.warn('[BC.revealInWebView] found, return true');
         return true;
       }
-      await console.warn(`[BC.revealInWebView] not found, scroll down attempt=${attempt + 1}`);
+      console.warn(`[BC.revealInWebView] not found, scroll down attempt=${attempt + 1}`);
       await scrollWebViewDown();
     }
-    await console.warn('[BC.revealInWebView] not found, finally call isExistingInWebView to return result');
+    console.warn('[BC.revealInWebView] not found, finally call isExistingInWebView to return result');
     return await isExistingInWebView(target);
   }
 
   /**
-   * `$$`/`$` not resolved: no scroll opportunity.
-   * Text not read: scroll, re-query locator.
+   * Do not resolve $$/$ first — missing nodes yield empty arrays and skip scroll chances.
+   * If text cannot be read, scroll and re-query the locator.
    */
   private async readDisplayedText(
     nodes: ReturnType<typeof $$> | ReturnType<typeof $>,
@@ -264,8 +262,48 @@ export class BcPage extends BasePage {
   }
 
   async getSummaryPrice(_kind: string): Promise<string> {
-    // TODO: Implement summary price readback
-    return '';
+    return this.getTotalPrice();
+  }
+
+  /** Sticky bar total / summary total text (digits compared by caller). */
+  async getTotalPrice(): Promise<string> {
+    const el = this.locator.summaryTotalPrice;
+    await el.waitForExist({ timeout: 10000 }).catch(() => undefined);
+    return ((await el.getText().catch(() => '')) ?? '').trim();
+  }
+
+  /** Katalon BC.moveToAddonPage — Buy Now (or CN sticky) lands on add-on. */
+  async goToAddonPage(): Promise<void> {
+    const buyNow = this.locator.buyNowButton;
+    if (await buyNow.isExisting().catch(() => false)) {
+      await scrollAndJsClick(buyNow);
+    } else {
+      await this.clickAddToCart();
+    }
+    await driver.pause(1500);
+  }
+
+  /** Katalon BC.selectAddOnOption — first add-on CTA; returns data-modelcode. */
+  async selectAddonOption(): Promise<string> {
+    const buttons = await this.locator.addonAddButtons;
+    for (const btn of buttons) {
+      if (!(await btn.isDisplayed().catch(() => false))) {
+        continue;
+      }
+      if (!(await btn.isEnabled().catch(() => true))) {
+        continue;
+      }
+      await scrollAndJsClick(btn);
+      await driver.pause(1500);
+      const sku =
+        ((await btn.getAttribute('data-modelcode').catch(() => '')) ?? '').trim() ||
+        ((await $('[data-modelcode]').getAttribute('data-modelcode').catch(() => '')) ?? '').trim();
+      if (!sku) {
+        throw new Error('Add-on selected but data-modelcode is empty');
+      }
+      return sku;
+    }
+    throw new Error('No clickable Add-on button found');
   }
 
   /** Click Add to Cart only. Cart arrival is confirmed later by cartPage.prepareCartPage(). */
@@ -281,3 +319,4 @@ export class BcPage extends BasePage {
   }
 
 }
+

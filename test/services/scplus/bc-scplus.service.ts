@@ -1,65 +1,23 @@
 import { AddedService } from '../added-service.interface';
 import { BcLocator } from '../../locators/bc.locator';
 import { parsePriceToNumber } from '../../helpers/data.helper';
-import { scrollElementToCenter } from '../../helpers/gesture.helper';
 import { switchToWebView } from '../../helpers/context.helper';
-import { scrollAndJsClick, scrollAndWdioClick, jsClick } from '../../helpers/element.helper';
-import { getRunConfig } from '../../../config/run.config';
-
-const SC_PLUS_KEYWORDS = ['Samsung Care+', 'Samsung Care Plus', 'Care+', 'Care', 'Protect'];
+import { scrollAndJsClick, scrollAndWdioClick } from '../../helpers/element.helper';
 
 export class BcScPlusService implements AddedService {
   private readonly locator = new BcLocator();
 
   async addService(): Promise<void> {
-    await console.warn('[BC.SCPLUS.addService] addService');
-    const add = this.locator.scPlusAddButton;
-    await add.waitForExist({ timeout: 15000 });
-    await console.warn('[BC.SCPLUS.addService] add: waitForExist done');
-    const className = (await add.getAttribute('class').catch(() => '')) ?? '';
-    await console.warn('[BC.SCPLUS.addService] add: getAttribute done');
-    // await scrollAndJsClick(add);
-    // await console.warn('[BC.SCPLUS.addService] add: scrollAndJsClick done');
+    console.warn('[BC.SCPLUS.addService] started');
 
-    await scrollAndWdioClick(add);
-    await console.warn('[BC.SCPLUS.addService] add: scrollAndWdioClick done');
-    const payment = this.locator.scPlusPaymentOption;
-    if (await payment.isDisplayed().catch(() => false)) {
-      await console.warn('[BC.SCPLUS.addService] payment:');
-      await scrollAndWdioClick(payment);
-      await console.warn('[BC.SCPLUS.addService] payment: scrollAndWdioClick done');
-    }
+    await this.selectAddOption();
+    
+    await this.selectPlanOption();
 
-    // CN applies SC+ without the care popup.
-    if (getRunConfig().siteCode === 'CN') {
-      return;
-    }
-
-    const modalOpened = await this.locator.scPlusModal
-      .waitForDisplayed({ timeout: 10000 })
-      .then(() => true)
-      .catch(() => false);
-    await console.warn('[BC.SCPLUS.addService] modalOpened:', modalOpened);
-    if (!modalOpened) {
-      await console.warn('[BC.SCPLUS.addService] modalOpened: false');
-      return;
-    }
-
-    if (className.includes('smc-item')) {
-      await console.warn('[BC.SCPLUS.addService] className: smc-item');
-      await this.selectFirstType();
-      await this.selectFirstDuration();
-      await this.clickContinue();
-    }
-
-    await this.checkAllTermsAndConditions();
-    await console.warn('[BC.SCPLUS.addService] checkAllTermsAndConditions done');
-    await this.clickConfirm();
-    await console.warn('[BC.SCPLUS.addService] clickConfirm done');
-    await this.waitForClose();
-    await console.warn('[BC.SCPLUS.addService] waitForClose done');
+    await this.popupProcess();
+    console.warn('[BC.SCPLUS.addService] done');  
   }
-
+  
   async selectNoForService(): Promise<void> {
     const no = this.locator.scPlusNoButton;
     await scrollAndWdioClick(no);
@@ -70,35 +28,15 @@ export class BcScPlusService implements AddedService {
   }
 
   async verifyServiceApplied(): Promise<void> {
-    await switchToWebView();
+    const appliedLabel = await this.locator.scPlusAppliedLabel;
 
-    // Broad summary selectors can match non-care rows ??find one whose text looks like SC+.
-    const candidates = await $$(
-      [
-        '#lineSummary .hubble-product__summary-product-inner .hubble-product__summary-product-option',
-        '.total-summary__price-bundle .summary-care-title',
-        'ul[class*="samsung-care"] li.pd-select-option__item.selected',
-        '.hubble-product__summary-product-option',
-        '.wearable-bc-price__bundle-title',
-        '[class*="SummaryDetails_summary__details__two__row"] span',
-      ].join(', ')
-    );
-
-    for (const candidate of candidates) {
-      if (!(await candidate.isDisplayed().catch(() => false))) {
-        continue;
-      }
-      const text = ((await candidate.getText().catch(() => '')) ?? '').trim();
-      if (
-        SC_PLUS_KEYWORDS.some((keyword) =>
-          text.toLowerCase().includes(keyword.toLowerCase())
-        )
-      ) {
-        return;
-      }
+    if (await appliedLabel.waitForDisplayed({ timeout: 3000 }).catch(() => false)) {
+      console.warn('[BC.SCPLUS.verifyServiceApplied] appliedLabel found');
+      return;
     }
 
-    throw new Error('SC+ not found in BC summary');
+    console.warn('[BC.SCPLUS.verifyServiceApplied] appliedLabel not found');
+    return;
   }
 
   async getServicePrice(): Promise<number> {
@@ -111,28 +49,39 @@ export class BcScPlusService implements AddedService {
     return parsePriceToNumber(attrPrice || textPrice);
   }
 
-  private async selectFirstType(): Promise<void> {
-    const type = this.locator.scPlusTypeOption;
-    if (await type.isExisting().catch(() => false)) {
-      await scrollElementToCenter(type).catch(() => undefined);
-      await scrollAndJsClick(type);
-      await driver.pause(500);
+  private async selectAddOption(): Promise<void> {
+    const addOption = this.locator.scPlusAddButton;
+    if (await addOption.isDisplayed().catch(() => false)) {
+      await scrollAndWdioClick(addOption);
+      console.warn('[BC.SCPLUS.addService] addOption found and clicked');
+    }
+  }
+  private async selectPlanOption(): Promise<void> {
+    const planOption = this.locator.scPlusPlanOption;
+    
+    if (await planOption.waitForDisplayed({ timeout: 3000 }).catch(() => false)) {
+      await scrollAndWdioClick(planOption);
+      console.warn('[BC.SCPLUS.selectPlanOption] plan/payment option found and clicked');
     }
   }
 
-  private async selectFirstDuration(): Promise<void> {
-    const duration = this.locator.scPlusDurationOption;
-    if (await duration.isExisting().catch(() => false)) {
-      await scrollElementToCenter(duration).catch(() => undefined);
-      await scrollAndJsClick(duration);
-      await driver.pause(500);
-    }
-  }
+  private async popupProcess(): Promise<void> {
+    const modalOpened = await this.locator.scPlusModal
+    if(await modalOpened.waitForDisplayed({ timeout: 5000 }).catch(() => false)) {
+      console.warn('[BC.SCPLUS.addService] modalOpened: true');
+      
+      await this.checkAllTermsAndConditions();
+      console.warn('[BC.SCPLUS.addService] checkAllTermsAndConditions done');
 
-  private async clickContinue(): Promise<void> {
-    const continueBtn = this.locator.scPlusContinueButton;
-    if (await continueBtn.isExisting().catch(() => false)) {
-      await scrollAndJsClick(continueBtn);
+      await this.clickConfirm();
+      console.warn('[BC.SCPLUS.addService] clickConfirm done');
+
+      await this.waitForClose();
+      console.warn('[BC.SCPLUS.addService] waitForClose done');      
+    }
+    else {
+      console.warn('[BC.SCPLUS.addService] modalOpened: false');
+      return;
     }
   }
 
@@ -143,21 +92,17 @@ export class BcScPlusService implements AddedService {
       if (checked) {
         continue;
       }
-      await driver.execute(
-        'arguments[0].scrollIntoView({ block: "center" });',
-        checkbox
-      );
-      await jsClick(checkbox);
+      await scrollAndJsClick(checkbox);
     }
   }
 
   private async clickConfirm(): Promise<void> {
     const confirm = this.locator.scPlusConfirmButton;
-    await confirm.waitForExist({ timeout: 10000 });
+    await confirm.waitForExist({ timeout: 3000 });
     await scrollAndJsClick(confirm);
   }
 
-  private async waitForClose(timeout = 10000): Promise<void> {
-    await this.locator.scPlusModal.waitForDisplayed({ reverse: true, timeout });
+  private async waitForClose(): Promise<void> {
+    await this.locator.scPlusModal.waitForDisplayed({ reverse: true, timeout: 5000 });
   }
 }

@@ -362,7 +362,7 @@ export class BcLocator {
     );
   }
 
-  get scPlusPaymentOption() {
+  get scPlusPlanOption() {
     return $(
       [
         '.hubble-product__options-payment .s-option-box',
@@ -440,11 +440,81 @@ export class BcLocator {
   }
 
   get eupAddButton() {
-    return $('[an-la*="eup" i][an-la*="yes" i], [an-la*="upgrade" i]');
+    return $(
+      [
+        ':has(> [an-la="eup:yes" i])',
+        '[an-la="eup:yes" i]',
+        '[an-la="purchase program:upgrade program" i]',
+        'button[an-la*="purchase program:samsung flex" i][data-type="upgrade" i]:not(.disabled)',
+        '[an-la*="eup" i][an-la*="yes" i]',
+        '[an-la*="upgrade" i]',
+      ].join(', ')
+    );
   }
 
   get eupNoButton() {
-    return $('[an-la*="eup" i][an-la*="no" i]');
+    return $('[an-la*="eup" i][an-la*="no" i], [an-la*="upgrade" i][an-la*="no" i]');
+  }
+
+  get eupRemoveButton() {
+    return $(
+      [
+        '[data-type-headline="Samsung Flex"] [an-la="upgrade program:remove"]',
+        '[an-la="eup:remove"]',
+        '.samsung-flex__cta button.js-upgrade-remove',
+      ].join(', ')
+    );
+  }
+
+  get eupApplyButton() {
+    return $(
+      [
+        '[data-type-headline="Samsung Flex"] [an-la="upgrade program:apply"]',
+        '.samsung-flex__cta button.js-upgrade-add',
+      ].join(', ')
+    );
+  }
+
+  get eupImeiInput() {
+    return $('.text-field-v2__input#eup-imei, input#eup-imei');
+  }
+
+  get eupConfirmImeiButton() {
+    return $('[id="confirmImei"][an-la="eup popup:enter imei:confirm code"]');
+  }
+
+  get eupTncLabels() {
+    return $$('label[for*="upgrade-seau-chk"]');
+  }
+
+  get summaryTotalPrice() {
+    return $(
+      [
+        '.hubble-product__total-text',
+        "[class*='SummaryDetails_amountContainer']",
+        '.total-summary__price-total .price',
+        '.hubble-price-bar__price-now',
+      ].join(', ')
+    );
+  }
+
+  get buyNowButton() {
+    return $(
+      [
+        'div.hubble-price-bar__price-cta:not(.inner-cta) [an-la="top sticky bar:buy now"]',
+        'div:is(.hubble-price-bar__price-cta, .watch-bc-price-bar__cta):not(.inner-cta) [an-la*="buy now" i]',
+        '[an-la="top sticky bar:buy now"].price-bar-cart-btn',
+      ].join(', ')
+    );
+  }
+
+  get addonAddButtons() {
+    return $$(
+      [
+        "button[an-la='add-on:add item']",
+        "a[class*='AddOnProductItemMX_productCardTop']",
+      ].join(', ')
+    );
   }
 
   get simAddButton() {
