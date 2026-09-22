@@ -1,5 +1,17 @@
 import { currentSiteCode } from './tc-filter.helper';
 
+// "$1,234.56" / "1.234,56" → comparable digit string
+export function normalizePriceDigits(priceText: string): string {
+  return (priceText ?? '').replace(/[\s.,]/g, '').toLowerCase();
+}
+
+/** True when normalized prices contain each other (Katalon BC.verifyMatch style). */
+export function pricesMatch(actual: string, expected: string): boolean {
+  const a = normalizePriceDigits(actual);
+  const b = normalizePriceDigits(expected);
+  return Boolean(a) && Boolean(b) && (a.includes(b) || b.includes(a));
+}
+
 // "$1,234.56" -> 1234.56
 export function parsePriceToNumber(priceText: string): number {
   const normalized = priceText.replace(/[^0-9.-]/g, '');

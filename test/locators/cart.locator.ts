@@ -151,11 +151,44 @@ export class CartLocator {
   }
 
   get eupAddButton() {
-    return $('[an-la*="eup" i]');
+    return $("button[data-an-la='add service:samsung flex'], [an-la*='eup' i]");
   }
 
   get eupNoButton() {
     return $('[an-la*="eup" i][an-la*="no" i]');
+  }
+
+  get eupRemoveButton() {
+    return $(
+      '[data-modeldisplay="Samsung Upgrade"] button[data-an-la="remove item"], [data-modeldisplay*="Flex" i] button[data-an-la*="remove" i]'
+    );
+  }
+
+  get eupAppliedLabel() {
+    return this.eupRemoveButton;
+  }
+
+  get tradeUpRemoveButton() {
+    return $(
+      [
+        'div[data-modelcode="TRADE-IN"] button:is([data-an-la="remove-item"], [data-an-la="remove item"], [data-an-tr="cart-product-remove"])',
+        'div[data-modelcode="TRADE-UP"] button[data-an-tr="cart-product-remove"]',
+      ].join(', ')
+    );
+  }
+
+  get tradeUpAppliedLabel() {
+    return this.tradeUpRemoveButton;
+  }
+
+  itemPrice(sku: string) {
+    return $(
+      [
+        `.cart-item[data-modelcode="${sku}" i] .price-container .price__current`,
+        `.cart-item[data-modelcode="${sku}" i] .price-special__current`,
+        `.cart-item[data-modelcode="${sku}" i] .price`,
+      ].join(', ')
+    );
   }
 
   get simAddButton() {
@@ -176,8 +209,8 @@ export class CartLocator {
     return $(
       [
         '[data-modelcode*="SIM"] button[data-an-la*="remove"]',
-        '[data-modelcode*="SIM"] button[data-an-tr*="remove"]',
       ].join(', ')
     );
   }
+
 }

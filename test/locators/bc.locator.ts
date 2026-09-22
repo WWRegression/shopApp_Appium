@@ -308,7 +308,8 @@ export class BcLocator {
         '[an-la="top sticky bar:buy now"].price-bar-cart-btn',
         'div.hubble-price-bar__price-cta .price-bar-cart-btn',
         '[an-la*="sticky bar" i][an-la*="cart" i]',
-        '.watch-bc-price-bar__cta button'
+        '.watch-bc-price-bar__cta button',
+        '[class*="SummaryFooter_summary"] button[an-la="pd buying tool:continue"]',
       ].join(', ')
     );
   }
@@ -520,7 +521,8 @@ export class BcLocator {
   get simAddButton() {
     return $(
       [
-        '[an-la*="tariffs:vodafone"i]',
+        '.s-option-tariff a[an-la="tariff:apply"]', 
+        '.contents-tariff button[aria-controls*="tariff-tab-panel"]',
       ].join(', ')
     );
   }
@@ -545,23 +547,26 @@ export class BcLocator {
     );
   }
 
-  get simInlinePlanOption() {
+  get simPlanOption() {
     return $(
       [
-        'div[data-tariff-carrier="vodafone"] label.hubble-pd-popup-opener[data-tariff-action="confirmation"]',
+        '.contents-tariff__option-wrap.is-open .s-option-box[data-tariff-carrier]',
       ].join(', ')
     );
   }
 
   get simModal() {
-    return $('.tariff-popup__inner, .bc-popup__content-wrap');
+    return $([
+      '.component-area .tariff-popup__contents',
+      '.component-area .bc-tariff-type1-popup.bc-popup.is-opened .bc-popup__layer',
+    ].join(', ')
+    );
   }
 
-  get simPlanOption() {
+  get simPlanOptionInPopup() {
     return $(
       [
-        '.tariff-popup__radio',
-        '#tariff-tab-panel-0 .contents-tariff__option-list:first-of-type label[data-tariff-action="confirmation"]',
+        '.tariff-popup__radio-label',
       ].join(', ')
     );
   }
@@ -571,15 +576,13 @@ export class BcLocator {
   }
 
   get simConfirmButton() {
-    return $('.tariff-popup__btn-submit, #hubble-tariff-layer button[title="Confirm Popup"]');
+    return $('.tariff-popup__btn-submit, .bc-popup__cta-item .cta--emphasis');
   }
 
   get simTermsCheckboxes() {
     return $$(
       [
-        '.tariff-popup__checkbox:has(input[required]):not(.tariff-popup__checkbox--checked)',
-        '.bc-tariff-type1-popup__checkbox:has(input[required]):not(.tariff-popup__checkbox--checked)',
-        '.tariff-popup__checkbox input[required]:not(:checked)',
+        '.tariff-popup__checkbox--required:has(input[required]):not(.tariff-popup__checkbox--checked)',
       ].join(', ')
     );
   }
@@ -587,7 +590,7 @@ export class BcLocator {
   get simRemoveButton() {
     return $(
       [
-        '.is-delete[role="button"][an-la*="tariff:"]',
+        '.is-delete[an-la*="tariff:"i][an-la*=":remove"i]',
       ].join(', ')
     );
   }
@@ -604,15 +607,18 @@ export class BcLocator {
   }
 
   get simAppliedLabel() {
-    return this.simRemoveButton;
+    return $(
+      [
+        'div[class*="Payment_paymentPlanInfo__" i]',
+      ].join(', ')
+    );
   }
 
   usCarrierPurchaseOption(connectivity: string) {
-    const cleaned = connectivity.toLowerCase().trim().replace(/&/g, '-');
+    const carrier = connectivity.toLowerCase().trim();
     return $(
       [
-        `[an-la*="purchase options:${cleaned}"]`,
-        `[an-la*="purchase options:${connectivity.toLowerCase().trim()}"]`,
+        `[an-la*="purchase options:" i][an-la*="${carrier}" i]`,
       ].join(', ')
     );
   }

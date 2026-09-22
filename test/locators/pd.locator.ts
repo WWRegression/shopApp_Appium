@@ -41,6 +41,95 @@ export class PdLocator {
     return $('~YOUR_PD_EUP_NO_SELECTOR');
   }
 
+  get arButton() {
+    return $("[an-la='gallery:ar']");
+  }
+
+  get headerSkuInfo() {
+    return $(
+      [
+        '.pd-info__sku',
+        '.pdd39-anchor-nav__info-sku',
+        "div[class*='ModelInfo_modalInfo'] span",
+      ].join(', ')
+    );
+  }
+
+  get tradeUpYesOption() {
+    return $(
+      [
+        'input[an-la="trade-in:yes"] + label',
+        'input[an-la="trade-up:yes"] + label',
+      ].join(', ')
+    );
+  }
+
+  get tradeUpModal() {
+    return $('.vd-trade-in-popup__step, .siel-trade-in-popup, .trade-up-modal');
+  }
+
+  get tradeUpPostalInput() {
+    return $(
+      [
+        '.vd-trade-in-popup__postal-code input#postal-code',
+        '.siel-trade-in-popup__pincode-wrap input#pincode',
+        "input[name='pincode']",
+      ].join(', ')
+    );
+  }
+
+  get tradeUpPostalCheckButton() {
+    return $(
+      [
+        '.vd-trade-in-popup__postal-code-btn',
+        'button#pincodeApplyBtn:not([class*="disabled"])',
+        '.trade-in-pincode-enter',
+      ].join(', ')
+    );
+  }
+
+  get tradeUpContinueButton() {
+    return $(
+      [
+        '[data-an-la="trade-up:select device:next"]',
+        'div.cn-trade-in-popup__step[style*="display: block"] button.cta--contained.cta--black:not(.cta--disabled)',
+      ].join(', ')
+    );
+  }
+
+  get tradeUpConditionYes() {
+    return $(
+      [
+        'div .condition-radio__yes',
+        '[data-an-la="trade-in:check device condition:upto"]',
+        '[for="conditionCheckInfoYes"]',
+      ].join(', ')
+    );
+  }
+
+  get tradeUpTerms() {
+    return $$(
+      [
+        '.terms-checkbox input:not(:checked) ~ .checkbox-label .checkbox-square',
+        'input.checkbox-v2__input#chkTuTncAgree',
+      ].join(', ')
+    );
+  }
+
+  get tradeUpApplyButton() {
+    return $(
+      [
+        ".tradeup-footer button[data-an-la*='add to cart']",
+        '.siel-trade-in-popup__btn-order:not([class*="disabled"])',
+        '[an-la*="discount:apply trade up" i]',
+      ].join(', ')
+    );
+  }
+
+  get tradeUpRemoveButton() {
+    return $('button[an-la="trade-in:delete"], a[an-la="trade-in:delete"]');
+  }
+
   get simAddButton() {
     return $('~YOUR_PD_SIM_ADD_SELECTOR');
   }

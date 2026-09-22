@@ -1,4 +1,17 @@
-import { scrollElementToCenter } from './gesture.helper';
+/**
+ * Element helpers — query, state, and interaction with WebDriver/DOM elements.
+ *
+ * Belongs here:
+ *   - existence / visibility checks
+ *   - clicks (native WDIO, JS, touch events)
+ *   - reading labels / text matching
+ *   - "scroll until element is found" orchestration (calls gesture.helper for motion)
+ *
+ * Does NOT belong here:
+ *   - raw swipe/scroll/tap motion → gesture.helper.ts
+ */
+
+import { scrollElementToCenter, scrollWebViewDown, scrollDown } from './gesture.helper';
 
 const DEFAULT_TIMEOUT_MS = 10000;
 
@@ -29,6 +42,42 @@ export async function isExistingInWebView(el: ChainablePromiseElement): Promise<
   }
 }
 
+/**
+ * Scroll the WebView document down until the target exists in the DOM
+ * (Hybris lazy-rendered nodes). Uses scrollWebViewDown — not native scrollGesture.
+ */
+export async function scrollUntilVisibleInWebView(
+  target: ChainablePromiseElement,
+  maxAttempts = 6
+): Promise<boolean> {
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    if (await isExistingInWebView(target)) {
+      console.warn('[scrollUntilVisibleInWebView] found, return true');
+      return true;
+    }
+    console.warn(`[scrollUntilVisibleInWebView] not found, scroll down attempt=${attempt + 1}`);
+    await scrollWebViewDown();
+  }
+  return isExistingInWebView(target);
+}
+
+/**
+ * Native list scroll until locator.exists (Katalon scrollUntilElementFound).
+ * Uses mobile scrollGesture via scrollDown — for Native lists, not WebView DOM.
+ */
+export async function scrollUntilVisible(
+  locator: ChainablePromiseElement,
+  maxAttempts = 10
+): Promise<boolean> {
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    if (await locator.isExisting().catch(() => false)) {
+      return true;
+    }
+    await scrollDown();
+  }
+  return false;
+}
+
 export async function clickElement(
   element: ChainablePromiseElement,
   options?: { timeout?: number }
@@ -38,27 +87,43 @@ export async function clickElement(
   await element.click();
 }
 
-/** Clicks in the DOM instead of tapping — overlay / position:fixed / hidden input. */
+/** DOM HTMLElement.click() — overlay / position:fixed / hidden input. */
 export async function jsClick(el: ChainablePromiseElement | WebdriverIO.Element): Promise<void> {
   await driver.execute('arguments[0].click();', await el);
 }
 
-/** Scroll into view, then HTMLElement.click(). */
+/**
+ * scrollIntoView (center) then HTMLElement.click().
+ * If JS click throws, fall back to WDIO element.click().
+ * Note: some widgets silently ignore JS click (no throw) — use scrollAndWdioClick for those.
+ */
 export async function scrollAndJsClick(
   el: ChainablePromiseElement | WebdriverIO.Element
 ): Promise<void> {
-  await console.warn('[scrollAndJsClick] start');
   await scrollElementToCenter(el).catch(() => undefined);
-  await jsClick(el);
-  await console.warn('[scrollAndJsClick] jsClick done');
+  try {
+    await jsClick(el);
+    console.warn('[scrollAndJsClick] jsClick done');
+  } catch {
+    console.warn('[scrollAndJsClick] jsClick threw, fallback to WDIO click');
+    await el.click();
+  }
 }
 
 /**
- * Scroll into view, then WDIO element.click() (for controls that ignore jsClick, e.g. SC+).
+ * scrollIntoView (center) then WDIO element.click().
+ * If WDIO click throws (obscured / not interactable), fall back to JS click.
+ * Prefer this for plan/radio cards that ignore HTMLElement.click() (SIM, SC+).
  */
-export async function scrollAndWdioClick(el: ChainablePromiseElement): Promise<void> {
+export async function scrollAndWdioClick(el: ChainablePromiseElement | WebdriverIO.Element): Promise<void> {
   await scrollElementToCenter(el).catch(() => undefined);
-  await el.click();
+  try {
+    await el.click();
+    console.warn('[scrollAndWdioClick] WDIO click done');
+  } catch {
+    console.warn('[scrollAndWdioClick] WDIO click threw, fallback to jsClick');
+    await jsClick(el);
+  }
 }
 
 /** Prefer getText(); fall back to content-desc. */
