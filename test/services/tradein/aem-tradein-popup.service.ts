@@ -9,8 +9,8 @@ import {
 } from './tradein.types';
 
 /**
- * Trade-In ?ì??step ê°ì? ë°©ì?¼ë¡ ?ë£?ë¤.
- * (ê³ ì  N??next ?´ë¦­???ë???ì¬ UI ?í??ë°ì)
+ * Trade-In popup: detect the current step and act on it
+ * (instead of a fixed N-click "next" walk that ignores UI state).
  */
 export class AemTradeInPopupService {
   private readonly locator = new AemTradeInPopupLocator();

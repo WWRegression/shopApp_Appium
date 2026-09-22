@@ -1,8 +1,7 @@
 import { BasePage } from './base.page';
 import { MypageProfileLocator, AddressTab } from '../locators/mypage-profile.locator';
 import { prepareWebViewPage, switchToNative } from '../helpers/context.helper';
-import { isDisplayedSafe, jsClick } from '../helpers/element.helper';
-import { scrollUntilVisible } from '../helpers/gesture.helper';
+import { isDisplayedSafe, jsClick, scrollUntilVisible } from '../helpers/element.helper';
 import { markFailed } from '../helpers/report.helper';
 
 /** My Account > Settings > Personal Data Management > Addresses. Ported from Katalon's Address.groovy. */

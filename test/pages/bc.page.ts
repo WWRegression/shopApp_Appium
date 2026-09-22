@@ -8,7 +8,7 @@ import { BcGalaxyClubService } from '../services/galaxyclub/bc-galaxyclub.servic
 import { prepareWebViewPage, isCurrentWebViewPage } from '../helpers/context.helper';
 import { scrollWebViewDown } from '../helpers/gesture.helper';
 import { storageCapacityMatches, pickStorageLabel } from '../helpers/data.helper';
-import { scrollAndJsClick, isExistingInWebView } from '../helpers/element.helper';
+import { scrollAndJsClick, scrollUntilVisibleInWebView } from '../helpers/element.helper';
 
 
 /** Fields BC accepts from site JSON / Flagship phone / watch. kind, ram, isPFDefaultSKU are catalog-only. */
@@ -98,7 +98,7 @@ export class BcPage extends BasePage {
           break;
       }
       console.warn(`[BC.selectOptions] target=` + chip.field);
-      if (!(await this.revealInWebView(target))) {
+      if (!(await scrollUntilVisibleInWebView(target))) {
         console.warn(`[BC.selectOptions] Skip: ${chip.field} not in DOM after scroll`);
         continue;
       }
@@ -184,21 +184,6 @@ export class BcPage extends BasePage {
       options: await this.readDisplayedText(this.locator.summaryOptions, true),
       servicePrice: await this.readDisplayedText(this.locator.summaryServicePrice, true),
     };
-  }
-
-  /** If the target is not in the DOM, scroll the WebView down.  */
-  private async revealInWebView(target: ChainablePromiseElement, maxAttempts = 6): Promise<boolean> {
-    for (let attempt = 0; attempt < maxAttempts; attempt++) {
-      // DOM querySelector path (CSS only); same Appium bridge cost as other execute calls.
-      if (await isExistingInWebView(target)) {
-        console.warn('[BC.revealInWebView] found, return true');
-        return true;
-      }
-      console.warn(`[BC.revealInWebView] not found, scroll down attempt=${attempt + 1}`);
-      await scrollWebViewDown();
-    }
-    console.warn('[BC.revealInWebView] not found, finally call isExistingInWebView to return result');
-    return await isExistingInWebView(target);
   }
 
   /**

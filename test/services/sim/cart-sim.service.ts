@@ -4,8 +4,14 @@ import { parsePriceToNumber } from '../../helpers/data.helper';
 import { assertElementDisplayed } from '../../helpers/validation.helper';
 import { switchToWebView, switchToWindowByPage } from '../../helpers/context.helper';
 import { getRunConfig } from '../../../config/run.config';
+import { getElementLabel } from '../../helpers/element.helper';
 
-const US_CARRIERS = ['Verizon', 'AT&T', 'T-Mobile'] as const;
+/** US SKU suffix → carrier display token (lowercase). */
+const US_SKU_CARRIER: Record<string, string> = {
+  VZW: 'verizon',
+  ATT: 'at&t',
+  XAU: 't-mobile',
+};
 
 export class CartSimService implements AddedService {
   private readonly locator = new CartLocator();
@@ -30,22 +36,24 @@ export class CartSimService implements AddedService {
     }
   }
 
-  async verifyServiceApplied(): Promise<void> {
-    await console.warn('[CART.SIM.verifyServiceApplied] Start');
+  /**
+   * Non-US: SIM remove chip present.
+   * US: cart line for `skuInfo` shows the carrier derived from SKU suffix (VZW/ATT/XAU).
+   */
+  async verifyServiceApplied(skuInfo: string): Promise<void> {
     if (getRunConfig().siteCode === 'US') {
-      const items = await $$('.cart-item, .cart-item__options, [class*="device"]');
-      for (const item of items) {
-        if (!(await item.isDisplayed().catch(() => false))) {
-          continue;
-        }
-        const text = ((await item.getText().catch(() => '')) ?? '').trim();
-        if (US_CARRIERS.some((carrier) => text.includes(carrier))) {
-          return;
-        }
+      const carrier = US_SKU_CARRIER[skuInfo.slice(-3).toUpperCase()].toLowerCase();
+      if (!carrier) {
+        throw new Error(`[CART.SIM.verifyServiceApplied] no carrier mapping for sku=${skuInfo}`);
       }
-      throw new Error('SIM/carrier not found in cart (US)');
+      const deviceName = (await getElementLabel(this.locator.cartItemName(skuInfo))).toLowerCase();
+      console.warn(`[CART.SIM.verifyServiceApplied] deviceName=${deviceName} carrier=${carrier}`);
+      if(!deviceName.includes(carrier))
+      {
+        throw new Error(`[CART.SIM.verifyServiceApplied] SIM not found in cart for sku=${skuInfo}`);
+      }
+      return;
     }
-
     await assertElementDisplayed(this.locator.simAppliedLabel, 'SIM not found in cart');
   }
 
@@ -54,4 +62,5 @@ export class CartSimService implements AddedService {
     const text = (await this.locator.simAppliedLabel.getText().catch(() => '')) ?? '';
     return parsePriceToNumber(text);
   }
+
 }

@@ -10,11 +10,10 @@ export class BcScPlusService implements AddedService {
   async addService(): Promise<void> {
     console.warn('[BC.SCPLUS.addService] started');
 
-    await this.selectAddOption();
-    
+    await this.selectAddOption();    
     await this.selectPlanOption();
-
     await this.popupProcess();
+
     console.warn('[BC.SCPLUS.addService] done');  
   }
   
@@ -66,8 +65,7 @@ export class BcScPlusService implements AddedService {
   }
 
   private async popupProcess(): Promise<void> {
-    const modalOpened = await this.locator.scPlusModal
-    if(await modalOpened.waitForDisplayed({ timeout: 5000 }).catch(() => false)) {
+    if(await this.waitForOpen()) {
       console.warn('[BC.SCPLUS.addService] modalOpened: true');
       
       await this.checkAllTermsAndConditions();
@@ -100,6 +98,10 @@ export class BcScPlusService implements AddedService {
     const confirm = this.locator.scPlusConfirmButton;
     await confirm.waitForExist({ timeout: 3000 });
     await scrollAndJsClick(confirm);
+  }
+
+  private async waitForOpen(): Promise<boolean> {
+    return await this.locator.scPlusModal.waitForDisplayed({ timeout: 5000 }).catch(() => false);
   }
 
   private async waitForClose(): Promise<void> {

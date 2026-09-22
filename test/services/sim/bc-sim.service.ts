@@ -3,13 +3,10 @@ import { BcLocator } from '../../locators/bc.locator';
 import { parsePriceToNumber } from '../../helpers/data.helper';
 import { scrollElementToCenter } from '../../helpers/gesture.helper';
 import { switchToWebView } from '../../helpers/context.helper';
-import { scrollAndJsClick, jsClick } from '../../helpers/element.helper';
+import { scrollAndJsClick, scrollAndWdioClick, scrollUntilVisibleInWebView, getElementLabel } from '../../helpers/element.helper';
 import { getRunConfig } from '../../../config/run.config';
 
-const US_CARRIERS = ['Verizon', 'AT&T', 'T-Mobile'] as const;
-
-const US_CONNECTIVITY_BY_SKU_SUFFIX: Record<string, string> = {
-  XAA: 'unlocked',
+const US_SKU_CARRIER: Record<string, string> = {
   VZW: 'verizon',
   ATT: 'at&t',
   XAU: 't-mobile',
@@ -23,49 +20,20 @@ export type SimAddOptions = {
 export class BcSimService implements AddedService {
   private readonly locator = new BcLocator();
 
-  async addService(options: SimAddOptions = {}): Promise<void> {
+  async addService(skuInfo: string): Promise<void> {
     await console.warn('[BC.SIM.addService] Start');
-    const siteCode = getRunConfig().siteCode;
-
-    if (siteCode === 'US') {
-      await this.addUsSim(options);
-      return;
-    }
-
-    // UK/DE start from the inline plan chip (no separate Apply CTA).
-    if (siteCode !== 'UK' && siteCode !== 'DE') {
-      const add = this.locator.simAddButton;
-      await add.waitForExist({ timeout: 30000 });
-      await scrollElementToCenter(add);
-      await scrollAndJsClick(add);
-    }
-
-    const purchase = this.locator.simPurchaseOption;
     
-    if (await purchase.isDisplayed().catch(() => false)) {
-      await scrollAndJsClick(purchase);
-    }
-    await console.warn('[BC.SIM.addService] purchase clicked');
-    if (['DE', 'UK', 'SE'].includes(siteCode)) {
-      await this.selectInlinePlan();
-      await console.warn('[BC.SIM.addService] inline plan selected');
-      await this.waitForOpen();
-      await console.warn('[BC.SIM.addService] modal opened');
-      if (siteCode === 'DE') {
-        await this.acceptTermsAndConditions();
-      }
-      await this.clickConfirm();
-      await console.warn('[BC.SIM.addService] modal closed');
-      return;
+    if (getRunConfig().siteCode === 'US') {
+      await this.addSimForUS(skuInfo);
+      console.warn('[BC.SIM.addService] addSimForUS done');
+      return;      
     }
 
-    await this.waitForOpen();
-    await this.selectAnyPlan();
-    await this.clickNext();
-    await this.acceptTermsAndConditions();
-    await this.clickConfirm();
-    await this.waitForClose();
-    await console.warn('[BC.SIM.addService] modal closed');
+    await this.selecteAddOption();
+    await this.selectPlanOption();
+    await this.popupProcess();
+
+    await console.warn('[BC.SIM.addService] Done');
   }
 
   async selectNoForService(): Promise<void> {
@@ -86,28 +54,11 @@ export class BcSimService implements AddedService {
   }
 
   async verifyServiceApplied(): Promise<void> {
-    const siteCode = getRunConfig().siteCode;
-
-    if (siteCode === 'US') {
-      const options = await $$('.hubble-product__summary-product-option, [class*="summary"] [class*="option"]');
-      for (const option of options) {
-        if (!(await option.isDisplayed().catch(() => false))) {
-          continue;
-        }
-        const text = ((await option.getText().catch(() => '')) ?? '').trim();
-        if (US_CARRIERS.some((carrier) => text.includes(carrier))) {
-          return;
-        }
-      }
-      throw new Error('SIM/carrier not found in BC summary (US)');
-    }
-
-    const remove = this.locator.simRemoveButton;
-    const visible = await remove
-      .waitForDisplayed({ timeout: 15000 })
-      .then(() => true)
-      .catch(() => false);
-    if (!visible) {
+    const appliedLabel = (getRunConfig().siteCode === 'US') ? this.locator.simAppliedLabel : this.locator.simRemoveButton;
+    if ((await appliedLabel.isDisplayed().catch(() => false))) {
+      const label = await getElementLabel(appliedLabel);
+      console.warn('[BC.SIM.verifyServiceApplied] SIM applied: ', label);
+    }else{
       throw new Error('SIM is not added on BC page');
     }
   }
@@ -122,89 +73,96 @@ export class BcSimService implements AddedService {
     return parsePriceToNumber(text.replace(/\s+|\/.*/g, ''));
   }
 
-  private async addUsSim(options: SimAddOptions): Promise<void> {
-    const connectivity =
-      options.connectivity ||
-      this.resolveUsConnectivityFromSku(options.sku) ||
-      '';
 
-    if (!connectivity) {
+  private async addSimForUS(skuInfo: string): Promise<void> {
+    const carrier = US_SKU_CARRIER[skuInfo.slice(-3).toUpperCase()]
+    console.warn('[BC.SIM.addUsSim] carrier : ', carrier);
+    if (!carrier) {
       return;
     }
-
-    const carrier = this.locator.connectivityOption(connectivity);
-    if (await carrier.isExisting().catch(() => false)) {
-      await scrollElementToCenter(carrier);
-      await scrollAndJsClick(carrier);
-      await driver.pause(500);
+    
+    const carrierOption = this.locator.connectivityOption(carrier);
+    if (await carrierOption.isDisplayed().catch(() => false)) {
+      await scrollAndWdioClick(carrierOption);
     }
 
-    if (connectivity.toLowerCase() === 'unlocked') {
-      return;
+    const purchase = this.locator.usCarrierPurchaseOption(carrier);
+    if (!(await scrollUntilVisibleInWebView(purchase))) {
+      throw new Error('SIM purchase option not found');
     }
-
-    const purchase = this.locator.usCarrierPurchaseOption(connectivity);
-    await purchase.waitForExist({ timeout: 10000 });
-    await scrollElementToCenter(purchase);
-    await scrollAndJsClick(purchase);
+    await scrollAndWdioClick(purchase);
+    console.warn('[BC.SIM.addUsSim] purchase found and clicked');
   }
 
-  private resolveUsConnectivityFromSku(sku?: string): string | undefined {
-    if (!sku || sku.length < 3) {
-      return undefined;
+  private async selecteAddOption(): Promise<void> {
+    const addOption = this.locator.simAddButton;
+    if (await addOption.isDisplayed().catch(() => false)) {
+      await scrollAndWdioClick(addOption);
+      console.warn('[BC.SIM.selecteAddOption] addOption found and clicked');
     }
-    const suffix = sku.slice(-3).toUpperCase();
-    return US_CONNECTIVITY_BY_SKU_SUFFIX[suffix];
   }
 
-  private async selectInlinePlan(): Promise<void> {
-    const plan = this.locator.simInlinePlanOption;
-    await plan.waitForExist({ timeout: 10000 });
-    await scrollAndJsClick(plan);
-  }
-
-  private async selectAnyPlan(): Promise<void> {
+  private async selectPlanOption(): Promise<void> {
     const plan = this.locator.simPlanOption;
-    await plan.waitForExist({ timeout: 10000 });
-    await scrollElementToCenter(plan).catch(() => undefined);
-    await scrollAndJsClick(plan);
+    if (await plan.isDisplayed().catch(() => false)) {
+      await scrollAndWdioClick(plan);
+      console.warn('[BC.SIM.selectPlanOption] plan/payment option found and clicked');
+    }
   }
 
-  private async acceptTermsAndConditions(): Promise<void> {
+  private async popupProcess(): Promise<void> {
+    if(await this.waitForOpen()) {
+      console.warn('[BC.SIM.popupProcess] modalOpened: true');
+      
+      await this.selectPlanOptionInPopup();
+      console.warn('[BC.SIM.popupProcess] selectPlanOptionInPopup done');
+      await this.checkAllTermsAndConditions();
+      console.warn('[BC.SIM.popupProcess] checkAllTermsAndConditions done');
+      await this.clickConfirm();
+      console.warn('[BC.SIM.popupProcess] clickConfirm done');
+      await this.waitForClose();
+      console.warn('[BC.SIM.popupProcess] waitForClose done');      
+    }
+    else {
+      console.warn('[BC.SCPLUS.addService] modalOpened: false');
+      return;
+    }
+  }
+  private async selectPlanOptionInPopup(): Promise<void> {
+    const planOption = this.locator.simPlanOptionInPopup;    
+    if (await planOption.isDisplayed().catch(() => false)) {
+      await scrollAndWdioClick(planOption);
+      console.warn('[BC.SIM.selectPlanOptionInPopup] plan/payment option found and clicked');
+
+      const next = this.locator.simNextButton;
+      await next.waitForExist({ timeout: 10000 });
+      await scrollAndWdioClick(next);
+      console.warn('[BC.SIM.selectPlanOptionInPopup] next button found and clicked');
+    }
+  }
+
+  private async checkAllTermsAndConditions(): Promise<void> {
     const checkboxes = await this.locator.simTermsCheckboxes;
     for (const checkbox of checkboxes) {
-      if (!(await checkbox.isDisplayed().catch(() => false))) {
+      const checked = await checkbox.isSelected().catch(() => false);
+      if (checked) {
         continue;
       }
-      await driver.execute(
-        'arguments[0].scrollIntoView({ block: "center" });',
-        checkbox
-      );
-      await jsClick(checkbox);
-      await driver.pause(300);
+      await scrollAndWdioClick(checkbox);
     }
-  }
-
-  private async clickNext(): Promise<void> {
-    const next = this.locator.simNextButton;
-    await next.waitForExist({ timeout: 10000 });
-    await scrollAndJsClick(next);
   }
 
   private async clickConfirm(): Promise<void> {
-    if (getRunConfig().siteCode === 'SE') {
-      await this.acceptTermsAndConditions();
-    }
     const confirm = this.locator.simConfirmButton;
-    await confirm.waitForExist({ timeout: 10000 });
+    await confirm.waitForExist({ timeout: 3000 });
     await scrollAndJsClick(confirm);
   }
 
-  private async waitForOpen(timeout = 10000): Promise<void> {
-    await this.locator.simModal.waitForDisplayed({ timeout });
+  private async waitForOpen(): Promise<boolean> {
+    return await this.locator.simModal.waitForDisplayed({ timeout: 5000 }).catch(() => false);
   }
 
-  private async waitForClose(timeout = 10000): Promise<void> {
-    await this.locator.simModal.waitForDisplayed({ reverse: true, timeout });
+  private async waitForClose(): Promise<void> {
+    await this.locator.simModal.waitForDisplayed({ reverse: true, timeout: 5000 });
   }
 }

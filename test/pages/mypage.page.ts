@@ -2,8 +2,7 @@ import { BasePage } from './base.page';
 import { MypageLocator } from '../locators/mypage.locator';
 import { switchToNative } from '../helpers/context.helper';
 import { getBrowserPages } from '../helpers/device.helper';
-import { scrollUntilVisible } from '../helpers/gesture.helper';
-import { getElementLabel } from '../helpers/element.helper';
+import { getElementLabel, scrollUntilVisible } from '../helpers/element.helper';
 
 export class MypagePage extends BasePage {
   private readonly locator = new MypageLocator();

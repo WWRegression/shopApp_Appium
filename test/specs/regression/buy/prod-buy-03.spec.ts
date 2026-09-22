@@ -25,14 +25,12 @@ describe('PROD_BUY_03', () => {
       await pfPage.selectPfCard({ mode: 'first' });
 
       await bcPage.prepareBcPage();
-      await console.warn('[PROD_BUY_03] BC page prepared');
       await bcPage.selectOptions(site.product);
       await bcPage.verifySku(site.product.sku);
       
-      await bcPage.sim.addService({ sku: site.product.sku });
+      await bcPage.sim.addService(site.product.sku );
       await bcPage.sim.verifyServiceApplied();
-      await console.warn('[PROD_BUY_03] SIM added');
-
+      
       await bcPage.tradeIn.selectNoForService();
       await bcPage.scPlus.selectNoForService();
       await bcPage.galaxyClub.selectNoForService();
@@ -41,8 +39,8 @@ describe('PROD_BUY_03', () => {
       await addOnPage.clickSplashContinue();
 
       await cartPage.prepareCartPage();
-      await cartPage.sim.verifyServiceApplied();
       await cartPage.verifySku(site.product.sku);
+      await cartPage.sim.verifyServiceApplied(site.product.sku);      
     });
   });
 });
