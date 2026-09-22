@@ -25,14 +25,6 @@ export class PdLocator {
     return $('~YOUR_PD_PRODUCT_NAME_SELECTOR');
   }
 
-  get scPlusAddButton() {
-    return $('~YOUR_PD_SCPLUS_ADD_SELECTOR');
-  }
-
-  get scPlusNoButton() {
-    return $('~YOUR_PD_SCPLUS_NO_SELECTOR');
-  }
-
   get eupAddButton() {
     return $('~YOUR_PD_EUP_ADD_SELECTOR');
   }
@@ -216,5 +208,71 @@ export class PdLocator {
       contains(translate(translate(@content-desc, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ ', 'abcdefghijklmnopqrstuvwxyz'), ' ', ''),
       translate(translate('${productName}', 'ABCDEFGHIJKLMNOPQRSTUVWXYZ ', 'abcdefghijklmnopqrstuvwxyz'), ' ', ''))
     ]`);
+  }
+
+  get scPlusAddButton() {
+    return $(
+      [
+        '.option-care .pd-select-option__item > .pd-option-selector:has([an-la="samsung care:yes"])',
+      ].join(', ')
+    );
+  }
+
+  get scPlusPlanOption() {
+    return $(
+      [
+        'label[for="pd-samsung-care-payment-0"]',
+      ].join(', ')
+    );
+  }
+
+  get scPlusModal() {
+    return $(
+      [
+        'div.hubble-care-popup.smcpopup[role="dialog"][style*="display: block"]',
+      ].join(', ')
+    );
+  }
+
+  get scPlusTermsCheckboxes() {
+    return $$(
+      [
+        '.hubble-care-popup__check-list.is-check-required .checkbox-radio',
+      ].join(', ')
+    );
+  }
+
+  get scPlusConfirmButton() {
+    return $(
+      [
+        'a[an-la="samsung care:confirm"][aria-disabled="false"]',
+      ].join(', ')
+    );
+  }
+
+  get scPlusAppliedLabel() {
+    return $(
+      [
+        'input[id^="pd-samsung-care-payment"]:checked + .pd-option-selector__label',
+        'ul[class*="samsung-care"] li.pd-select-option__item.selected:not(:has(input[id^="pd-samsung-care-payment"]:checked)) .pd-option-selector__label',
+      ].join(', ')
+    );
+  }
+
+  get scPlusPriceLabel() {
+    return $(
+      [
+        'input[id^="pd-samsung-care-payment"]:checked + .pd-option-selector__label .pd-option-selector__sub-text',
+        'ul[class*="samsung-care"] li.pd-select-option__item.selected:not(:has(input[id^="pd-samsung-care-payment"]:checked)) .pd-option-selector__label .pd-option-selector__sub-text',
+      ].join(', ')
+    );
+  }
+
+  get scPlusNoButton() {
+    return $(
+      [
+        '.option-care .pd-option-selector:has([an-la="samsung care:no"])',
+      ].join(', ')
+    );
   }
 }

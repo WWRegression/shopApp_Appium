@@ -1,6 +1,6 @@
 import { getRunConfig } from '../../config/run.config';
 import { storageLabelVariants } from '../helpers/data.helper';
-import { OptionChip } from '../pages/bc.page';
+
 /**
  * Buy Configurator (WebView) locators.
  * CSS는 Hybris BC 기준. 앱 변경 시 Inspector로 보정.
@@ -309,8 +309,8 @@ export class BcLocator {
         'div.hubble-price-bar__price-cta .price-bar-cart-btn',
         '[an-la*="sticky bar" i][an-la*="cart" i]',
         '.watch-bc-price-bar__cta button',
-        '[class*="SummaryFooter_summary"] button[an-la="pd buying tool:continue"]',
-      ].join(', ')
+        '#anchorNavigationPriceBarMobile [an-la*="anchor navi"]'
+      ].join(', ') 
     );
   }
 
@@ -343,22 +343,10 @@ export class BcLocator {
 
   get scPlusAddButton() {
     return $(
-      [        
-        '.hubble-product__options-list-wrap:not([style*="hidden"]) .js-smc',
-      ].join(', ')
-    );
-  }
-
-  get scPlusNoButton() {
-    return $(
       [
-        '.hubble-product__options-list-wrap:not([style*="hidden"]) .js-smc-none',
-        '.hubble-product__options-list-wrap:not([style*="hidden"]) #carenone',
-        '.wearable-option.option-care button[an-la="samsung care:none"]',
-        '.smc-list .insurance__item--no',
-        '.option-care .pd-option-selector:has([an-la="samsung care:no"])',
-        '[class*="VIPCumCarePlusContainer"] button[an-la*="samsung care:no" i]',
-        '.watch-bc-buyflow.care-option:not([style*="none"]) button[an-la="samsung care:no"]',
+        '.hubble-product__options-list-wrap:not([style*="hidden"]) .js-smc',
+        '.watch-bc-buyflow.care-option:not([style*="none"]) button:not([an-la*="care:none"]):not([an-la*="care:no"])',
+        '[id="#vipCumCarePlus"] #molecule_careplus_item',
       ].join(', ')
     );
   }
@@ -366,8 +354,9 @@ export class BcLocator {
   get scPlusPlanOption() {
     return $(
       [
-        '.hubble-product__options-payment .s-option-box',
-        'label[for="pd-samsung-care-payment-0"]',
+        '.hubble-product__options-payment.is-open .s-option-box',
+        '.watch-bc-buyflow.care-option:not([style*="none"]) .samsung-care-tabpanel.open .samsung-care-tabpanel__option-item',
+        '#molecule_care_offers[class*="CareOffers_newDesign"] #molecule_care_offer_option',
       ].join(', ')
     );
   }
@@ -375,31 +364,8 @@ export class BcLocator {
   get scPlusModal() {
     return $(
       [
-        '.hubble-care-popup-new:not([style*="display: none"])',
-        'div.hubble-care-popup.smcpopup[role="dialog"][style*="display: block"]',
-        '.smc-modal',
-      ].join(', ')
-    );
-  }
-
-  get scPlusTypeOption() {
-    return $('.smc-modal :has(> [name="smc-types"]), .smc-modal [name="smc-types"]');
-  }
-
-  get scPlusDurationOption() {
-    return $('.smc-modal :has(> [name="smc-durations"]), .smc-modal [name="smc-durations"]');
-  }
-
-  get scPlusContinueButton() {
-    return $('.smc-modal [an-la="samsung care:continue"]');
-  }
-
-  get scPlusConfirmButton() {
-    return $(
-      [
-        'button[an-la="samsung care:confirm"]',
-        '[an-la*="samsung care"][an-la*="agree & close"]',
-        'a[an-la="samsung care:confirm"][aria-disabled="false"]',
+        '.hubble-care-popup-new.is-opened',
+        '.Overlay_wrapper___OHUm',
       ].join(', ')
     );
   }
@@ -407,22 +373,16 @@ export class BcLocator {
   get scPlusTermsCheckboxes() {
     return $$(
       [
-        '.hubble-care-popup-new__check-list .checkbox-radio input',
-        '.smc-modal .tandc__item',
-        '.js-added-services-container .added-services-terms .checkbox-square',
-        'mat-checkbox[formcontrolname="tnc"] input[required]',
-        '.hubble-care-popup__check-list.is-check-required input[id*="care-chk"]',
+       '.hubble-care-popup-new.is-opened .hubble-care-popup-new__check-list .checkbox-radio__label',
       ].join(', ')
     );
   }
 
-  get scPlusPriceLabel() {
+  get scPlusConfirmButton() {
     return $(
       [
-        '#samsung-care div[class*="is-checked"][data-smc-price]',
-        '#samsung-care div[class*="is-checked"] .s-option-price',
-        '#samsung-care div[class*="is-checked"] .opt-option-price',
-        '[class*="CareOfferOption_selected"] span',
+        'button[an-la="samsung care:confirm"]',
+        'button[an-la*="samsung care"][an-la*="agree & close"]',
       ].join(', ')
     );
   }
@@ -432,10 +392,28 @@ export class BcLocator {
       [
         '#lineSummary .hubble-product__summary-product-inner .hubble-product__summary-product-option',
         '.total-summary__price-bundle .summary-care-title',
-        'ul[class*="samsung-care"]:has(li.pd-select-option__item.selected)',
-        '.hubble-product__summary-product-option',
-        '.wearable-bc-price__bundle-title',
-        '[class*="SummaryDetails_summary__details__two__row"] span',
+        '.SummaryDetails_flexCol__SdF7H > span',
+      ].join(', ')
+    );
+  }
+
+  get scPlusPriceLabel() {
+    return $(
+      [
+        '#lineSummary .hubble-product__summary-product-inner .hubble-product__summary-product-price',
+        '.total-summary__price-bundle .total-summary__price-bundle-price.price-target:not(:empty)',
+        '[class*="CareOfferOption_selected"] span',
+      ].join(', ')
+    );
+  }
+
+  get scPlusNoButton() {
+    return $(
+      [
+        '.hubble-product__options-list-wrap:not([style*="hidden"]) .js-smc-none',
+        '.hubble-product__options-list-wrap:not([style*="hidden"]) #carenone',
+        '.watch-bc-buyflow.care-option:not([style*="none"]) button[an-la="samsung care:no"]',
+        '[class*="VIPCumCarePlusContainer"] button[an-la*="samsung care:no" i]',
       ].join(', ')
     );
   }

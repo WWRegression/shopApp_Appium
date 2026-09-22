@@ -138,14 +138,10 @@ export class CartLocator {
     return $(
       [
         '[data-pvisubtype="samsung care"] .action-text',
-        '[data-pvisubtype="samsung mobile care"] .action-text',
-        '[data-pvisubtype="samsung-care"] .action-text',
-        '[data-modeldisplay*="Samsung Care+"] .action-text',
+        '[data-modeldisplay*="Samsung Care+"] .action-text', 
         '[data-modelname*="SMC"] .action-text',
-        '.service-item__smc[data-modeldisplay="SMC"] .action-text',
-        '.service-item__smc[data-modeldisplay*="Care+"] .action-text',
+        '[data-pimsubtype="galaxy"] .action-text.smc', 
         '.service-item__smc .action-text',
-        '[data-pimsubtype="galaxy"] .action-text.smc',
       ].join(', ')
     );
   }
