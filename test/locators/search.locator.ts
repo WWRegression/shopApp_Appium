@@ -8,9 +8,9 @@ export class SearchLocator {
   get searchInput() {
     return $(
       [
-      "//android.view.View[contains(@content-desc, 'field Double tap to enter search term')]/parent::android.widget.Button",
-      "//android.view.View[android.widget.Button]/android.view.View/android.widget.EditText",
-      ].join(', ') 
+        "//android.view.View[contains(@content-desc, 'field Double tap to enter search term')]/parent::android.widget.Button",
+        "//android.view.View[android.widget.Button]/android.view.View/android.widget.EditText",
+      ].join(' | ')
     );
   }
 
