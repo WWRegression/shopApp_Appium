@@ -3,7 +3,7 @@ import { SearchPage } from '../../pages/search.page';
 import { PfPage } from '../../pages/pf.page';
 import { BcPage } from '../../pages/bc.page';
 import { CartPage } from '../../pages/cart.page';
-import { AddOnPage } from '../../pages/addon.page';
+import { SplashPage } from '../../pages/splash.page';
 
 /**
  * SAMPLE — 회귀 카탈로그(test-case.catalog.ts)에 등록되지 않은 데모 스펙.
@@ -17,7 +17,7 @@ describe('SAMPLE_PF_BC_CART', () => {
   const pfPage = new PfPage();
   const bcPage = new BcPage();
   const cartPage = new CartPage();
-  const addOnPage = new AddOnPage();
+  const splashPage = new SplashPage();
 
   it('search product, select BC options, decline service, reach cart', async function () {
     const site = getSiteData();
@@ -34,7 +34,7 @@ describe('SAMPLE_PF_BC_CART', () => {
     await bcPage.scPlus.selectNoForService();
 
     await bcPage.clickAddToCart();
-    await addOnPage.clickSplashContinue();
+    await splashPage.clickSplashContinue();
     await cartPage.prepareCartPage();
   });
 });

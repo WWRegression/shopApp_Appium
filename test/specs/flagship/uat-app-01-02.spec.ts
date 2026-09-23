@@ -7,7 +7,7 @@ import { PfPage } from '../../pages/pf.page';
 import { BcPage } from '../../pages/bc.page';
 import { PdPage } from '../../pages/pd.page';
 import { CartPage } from '../../pages/cart.page';
-import { AddOnPage } from '../../pages/addon.page';
+import { SplashPage } from '../../pages/splash.page';
 
 describe('UAT_APP_01 / UAT_APP_02', () => {
   const products = loadFlagshipProducts(getRunConfig().siteCode);
@@ -60,7 +60,7 @@ describe('UAT_APP_01 / UAT_APP_02', () => {
         }
 
         const bcPage = new BcPage();
-        const addOnPage = new AddOnPage();
+        const splashPage = new SplashPage();
         const cartPage = new CartPage();
         const { page } = await getCurrentWebViewPage({ waitMs: 10000 });
         console.log('UAT_APP_02 =============> Start page: ', page);
@@ -76,7 +76,7 @@ describe('UAT_APP_01 / UAT_APP_02', () => {
           throw new Error(`UAT_APP_02: expected BC/PD after APP_01, got page=${page} sku=${product.sku}`);
         }
 
-        await addOnPage.clickSplashContinue();
+        await splashPage.clickSplashContinue();
         await cartPage.prepareCartPage();
         await cartPage.verifySku(product.sku);
         await cartPage.verifyOptions(product.sku, toCartItemOptions(product));

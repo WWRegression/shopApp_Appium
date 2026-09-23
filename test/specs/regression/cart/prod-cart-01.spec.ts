@@ -3,14 +3,14 @@ import { SearchPage } from '../../../pages/search.page';
 import { PfPage } from '../../../pages/pf.page';
 import { BcPage } from '../../../pages/bc.page';
 import { CartPage } from '../../../pages/cart.page';
-import { AddOnPage } from '../../../pages/addon.page';
+import { SplashPage } from '../../../pages/splash.page';
 
 describe('PROD_CART_01', () => {
   const searchPage = new SearchPage();
   const pfPage = new PfPage();
   const bcPage = new BcPage();
   const cartPage = new CartPage();
-  const addOnPage = new AddOnPage();
+  const splashPage = new SplashPage();
 
   it('quantity +/-, product removal, cart icon count', async function () {
     await runOrSkip.call(this, 'PROD_CART_01', async (site) => {
@@ -24,7 +24,7 @@ describe('PROD_CART_01', () => {
       await bcPage.tradeIn.selectNoForService();
       await bcPage.scPlus.selectNoForService();
       await bcPage.clickAddToCart();
-      await addOnPage.clickSplashContinue();
+      await splashPage.clickSplashContinue();
 
       const sku = await cartPage.getFirstItemSku();
       await cartPage.verifySku(sku);

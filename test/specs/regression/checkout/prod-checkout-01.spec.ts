@@ -2,7 +2,7 @@ import { runOrSkip } from '../../../helpers/tc-filter.helper';
 import { SearchPage } from '../../../pages/search.page';
 import { PfPage } from '../../../pages/pf.page';
 import { BcPage } from '../../../pages/bc.page';
-import { AddOnPage } from '../../../pages/addon.page';
+import { SplashPage } from '../../../pages/splash.page';
 import { CartPage } from '../../../pages/cart.page';
 import { CheckoutPage } from '../../../pages/checkout.page';
 import { MypageProfilePage } from '../../../pages/mypage-profile.page';
@@ -11,7 +11,7 @@ describe('PROD_CHECKOUT_01', () => {
   const searchPage = new SearchPage();
   const pfPage = new PfPage();
   const bcPage = new BcPage();
-  const addOnPage = new AddOnPage();
+  const splashPage = new SplashPage();
   const cartPage = new CartPage();
   const checkoutPage = new CheckoutPage();
   const mypageProfilePage = new MypageProfilePage();
@@ -35,7 +35,7 @@ describe('PROD_CHECKOUT_01', () => {
       await bcPage.scPlus.selectNoForService();
 
       await bcPage.clickAddToCart();
-      await addOnPage.clickSplashContinue();
+      await splashPage.clickSplashContinue();
 
       await cartPage.prepareCartPage();
       await cartPage.verifySku(bcSummary.sku);

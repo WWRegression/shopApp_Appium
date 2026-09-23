@@ -11,6 +11,7 @@ export class SearchPage extends BasePage {
 
   async search(keyword: string): Promise<void> {
     await switchToNative();
+    console.warn('[search] searching for:', keyword);
     await this.locator.searchInput.waitForDisplayed({ timeout: 10000 });
     await this.locator.searchInput.click();
     await driver.keys(keyword.split(''));

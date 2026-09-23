@@ -257,8 +257,8 @@ export class BcPage extends BasePage {
     return ((await el.getText().catch(() => '')) ?? '').trim();
   }
 
-  /** Katalon BC.moveToAddonPage — Buy Now (or CN sticky) lands on add-on. */
-  async goToAddonPage(): Promise<void> {
+  /** Katalon BC.moveToAddonPage — Buy Now (or CN sticky) lands on splash (addon/gift). */
+  async goToSplashPage(): Promise<void> {
     const buyNow = this.locator.buyNowButton;
     if (await buyNow.isExisting().catch(() => false)) {
       await scrollAndJsClick(buyNow);

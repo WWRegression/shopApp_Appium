@@ -94,8 +94,7 @@ export async function jsClick(el: ChainablePromiseElement | WebdriverIO.Element)
 
 /**
  * scrollIntoView (center) then HTMLElement.click().
- * If JS click throws, fall back to WDIO element.click().
- * Note: some widgets silently ignore JS click (no throw) — use scrollAndWdioClick for those.
+ * Failures (missing element etc.) are swallowed after WDIO fallback attempt.
  */
 export async function scrollAndJsClick(
   el: ChainablePromiseElement | WebdriverIO.Element
@@ -106,23 +105,29 @@ export async function scrollAndJsClick(
     console.warn('[scrollAndJsClick] jsClick done');
   } catch {
     console.warn('[scrollAndJsClick] jsClick threw, fallback to WDIO click');
-    await el.click();
+    await el.click().catch((err) => {
+      console.warn('[scrollAndJsClick] WDIO click also failed:', (err as Error)?.message ?? err);
+    });
   }
 }
 
 /**
  * scrollIntoView (center) then WDIO element.click().
- * If WDIO click throws (obscured / not interactable), fall back to JS click.
- * Prefer this for plan/radio cards that ignore HTMLElement.click() (SIM, SC+).
+ * Prefer for plan/radio cards that ignore HTMLElement.click().
+ * Missing element / both clicks failing → catch and continue (no throw).
  */
-export async function scrollAndWdioClick(el: ChainablePromiseElement | WebdriverIO.Element): Promise<void> {
+export async function scrollAndWdioClick(
+  el: ChainablePromiseElement | WebdriverIO.Element
+): Promise<void> {
   await scrollElementToCenter(el).catch(() => undefined);
   try {
     await el.click();
     console.warn('[scrollAndWdioClick] WDIO click done');
-  } catch {
+  } catch {    
+    await jsClick(el).catch((err) => {
+      console.warn('[scrollAndWdioClick] jsClick also failed:', (err as Error)?.message ?? err);
+    });
     console.warn('[scrollAndWdioClick] WDIO click threw, fallback to jsClick');
-    await jsClick(el);
   }
 }
 

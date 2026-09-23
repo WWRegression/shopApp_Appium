@@ -1,7 +1,7 @@
 import { runOrSkip } from '../../../helpers/tc-filter.helper';
 import { SearchPage } from '../../../pages/search.page';
 import { BcPage } from '../../../pages/bc.page';
-import { AddOnPage } from '../../../pages/addon.page';
+import { SplashPage } from '../../../pages/splash.page';
 import { CartPage } from '../../../pages/cart.page';
 import { PfPage } from '../../../pages/pf.page';
 
@@ -13,7 +13,7 @@ describe('PROD_BUY_02', () => {
   const searchPage = new SearchPage();
   const pfPage = new PfPage();
   const bcPage = new BcPage();
-  const addOnPage = new AddOnPage();
+  const splashPage = new SplashPage();
   const cartPage = new CartPage();
   
   it('add SC+ on BC and verify in cart', async function () {
@@ -34,7 +34,7 @@ describe('PROD_BUY_02', () => {
       await bcPage.galaxyClub.selectNoForService();
 
       await bcPage.clickAddToCart();
-      await addOnPage.clickSplashContinue();
+      await splashPage.clickSplashContinue();
 
       await cartPage.prepareCartPage();
       await cartPage.verifySku(site.product.sku);

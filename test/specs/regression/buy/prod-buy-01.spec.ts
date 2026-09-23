@@ -2,7 +2,7 @@ import { runOrSkip } from '../../../helpers/tc-filter.helper';
 import { SearchPage } from '../../../pages/search.page';
 import { PfPage } from '../../../pages/pf.page';
 import { BcPage } from '../../../pages/bc.page';
-import { AddOnPage } from '../../../pages/addon.page';
+import { SplashPage } from '../../../pages/splash.page';
 import { CartPage } from '../../../pages/cart.page';
 
 /**
@@ -13,7 +13,7 @@ describe('PROD_BUY_01', () => {
   const searchPage = new SearchPage();
   const pfPage = new PfPage();
   const bcPage = new BcPage();
-  const addOnPage = new AddOnPage();
+  const splashPage = new SplashPage();
   const cartPage = new CartPage();
 
   it('add Trade-In on BC and verify in cart', async function () {
@@ -34,7 +34,7 @@ describe('PROD_BUY_01', () => {
       await bcPage.galaxyClub.selectNoForService();
 
       await bcPage.clickAddToCart();
-      await addOnPage.clickSplashContinue();
+      await splashPage.clickSplashContinue();
 
       await cartPage.prepareCartPage();
       await cartPage.tradeIn.verifyServiceApplied();

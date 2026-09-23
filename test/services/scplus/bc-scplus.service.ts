@@ -2,7 +2,8 @@ import { AddedService } from '../added-service.interface';
 import { BcLocator } from '../../locators/bc.locator';
 import { parsePriceToNumber } from '../../helpers/data.helper';
 import { switchToWebView } from '../../helpers/context.helper';
-import { scrollAndJsClick, scrollAndWdioClick } from '../../helpers/element.helper';
+import { isExistingInWebView, scrollAndJsClick, scrollAndWdioClick } from '../../helpers/element.helper';
+import { assertElementDisplayed } from '../../helpers/validation.helper';
 
 export class BcScPlusService implements AddedService {
   private readonly locator = new BcLocator();
@@ -19,6 +20,10 @@ export class BcScPlusService implements AddedService {
   
   async selectNoForService(): Promise<void> {
     const no = this.locator.scPlusNoButton;
+    if (!(await isExistingInWebView(no))) {
+      console.warn('[BC.SCPLUS.selectNoForService] SC+ section not exists');
+      return;
+    }
     await scrollAndWdioClick(no);
   }
 
@@ -35,7 +40,7 @@ export class BcScPlusService implements AddedService {
     }
 
     console.warn('[BC.SCPLUS.verifyServiceApplied] appliedLabel not found');
-    return;
+    await assertElementDisplayed(appliedLabel, 'SC+ not applied on BC');
   }
 
   async getServicePrice(): Promise<number> {
@@ -55,9 +60,9 @@ export class BcScPlusService implements AddedService {
       console.warn('[BC.SCPLUS.addService] addOption found and clicked');
     }
   }
+  
   private async selectPlanOption(): Promise<void> {
     const planOption = this.locator.scPlusPlanOption;
-    
     if (await planOption.waitForDisplayed({ timeout: 3000 }).catch(() => false)) {
       await scrollAndWdioClick(planOption);
       console.warn('[BC.SCPLUS.selectPlanOption] plan/payment option found and clicked');

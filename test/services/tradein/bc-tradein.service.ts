@@ -28,19 +28,22 @@ export class BcTradeInService implements AddedService {
   async selectNoForService(): Promise<void> {
     const no = this.locator.tradeInNoOption();
     if (!(await isExistingInWebView(no))) {
-      await console.warn('[BC.TRADEIN.selectNoForService] Trade-In section not exists');
+      console.warn('[BC.TRADEIN.selectNoForService] Trade-In section not exists');
       return;
     }
     await scrollAndJsClick(no);
   }
 
   async removeService(): Promise<void> {
-    await switchToWebView();
-    await this.locator.tradeInRemoveButton.click();
+    const removeButton = this.locator.tradeInRemoveButton;
+    if (!(await isExistingInWebView(removeButton))) {
+      console.warn('[BC.TRADEIN.removeService] Trade-In remove button not exists');
+      return;
+    }
+    await scrollAndJsClick(removeButton);
   }
 
   async verifyServiceApplied(): Promise<void> {
-    await switchToWebView();
     const removeVisible = await this.locator.tradeInRemoveButton
       .waitForDisplayed({ timeout: 15000 })
       .then(() => true)

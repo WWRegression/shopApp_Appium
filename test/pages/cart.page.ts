@@ -13,7 +13,7 @@ import {
 } from '../helpers/context.helper';
 import { getRunConfig } from '../../config/run.config';
 import { getElementLabel, dispatchTouchStart, jsClick } from '../helpers/element.helper';
-import { assertEqual } from '../helpers/validation.helper';
+import { assertEqual, assertElementDisplayed } from '../helpers/validation.helper';
 import { markFailed, markFailedAndStop, FieldCheck } from '../helpers/report.helper';
 import { removeNonWordChars } from '../helpers/data.helper';
 import { deleteCart } from '../helpers/api.helper';
@@ -140,6 +140,21 @@ export class CartPage extends BasePage {
     await markFailedAndStop(
       async () => assertEqual(skus.some((code) => code.toLowerCase() === target), true),
       `verifySku: expected "${sku}" not found in cart (found: ${skus.join(', ') || 'none'})`
+    );
+  }
+
+  async getItemPrice(sku: string): Promise<string> {
+    await this.prepareCartPage();
+    const el = this.locator.itemPrice(sku);
+    await el.waitForExist({ timeout: 10000 });
+    return ((await el.getText().catch(() => '')) ?? '').trim();
+  }
+
+  async verifyTradeUpApplied(): Promise<void> {
+    await this.prepareCartPage();
+    await assertElementDisplayed(
+      this.locator.tradeUpAppliedLabel,
+      'Trade-Up not found in cart'
     );
   }
 

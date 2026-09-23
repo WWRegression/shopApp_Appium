@@ -244,6 +244,7 @@ export class BasePage {
     if (!title) {
       return false;
     }
+	console.warn('[matchesHeaderTitle] title:', title, 'expected:', expected);
     return matchesText(title, expected);
   }
 
