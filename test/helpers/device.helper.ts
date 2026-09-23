@@ -146,3 +146,20 @@ export function getGoogleAccountEmail(udid?: string): string {
     return '';
   }
 }
+
+
+/**
+ * If Chrome / Samsung Internet is in the foreground (e.g. DE SC+ terms link),
+ * dismiss it and bring the Shop app back.
+ */
+export async function closeExternalBrowserIfOpen(): Promise<boolean> {
+  await driver.pause(1000);
+  const pkg = String((await driver.getCurrentPackage().catch(() => '')) ?? '');
+  console.warn('[closeExternalBrowserIfOpen] pkg:', pkg);
+  if(pkg !==targetPackage() ){
+    await driver.terminateApp(pkg);
+    await driver.activateApp(targetPackage());
+    return true;
+  }
+  return false;
+}

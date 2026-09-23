@@ -4,6 +4,7 @@ import { parsePriceToNumber } from '../../helpers/data.helper';
 import { switchToWebView } from '../../helpers/context.helper';
 import { isExistingInWebView, scrollAndJsClick, scrollAndWdioClick } from '../../helpers/element.helper';
 import { assertElementDisplayed } from '../../helpers/validation.helper';
+import { closeExternalBrowserIfOpen } from '../../helpers/device.helper';
 
 export class BcScPlusService implements AddedService {
   private readonly locator = new BcLocator();
@@ -11,13 +12,13 @@ export class BcScPlusService implements AddedService {
   async addService(): Promise<void> {
     console.warn('[BC.SCPLUS.addService] started');
 
-    await this.selectAddOption();    
+    await this.selectAddOption();
     await this.selectPlanOption();
     await this.popupProcess();
 
-    console.warn('[BC.SCPLUS.addService] done');  
+    console.warn('[BC.SCPLUS.addService] done');
   }
-  
+
   async selectNoForService(): Promise<void> {
     const no = this.locator.scPlusNoButton;
     if (!(await isExistingInWebView(no))) {
@@ -60,7 +61,7 @@ export class BcScPlusService implements AddedService {
       console.warn('[BC.SCPLUS.addService] addOption found and clicked');
     }
   }
-  
+
   private async selectPlanOption(): Promise<void> {
     const planOption = this.locator.scPlusPlanOption;
     if (await planOption.waitForDisplayed({ timeout: 3000 }).catch(() => false)) {
@@ -70,9 +71,9 @@ export class BcScPlusService implements AddedService {
   }
 
   private async popupProcess(): Promise<void> {
-    if(await this.waitForOpen()) {
+    if (await this.waitForOpen()) {
       console.warn('[BC.SCPLUS.addService] modalOpened: true');
-      
+
       await this.checkAllTermsAndConditions();
       console.warn('[BC.SCPLUS.addService] checkAllTermsAndConditions done');
 
@@ -80,11 +81,9 @@ export class BcScPlusService implements AddedService {
       console.warn('[BC.SCPLUS.addService] clickConfirm done');
 
       await this.waitForClose();
-      console.warn('[BC.SCPLUS.addService] waitForClose done');      
-    }
-    else {
+      console.warn('[BC.SCPLUS.addService] waitForClose done');
+    } else {
       console.warn('[BC.SCPLUS.addService] modalOpened: false');
-      return;
     }
   }
 
@@ -100,9 +99,16 @@ export class BcScPlusService implements AddedService {
   }
 
   private async clickConfirm(): Promise<void> {
+    if(await closeExternalBrowserIfOpen()){
+      await switchToWebView(3000).catch(() => undefined);
+    }
     const confirm = this.locator.scPlusConfirmButton;
     await confirm.waitForExist({ timeout: 3000 });
     await scrollAndJsClick(confirm);
+
+    if(await closeExternalBrowserIfOpen()){
+      await switchToWebView(3000).catch(() => undefined);
+    }
   }
 
   private async waitForOpen(): Promise<boolean> {

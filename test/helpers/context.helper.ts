@@ -397,6 +397,7 @@ export async function getCurrentWebViewPage(
 
   if (context === 'webview') {
     const href = (await getCurrentWindowUrl()) ?? '';
+    console.warn('[getCurrentWebViewPage] href:', href);
     const page = matchWebViewPageFromUrls([href], siteCode);
     return { page, context };
   }
