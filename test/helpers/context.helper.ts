@@ -322,7 +322,9 @@ export async function prepareWebViewPage(
   // Fast-path: already on the target WebView page with layout visible — skip switches.
   if (await isWebViewContext()) {
     const href = await getCurrentWindowUrl().catch(() => undefined);
+    console.warn('[prepareWebViewPage] href:', href);
     if (href && matchPageByUrl(href, page, siteCode)) {
+      console.warn('[prepareWebViewPage] href matches page');
       return true;
     }
   }

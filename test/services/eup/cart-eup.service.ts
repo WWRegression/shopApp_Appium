@@ -1,30 +1,39 @@
 import { AddedService } from '../added-service.interface';
 import { CartLocator } from '../../locators/cart.locator';
 import { parsePriceToNumber } from '../../helpers/data.helper';
+import { assertElementDisplayed } from '../../helpers/validation.helper';
+import { switchToWebView, switchToWindowByPage } from '../../helpers/context.helper';
+import { scrollAndJsClick } from '../../helpers/element.helper';
 
 export class CartEupService implements AddedService {
   private readonly locator = new CartLocator();
 
   async addService(): Promise<void> {
-    // TODO: Implement Cart EUP add flow
-    await this.locator.eupAddButton.click();
+    await switchToWebView();
+    await switchToWindowByPage('cart');
+    await scrollAndJsClick(this.locator.eupAddButton);
   }
 
   async selectNoForService(): Promise<void> {
-    // TODO: Implement Cart EUP "No" option
+    await switchToWebView();
     await this.locator.eupNoButton.click();
   }
 
   async removeService(): Promise<void> {
-    // TODO: Implement Cart EUP removal
+    await switchToWebView();
+    await switchToWindowByPage('cart');
+    await scrollAndJsClick(this.locator.eupRemoveButton);
   }
 
   async verifyServiceApplied(): Promise<void> {
-    // TODO: Implement Cart EUP verification
+    await switchToWebView();
+    await switchToWindowByPage('cart');
+    await assertElementDisplayed(this.locator.eupAppliedLabel, 'EUP not found in cart');
   }
 
   async getServicePrice(): Promise<number> {
-    // TODO: Implement Cart EUP price retrieval
-    return parsePriceToNumber('0');
+    await switchToWebView();
+    const text = (await this.locator.eupAppliedLabel.getText().catch(() => '')) ?? '';
+    return parsePriceToNumber(text);
   }
 }

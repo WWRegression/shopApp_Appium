@@ -62,7 +62,7 @@ export class SplashPage extends BasePage {
       console.warn('[splash] on cart (url)');
       return true;
     }
-    if (await this.matchesHeaderTitle(/cart/i).catch(() => false)) {
+    if (await this.matchesHeaderTitle('CART').catch(() => false)) {
       console.warn('[splash] on cart (header title)');
       await switchToWebView(3000).catch(() => false);
       return true;

@@ -418,29 +418,11 @@ export class BcLocator {
     );
   }
 
+  // ---- EUP ----
   get eupAddButton() {
     return $(
       [
-        ':has(> [an-la="eup:yes" i])',
-        '[an-la="eup:yes" i]',
         '[an-la="purchase program:upgrade program" i]',
-        'button[an-la*="purchase program:samsung flex" i][data-type="upgrade" i]:not(.disabled)',
-        '[an-la*="eup" i][an-la*="yes" i]',
-        '[an-la*="upgrade" i]',
-      ].join(', ')
-    );
-  }
-
-  get eupNoButton() {
-    return $('[an-la*="eup" i][an-la*="no" i], [an-la*="upgrade" i][an-la*="no" i]');
-  }
-
-  get eupRemoveButton() {
-    return $(
-      [
-        '[data-type-headline="Samsung Flex"] [an-la="upgrade program:remove"]',
-        '[an-la="eup:remove"]',
-        '.samsung-flex__cta button.js-upgrade-remove',
       ].join(', ')
     );
   }
@@ -448,22 +430,23 @@ export class BcLocator {
   get eupApplyButton() {
     return $(
       [
-        '[data-type-headline="Samsung Flex"] [an-la="upgrade program:apply"]',
-        '.samsung-flex__cta button.js-upgrade-add',
+        '.hubble-product__options-content__box-wrap.is-open [an-la="purchase option:upgrade program:apply"i]',
       ].join(', ')
     );
   }
-
-  get eupImeiInput() {
-    return $('.text-field-v2__input#eup-imei, input#eup-imei');
+  get eupNoButton() {
+    return $('[an-la*="eup" i][an-la*="no" i], [an-la*="upgrade" i][an-la*="no" i]');
   }
 
-  get eupConfirmImeiButton() {
-    return $('[id="confirmImei"][an-la="eup popup:enter imei:confirm code"]');
+  get eupRemoveButton() {
+    return $(
+      [
+        '.hubble-product__options-content__box-wrap.is-open [an-la="upgrade program:remove"]',
+      ].join(', ')
+    );
   }
-
-  get eupTncLabels() {
-    return $$('label[for*="upgrade-seau-chk"]');
+  get eupRemoveConfirmButton() {
+    return $('.cta.js-product-del[an-la="upgrade program:delete option:yes"]');
   }
 
   get summaryTotalPrice() {

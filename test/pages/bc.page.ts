@@ -294,7 +294,7 @@ export class BcPage extends BasePage {
   /** Click Add to Cart only. Cart arrival is confirmed later by cartPage.prepareCartPage(). */
   async clickAddToCart(): Promise<void> {
     const button = this.locator.addToCartButton;
-    await button.waitForExist({ timeout: 15000 });
+    await button.waitForDisplayed({ timeout: 15000 });
     await scrollAndJsClick(button);
   }
 

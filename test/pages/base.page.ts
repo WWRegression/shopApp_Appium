@@ -239,13 +239,16 @@ export class BasePage {
     await clickElement(this.headerLocator.icon(icon));
   }
 
-  async matchesHeaderTitle(expected: string | RegExp): Promise<boolean> {
+  async matchesHeaderTitle(expected: keyof typeof BasePage.titleTexts ): Promise<boolean> {
+	console.warn('[matchesHeaderTitle] start');
     const title = (await this.getHeaderTitle()).trim();
     if (!title) {
       return false;
     }
 	console.warn('[matchesHeaderTitle] title:', title, 'expected:', expected);
-    return matchesText(title, expected);
+	return BasePage.titleTexts[expected].some(
+		(text) => matchesText(title, text)
+	  );
   }
 
   private async getHeaderTitle(): Promise<string> {
