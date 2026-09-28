@@ -3,8 +3,9 @@ import { BcLocator } from '../../locators/bc.locator';
 import { parsePriceToNumber } from '../../helpers/data.helper';
 import { scrollElementToCenter } from '../../helpers/gesture.helper';
 import { switchToWebView } from '../../helpers/context.helper';
-import { scrollAndJsClick, scrollAndWdioClick, scrollUntilVisibleInWebView, getElementLabel } from '../../helpers/element.helper';
+import { scrollAndJsClick, scrollAndWdioClick, scrollUntilVisibleInWebView } from '../../helpers/element.helper';
 import { getRunConfig } from '../../../config/run.config';
+import { assertElementDisplayed } from '../../helpers/validation.helper';
 
 const US_SKU_CARRIER: Record<string, string> = {
   VZW: 'verizon',
@@ -54,13 +55,10 @@ export class BcSimService implements AddedService {
   }
 
   async verifyServiceApplied(): Promise<void> {
-    const appliedLabel = (getRunConfig().siteCode === 'US') ? this.locator.simAppliedLabel : this.locator.simRemoveButton;
-    if ((await appliedLabel.isDisplayed().catch(() => false))) {
-      const label = await getElementLabel(appliedLabel);
-      console.warn('[BC.SIM.verifyServiceApplied] SIM applied: ', label);
-    }else{
-      throw new Error('SIM is not added on BC page');
-    }
+    const applied =
+      (getRunConfig().siteCode === 'US') ? this.locator.simAppliedLabel : this.locator.simRemoveButton;
+    await assertElementDisplayed(applied, 'SIM not applied on BC');
+    console.warn('[BC.SIM.verifyServiceApplied] applied');
   }
 
   async getServicePrice(): Promise<number> {
@@ -72,7 +70,6 @@ export class BcSimService implements AddedService {
     const text = (await priceEl.getText().catch(() => '')) ?? '';
     return parsePriceToNumber(text.replace(/\s+|\/.*/g, ''));
   }
-
 
   private async addSimForUS(skuInfo: string): Promise<void> {
     const carrier = US_SKU_CARRIER[skuInfo.slice(-3).toUpperCase()]

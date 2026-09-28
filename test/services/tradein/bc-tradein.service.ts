@@ -44,14 +44,8 @@ export class BcTradeInService implements AddedService {
   }
 
   async verifyServiceApplied(): Promise<void> {
-    const removeVisible = await this.locator.tradeInRemoveButton
-      .waitForDisplayed({ timeout: 15000 })
-      .then(() => true)
-      .catch(() => false);
-    if (removeVisible) {
-      return;
-    }
     await assertElementDisplayed(this.locator.tradeInEditButton, 'Trade-In not applied on BC');
+    console.warn('[BC.TRADEIN.verifyServiceApplied] applied');
   }
 
   async getServicePrice(): Promise<number> {

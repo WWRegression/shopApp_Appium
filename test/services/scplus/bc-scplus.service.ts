@@ -33,15 +33,8 @@ export class BcScPlusService implements AddedService {
   }
 
   async verifyServiceApplied(): Promise<void> {
-    const appliedLabel = await this.locator.scPlusAppliedLabel;
-
-    if (await appliedLabel.waitForDisplayed({ timeout: 3000 }).catch(() => false)) {
-      console.warn('[BC.SCPLUS.verifyServiceApplied] appliedLabel found');
-      return;
-    }
-
-    console.warn('[BC.SCPLUS.verifyServiceApplied] appliedLabel not found');
-    await assertElementDisplayed(appliedLabel, 'SC+ not applied on BC');
+    await assertElementDisplayed(this.locator.scPlusAppliedLabel, 'SC+ not applied on BC');
+    console.warn('[BC.SCPLUS.verifyServiceApplied] applied');
   }
 
   async getServicePrice(): Promise<number> {

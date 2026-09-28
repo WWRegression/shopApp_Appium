@@ -48,6 +48,7 @@ export class BcEupService implements AddedService {
 
   async verifyServiceApplied(): Promise<void> {
     await assertElementDisplayed(this.locator.eupRemoveButton, 'EUP not applied on BC');
+    console.warn('[BC.EUP.verifyServiceApplied] applied');
   }
 
   async getServicePrice(): Promise<number> {
