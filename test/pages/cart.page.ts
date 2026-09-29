@@ -4,19 +4,11 @@ import { CartTradeInService } from '../services/tradein/cart-tradein.service';
 import { CartScPlusService } from '../services/scplus/cart-scplus.service';
 import { CartEupService } from '../services/eup/cart-eup.service';
 import { CartSimService } from '../services/sim/cart-sim.service';
-import {
-  switchToNative,
-  prepareWebViewPage,
-  hasAppWebViewContext,
-  switchToWebView,
-  getCurrentWindowUrl,
-} from '../helpers/context.helper';
-import { getRunConfig } from '../../config/run.config';
-import { getElementLabel, dispatchTouchStart, jsClick } from '../helpers/element.helper';
+import { switchToNative, prepareWebViewPage } from '../helpers/context.helper';
+import { getElementLabel, dispatchTouchStart, jsClick, scrollAndJsClick, clickIfDisplayed } from '../helpers/element.helper';
 import { assertEqual, assertElementDisplayed } from '../helpers/validation.helper';
 import { markFailed, markFailedAndStop, FieldCheck } from '../helpers/report.helper';
 import { removeNonWordChars } from '../helpers/data.helper';
-import { deleteCart } from '../helpers/api.helper';
 
 export interface CartItemOptions {
   deviceName?: string;
@@ -38,7 +30,7 @@ export class CartPage extends BasePage {
    * Wait up to WEBVIEW_PAGE_READY_MS (10s) for cart. Throws on timeout so the TC fails fast.
    */
   async prepareCartPage(): Promise<void> {
-    await console.warn('prepareCartPage: start');
+    console.warn('prepareCartPage: start');
     const ready = await prepareWebViewPage('cart', this.locator.cartLayout);
     if (!ready) {
       throw new Error('prepareCartPage: cart not ready within 10s');
@@ -51,59 +43,39 @@ export class CartPage extends BasePage {
   }
 
   /**
-   * Empty the cart as a precondition.
-   * prod → OCC API (UI click loop is flaky: stale nodes / qty-remove sharing an-tr).
-   * stg → UI remove with a hard attempt cap.
+   * Empty the cart via UI (precondition).
+   * Loops remove → optional confirm until empty, with a hard attempt cap.
    */
   async clearCart(): Promise<void> {
+    const maxAttempts = 10;
+
     await this.selectBnbMenu('cart');
     await this.prepareCartPage();
     await this.dismissPopupIfShown();
 
-    for (;;) {
-      const removeButton = this.locator.removeItemButton;
-      if (!(await removeButton.isDisplayed().catch(() => false))) {
-        break;
-      }
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      console.warn(`[clearCart] attempt ${attempt}`);
+      await this.removeOneCartItem()
 
-      try {
-        await jsClick(removeButton);
-        await driver.pause(1000);
-      } catch {
-        // Element can go stale between isDisplayed() and click() — retry with a fresh query.
-        continue;
-      }
-
-      const confirmButton = this.locator.removeConfirmButton;
-      if (await confirmButton.isDisplayed().catch(() => false)) {
-        // Modal can close on its own between the check above and the click below.
-        await jsClick(confirmButton).catch(() => undefined);
-        await confirmButton.waitForDisplayed({ timeout: 3000, reverse: true }).catch(() => undefined);
+      if (await this.isCartEmpty(3000)) {
+        console.warn('[clearCart] empty cart');
+        await switchToNative();
+        return;
       }
     }
-
-    await switchToNative();
   }
 
-  /**
-   * Deletes the cart via the OCC API instead of clicking each remove button. prod only — see
-   * api.helper's deleteCart(). Reuses an already-open WebView only if it's already on the
-   * current run's site — otherwise a leftover WebView from a different site would make the API
-   * call target the wrong country's cart while reporting success.
-   */
-  async deleteCart(): Promise<void> {
-    let onCorrectSite = false;
-    if (await hasAppWebViewContext()) {
-      await switchToWebView();
-      const href = (await getCurrentWindowUrl())?.toLowerCase() ?? '';
-      onCorrectSite = href.includes(`${getRunConfig().siteCode.toLowerCase()}/`);
-    }
+  private async isCartEmpty(waitTime: number = 0): Promise<boolean> {
+    return this.locator.emptyCartSection.waitForDisplayed({ timeout: waitTime }).then(() => true).catch(() => false);
+  }
 
-    if (!onCorrectSite) {
-      await this.selectBnbMenu('cart');
-      await this.prepareCartPage();
+  /** Clicks first remove control (+ confirm if shown). Returns false if remove UI is absent. */
+  private async removeOneCartItem(): Promise<boolean> {
+    if (!(await clickIfDisplayed(this.locator.removeItemButton))) {
+      return false;
     }
-    await deleteCart();
+    await clickIfDisplayed(this.locator.removeConfirmButton);
+    return true;
   }
 
   /** All sku (data-modelcode) values currently in the cart, original case preserved. */

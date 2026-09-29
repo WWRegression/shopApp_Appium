@@ -87,6 +87,13 @@ export async function clickElement(
   await element.click();
 }
 
+/** Click only if currently displayed. Returns whether a click was attempted. */
+export async function clickIfDisplayed(element: ChainablePromiseElement): Promise<boolean> {
+  if (!(await isDisplayedSafe(element))) return false;
+  await scrollAndJsClick(element);
+  return true;
+}
+
 /** DOM HTMLElement.click() — overlay / position:fixed / hidden input. */
 export async function jsClick(el: ChainablePromiseElement | WebdriverIO.Element): Promise<void> {
   await driver.execute('arguments[0].click();', await el);

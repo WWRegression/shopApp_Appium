@@ -3,6 +3,10 @@ export class CartLocator {
     return $('cx-page-layout.CartPageTemplateV2, div.cart-details-wrapper');
   }
 
+  get emptyCartSection() {
+    return $('cx-cart-details .cart-details__empty');
+  }
+
   get removeItemButton() {
     return $(
       [
