@@ -303,13 +303,10 @@ export class BcLocator {
   get addToCartButton() {
     return $(
       [
-        '[an-la="top sticky bar:add to cart"].price-bar-confirm-btn',
-        '.wearable-bc-calculator__price-cta button[an-la="sticky bar:continue"]',
-        '[an-la="top sticky bar:buy now"].price-bar-cart-btn',
-        'div.hubble-price-bar__price-cta .price-bar-cart-btn',
-        '[an-la*="sticky bar" i][an-la*="cart" i]',
+        '.price-bar-cart-btn[an-la*="top sticky bar"]:not([title])',
         '.watch-bc-price-bar__cta button',
-        '#anchorNavigationPriceBarMobile [an-la*="anchor navi"]'
+        '.price-bar-confirm-btn[an-la="top sticky bar:add to cart"]:not([title])',
+        'button[an-la*="sticky bar"]',
       ].join(', ') 
     );
   }

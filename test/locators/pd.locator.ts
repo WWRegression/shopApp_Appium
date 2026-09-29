@@ -210,6 +210,14 @@ export class PdLocator {
     ]`);
   }
 
+  get addToCartButton() {
+    return $(
+      [
+        '#anchorNavigationPriceBarMobile [an-la*="anchor navi"]',
+      ].join(', ') 
+    );
+  }
+  
   get scPlusAddButton() {
     return $(
       [

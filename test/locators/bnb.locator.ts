@@ -119,6 +119,7 @@ export class BnbLocator {
       or (contains(@content-desc, "Coș") and contains(@content-desc, "Fila 4"))
       or (contains(@content-desc, "Sepet") and contains(@content-desc, "Sekme 4"))
       or (contains(@content-desc, "カート") and contains(@content-desc, "タブ"))
+      or (contains(@content-desc, "Carrinho") and contains(@content-desc, "Separador 4"))
       ]`
     );
   }
