@@ -59,6 +59,21 @@ export class PopupLocator {
     );
   }
 
+  /** Android notification permission "Don't allow" — Katalon Initialization/notificationDenyBtn */
+  get notificationDenyButton() {
+    return $(
+      `//android.widget.Button[
+        @resource-id = 'com.android.permissioncontroller:id/permission_deny_button'
+        or @resource-id = 'com.android.permissioncontroller:id/permission_deny_and_dont_ask_again_button'
+      ]`
+    );
+  }
+
+  /** Android location permission "While using the app" — Katalon Initialization/locationPremissionAllowBtn */
+  get locationAllowButton() {
+    return $(`//*[@resource-id = 'com.android.permissioncontroller:id/permission_allow_foreground_only_button']`);
+  }
+
   get cookieAcceptButton() {
     return $(
      `//android.widget.Button[

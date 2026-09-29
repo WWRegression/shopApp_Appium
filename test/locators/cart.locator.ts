@@ -7,6 +7,11 @@ export class CartLocator {
     return $('cx-cart-details .cart-details__empty');
   }
 
+  /** Katalon Cart/emptyCartLoginBtn — Sign in button on the empty cart (guest) */
+  get emptyCartLoginButton() {
+    return $('button[data-an-la="empty cart:sign in"]');
+  }
+
   get removeItemButton() {
     return $(
       [

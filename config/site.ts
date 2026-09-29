@@ -12,7 +12,7 @@ export interface AppIdentity {
 
 /** 사이트별 APK. CN/IN/US가 아니면 GLOBAL. */
 export const appBySite: Record<'CN' | 'IN' | 'US' | 'GLOBAL', AppIdentity> = {
-  CN: { packageName: 'com.jv.samsungeshop', activity: 'com.jv.samsungeshop.MainActivity' },
+  CN: { packageName: 'com.jv.samsungeshop', activity: 'com.samsung.ecomm.global.shop_app.MainActivity' },
   IN: { packageName: 'com.samsung.ecomm.global.in', activity: 'com.samsung.ecomm.global.shop_app.MainActivity' },
   US: { packageName: 'com.samsung.ecomm', activity: 'com.samsung.ecomm.global.shop_app.MainActivity' },
   GLOBAL: { packageName: 'com.samsung.ecomm.global.gbr', activity: 'com.samsung.ecomm.global.shop_app.MainActivity' },

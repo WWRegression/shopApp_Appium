@@ -59,6 +59,28 @@ export async function adb(...args: string[]): Promise<string> {
   return adbAsync(args);
 }
 
+/** adb am force-stop (Katalon Launch.forceStopPakage). */
+export async function forceStopPackage(appPackage: string): Promise<void> {
+  await adb('shell', 'am', 'force-stop', appPackage);
+}
+
+/** adb pm clear — wipes the app's data (Katalon Launch.clearPackage). */
+export async function clearPackage(appPackage: string): Promise<void> {
+  await adb('shell', 'pm', 'clear', appPackage);
+}
+
+/** adb am start -a <action> (Katalon Launch.startPackageByAction). */
+export async function startActivityByAction(action: string): Promise<void> {
+  await adb('shell', 'am', 'start', '-a', action);
+  await driver.pause(1000);
+}
+
+/** Force-stops and relaunches the app (Katalon Launch.startExistingApp). */
+export async function restartApp(appPackage = targetPackage()): Promise<void> {
+  await forceStopPackage(appPackage);
+  await driver.activateApp(appPackage);
+}
+
 /** Process id of the given app package (defaults to the current site's target package). */
 export async function getAppPid(appPackage = targetPackage()): Promise<string> {
   return adb('shell', 'pidof', appPackage).catch(() => '');
@@ -132,21 +154,34 @@ function extractDumpValue(output: string, key: string): string {
   return match?.[1] ?? 'Not Found';
 }
 
-/**
- * adb dumpsys account → Google 계정 email (`type=com.google`, `name=wwautokr`).
- */
-export function getGoogleAccountEmail(udid?: string): string {
+/** First current device account email matching the filter (dumpsys account); ignores history lines. */
+function findDeviceAccountEmail(matches: (email: string, type: string) => boolean, udid?: string): string {
   try {
-    const stdout = adbSync(
-      ['shell', 'dumpsys account | grep type=com.google | grep name=wwautokr'],
-      udid
-    );
-    return stdout.match(/name=([^,}]+)/)?.[1]?.trim() ?? '';
+    const stdout = adbSync(['shell', 'dumpsys', 'account'], udid);
+    for (const raw of stdout.split(/\r?\n/)) {
+      const m = raw.trim().match(/^Account \{name=([^,}]+), type=([^}]+)\}/);
+      if (m && matches(m[1].trim(), m[2].trim())) {
+        return m[1].trim();
+      }
+    }
   } catch {
-    return '';
+    // adb failure → treat as not found
   }
+  return '';
 }
 
+/** Google account email starting with wwautokr and ending with @gmail.com. */
+export function getGoogleAccountEmail(udid?: string): string {
+  return findDeviceAccountEmail(
+    (email, type) => type === 'com.google' && email.startsWith('wwautokr') && email.endsWith('@gmail.com'),
+    udid
+  );
+}
+
+/** Current device account whose email contains the domain (non-Gmail login/logout). */
+export function getAccountEmail(domain = 'proton.me', udid?: string): string {
+  return findDeviceAccountEmail((email) => email.includes(domain), udid);
+}
 
 /**
  * If Chrome / Samsung Internet is in the foreground (e.g. DE SC+ terms link),

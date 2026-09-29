@@ -5,12 +5,15 @@ import {
   type ReportStatus,
 } from './db.helper';
 
-/** Runs a select-step action; on failure, throws one clear Error (used as the DB fail reason). */
-export async function markFailedAndStop(action: () => Promise<void>, reason: string): Promise<void> {
+/** Runs a select-step action; on failure, throws one clear Error (used as the DB fail reason). Pass a function to build the reason at failure time (e.g. with the failed step). */
+export async function markFailedAndStop(
+  action: () => Promise<void>,
+  reason: string | (() => string)
+): Promise<void> {
   try {
     await action();
   } catch (cause) {
-    throw new Error(reason, { cause: cause as Error });
+    throw new Error(typeof reason === 'function' ? reason() : reason, { cause: cause as Error });
   }
 }
 

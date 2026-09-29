@@ -5,7 +5,15 @@ import { CartScPlusService } from '../services/scplus/cart-scplus.service';
 import { CartEupService } from '../services/eup/cart-eup.service';
 import { CartSimService } from '../services/sim/cart-sim.service';
 import { switchToNative, prepareWebViewPage } from '../helpers/context.helper';
-import { getElementLabel, dispatchTouchStart, jsClick, scrollAndJsClick, clickIfDisplayed } from '../helpers/element.helper';
+import {
+  getElementLabel,
+  dispatchTouchStart,
+  jsClick,
+  scrollAndJsClick,
+  clickIfDisplayed,
+  clickElement,
+  isDisplayedSafe,
+} from '../helpers/element.helper';
 import { assertEqual, assertElementDisplayed } from '../helpers/validation.helper';
 import { markFailed, markFailedAndStop, FieldCheck } from '../helpers/report.helper';
 import { removeNonWordChars } from '../helpers/data.helper';
@@ -67,6 +75,30 @@ export class CartPage extends BasePage {
 
   private async isCartEmpty(waitTime: number = 0): Promise<boolean> {
     return this.locator.emptyCartSection.waitForDisplayed({ timeout: waitTime }).then(() => true).catch(() => false);
+  }
+
+  /** Katalon LogIn.loginOnEmptyCart — taps Sign in on the empty cart; the SSO page is handled by LoginPage.clickSsoSignIn(). */
+  async clickEmptyCartLogin(): Promise<void> {
+    await this.prepareCartPage();
+    await markFailedAndStop(
+      () => clickElement(this.locator.emptyCartLoginButton, { timeout: 5000 }),
+      'Login failed on the Cart page: empty cart Sign in button not found'
+    );
+  }
+
+  /** Katalon LogIn.verifyLoggedInCartPage — cart loads and the empty cart Sign in button is gone. */
+  async verifyLoggedInOnCart(): Promise<void> {
+    await this.prepareCartPage();
+    const loginShown = await isDisplayedSafe(this.locator.emptyCartLoginButton);
+    console.log(`[verifyLoggedInOnCart] empty cart Sign in shown=${loginShown}`);
+    markFailed([{ label: 'empty cart Sign in button hidden after login', pass: !loginShown }], 'verifyLoggedInOnCart');
+    await switchToNative();
+
+    // Some sites (e.g. US) reopen cart without BNB after login — go back only then, so BNB-tab carts are untouched
+    if (!(await isDisplayedSafe(this.bnbLocator.mypageButton))) {
+      console.log('[verifyLoggedInOnCart] BNB hidden, going back');
+      await driver.back();
+    }
   }
 
   /** Clicks first remove control (+ confirm if shown). Returns false if remove UI is absent. */

@@ -7,8 +7,24 @@ export class MypageLocator {
     return $$('//android.view.View[@content-desc and .//android.widget.ImageView]');
   }
 
+  /** Katalon MyAccount/accountPage — UK (English), CN */
+  get accountPageTitle() {
+    return $(`//android.view.View[@content-desc = 'My Page' or @content-desc = 'My page' or @content-desc = '个人中心']`);
+  }
+
+  /** Katalon LogIn/mypageLoginBtn — UK (English); CN '登录' matched exactly since the CN logout button '退出登录' contains it */
   get loginButton() {
-    return $('~YOUR_MYPAGE_LOGIN_SELECTOR');
+    return $(`//*[contains(@content-desc, 'Log-in') or contains(@content-desc, 'Login') or @content-desc = '登录']`);
+  }
+
+  /** Katalon LogIn/mypageLogoutBtn — UK (English), CN ('退出登录') */
+  get logoutButton() {
+    return $(`//*[contains(@content-desc, 'Logout') or contains(@content-desc, 'Log out') or contains(@content-desc, '退出')]`);
+  }
+
+  /** Katalon LogIn/mypageLogoutOkayBtn — logout confirm dialog */
+  get logoutOkayButton() {
+    return $(`//android.widget.Button[@index = '2']`);
   }
 
   get accountName() {

@@ -12,12 +12,24 @@
  */
 
 import { scrollElementToCenter, scrollWebViewDown, scrollDown } from './gesture.helper';
+import { isWebViewContext } from './context.helper';
 
 const DEFAULT_TIMEOUT_MS = 10000;
 
 /** isDisplayed() that never throws. */
 export async function isDisplayedSafe(element: ChainablePromiseElement): Promise<boolean> {
   return element.isDisplayed().catch(() => false);
+}
+
+/** Waits up to timeout for the element to be displayed; never throws (Katalon verifyElementVisible OPTIONAL). */
+export async function waitForDisplayedSafe(
+  element: ChainablePromiseElement,
+  timeout = DEFAULT_TIMEOUT_MS
+): Promise<boolean> {
+  return element.waitForDisplayed({ timeout }).then(
+    () => true,
+    () => false
+  );
 }
 
 /**
@@ -61,6 +73,19 @@ export async function scrollUntilVisibleInWebView(
   return isExistingInWebView(target);
 }
 
+/** UiAutomator2 default: each lookup first waits up to this long for the UI to go idle. */
+const DEFAULT_IDLE_TIMEOUT_MS = 10000;
+
+/** Runs fn without waiting for UI idle — animated screens (e.g. CN login slider) otherwise make every lookup wait ~10s. */
+export async function withoutIdleWait<T>(fn: () => Promise<T>): Promise<T> {
+  await driver.updateSettings({ waitForIdleTimeout: 0 });
+  try {
+    return await fn();
+  } finally {
+    await driver.updateSettings({ waitForIdleTimeout: DEFAULT_IDLE_TIMEOUT_MS });
+  }
+}
+
 /**
  * Native list scroll until locator.exists (Katalon scrollUntilElementFound).
  * Uses mobile scrollGesture via scrollDown — for Native lists, not WebView DOM.
@@ -87,11 +112,24 @@ export async function clickElement(
   await element.click();
 }
 
-/** Click only if currently displayed. Returns whether a click was attempted. */
-export async function clickIfDisplayed(element: ChainablePromiseElement): Promise<boolean> {
-  if (!(await isDisplayedSafe(element))) return false;
-  await scrollAndJsClick(element);
+/** Clicks if the element shows up within timeout (default 0 = check now). WebView → JS click, native → element click. */
+export async function clickIfDisplayed(element: ChainablePromiseElement, timeout = 0): Promise<boolean> {
+  const shown = timeout > 0 ? await waitForDisplayedSafe(element, timeout) : await isDisplayedSafe(element);
+  if (!shown) return false;
+  if (await isWebViewContext()) await scrollAndJsClick(element);
+  else await element.click();
   return true;
+}
+
+/** Waits for the element to be displayed, then types the value (clickElement counterpart for inputs). */
+export async function setElementValue(
+  element: ChainablePromiseElement,
+  value: string,
+  options?: { timeout?: number }
+): Promise<void> {
+  const timeout = options?.timeout ?? DEFAULT_TIMEOUT_MS;
+  await element.waitForDisplayed({ timeout });
+  await element.setValue(value);
 }
 
 /** DOM HTMLElement.click() — overlay / position:fixed / hidden input. */

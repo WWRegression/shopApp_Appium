@@ -1,13 +1,16 @@
 import { PopupLocator } from '../locators/popup.locator';
 import { HeaderLocator, type HeaderIcon } from '../locators/header.locator';
 import { BnbLocator, BNB_MENUS, type BnbMenu } from '../locators/bnb.locator';
+import { LoginLocator } from '../locators/login.locator';
 import { switchToNative } from '../helpers/context.helper';
 import { scrollUp } from '../helpers/gesture.helper';
 import {
   clickElement,
+  clickIfDisplayed,
   isDisplayedSafe,
   matchesText,
   getElementLabel,
+  waitForDisplayedSafe,
 } from '../helpers/element.helper';
 
 export type { HeaderIcon, BnbMenu };
@@ -25,7 +28,9 @@ export class BasePage {
   protected readonly popupLocator = new PopupLocator();
   protected readonly headerLocator = new HeaderLocator();
   protected readonly bnbLocator = new BnbLocator();
-  
+  /** App entry screens (guest splash, profile select) — used to tell when the app is up without a permission popup */
+  private readonly appEntryLocator = new LoginLocator();
+
   static titleTexts = {
 		'HOME': [
 			'Home',
@@ -221,6 +226,34 @@ export class BasePage {
     }
   }
 
+  /**
+   * Katalon Init.clickNotification / clickLocationPermission — deny notifications, allow location.
+   * The location popup is awaited only after a notification popup; pass a long locationTimeoutMs only for a freshly wiped app.
+   */
+  async dismissPermissionPopups(timeoutMs = 5000, locationTimeoutMs = 1000): Promise<void> {
+    await switchToNative();
+    // Stop waiting as soon as an app screen is up without the popup, instead of always waiting the full timeout
+    await driver
+      .waitUntil(
+        async () =>
+          (await isDisplayedSafe(this.popupLocator.notificationDenyButton)) ||
+          (await isDisplayedSafe(this.bnbLocator.homeButton)) ||
+          (await isDisplayedSafe(this.appEntryLocator.continueAsGuestButton)) ||
+          (await isDisplayedSafe(this.appEntryLocator.selectProfileTitle)),
+        { timeout: timeoutMs, interval: 300 }
+      )
+      .catch(() => undefined);
+
+    const notificationShown = await clickIfDisplayed(this.popupLocator.notificationDenyButton, 1000);
+    if (notificationShown) {
+      console.log('[dismissPermissionPopups] notification permission denied');
+    }
+    // Location popup only follows the notification popup on a fresh app; otherwise just check what is on screen
+    if (await clickIfDisplayed(this.popupLocator.locationAllowButton, notificationShown ? locationTimeoutMs : 500)) {
+      console.log('[dismissPermissionPopups] location permission allowed');
+    }
+  }
+
   async dismissOverlays(): Promise<void> {
     await this.dismissPopupIfShown();
     await this.dismissCookieIfShown();
@@ -300,6 +333,15 @@ export class BasePage {
     // try to recover it by tapping a visible header icon.
     if (await isDisplayedSafe(this.bnbLocator.menu(menu))) {
       return;
+    }
+
+    // A notification popup can pop up a few seconds after launch (e.g. IN re-asking after a deny) and cover BNB
+    if (await isDisplayedSafe(this.popupLocator.notificationDenyButton)) {
+      await this.dismissPermissionPopups();
+      // BNB comes back only after the popup's close animation
+      if (await waitForDisplayedSafe(this.bnbLocator.menu(menu), 3000)) {
+        return;
+      }
     }
 
     // Some pages (e.g., checkout) don't show BNB at all. Recover BNB via a header icon.
