@@ -4,7 +4,7 @@ export class CartLocator {
   }
 
   get emptyCartSection() {
-    return $('cx-cart-details .cart-details__empty');
+    return $('cx-cart-details .cart-details__empty, app-cart-details-cn .cart-details__empty');
   }
 
   /** Katalon Cart/emptyCartLoginBtn — Sign in button on the empty cart (guest) */
