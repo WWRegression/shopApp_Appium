@@ -257,40 +257,6 @@ export class BcPage extends BasePage {
     return ((await el.getText().catch(() => '')) ?? '').trim();
   }
 
-  /** Katalon BC.moveToAddonPage — Buy Now (or CN sticky) lands on splash (addon/gift). */
-  async goToSplashPage(): Promise<void> {
-    const buyNow = this.locator.buyNowButton;
-    if (await buyNow.isExisting().catch(() => false)) {
-      await scrollAndJsClick(buyNow);
-    } else {
-      await this.clickAddToCart();
-    }
-    await driver.pause(1500);
-  }
-
-  /** Katalon BC.selectAddOnOption — first add-on CTA; returns data-modelcode. */
-  async selectAddonOption(): Promise<string> {
-    const buttons = await this.locator.addonAddButtons;
-    for (const btn of buttons) {
-      if (!(await btn.isDisplayed().catch(() => false))) {
-        continue;
-      }
-      if (!(await btn.isEnabled().catch(() => true))) {
-        continue;
-      }
-      await scrollAndJsClick(btn);
-      await driver.pause(1500);
-      const sku =
-        ((await btn.getAttribute('data-modelcode').catch(() => '')) ?? '').trim() ||
-        ((await $('[data-modelcode]').getAttribute('data-modelcode').catch(() => '')) ?? '').trim();
-      if (!sku) {
-        throw new Error('Add-on selected but data-modelcode is empty');
-      }
-      return sku;
-    }
-    throw new Error('No clickable Add-on button found');
-  }
-
   /** Click Add to Cart only. Cart arrival is confirmed later by cartPage.prepareCartPage(). */
   async clickAddToCart(): Promise<void> {
     const button = this.locator.addToCartButton;

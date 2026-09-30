@@ -1,4 +1,3 @@
-import { getRunConfig } from '../../config/run.config';
 import { storageLabelVariants } from '../helpers/data.helper';
 
 /**
@@ -25,6 +24,11 @@ export class BcLocator {
     );
   }
 
+  get bcProductName() {
+    return $('.hubble-price-bar__detail-title, .sg-product-display-name, .watch-bc-price-bar__headline, div[class*="ProductTitle_product"] h1');
+  }
+
+  // ---- Trade-in ----
   tradeInYesOption() {
     return $(
       [
@@ -72,6 +76,15 @@ export class BcLocator {
     );
   }
 
+   get tradeInAddButton() {
+    return this.tradeInYesOption();
+  }
+
+  get tradeInNoButton() {
+    return this.tradeInNoOption();
+  }
+
+  // ---- Option ----
   deviceOption(label: string) {
     return $(
       [
@@ -126,6 +139,7 @@ export class BcLocator {
 
   }
 
+  // ---- Summary ----
   get summaryDeviceName() {
     return $$(
       [
@@ -165,6 +179,17 @@ export class BcLocator {
         '.s-tradein-summary .s-trade-price, .s-trade-price-wrap > span',
         `.tradein-option-selected .tradein-option-selected__option-price > strong`,
         `.tradein-option-selected .tradein-option-selected__option-price:not(:has(> strong)) > span`
+      ].join(', ')
+    );
+  }
+
+  get summaryTotalPrice() {
+    return $(
+      [
+        '.hubble-product__total-text',
+        "[class*='SummaryDetails_amountContainer']",
+        '.total-summary__price-total .price',
+        '.hubble-price-bar__price-now',
       ].join(', ')
     );
   }
@@ -325,19 +350,7 @@ export class BcLocator {
     );
   }
 
-  // legacy aliases used by older service stubs
-  get tradeInAddButton() {
-    return this.tradeInYesOption();
-  }
-
-  get tradeInNoButton() {
-    return this.tradeInNoOption();
-  }
-
-  get tradeInAppliedLabel() {
-    return this.tradeInRemoveButton;
-  }
-
+// ---- SC+ ----
   get scPlusAddButton() {
     return $(
       [
@@ -431,6 +444,7 @@ export class BcLocator {
       ].join(', ')
     );
   }
+  
   get eupNoButton() {
     return $('[an-la*="eup" i][an-la*="no" i], [an-la*="upgrade" i][an-la*="no" i]');
   }
@@ -446,36 +460,7 @@ export class BcLocator {
     return $('.cta.js-product-del[an-la="upgrade program:delete option:yes"]');
   }
 
-  get summaryTotalPrice() {
-    return $(
-      [
-        '.hubble-product__total-text',
-        "[class*='SummaryDetails_amountContainer']",
-        '.total-summary__price-total .price',
-        '.hubble-price-bar__price-now',
-      ].join(', ')
-    );
-  }
-
-  get buyNowButton() {
-    return $(
-      [
-        'div.hubble-price-bar__price-cta:not(.inner-cta) [an-la="top sticky bar:buy now"]',
-        'div:is(.hubble-price-bar__price-cta, .watch-bc-price-bar__cta):not(.inner-cta) [an-la*="buy now" i]',
-        '[an-la="top sticky bar:buy now"].price-bar-cart-btn',
-      ].join(', ')
-    );
-  }
-
-  get addonAddButtons() {
-    return $$(
-      [
-        "button[an-la='add-on:add item']",
-        "a[class*='AddOnProductItemMX_productCardTop']",
-      ].join(', ')
-    );
-  }
-
+  // ---- SIM ----
   get simAddButton() {
     return $(
       [
@@ -492,15 +477,6 @@ export class BcLocator {
         '[an-la="tariff:no"]',
         '[an-la="tariff:none"]',
         '.s-option-tariff [an-la*="no" i]',
-      ].join(', ')
-    );
-  }
-
-  get simPurchaseOption() {
-    return $(
-      [
-        '[an-la*="tariffs:vodafone"i]',
-        '.contents-tariff__option-list',
       ].join(', ')
     );
   }
@@ -556,8 +532,6 @@ export class BcLocator {
   get simPriceLabel() {
     return $(
       [
-        '.tariff-popup__selected-spec-header .tariff-popup__selected-spec-value',
-        '.tariff-popup__selected-spec-price strong',
         '.product_service_offers .s-selec-price',
         '.s-tariff-summary__price',
       ].join(', ')
@@ -581,10 +555,4 @@ export class BcLocator {
     );
   }
 
-  get bcProductName() {
-    if (getRunConfig().siteCode === 'US') {
-      return $("div[class*='ProductTitle_product'] h1");
-    }
-    return $('.hubble-price-bar__detail-title, .sg-product-display-name, .watch-bc-price-bar__headline');
-  }
 }
