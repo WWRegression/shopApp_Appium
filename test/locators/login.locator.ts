@@ -24,8 +24,8 @@ export class LoginLocator {
     return $(`//android.widget.Button[@content-desc = 'Continue']`);
   }
 
-  /** Katalon LogIn/loginPageSignInBtn — SSO main page */
-  get ssoSignInButton() {
+  /** Katalon LogIn/loginPageSignInBtn — login button on the login page (Sign in / Login with Samsung Account / 三星账号授权登录) */
+  get loginPageLoginButton() {
     return $(
       `//android.widget.Button[
         @content-desc = 'Sign in'
@@ -39,7 +39,7 @@ export class LoginLocator {
   }
 
   /** Katalon LogIn/loginPageTnC — CN SSO privacy agreement checkbox (must be checked before any login button works) */
-  get ssoPrivacyCheckbox() {
+  get loginPagePrivacyCheckbox() {
     return $(`//android.widget.CheckBox[@checked = 'false' and ..//*[@content-desc = '《隐私政策》']]`);
   }
 
@@ -108,6 +108,13 @@ export class LoginLocator {
       `//android.widget.Button[@resource-id = '${SAMSUNG_ACCOUNT_ID}/center_text']
       | //android.widget.Button[@resource-id = '${SAMSUNG_ACCOUNT_ID}/primary_button' and @text = 'Agree']
       | //android.widget.Button[@text = 'Agree']`
+    );
+  }
+
+  /** Any element of the SSO screens (Samsung account app or the Google account picker) — gone once SSO hands back */
+  get ssoScreenElement() {
+    return $(
+      `//*[starts-with(@resource-id, '${SAMSUNG_ACCOUNT_ID}/') or starts-with(@resource-id, 'com.google.android.gms:id/')]`
     );
   }
 

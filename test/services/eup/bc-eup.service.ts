@@ -1,7 +1,7 @@
 import { AddedService } from '../added-service.interface';
 import { BcLocator } from '../../locators/bc.locator';
 import { parsePriceToNumber } from '../../helpers/data.helper';
-import { scrollAndJsClick, isExistingInWebView } from '../../helpers/element.helper';
+import { scrollAndJsClick, isExistingInWebView, scrollAndWdioClick } from '../../helpers/element.helper';
 import { assertElementDisplayed } from '../../helpers/validation.helper';
 
 export class BcEupService implements AddedService {
@@ -17,13 +17,13 @@ export class BcEupService implements AddedService {
   private async selectAddOption(): Promise<void> {
     const add = this.locator.eupAddButton;
     await add.waitForExist({ timeout: 15000 });
-    await scrollAndJsClick(add);
+    await scrollAndWdioClick(add);
   }
 
   private async selectApply(): Promise<void> {
     const apply = this.locator.eupApplyButton;
     await apply.waitForDisplayed({ timeout: 5000 });
-    await scrollAndJsClick(apply);
+    await scrollAndWdioClick(apply);
   }
 
 

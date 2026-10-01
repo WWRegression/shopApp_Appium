@@ -7,6 +7,11 @@ export class CartLocator {
     return $('cx-cart-details .cart-details__empty, app-cart-details-cn .cart-details__empty');
   }
 
+  /** Katalon Cart/cartToCheckoutBtn_2nd — "Continue to checkout" scoped to the open Express Checkout modal (e.g. US). */
+  get checkoutModalButton() {
+    return $('app-sticky-checkout-cta-modal.show .modal__container.sticky-checkout-modal button[data-an-tr="cart-to-checkout"]');
+  }
+
   /** Katalon Cart/emptyCartLoginBtn — Sign in button on the empty cart (guest) */
   get emptyCartLoginButton() {
     return $('button[data-an-la="empty cart:sign in"]');

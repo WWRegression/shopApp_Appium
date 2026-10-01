@@ -10,17 +10,17 @@ describe('PROD_LOGIN_04', () => {
 
   it('Registered - logout / login on Account page', async function () {
     await runOrSkip.call(this, 'PROD_LOGIN_04', async () => {
-      await loginPage.signInSamsungAccountOnDevice();
+      await loginPage.signInOnDevice();
       await restartApp();
       await mypagePage.dismissPermissionPopups();
-      await mypagePage.selectHome();
+      await loginPage.openHomeAfterLaunch();
 
       await mypagePage.logoutOnMypage();
       await mypagePage.verifyLoggedOut();
 
-      // Device already has a Samsung account, so Sign in on the SSO page logs in without typing credentials
+      // Device already has a Samsung account, so the login button on the login page logs in without typing credentials
       await mypagePage.clickLoginOnMypage();
-      await loginPage.clickSsoSignIn();
+      await loginPage.clickLoginBtnOnLoginPage();
       await loginPage.skipPurposeIfShown();
 
       await mypagePage.verifyLoggedIn();

@@ -360,6 +360,23 @@ export class BasePage {
       return;
     }
 
+    // Search (e.g. from checkout) focuses its input, and the keyboard covers BNB
+    if (await driver.isKeyboardShown().catch(() => false)) {
+      await driver.hideKeyboard().catch(() => undefined);
+      if (await waitForDisplayedSafe(this.bnbLocator.menu(menu), 2000)) {
+        return;
+      }
+    }
+
+    // Some sites show no BNB on search either (e.g. US); its header Back leads Home (Katalon ensureBNBVisible 2nd attempt: headerBackBtn)
+    if (await isDisplayedSafe(this.headerLocator.backButton)) {
+      await clickElement(this.headerLocator.backButton);
+      if (await waitForDisplayedSafe(this.bnbLocator.menu(menu), 3000)) {
+        console.log('[ensureBnbVisible] BNB shown after header Back');
+        return;
+      }
+    }
+
     throw new Error(`BNB is not visible: ${menu}`);
   }
 

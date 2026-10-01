@@ -46,7 +46,13 @@ const PRODUCT_API_BASE_BY_ENV: Record<AppEnvironment, string> = {
   stg: 'https://stg2.shop.samsung.com/tokocommercewebservices/v2',
 };
 
-function productApiBase(): string {
+/** CN is served from its own API host (Katalon API.getProductAPIBase); the global host fails from the CN WebView. */
+const CN_PRODUCT_API_BASE = 'https://p1-smz-api-cdn.shop.samsung.com.cn/tokocommercewebservices/v2';
+
+function productApiBase(siteCode: string): string {
+  if (siteCode.toLowerCase() === 'cn') {
+    return CN_PRODUCT_API_BASE;
+  }
   return PRODUCT_API_BASE_BY_ENV[getRunConfig().environment];
 }
 
@@ -205,7 +211,7 @@ async function hasNoWarrantyAddOn(site: LoadedSite, type: 'VD' | 'HA', sku: stri
 
 async function fetchSkuStatus(site: LoadedSite, sku: string): Promise<SkuStatus> {
   const siteCode = site.siteCode.toLowerCase();
-  const url = `${productApiBase()}/${siteCode}/products/${sku}?fields=SIMPLE_INFO`;
+  const url = `${productApiBase(siteCode)}/${siteCode}/products/${sku}?fields=SIMPLE_INFO`;
   const data = await fetchJson<ProductInfoResponse>(url);
   const services = new Set([
     ...normalizeServices(data.addedServices),
@@ -411,7 +417,7 @@ export async function clearSavedAddresses(): Promise<ClearAddressesResult> {
   const href = (await getCurrentWindowUrl()) ?? '';
   const site = href ? new URL(href).pathname.split('/').filter(Boolean)[0] : undefined;
   markFailed([{ label: 'site from url', pass: Boolean(site), detail: href }], 'clearSavedAddresses');
-  const base = `${productApiBase()}/${site}`;
+  const base = `${productApiBase(site ?? '')}/${site}`;
 
   await driver.setTimeout({ script: 120000 });
   const result = await driver.executeAsync<ClearAddressesResult, [string]>(clearAddressesScript, base);
@@ -485,7 +491,7 @@ export async function deleteCart(): Promise<DeleteCartResult> {
   const href = (await getCurrentWindowUrl()) ?? '';
   const site = href ? new URL(href).pathname.split('/').filter(Boolean)[0] : undefined;
   markFailed([{ label: 'site from url', pass: Boolean(site), detail: href }], 'deleteCart');
-  const base = `${productApiBase()}/${site}`;
+  const base = `${productApiBase(site ?? '')}/${site}`;
 
   await driver.setTimeout({ script: 120000 });
   const result = await driver.executeAsync<DeleteCartResult, [string]>(deleteCartScript, base);
@@ -540,7 +546,7 @@ export async function addToCart(sku: string, quantity = 1): Promise<AddToCartRes
   const href = (await getCurrentWindowUrl()) ?? '';
   const site = href ? new URL(href).pathname.split('/').filter(Boolean)[0] : undefined;
   markFailed([{ label: 'site from url', pass: Boolean(site), detail: href }], 'addToCart');
-  const base = `${productApiBase()}/${site}`;
+  const base = `${productApiBase(site ?? '')}/${site}`;
 
   await driver.setTimeout({ script: 60000 });
   const result = await driver.executeAsync<AddToCartResult, [string, string, number]>(
@@ -598,7 +604,7 @@ export async function addMultipleToCart(skus: string[]): Promise<AddMultipleToCa
   const href = (await getCurrentWindowUrl()) ?? '';
   const site = href ? new URL(href).pathname.split('/').filter(Boolean)[0] : undefined;
   markFailed([{ label: 'site from url', pass: Boolean(site), detail: href }], 'addMultipleToCart');
-  const base = `${productApiBase()}/${site}`;
+  const base = `${productApiBase(site ?? '')}/${site}`;
 
   await driver.setTimeout({ script: 60000 });
   const result = await driver.executeAsync<AddMultipleToCartResult, [string, string[]]>(

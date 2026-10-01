@@ -9,8 +9,9 @@ import {
   isDisplayedSafe,
   scrollUntilVisible,
   waitForDisplayedSafe,
+  withoutIdleWait,
 } from '../helpers/element.helper';
-import { swipeByBoundary, tapAtCoordinates } from '../helpers/gesture.helper';
+import { flingToEnd, swipeByBoundary, tapAtCoordinates } from '../helpers/gesture.helper';
 import { markFailed } from '../helpers/report.helper';
 
 /** Katalon loginOnMypage taps this offset inside the profile card instead of the element center. */
@@ -159,14 +160,17 @@ export class MypagePage extends BasePage {
   private async openMypage(timeoutMs: number): Promise<void> {
     // logout → verifyLoggedOut → clickLogin each open My Page; skip the BNB tap when it is already shown
     await switchToNative();
-    if (await isDisplayedSafe(this.locator.accountPageTitle)) {
-      console.log('[openMypage] already on My Page');
-      return;
-    }
-    await this.selectBnbMenu('mypage');
-    if (!(await waitForDisplayedSafe(this.locator.accountPageTitle, timeoutMs))) {
-      console.log('[openMypage] failed to navigate to My Page');
-    }
+    // Home's rotating banner (e.g. IN) keeps the UI busy, so each lookup would first wait up to 10s for idle
+    await withoutIdleWait(async () => {
+      if (await isDisplayedSafe(this.locator.accountPageTitle)) {
+        console.log('[openMypage] already on My Page');
+        return;
+      }
+      await this.selectBnbMenu('mypage');
+      if (!(await waitForDisplayedSafe(this.locator.accountPageTitle, timeoutMs))) {
+        console.log('[openMypage] failed to navigate to My Page');
+      }
+    });
   }
 
   /** Katalon swipes My Page down to its top before looking for Login; skipped when Login is already visible. */
@@ -176,40 +180,11 @@ export class MypagePage extends BasePage {
     }
   }
 
-  /**
-   * Katalon Common.navigateToPage("HOME") — waits for the app to load after a relaunch, then taps Home.
-   * Skipped (like Katalon, which only warns) when no BNB shows, e.g. "Select profile to continue"; logout/verifyLoggedOut/clickLogin handle that screen.
-   */
-  async selectHome(timeoutMs = 20000): Promise<void> {
-    await switchToNative();
-    await driver
-      .waitUntil(
-        async () =>
-          (await isDisplayedSafe(this.bnbLocator.homeButton)) ||
-          (await this.loginPage.isProfileSelectShown()) ||
-          (await isDisplayedSafe(this.popupLocator.notificationDenyButton)),
-        { timeout: timeoutMs, interval: 500 }
-      )
-      .catch(() => undefined);
-
-    // A late notification popup (e.g. IN re-asking after a deny) covers Home — close it, then wait for BNB
-    if (await isDisplayedSafe(this.popupLocator.notificationDenyButton)) {
-      await this.dismissPermissionPopups();
-      await waitForDisplayedSafe(this.bnbLocator.homeButton, 3000);
-    }
-
-    if (!(await isDisplayedSafe(this.bnbLocator.homeButton))) {
-      console.log('[selectHome] BNB not shown (e.g. Select profile screen) — skipping');
-      return;
-    }
-    await this.selectBnbMenu('home');
-  }
-
-  /** Katalon LogIn.loginOnMypage (My Page part) — taps Login; the SSO page is handled by LoginPage.clickSsoSignIn(). */
+  /** Katalon LogIn.loginOnMypage (My Page part) — taps Login; the login page is handled by LoginPage.clickLoginBtnOnLoginPage(). */
   async clickLoginOnMypage(): Promise<void> {
     // Katalon loginOnMypage(IN): logged-out IN shows "Select profile to continue" instead of My Page
-    if (await this.loginPage.isProfileSelectShown()) {
-      await this.loginPage.loginOnSelectProfile();
+    if (await this.loginPage.isSelectProfileShownForIn()) {
+      await this.loginPage.loginOnSelectProfileForIn();
       return;
     }
     await this.openMypage(5000);
@@ -228,11 +203,31 @@ export class MypagePage extends BasePage {
     await tapAtCoordinates(tapX, tapY);
   }
 
+  /** Scrolls to Logout at the bottom of My Page (Katalon swipes a fixed 2–3 times; one fling is faster). */
+  private async scrollToLogoutButton(): Promise<boolean> {
+    // Short My Pages (e.g. CN) already show it — flinging a page that doesn't scroll is slow
+    if (await isDisplayedSafe(this.locator.logoutButton)) {
+      return true;
+    }
+    await flingToEnd();
+    if (await isDisplayedSafe(this.locator.logoutButton)) {
+      return true;
+    }
+    // The fling may have hit another scrollable (e.g. a banner) — fall back to step scrolling
+    return scrollUntilVisible(this.locator.logoutButton, 5);
+  }
+
   /** Katalon LogIn.logoutOnMypage — logs out from the bottom of My Page if logged in. */
   async logoutOnMypage(): Promise<void> {
     console.log('[logoutOnMypage] start');
+    // Katalon logoutOnMypage: the login page means logged out — start as guest and stop
+    if (await this.loginPage.isLoginPageShown()) {
+      console.log('[logoutOnMypage] login page shown — already logged out, continuing as guest');
+      await this.loginPage.continueAsGuest();
+      return;
+    }
     // "Select profile to continue" (IN) is itself the logged-out state
-    if (await this.loginPage.isProfileSelectShown()) {
+    if (await this.loginPage.isSelectProfileShownForIn()) {
       console.log('[logoutOnMypage] Select profile screen shown — already logged out, skipping');
       return;
     }
@@ -242,13 +237,13 @@ export class MypagePage extends BasePage {
       console.log('[logoutOnMypage] already logged out, skipping');
       return;
     }
-    // Katalon swipes up twice; My Page length differs by site (IN needs more), so scroll until Logout appears
-    const found = await scrollUntilVisible(this.locator.logoutButton, 5);
+    const found = await this.scrollToLogoutButton();
 
     if (found && (await clickIfDisplayed(this.locator.logoutButton, 3000))) {
       console.log('[logoutOnMypage] Logout clicked');
       await clickIfDisplayed(this.locator.logoutOkayButton, 5000);
-      await driver.pause(10000);
+      // Katalon waits a fixed 10s; wait only until Logout is gone — verifyLoggedOut checks the Login button afterwards
+      await this.locator.logoutButton.waitForDisplayed({ timeout: 10000, reverse: true }).catch(() => undefined);
     }
     console.log('[logoutOnMypage] end');
   }
@@ -256,7 +251,7 @@ export class MypagePage extends BasePage {
   /** Katalon LogIn.isLogOutStatus — Login button must be shown at the top of My Page. */
   async verifyLoggedOut(): Promise<void> {
     // Katalon isLogOutStatus(IN): the "Select profile to continue" screen itself means logged out
-    if (await this.loginPage.isProfileSelectShown()) {
+    if (await this.loginPage.isSelectProfileShownForIn()) {
       console.log('[verifyLoggedOut] Select profile screen shown — logged out');
       return;
     }
@@ -269,18 +264,17 @@ export class MypagePage extends BasePage {
       // Katalon: log back in before failing so the next TC doesn't start from a broken login state
       console.log('[verifyLoggedOut] not logged out — trying to log back in before failing');
       await this.clickLoginOnMypage().catch(() => undefined);
-      await this.loginPage.clickSsoSignIn().catch(() => undefined);
+      await this.loginPage.clickLoginBtnOnLoginPage().catch(() => undefined);
     }
     markFailed([{ label: 'user is logged out (Login button shown)', pass: loggedOut }], 'verifyLoggedOut');
   }
 
   /** Katalon LogIn.isLogInStatus — Logout button must be found at the bottom of My Page. */
   async verifyLoggedIn(): Promise<void> {
-    await driver.pause(2000);
+    // Katalon's 2s delay isn't needed: openMypage already waits for the My Page title
     await this.openMypage(10000);
 
-    // Katalon swipes up 3 times then retries; scroll until Logout appears instead (IN My Page is longer than UK)
-    const loggedIn = await scrollUntilVisible(this.locator.logoutButton, 5);
+    const loggedIn = await this.scrollToLogoutButton();
     console.log(`[verifyLoggedIn] ${loggedIn}`);
     markFailed([{ label: 'user is logged in (Logout button shown)', pass: loggedIn }], 'verifyLoggedIn');
   }

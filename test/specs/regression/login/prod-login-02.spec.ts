@@ -10,7 +10,7 @@ describe('PROD_LOGIN_02', () => {
 
   it('Guest - SSO Gmail login on Account page', async function () {
     await runOrSkip.call(this, 'PROD_LOGIN_02', async () => {
-      await loginPage.signOutSamsungAccountOnDevice();
+      await loginPage.signOutOnDevice();
       await restartApp();
       await mypagePage.dismissOverlays();
       await loginPage.continueAsGuest();
@@ -20,8 +20,8 @@ describe('PROD_LOGIN_02', () => {
       await mypagePage.verifyLoggedOut();
 
       await mypagePage.clickLoginOnMypage();
-      await loginPage.clickSsoSignIn();
-      await loginPage.loginWithGmailSso();
+      await loginPage.clickLoginBtnOnLoginPage();
+      await loginPage.loginWithGmailOnSso();
       await loginPage.skipPurposeIfShown();
 
       await mypagePage.verifyLoggedIn();

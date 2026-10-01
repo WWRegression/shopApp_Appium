@@ -8,7 +8,7 @@ import { BcGalaxyClubService } from '../services/galaxyclub/bc-galaxyclub.servic
 import { prepareWebViewPage, isCurrentWebViewPage } from '../helpers/context.helper';
 import { scrollWebViewDown } from '../helpers/gesture.helper';
 import { storageCapacityMatches, pickStorageLabel } from '../helpers/data.helper';
-import { scrollAndJsClick, scrollUntilVisibleInWebView } from '../helpers/element.helper';
+import { scrollAndJsClick, scrollAndWdioClick, scrollUntilVisibleInWebView } from '../helpers/element.helper';
 
 
 /** Fields BC accepts from site JSON / Flagship phone / watch. kind, ram, isPFDefaultSKU are catalog-only. */
@@ -102,7 +102,8 @@ export class BcPage extends BasePage {
         console.warn(`[BC.selectOptions] Skip: ${chip.field} not in DOM after scroll`);
         continue;
       }
-      await scrollAndJsClick(target);
+      // Option boxes are divs wrapping the radio input — HTMLElement.click() on the div doesn't select it, a real tap does
+      await scrollAndWdioClick(target);
       console.warn(`[BC.selectOptions] Click: ${chip.field}`);
     }
     

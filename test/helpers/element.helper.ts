@@ -76,13 +76,20 @@ export async function scrollUntilVisibleInWebView(
 /** UiAutomator2 default: each lookup first waits up to this long for the UI to go idle. */
 const DEFAULT_IDLE_TIMEOUT_MS = 10000;
 
+/** How many withoutIdleWait calls are running — only the outermost one restores the idle wait. */
+let idleWaitOffDepth = 0;
+
 /** Runs fn without waiting for UI idle — animated screens (e.g. CN login slider) otherwise make every lookup wait ~10s. */
 export async function withoutIdleWait<T>(fn: () => Promise<T>): Promise<T> {
-  await driver.updateSettings({ waitForIdleTimeout: 0 });
+  if (idleWaitOffDepth++ === 0) {
+    await driver.updateSettings({ waitForIdleTimeout: 0 });
+  }
   try {
     return await fn();
   } finally {
-    await driver.updateSettings({ waitForIdleTimeout: DEFAULT_IDLE_TIMEOUT_MS });
+    if (--idleWaitOffDepth === 0) {
+      await driver.updateSettings({ waitForIdleTimeout: DEFAULT_IDLE_TIMEOUT_MS });
+    }
   }
 }
 
@@ -168,11 +175,11 @@ export async function scrollAndWdioClick(
   try {
     await el.click();
     console.warn('[scrollAndWdioClick] WDIO click done');
-  } catch {    
+  } catch {
+    console.warn('[scrollAndWdioClick] WDIO click threw, fallback to jsClick');
     await jsClick(el).catch((err) => {
       console.warn('[scrollAndWdioClick] jsClick also failed:', (err as Error)?.message ?? err);
     });
-    console.warn('[scrollAndWdioClick] WDIO click threw, fallback to jsClick');
   }
 }
 

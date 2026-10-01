@@ -8,7 +8,7 @@ describe('UAT_APP_11', () => {
 
   it('Category and Category Chip on PF for Flagship SKUs', async function () {
     await runOrSkip.call(this, 'UAT_APP_11', async () => {
-      await loginPage.loginWithEmailSso();
+      await loginPage.loginWithEmailOnSso();
       await shopPage.openFirstCategory();
       // TODO: reimplement using new PfPage API
     });

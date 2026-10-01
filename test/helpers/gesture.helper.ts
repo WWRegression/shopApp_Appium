@@ -104,6 +104,13 @@ export async function scrollUp(): Promise<void> {
   await driver.pause(300);
 }
 
+/** Flings the first scrollable Native list to its end in one call (UiScrollable.flingToEnd) — much faster than step scrolling. */
+export async function flingToEnd(maxSwings = 10): Promise<void> {
+  await $(`android=new UiScrollable(new UiSelector().scrollable(true)).flingToEnd(${maxSwings})`)
+    .isExisting()
+    .catch(() => false);
+}
+
 /** Strong swipe toward the top of the screen (finger moves down). */
 export async function swipeToTop(): Promise<void> {
   await gestureByBoundary('swipe', 'down', 0.95, { top: 300 });

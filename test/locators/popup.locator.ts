@@ -1,4 +1,12 @@
+/** X of the full-screen ad overlay ("SHOP NOW") — no ids, so the image beside the ad box */
+const AD_OVERLAY_CLOSE = `//android.widget.Button[@text = 'SHOP NOW' or @content-desc = 'SHOP NOW']/ancestor::android.widget.RelativeLayout[2]/android.widget.ImageView`;
+
 export class PopupLocator {
+  /** Ad overlay close only — for screens where the broad closeButton could hit a real button (e.g. CN guest button) */
+  get adCloseButton() {
+    return $(AD_OVERLAY_CLOSE);
+  }
+
   get closeButton() {
     return $(
       `//*[@class = 'android.widget.Image' and @resource-id = 'qa-closeButton']
@@ -55,7 +63,8 @@ export class PopupLocator {
             ]
           )
         ]
-      | //*[@class = 'android.view.View' and @content-desc = "Don't ask again"]`
+      | //*[@class = 'android.view.View' and @content-desc = "Don't ask again"]
+      | ${AD_OVERLAY_CLOSE}`
     );
   }
 
