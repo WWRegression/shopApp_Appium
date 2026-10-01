@@ -4,7 +4,7 @@ import { BasePage } from './base.page';
 import { CheckoutLocator, CHECKOUT_FORMS } from '../locators/checkout.locator';
 import { prepareWebViewPage } from '../helpers/context.helper';
 import { getSiteData as getSite } from '../../config/site';
-import { scrollAndJsClick, getElementLabel, isDisplayedSafe, jsClick } from '../helpers/element.helper';
+import { scrollAndJsClick, getElementLabel, isDisplayedOrFalse, jsClick } from '../helpers/element.helper';
 import { scrollDown } from '../helpers/gesture.helper';
 import { markFailed } from '../helpers/report.helper';
 import type { LoadedSite } from '../../config/site';
@@ -45,6 +45,29 @@ export class CheckoutPage extends BasePage {
   async prepareCheckoutPage(): Promise<void> {
     const ready = await prepareWebViewPage('checkout', this.locator.checkoutLayout, 20000);
     markFailed([{ label: 'checkout page reached', pass: ready }], 'prepareCheckoutPage');
+  }
+
+  /** Best-effort order/item price text for BUY_09 consistency check. */
+  async getDisplayedItemPrice(): Promise<string> {
+    await this.prepareCheckoutPage();
+    const candidates = [
+      '.view-order-container .price',
+      '.order-summary-wrapper .price',
+      '.cx-summary-amount',
+      "[class*='summary-total__amount']",
+      '.price__current',
+      '.price-special__current',
+    ];
+    for (const sel of candidates) {
+      const el = $(sel);
+      if (await el.isDisplayed().catch(() => false)) {
+        const text = ((await el.getText().catch(() => '')) ?? '').trim();
+        if (text) {
+          return text;
+        }
+      }
+    }
+    return '';
   }
 
   /** Which known checkout forms are on screen right now (usually one, can be more). */
@@ -396,13 +419,13 @@ export class CheckoutPage extends BasePage {
     }
 
     await scrollDown();
-    if (await isDisplayedSafe(this.locator.viewOrderToggle)) {
+    if (await isDisplayedOrFalse(this.locator.viewOrderToggle)) {
       await scrollAndJsClick(this.locator.viewOrderToggle);
     }
 
-    if (await isDisplayedSafe(this.locator.editOrderSummaryButton)) {
+    if (await isDisplayedOrFalse(this.locator.editOrderSummaryButton)) {
       await scrollAndJsClick(this.locator.editOrderSummaryButton);
-      if (await isDisplayedSafe(this.locator.leaveCheckoutConfirmButton)) {
+      if (await isDisplayedOrFalse(this.locator.leaveCheckoutConfirmButton)) {
         await scrollAndJsClick(this.locator.leaveCheckoutConfirmButton);
       }
     }

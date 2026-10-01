@@ -18,9 +18,9 @@ import {
 import {
   clickElement,
   clickIfDisplayed,
-  isDisplayedSafe,
+  isDisplayedOrFalse,
   setElementValue,
-  waitForDisplayedSafe,
+  waitForDisplayedOrFalse,
   withoutIdleWait,
 } from '../helpers/element.helper';
 import { scrollByBoundary } from '../helpers/gesture.helper';
@@ -65,9 +65,9 @@ export class LoginPage extends BasePage {
     await forceStopPackage(SAMSUNG_ACCOUNT_PACKAGE);
     await startActivityByAction('android.settings.SYNC_SETTINGS');
     await switchToNative();
-    await waitForDisplayedSafe(this.locator.settingsAddAccount, 5000);
+    await waitForDisplayedOrFalse(this.locator.settingsAddAccount, {timeout:5000});
 
-    if (await waitForDisplayedSafe(this.locator.samsungAccountItem, 5000)) {
+    if (await waitForDisplayedOrFalse(this.locator.samsungAccountItem, {timeout:5000})) {
       console.log('[signOutOnDevice] removing Samsung account');
       await clickIfDisplayed(this.locator.samsungAccountItem, 5000);
       await clickIfDisplayed(this.locator.removeAccountButton, 5000);
@@ -100,14 +100,14 @@ export class LoginPage extends BasePage {
   /** True when the "Select profile to continue" screen is shown (IN shows it instead of My Page when logged out). */
   async isSelectProfileShownForIn(): Promise<boolean> {
     await switchToNative();
-    return isDisplayedSafe(this.locator.selectProfileTitle);
+    return isDisplayedOrFalse(this.locator.selectProfileTitle);
   }
 
   /** True when the login page (Sign in / Continue as guest) is shown — the app is logged out. */
   async isLoginPageShown(): Promise<boolean> {
     await switchToNative();
     // The login page animates (welcome slider), so skip the UI idle wait
-    return withoutIdleWait(() => isDisplayedSafe(this.locator.continueAsGuestButton));
+    return withoutIdleWait(() => isDisplayedOrFalse(this.locator.continueAsGuestButton));
   }
 
   /** Katalon LogIn.longinOnSelectProfile — selects the saved profile, then taps the login button (Continue if no login button). */
@@ -133,13 +133,13 @@ export class LoginPage extends BasePage {
     await startActivityByAction('android.settings.SYNC_SETTINGS');
     await switchToNative();
 
-    if (await waitForDisplayedSafe(this.locator.samsungAccountItem, 5000)) {
+    if (await waitForDisplayedOrFalse(this.locator.samsungAccountItem, {timeout:5000})) {
       console.log('[signInOnDevice] Samsung account already on device');
     } else {
       console.log('[signInOnDevice] adding Samsung account');
       // Optional like Katalon — if these miss, loginWithEmailOnSso fails at the Email button with a clear reason
-      await clickIfDisplayed(this.locator.settingsAddAccount, 5000);
-      await clickIfDisplayed(this.locator.samsungAccountItem, 5000);
+      await waitForDisplayedOrFalse(this.locator.settingsAddAccount, {timeout:5000});
+      await waitForDisplayedOrFalse(this.locator.samsungAccountItem, {timeout:5000});
       await this.loginWithEmailOnSso();
     }
 
@@ -154,8 +154,8 @@ export class LoginPage extends BasePage {
     // The login page animates (welcome slider), so skip the UI idle wait
     const shown = await withoutIdleWait(
       async () =>
-        (await waitForDisplayedSafe(this.locator.loginPageLoginButton, timeoutMs)) &&
-        (await isDisplayedSafe(this.locator.continueAsGuestButton))
+        (await waitForDisplayedOrFalse(this.locator.loginPageLoginButton, {timeout:timeoutMs})) &&
+        (await isDisplayedOrFalse(this.locator.continueAsGuestButton))
     );
     console.log(`[verifyLoginPage] ${shown}`);
     markFailed([{ label: 'login page not shown (Sign in / Continue as guest not found)', pass: shown }], 'verifyLoginPage');
@@ -187,10 +187,10 @@ export class LoginPage extends BasePage {
       await driver
         .waitUntil(
           async () =>
-            (await isDisplayedSafe(this.locator.loginPageLoginButton)) ||
-            (await isDisplayedSafe(this.locator.samsungAccountLogoButton)) ||
-            (await isDisplayedSafe(this.locator.emailSsoButton)) ||
-            (await isDisplayedSafe(this.locator.gmailSsoButton)),
+            (await isDisplayedOrFalse(this.locator.loginPageLoginButton)) ||
+            (await isDisplayedOrFalse(this.locator.samsungAccountLogoButton)) ||
+            (await isDisplayedOrFalse(this.locator.emailSsoButton)) ||
+            (await isDisplayedOrFalse(this.locator.gmailSsoButton)),
           { timeout: 10000, interval: 500 }
         )
         .catch(() => undefined);
@@ -243,7 +243,7 @@ export class LoginPage extends BasePage {
       const checkbox = this.locator.allAgreeCheckbox;
       // The checkbox toggles, so tap it only while unchecked
       if (
-        (await isDisplayedSafe(checkbox)) &&
+        (await isDisplayedOrFalse(checkbox)) &&
         (await checkbox.getAttribute('checked').catch(() => 'true')) !== 'true' &&
         (await clickIfDisplayed(checkbox))
       ) {
@@ -253,7 +253,7 @@ export class LoginPage extends BasePage {
       } else if (cancelPending && (await clickIfDisplayed(this.locator.simpleLoginCancelButton))) {
         cancelPending = false;
         console.log(`[${tag}] simple login prompt: Cancel tapped`);
-      } else if (await isDisplayedSafe(this.locator.ssoScreenElement)) {
+      } else if (await isDisplayedOrFalse(this.locator.ssoScreenElement)) {
         goneChecks = 0;
       } else if (++goneChecks >= 2) {
         // Two checks in a row without any SSO element — not just a screen transition
@@ -272,14 +272,14 @@ export class LoginPage extends BasePage {
     await driver
       .waitUntil(
         async () =>
-          (await isDisplayedSafe(this.locator.purposeNextButton)) ||
-          (await isDisplayedSafe(this.bnbLocator.homeButton)) ||
-          (await isDisplayedSafe(this.headerLocator.backButton)),
+          (await isDisplayedOrFalse(this.locator.purposeNextButton)) ||
+          (await isDisplayedOrFalse(this.bnbLocator.homeButton)) ||
+          (await isDisplayedOrFalse(this.headerLocator.backButton)),
         { timeout: timeoutMs, interval: 500 }
       )
       .catch(() => undefined);
 
-    if (await isDisplayedSafe(this.locator.purposeNextButton)) {
+    if (await isDisplayedOrFalse(this.locator.purposeNextButton)) {
       console.log('[skipPurpose] purpose screen shown, skipping');
       for (let i = 0; i < 2; i++) {
         await clickIfDisplayed(this.locator.purposeSkipButton, 5000);
@@ -293,7 +293,7 @@ export class LoginPage extends BasePage {
     // clickLoginBtnOnLoginPage restores the previous (checkout WebView) context, and the Google button is native
     await switchToNative();
     // The screen right after Sign in is still animating, so check without the UI idle wait (otherwise ~10s per lookup)
-    if (!(await withoutIdleWait(() => waitForDisplayedSafe(this.locator.gmailSsoButton, 3000)))) {
+    if (!(await withoutIdleWait(() => waitForDisplayedOrFalse(this.locator.gmailSsoButton, {timeout:3000})))) {
       console.log('[loginWithGmailOnSsoIfShown] no SSO login options — logged in with the device account');
       return;
     }
@@ -323,9 +323,9 @@ export class LoginPage extends BasePage {
   async openHomeAfterLaunch(timeoutMs = 20000): Promise<void> {
     await switchToNative();
     const isAppScreenShown = async () =>
-      (await isDisplayedSafe(this.bnbLocator.homeButton)) ||
+      (await isDisplayedOrFalse(this.bnbLocator.homeButton)) ||
       (await this.isSelectProfileShownForIn()) ||
-      (await isDisplayedSafe(this.locator.continueAsGuestButton));
+      (await isDisplayedOrFalse(this.locator.continueAsGuestButton));
     // Home banner / login page animate, so skip the UI idle wait while waiting for the app
     const waitForAppScreen = (withPopup: boolean) =>
       withoutIdleWait(() =>
@@ -333,7 +333,7 @@ export class LoginPage extends BasePage {
           .waitUntil(
             async () =>
               (await isAppScreenShown()) ||
-              (withPopup && (await isDisplayedSafe(this.popupLocator.notificationDenyButton))),
+              (withPopup && (await isDisplayedOrFalse(this.popupLocator.notificationDenyButton))),
             { timeout: timeoutMs, interval: 500 }
           )
           .catch(() => undefined)
@@ -341,13 +341,13 @@ export class LoginPage extends BasePage {
 
     await waitForAppScreen(true);
     // A late notification popup (e.g. IN re-asking after a deny) covers the app — close it, then wait for whichever screen is behind it
-    if (await isDisplayedSafe(this.popupLocator.notificationDenyButton)) {
+    if (await isDisplayedOrFalse(this.popupLocator.notificationDenyButton)) {
       await this.dismissPermissionPopups();
       await waitForAppScreen(false);
     }
 
     // Like Katalon (only warns): no BNB on e.g. "Select profile" — the MypagePage steps handle that screen
-    if (!(await isDisplayedSafe(this.bnbLocator.homeButton))) {
+    if (!(await isDisplayedOrFalse(this.bnbLocator.homeButton))) {
       console.log('[openHomeAfterLaunch] BNB not shown (e.g. Select profile screen) — skipping');
       return;
     }
@@ -393,7 +393,7 @@ export class LoginPage extends BasePage {
     }
 
     await withoutIdleWait(async () => {
-      if (await isDisplayedSafe(this.bnbLocator.homeButton)) {
+      if (await isDisplayedOrFalse(this.bnbLocator.homeButton)) {
         console.log('[continueAsGuest] app already loaded, skipping');
         return;
       }
@@ -407,7 +407,7 @@ export class LoginPage extends BasePage {
       return;
     }
     this.appDataCleared = false;
-    if (await waitForDisplayedSafe(this.popupLocator.notificationDenyButton, 15000)) {
+    if (await waitForDisplayedOrFalse(this.popupLocator.notificationDenyButton, {timeout:15000})) {
       // Katalon clickLocationPermission waits 15s, but the location popup never showed in IN runs — check briefly
       await this.dismissPermissionPopups(5000, 3000);
     }
@@ -416,18 +416,18 @@ export class LoginPage extends BasePage {
   /** Waits for the first app screen (Home, login page or "Select profile"), dismissing a permission popup on top. */
   private async waitForAppLoaded(timeoutMs: number): Promise<void> {
     const isAppLoaded = async () =>
-      (await isDisplayedSafe(this.bnbLocator.homeButton)) ||
-      (await isDisplayedSafe(this.locator.continueAsGuestButton)) ||
+      (await isDisplayedOrFalse(this.bnbLocator.homeButton)) ||
+      (await isDisplayedOrFalse(this.locator.continueAsGuestButton)) ||
       (await this.isSelectProfileShownForIn());
 
     await driver
       .waitUntil(
-        async () => (await isDisplayedSafe(this.popupLocator.notificationDenyButton)) || (await isAppLoaded()),
+        async () => (await isDisplayedOrFalse(this.popupLocator.notificationDenyButton)) || (await isAppLoaded()),
         { timeout: timeoutMs, interval: 500 }
       )
       .catch(() => undefined);
 
-    if (await isDisplayedSafe(this.popupLocator.notificationDenyButton)) {
+    if (await isDisplayedOrFalse(this.popupLocator.notificationDenyButton)) {
       await this.dismissPermissionPopups();
       await driver.waitUntil(isAppLoaded, { timeout: timeoutMs, interval: 500 }).catch(() => undefined);
     }
@@ -454,13 +454,13 @@ export class LoginPage extends BasePage {
       return;
     }
     console.log('[clickGuestButton] guest button tapped');
-    if (!(await waitForDisplayedSafe(this.bnbLocator.homeButton, 5000))) {
+    if (!(await waitForDisplayedOrFalse(this.bnbLocator.homeButton, {timeout:5000}))) {
       await clickIfDisplayed(this.popupLocator.adCloseButton);
       if (await clickIfDisplayed(this.locator.continueAsGuestButton, 1000)) {
         console.log('[clickGuestButton] guest button tapped again');
       }
     }
-    await waitForDisplayedSafe(this.bnbLocator.homeButton, 10000);
+    await waitForDisplayedOrFalse(this.bnbLocator.homeButton, {timeout:10000});
   }
 
   /**
@@ -475,7 +475,7 @@ export class LoginPage extends BasePage {
 
     await switchToNative();
 
-    if (!(await waitForDisplayedSafe(this.locator.wdsLoginPage, timeoutMs))) {
+    if (!(await waitForDisplayedOrFalse(this.locator.wdsLoginPage, {timeout:timeoutMs}))) {
       console.log('[login] WDS page not visible, skipping');
       return false;
     }

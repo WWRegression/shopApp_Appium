@@ -6,9 +6,9 @@ import { getBrowserPages } from '../helpers/device.helper';
 import {
   clickIfDisplayed,
   getElementLabel,
-  isDisplayedSafe,
+  isDisplayedOrFalse,
   scrollUntilVisible,
-  waitForDisplayedSafe,
+  waitForDisplayedOrFalse,
   withoutIdleWait,
 } from '../helpers/element.helper';
 import { flingToEnd, swipeByBoundary, tapAtCoordinates } from '../helpers/gesture.helper';
@@ -162,12 +162,12 @@ export class MypagePage extends BasePage {
     await switchToNative();
     // Home's rotating banner (e.g. IN) keeps the UI busy, so each lookup would first wait up to 10s for idle
     await withoutIdleWait(async () => {
-      if (await isDisplayedSafe(this.locator.accountPageTitle)) {
+      if (await isDisplayedOrFalse(this.locator.accountPageTitle)) {
         console.log('[openMypage] already on My Page');
         return;
       }
       await this.selectBnbMenu('mypage');
-      if (!(await waitForDisplayedSafe(this.locator.accountPageTitle, timeoutMs))) {
+      if (!(await waitForDisplayedOrFalse(this.locator.accountPageTitle, {timeout:timeoutMs}))) {
         console.log('[openMypage] failed to navigate to My Page');
       }
     });
@@ -175,7 +175,7 @@ export class MypagePage extends BasePage {
 
   /** Katalon swipes My Page down to its top before looking for Login; skipped when Login is already visible. */
   private async scrollToLoginButton(): Promise<void> {
-    if (!(await isDisplayedSafe(this.locator.loginButton))) {
+    if (!(await isDisplayedOrFalse(this.locator.loginButton))) {
       await swipeByBoundary('down', 0.95);
     }
   }
@@ -191,7 +191,7 @@ export class MypagePage extends BasePage {
     await this.scrollToLoginButton();
 
     const loginButton = this.locator.loginButton;
-    if (!(await waitForDisplayedSafe(loginButton, 5000))) {
+    if (!(await waitForDisplayedOrFalse(loginButton, {timeout:5000}))) {
       console.log('[clickLoginOnMypage] login button not shown');
       return;
     }
@@ -206,11 +206,11 @@ export class MypagePage extends BasePage {
   /** Scrolls to Logout at the bottom of My Page (Katalon swipes a fixed 2–3 times; one fling is faster). */
   private async scrollToLogoutButton(): Promise<boolean> {
     // Short My Pages (e.g. CN) already show it — flinging a page that doesn't scroll is slow
-    if (await isDisplayedSafe(this.locator.logoutButton)) {
+    if (await isDisplayedOrFalse(this.locator.logoutButton)) {
       return true;
     }
     await flingToEnd();
-    if (await isDisplayedSafe(this.locator.logoutButton)) {
+    if (await isDisplayedOrFalse(this.locator.logoutButton)) {
       return true;
     }
     // The fling may have hit another scrollable (e.g. a banner) — fall back to step scrolling
@@ -233,7 +233,7 @@ export class MypagePage extends BasePage {
     }
     await this.openMypage(5000);
     // Already logged out (e.g. just after guest entry) → nothing to scroll for
-    if (await isDisplayedSafe(this.locator.loginButton)) {
+    if (await isDisplayedOrFalse(this.locator.loginButton)) {
       console.log('[logoutOnMypage] already logged out, skipping');
       return;
     }
@@ -258,7 +258,7 @@ export class MypagePage extends BasePage {
     await this.openMypage(5000);
     await this.scrollToLoginButton();
 
-    const loggedOut = await waitForDisplayedSafe(this.locator.loginButton, 10000);
+    const loggedOut = await waitForDisplayedOrFalse(this.locator.loginButton, {timeout:10000});
     console.log(`[verifyLoggedOut] ${loggedOut}`);
     if (!loggedOut) {
       // Katalon: log back in before failing so the next TC doesn't start from a broken login state

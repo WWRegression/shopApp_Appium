@@ -6,7 +6,7 @@ import { assertElementDisplayed } from '../../helpers/validation.helper';
 import { switchToWebView } from '../../helpers/context.helper';
 import { scrollElementToCenter } from '../../helpers/gesture.helper';
 import { TradeInInput } from './tradein.types';
-import { scrollAndJsClick, isExistingInWebView } from '../../helpers/element.helper';
+import { scrollAndJsClick,scrollAndWdioClick, isExistingInWebView } from '../../helpers/element.helper';
 
 export class BcTradeInService implements AddedService {
   private readonly locator = new BcLocator();
@@ -31,7 +31,7 @@ export class BcTradeInService implements AddedService {
       console.warn('[BC.TRADEIN.selectNoForService] Trade-In section not exists');
       return;
     }
-    await scrollAndJsClick(no);
+    await scrollAndWdioClick(no);
   }
 
   async removeService(): Promise<void> {

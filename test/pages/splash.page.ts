@@ -1,6 +1,6 @@
 import { BasePage } from './base.page';
 import { SplashLocator } from '../locators/splash.locator';
-import { isDisplayedSafe, scrollAndWdioClick } from '../helpers/element.helper';
+import { isDisplayedOrFalse, scrollAndWdioClick } from '../helpers/element.helper';
 import { switchToWebView, isCurrentWebViewPage } from '../helpers/context.helper';
 
 /**
@@ -37,7 +37,7 @@ export class SplashPage extends BasePage {
 
   private async clickContinueButton(): Promise<boolean> {
     const continueBtn = this.locator.continueButton;
-    if (await isDisplayedSafe(continueBtn)) {
+    if (await isDisplayedOrFalse(continueBtn)) {
       console.warn('[clickContinueButton] clicking continue on footer');
       await scrollAndWdioClick(continueBtn);
       await driver.pause(1000);
@@ -48,7 +48,7 @@ export class SplashPage extends BasePage {
 
   private async clickContinueOnPopup(): Promise<boolean> {
     const continueToCartBtn = this.locator.continueButtonOnPopup;
-    if (await isDisplayedSafe(continueToCartBtn)) {
+    if (await isDisplayedOrFalse(continueToCartBtn)) {
       console.warn('[clickContinueOnPopup] clicking continue on popup');
       await scrollAndWdioClick(continueToCartBtn);
       await driver.pause(1000);

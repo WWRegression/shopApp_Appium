@@ -1,7 +1,7 @@
 import { BasePage } from './base.page';
 import { MypageProfileLocator, AddressTab } from '../locators/mypage-profile.locator';
 import { prepareWebViewPage, switchToNative } from '../helpers/context.helper';
-import { isDisplayedSafe, jsClick, scrollUntilVisible } from '../helpers/element.helper';
+import { isDisplayedOrFalse, jsClick, scrollUntilVisible } from '../helpers/element.helper';
 import { markFailed } from '../helpers/report.helper';
 
 /** My Account > Settings > Personal Data Management > Addresses. Ported from Katalon's Address.groovy. */
@@ -37,7 +37,7 @@ export class MypageProfilePage extends BasePage {
 
   async activateTab(tab: AddressTab): Promise<void> {
     const target = this.locator.tab(tab);
-    if (await isDisplayedSafe(target)) {
+    if (await isDisplayedOrFalse(target)) {
       await target.click();
     }
   }
