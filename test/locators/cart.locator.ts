@@ -146,11 +146,8 @@ export class CartLocator {
   get scPlusAppliedLabel() {
     return $(
       [
-        '[data-pvisubtype="samsung care"] .action-text',
-        '[data-modeldisplay*="Samsung Care+"] .action-text', 
-        '[data-modelname*="SMC"] .action-text',
-        '[data-pimsubtype="galaxy"] .action-text.smc', 
-        '.service-item__smc .action-text',
+        '.service-item__smc div.action-text',
+        '[data-pimsubtype="galaxy"] .action-text.smc',
       ].join(', ')
     );
   }

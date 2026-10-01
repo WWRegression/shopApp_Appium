@@ -100,7 +100,7 @@ export class BnbLocator {
       `//android.view.View[
       (contains(@content-desc, "Cart") and contains(@content-desc, "Tab 4"))
       or (contains(@content-desc, "عربة التسوق") and contains(@content-desc, "علامة التبويب 4"))
-      or (contains(@content-desc, "Panier") and contains(@content-desc, "Onglet 4"))
+      or (contains(@content-desc, "Panier") and contains(@content-desc, "Onglet 4"))
       or (contains(@content-desc, "Carrito") and contains(@content-desc, "Pestaña 4"))
       or (contains(@content-desc, "Mon panier") and contains(@content-desc, "Onglet 4"))
       or (contains(@content-desc, "Troli") and contains(@content-desc, "Tab 4"))
