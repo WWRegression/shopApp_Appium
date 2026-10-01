@@ -4,7 +4,9 @@ const SAMSUNG_ACCOUNT_ID = 'com.osp.app.signin:id';
 export class LoginLocator {
   /** Katalon LogIn/loginPageGuestBtn */
   get continueAsGuestButton() {
-    return $(`//android.widget.Button[contains(@content-desc, 'as guest') or @content-desc = '以访客身份继续浏览']`);
+    return $(
+      `//android.widget.Button[contains(@content-desc, 'as guest') or contains(@content-desc, 'als Gast') or contains(@content-desc, 'Als Gast') or @content-desc = '以访客身份继续浏览']`
+    );
   }
 
   /** Title of the "Select profile to continue" screen (seen on IN) — Katalon Home/selectProfileToContinue anchor */
@@ -33,6 +35,7 @@ export class LoginLocator {
         or @content-desc = 'Login'
         or @content-desc = 'Sign in to your Galaxy'
         or contains(@content-desc, 'Login with Samsung Account')
+        or contains(@content-desc, 'Anmelden')
         or @content-desc = '三星账号授权登录'
       ]`
     );
@@ -128,12 +131,14 @@ export class LoginLocator {
 
   /** Katalon Initialization/purposeNextBtn */
   get purposeNextButton() {
-    return $(`//android.widget.Button[@content-desc = 'Next' or @content-desc = 'Ok' or @content-desc = '下一页']`);
+    return $(
+      `//android.widget.Button[@content-desc = 'Next' or @content-desc = 'Ok' or @content-desc = 'Weiter' or @content-desc = 'Nächste' or @content-desc = '下一页']`
+    );
   }
 
   /** Katalon Initialization/purposeSkipBtn */
   get purposeSkipButton() {
-    return $(`//android.widget.Button[@content-desc = 'Skip' or @content-desc = '跳过']`);
+    return $(`//android.widget.Button[@content-desc = 'Skip' or @content-desc = 'Überspringen' or @content-desc = '跳过']`);
   }
 
   /** Device Settings > Accounts (device language, English) — Katalon LogIn/settingAddAccount */

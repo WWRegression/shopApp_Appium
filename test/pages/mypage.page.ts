@@ -266,7 +266,7 @@ export class MypagePage extends BasePage {
       await this.clickLoginOnMypage().catch(() => undefined);
       await this.loginPage.clickLoginBtnOnLoginPage().catch(() => undefined);
     }
-    markFailed([{ label: 'user is logged out (Login button shown)', pass: loggedOut }], 'verifyLoggedOut');
+    markFailed([{ label: 'user is not logged out (Login button not found on My Page)', pass: loggedOut }], 'verifyLoggedOut');
   }
 
   /** Katalon LogIn.isLogInStatus — Logout button must be found at the bottom of My Page. */
@@ -276,7 +276,7 @@ export class MypagePage extends BasePage {
 
     const loggedIn = await this.scrollToLogoutButton();
     console.log(`[verifyLoggedIn] ${loggedIn}`);
-    markFailed([{ label: 'user is logged in (Logout button shown)', pass: loggedIn }], 'verifyLoggedIn');
+    markFailed([{ label: 'user is not logged in (Logout button not found on My Page)', pass: loggedIn }], 'verifyLoggedIn');
   }
 
   async getAccountName(): Promise<string> {

@@ -12,6 +12,11 @@ export class CartLocator {
     return $('app-sticky-checkout-cta-modal.show .modal__container.sticky-checkout-modal button[data-an-tr="cart-to-checkout"]');
   }
 
+  /** Katalon Cart/loginBtn — guest Sign in button / banner on a cart with items */
+  get cartLoginButton() {
+    return $('button.guest-signin-btn, button.sign-in-banner__btn');
+  }
+
   /** Katalon Cart/emptyCartLoginBtn — Sign in button on the empty cart (guest) */
   get emptyCartLoginButton() {
     return $('button[data-an-la="empty cart:sign in"]');

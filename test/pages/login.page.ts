@@ -149,7 +149,7 @@ export class LoginPage extends BasePage {
   }
 
   /** Katalon LogIn.loginOnSplashPage — checkout as a guest opens the login page (Sign in / Continue as guest). */
-  async verifyLoginPageShown(timeoutMs = 20000): Promise<void> {
+  async verifyLoginPage(timeoutMs = 20000): Promise<void> {
     await switchToNative();
     // The login page animates (welcome slider), so skip the UI idle wait
     const shown = await withoutIdleWait(
@@ -157,8 +157,8 @@ export class LoginPage extends BasePage {
         (await waitForDisplayedSafe(this.locator.loginPageLoginButton, timeoutMs)) &&
         (await isDisplayedSafe(this.locator.continueAsGuestButton))
     );
-    console.log(`[verifyLoginPageShown] ${shown}`);
-    markFailed([{ label: 'login page shown (Sign in / Continue as guest)', pass: shown }], 'verifyLoginPageShown');
+    console.log(`[verifyLoginPage] ${shown}`);
+    markFailed([{ label: 'login page not shown (Sign in / Continue as guest not found)', pass: shown }], 'verifyLoginPage');
   }
 
   /** Katalon LogIn/loginPageTnC — CN login buttons stay disabled until the privacy agreement is checked. */
@@ -210,7 +210,7 @@ export class LoginPage extends BasePage {
   /** Katalon LogIn.SSOloginViaEmail — Samsung account login with this.emailAccount(). */
   async loginWithEmailOnSso(): Promise<void> {
     const { email, password } = this.emailAccount();
-    markFailed([{ label: 'account email found on device', pass: Boolean(email) }], 'loginWithEmailOnSso');
+    markFailed([{ label: 'account email not found on device', pass: Boolean(email) }], 'loginWithEmailOnSso');
     console.log(`[loginWithEmailOnSso] email=${email}`);
     await switchToNative();
 
@@ -265,7 +265,7 @@ export class LoginPage extends BasePage {
   }
 
   /** Katalon Init.purposeSkip — skips the post-login purpose screen if shown (preference "Review Later" left out until seen). */
-  async skipPurposeIfShown(timeoutMs = 15000): Promise<void> {
+  async skipPurpose(timeoutMs = 15000): Promise<void> {
     await switchToNative();
 
     // The purpose screen loads a few seconds after SSO returns, so wait for either screen, Home, or a Back header (e.g. US cart without BNB)
@@ -280,7 +280,7 @@ export class LoginPage extends BasePage {
       .catch(() => undefined);
 
     if (await isDisplayedSafe(this.locator.purposeNextButton)) {
-      console.log('[skipPurposeIfShown] purpose screen shown, skipping');
+      console.log('[skipPurpose] purpose screen shown, skipping');
       for (let i = 0; i < 2; i++) {
         await clickIfDisplayed(this.locator.purposeSkipButton, 5000);
         await driver.pause(1000);
@@ -303,7 +303,7 @@ export class LoginPage extends BasePage {
   /** Katalon LogIn.SSOloginViaGmail — picks the device Gmail account (this.gmailAccount()) in the Google picker. */
   async loginWithGmailOnSso(): Promise<void> {
     const { email } = this.gmailAccount();
-    markFailed([{ label: 'Gmail account found on device', pass: Boolean(email) }], 'loginWithGmailOnSso');
+    markFailed([{ label: 'Gmail account not found on device', pass: Boolean(email) }], 'loginWithGmailOnSso');
     console.log(`[loginWithGmailOnSso] email=${email}`);
     await switchToNative();
 

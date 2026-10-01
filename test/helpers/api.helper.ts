@@ -559,7 +559,7 @@ export async function addToCart(sku: string, quantity = 1): Promise<AddToCartRes
   // Reload to sync the app's own state with the change made behind its back.
   await driver.refresh().catch(() => undefined);
   await driver.pause(2000);
-  await switchToNative();
+  // await switchToNative();
 
   markFailed([{ label: 'entry added', pass: result.ok, detail: JSON.stringify(result) }], 'addToCart');
   return result;

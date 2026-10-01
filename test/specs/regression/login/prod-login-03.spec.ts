@@ -27,7 +27,7 @@ describe('PROD_LOGIN_03', () => {
       await cartPage.clickLoginOnEmptyCart();
       await loginPage.clickLoginBtnOnLoginPage();
       await loginPage.loginWithGmailOnSso();
-      await loginPage.skipPurposeIfShown();
+      await loginPage.skipPurpose();
 
       await cartPage.verifyLoggedInOnCart();
       await mypagePage.verifyLoggedIn();

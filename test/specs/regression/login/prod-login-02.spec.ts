@@ -22,7 +22,7 @@ describe('PROD_LOGIN_02', () => {
       await mypagePage.clickLoginOnMypage();
       await loginPage.clickLoginBtnOnLoginPage();
       await loginPage.loginWithGmailOnSso();
-      await loginPage.skipPurposeIfShown();
+      await loginPage.skipPurpose();
 
       await mypagePage.verifyLoggedIn();
     });

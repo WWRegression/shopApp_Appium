@@ -21,7 +21,7 @@ describe('PROD_LOGIN_04', () => {
       // Device already has a Samsung account, so the login button on the login page logs in without typing credentials
       await mypagePage.clickLoginOnMypage();
       await loginPage.clickLoginBtnOnLoginPage();
-      await loginPage.skipPurposeIfShown();
+      await loginPage.skipPurpose();
 
       await mypagePage.verifyLoggedIn();
     });
