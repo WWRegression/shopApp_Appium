@@ -7,10 +7,10 @@ import { scrollUp } from '../helpers/gesture.helper';
 import {
   clickElement,
   clickIfDisplayed,
-  isDisplayedSafe,
+  isDisplayedOrFalse,
   matchesText,
   getElementLabel,
-  waitForDisplayedSafe,
+  waitForDisplayedOrFalse,
 } from '../helpers/element.helper';
 
 export type { HeaderIcon, BnbMenu };
@@ -214,14 +214,14 @@ export class BasePage {
   /** Popup */
   async dismissPopupIfShown(): Promise<void> {
     const closeButton = this.popupLocator.closeButton;
-    if (await isDisplayedSafe(closeButton)) {
+    if (await isDisplayedOrFalse(closeButton)) {
       await closeButton.click();
     }
   }
 
   async dismissCookieIfShown(): Promise<void> {
     const acceptButton = this.popupLocator.cookieAcceptButton;
-    if (await isDisplayedSafe(acceptButton)) {
+    if (await isDisplayedOrFalse(acceptButton)) {
       await acceptButton.click();
     }
   }
@@ -236,10 +236,10 @@ export class BasePage {
     await driver
       .waitUntil(
         async () =>
-          (await isDisplayedSafe(this.popupLocator.notificationDenyButton)) ||
-          (await isDisplayedSafe(this.bnbLocator.homeButton)) ||
-          (await isDisplayedSafe(this.appEntryLocator.continueAsGuestButton)) ||
-          (await isDisplayedSafe(this.appEntryLocator.selectProfileTitle)),
+          (await isDisplayedOrFalse(this.popupLocator.notificationDenyButton)) ||
+          (await isDisplayedOrFalse(this.bnbLocator.homeButton)) ||
+          (await isDisplayedOrFalse(this.appEntryLocator.continueAsGuestButton)) ||
+          (await isDisplayedOrFalse(this.appEntryLocator.selectProfileTitle)),
         { timeout: timeoutMs, interval: 300 }
       )
       .catch(() => undefined);
@@ -314,7 +314,7 @@ export class BasePage {
 
   private async isBnbMenuMarkedSelected(menu: BnbMenu): Promise<boolean> {
     const element = this.bnbLocator.menu(menu);
-    if (!(await isDisplayedSafe(element))) {
+    if (!(await isDisplayedOrFalse(element))) {
       return false;
     }
 
@@ -331,15 +331,15 @@ export class BasePage {
   private async ensureBnbVisible(menu: BnbMenu): Promise<void> {
     // prepareHeaderBnb() already performs one scrollUp(). If BNB is still hidden,
     // try to recover it by tapping a visible header icon.
-    if (await isDisplayedSafe(this.bnbLocator.menu(menu))) {
+    if (await isDisplayedOrFalse(this.bnbLocator.menu(menu))) {
       return;
     }
 
     // A notification popup can pop up a few seconds after launch (e.g. IN re-asking after a deny) and cover BNB
-    if (await isDisplayedSafe(this.popupLocator.notificationDenyButton)) {
+    if (await isDisplayedOrFalse(this.popupLocator.notificationDenyButton)) {
       await this.dismissPermissionPopups();
       // BNB comes back only after the popup's close animation
-      if (await waitForDisplayedSafe(this.bnbLocator.menu(menu), 3000)) {
+      if (await waitForDisplayedOrFalse(this.bnbLocator.menu(menu), {timeout:3000})) {
         return;
       }
     }
@@ -356,22 +356,22 @@ export class BasePage {
 
     await this.selectHeaderIcon(recoverIcon);
 
-    if (await isDisplayedSafe(this.bnbLocator.menu(menu))) {
+    if (await isDisplayedOrFalse(this.bnbLocator.menu(menu))) {
       return;
     }
 
     // Search (e.g. from checkout) focuses its input, and the keyboard covers BNB
     if (await driver.isKeyboardShown().catch(() => false)) {
       await driver.hideKeyboard().catch(() => undefined);
-      if (await waitForDisplayedSafe(this.bnbLocator.menu(menu), 2000)) {
+      if (await waitForDisplayedOrFalse(this.bnbLocator.menu(menu), {timeout:2000})) {
         return;
       }
     }
 
     // Some sites show no BNB on search either (e.g. US); its header Back leads Home (Katalon ensureBNBVisible 2nd attempt: headerBackBtn)
-    if (await isDisplayedSafe(this.headerLocator.backButton)) {
+    if (await isDisplayedOrFalse(this.headerLocator.backButton)) {
       await clickElement(this.headerLocator.backButton);
-      if (await waitForDisplayedSafe(this.bnbLocator.menu(menu), 3000)) {
+      if (await waitForDisplayedOrFalse(this.bnbLocator.menu(menu), {timeout:3000})) {
         console.log('[ensureBnbVisible] BNB shown after header Back');
         return;
       }
@@ -385,7 +385,7 @@ export class BasePage {
   ): Promise<HeaderIcon | null> {
     for (const icon of candidates) {
       const element = this.headerLocator.icon(icon);
-      if (await isDisplayedSafe(element)) {
+      if (await isDisplayedOrFalse(element)) {
         return icon;
       }
     }

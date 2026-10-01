@@ -184,13 +184,13 @@ export class CartLocator {
     return $(
       [
         'div[data-modelcode="TRADE-IN"] button:is([data-an-la="remove-item"], [data-an-la="remove item"], [data-an-tr="cart-product-remove"])',
-        'div[data-modelcode="TRADE-UP"] button[data-an-tr="cart-product-remove"]',
+        'div[data-modelcode="TRADE-UP"] button[data-an-la="remove item"]',
       ].join(', ')
     );
   }
 
-  get tradeUpAppliedLabel() {
-    return this.tradeUpRemoveButton;
+  get tradeUpPriceLabel() {
+    return $('div[data-modelcode="TRADE-UP"] .service-item__actions div.action-text');
   }
 
   itemPrice(sku: string) {

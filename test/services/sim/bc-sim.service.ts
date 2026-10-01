@@ -3,7 +3,7 @@ import { BcLocator } from '../../locators/bc.locator';
 import { parsePriceToNumber } from '../../helpers/data.helper';
 import { scrollElementToCenter } from '../../helpers/gesture.helper';
 import { switchToWebView } from '../../helpers/context.helper';
-import { scrollAndJsClick, scrollAndWdioClick, scrollUntilVisibleInWebView } from '../../helpers/element.helper';
+import { scrollAndWdioClick, scrollUntilVisibleInWebView } from '../../helpers/element.helper';
 import { getRunConfig } from '../../../config/run.config';
 import { assertElementDisplayed } from '../../helpers/validation.helper';
 
@@ -50,7 +50,7 @@ export class BcSimService implements AddedService {
     await switchToWebView();
     const remove = this.locator.simRemoveButton;
     if (await remove.isDisplayed().catch(() => false)) {
-      await scrollAndJsClick(remove);
+      await scrollAndWdioClick(remove);
     }
   }
 
@@ -152,7 +152,7 @@ export class BcSimService implements AddedService {
   private async clickConfirm(): Promise<void> {
     const confirm = this.locator.simConfirmButton;
     await confirm.waitForExist({ timeout: 3000 });
-    await scrollAndJsClick(confirm);
+    await scrollAndWdioClick(confirm);
   }
 
   private async waitForOpen(): Promise<boolean> {

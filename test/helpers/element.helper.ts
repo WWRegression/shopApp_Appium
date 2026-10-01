@@ -12,24 +12,26 @@
  */
 
 import { scrollElementToCenter, scrollWebViewDown, scrollDown } from './gesture.helper';
-import { isWebViewContext } from './context.helper';
+import type { WaitForOptions } from 'webdriverio';
 
-const DEFAULT_TIMEOUT_MS = 10000;
+const DEFAULT_TIMEOUT_MS = 3000;
 
 /** isDisplayed() that never throws. */
-export async function isDisplayedSafe(element: ChainablePromiseElement): Promise<boolean> {
-  return element.isDisplayed().catch(() => false);
+export async function isDisplayedOrFalse(element: ChainablePromiseElement): Promise<boolean> {
+  return await element.isDisplayed().catch(() => false);
 }
 
-/** Waits up to timeout for the element to be displayed; never throws (Katalon verifyElementVisible OPTIONAL). */
-export async function waitForDisplayedSafe(
-  element: ChainablePromiseElement,
-  timeout = DEFAULT_TIMEOUT_MS
-): Promise<boolean> {
-  return element.waitForDisplayed({ timeout }).then(
-    () => true,
-    () => false
-  );
+/** waitForDisplayed() that never throws. */
+export async function waitForDisplayedOrFalse(element: ChainablePromiseElement, options?: WaitForOptions): Promise<boolean> {
+  return await element.waitForDisplayed(options).then(() => true).catch(() => false);
+}
+
+/** Clicks the element if it is displayed. (default 0 = check now). */
+export async function clickIfDisplayed(element: ChainablePromiseElement, timeout = 0): Promise<boolean> {
+  const displayed = timeout > 0 ? await waitForDisplayedOrFalse(element, {timeout:timeout}) : await isDisplayedOrFalse(element);
+  if (!displayed) return false;
+  await scrollAndWdioClick(element);
+  return true;
 }
 
 /**
@@ -119,14 +121,6 @@ export async function clickElement(
   await element.click();
 }
 
-/** Clicks if the element shows up within timeout (default 0 = check now). WebView → JS click, native → element click. */
-export async function clickIfDisplayed(element: ChainablePromiseElement, timeout = 0): Promise<boolean> {
-  const shown = timeout > 0 ? await waitForDisplayedSafe(element, timeout) : await isDisplayedSafe(element);
-  if (!shown) return false;
-  if (await isWebViewContext()) await scrollAndJsClick(element);
-  else await element.click();
-  return true;
-}
 
 /** Waits for the element to be displayed, then types the value (clickElement counterpart for inputs). */
 export async function setElementValue(
@@ -185,7 +179,7 @@ export async function scrollAndWdioClick(
 
 /** Prefer getText(); fall back to content-desc. */
 export async function getElementLabel(element: ChainablePromiseElement): Promise<string> {
-  if (!(await isDisplayedSafe(element))) {
+  if (!(await isDisplayedOrFalse(element))) {
     return '';
   }
   const text = await element.getText().catch(() => '');

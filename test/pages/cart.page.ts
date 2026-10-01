@@ -4,15 +4,15 @@ import { CartTradeInService } from '../services/tradein/cart-tradein.service';
 import { CartScPlusService } from '../services/scplus/cart-scplus.service';
 import { CartEupService } from '../services/eup/cart-eup.service';
 import { CartSimService } from '../services/sim/cart-sim.service';
+import { CartTradeUpService } from '../services/tradeup/cart-tradeup.service';
 import { switchToNative, prepareWebViewPage } from '../helpers/context.helper';
 import {
   getElementLabel,
   dispatchTouchStart,
   jsClick,
-  scrollAndJsClick,
   clickIfDisplayed,
   clickElement,
-  isDisplayedSafe,
+  isDisplayedOrFalse,  
 } from '../helpers/element.helper';
 import { assertEqual, assertElementDisplayed } from '../helpers/validation.helper';
 import { markFailed, markFailedAndStop, FieldCheck } from '../helpers/report.helper';
@@ -33,6 +33,7 @@ export class CartPage extends BasePage {
   readonly scPlus = new CartScPlusService();
   readonly eup = new CartEupService();
   readonly sim = new CartSimService();
+  readonly tradeUp = new CartTradeUpService();
 
   /**
    * Wait up to WEBVIEW_PAGE_READY_MS (10s) for cart. Throws on timeout so the TC fails fast.
@@ -101,13 +102,13 @@ export class CartPage extends BasePage {
   /** Katalon LogIn.verifyLoggedInCartPage — cart loads and the empty cart Sign in button is gone. */
   async verifyLoggedInOnCart(): Promise<void> {
     await this.prepareCartPage();
-    const loginShown = await isDisplayedSafe(this.locator.emptyCartLoginButton);
+    const loginShown = await isDisplayedOrFalse(this.locator.emptyCartLoginButton);
     console.log(`[verifyLoggedInOnCart] empty cart Sign in shown=${loginShown}`);
     markFailed([{ label: 'user is not logged in (empty cart Sign in button still shown)', pass: !loginShown }], 'verifyLoggedInOnCart');
     await switchToNative();
 
     // Some sites (e.g. US) reopen cart without BNB after login — go back only then, so BNB-tab carts are untouched
-    if (!(await isDisplayedSafe(this.bnbLocator.mypageButton))) {
+    if (!(await isDisplayedOrFalse(this.bnbLocator.mypageButton))) {
       console.log('[verifyLoggedInOnCart] BNB hidden, going back');
       await driver.back();
     }
@@ -164,14 +165,6 @@ export class CartPage extends BasePage {
     const el = this.locator.itemPrice(sku);
     await el.waitForExist({ timeout: 10000 });
     return ((await el.getText().catch(() => '')) ?? '').trim();
-  }
-
-  async verifyTradeUpApplied(): Promise<void> {
-    await this.prepareCartPage();
-    await assertElementDisplayed(
-      this.locator.tradeUpAppliedLabel,
-      'Trade-Up not found in cart'
-    );
   }
 
   /**

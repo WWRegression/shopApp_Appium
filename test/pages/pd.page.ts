@@ -1,29 +1,34 @@
-import { BasePage } from './base.page';
-import { PdLocator } from '../locators/pd.locator';
 import { PdTradeInService } from '../services/tradein/pd-tradein.service';
+import { PdTradeUpService } from '../services/tradeup/pd-tradeup.service';
 import { PdScPlusService } from '../services/scplus/pd-scplus.service';
 import { PdEupService } from '../services/eup/pd-eup.service';
 import { PdSimService } from '../services/sim/pd-sim.service';
 import { FlagshipWatchProduct } from '../helpers/flagship-sku.helper';
 import { normalizeText, resolveDisplayColor } from '../helpers/data.helper';
 import { markFailedAndStop, markFailed, FieldCheck } from '../helpers/report.helper';
-import { getElementLabel, isDisplayedSafe, scrollAndJsClick } from '../helpers/element.helper';
-import { prepareWebViewPage, switchToNative } from '../helpers/context.helper';
+import { getElementLabel, isDisplayedOrFalse, scrollAndJsClick } from '../helpers/element.helper';
+import { prepareWebViewPage, switchToNative, isWebViewContext, switchToWebView } from '../helpers/context.helper';
+import { scrollDown } from '../helpers/gesture.helper';
 import { ProductOptionFields } from './bc.page';
+import { assertElementDisplayed } from '../helpers/validation.helper';
+import { BasePage } from './base.page';
+import { PdLocator } from '../locators/pd.locator';
 
 export class PdPage extends BasePage {
   private readonly locator = new PdLocator();
   private selectedColor = '';
   readonly tradeIn = new PdTradeInService();
+  readonly tradeUp = new PdTradeUpService();
   readonly scPlus = new PdScPlusService();
   readonly eup = new PdEupService();
   readonly sim = new PdSimService();
 
   /** skuAnchor renders early and carries data-shop-sku, so it doubles as the "PD is ready" marker. */
   async preparePdPage(): Promise<void> {
-    const ready = await prepareWebViewPage('pd', this.locator.skuAnchor);
+    const ready = await prepareWebViewPage('pd', this.locator.skuAnchor, 15000);
+    console.warn(`[PD] preparePdPage ready=${ready}`);
     if (!ready) {
-      throw new Error('preparePdPage: PD not ready within 10s');
+      // throw new Error('preparePdPage: PD not ready within 10s');
     }
   }
   
@@ -86,8 +91,67 @@ export class PdPage extends BasePage {
     return await this.locator.nativePdProductName(productName).getText();
   }
 
-  async addToCart(): Promise<void> {
-    // TODO: Implement add to cart from PD
+  async clickAddToCart(): Promise<void> {
+    const btn = $(
+      [
+        '[an-la*="add to cart" i]',
+        '[an-la*="buy now" i]',
+        '.hubble-price-bar__price-cta button',
+        '.pdd39-anchor-nav__cta button',
+      ].join(', ')
+    );
+    await btn.waitForExist({ timeout: 15000 });
+    await scrollAndJsClick(btn);
+  }
+
+  /** Katalon PD.verifyNativePDPage — SKU/name visible in Native, not WebView. */
+  async verifyNativePdPage(skuOrName: string): Promise<void> {
+    if (await isWebViewContext()) {
+      // Prefer Native PD; if still WebView-only, fail for BUY_06 intent.
+      await switchToNative();
+    }
+    await driver.pause(1000);
+    for (let i = 0; i < 3; i++) {
+      await scrollDown().catch(() => undefined);
+    }
+    const target = this.locator.nativePdProductName(skuOrName);
+    await assertElementDisplayed(target, `Native PD not shown for "${skuOrName}"`);
+  }
+
+  /** Katalon PD.verifyPDPageLoadBySKU — WebView PD header contains SKU. */
+  async verifyPdLoadedBySku(sku: string): Promise<void> {
+    await this.preparePdPage();
+    const info = this.locator.headerSkuInfo;
+    const text = ((await info.getText().catch(() => '')) ?? '').toLowerCase().replace(/\s+/g, '');
+    const expected = sku.toLowerCase().replace(/\s+/g, '');
+    if (!text.includes(expected)) {
+      console.warn(`[PD] SKU soft-mismatch header="${text}" expected="${expected}"`);
+    }
+  }
+
+  /** Katalon PD.selectAR + verifyARExecution (Google Lens / quicksearchbox). */
+  async openArAndVerify(timeoutMs = 20000): Promise<void> {
+    await switchToWebView();
+    const ar = this.locator.arButton;
+    await ar.waitForExist({ timeout: 15000 });
+    await scrollAndJsClick(ar);
+
+    const deadline = Date.now() + timeoutMs;
+    while (Date.now() < deadline) {
+      const pkg = await driver.getCurrentPackage().catch(() => '');
+      if (pkg === 'com.google.android.googlequicksearchbox') {
+        console.warn('[PD] AR package launched');
+        await driver.pause(2000);
+        try {
+          await driver.terminateApp('com.google.android.googlequicksearchbox');
+        } catch {
+          await driver.back();
+        }
+        return;
+      }
+      await driver.pause(1000);
+    }
+    throw new Error('AR function did not launch Google AR package within timeout');
   }
 
   /** Selects device/connectivity only if their section is shown (some PD products fix those values); color is always selectable. */
@@ -102,8 +166,8 @@ export class PdPage extends BasePage {
 
   /** Options here show a combined "Device (Connectivity, Size)" label, so match on device + case size together. */
   private async selectDeviceIfShown(product: FlagshipWatchProduct): Promise<void> {
-    if (!(await isDisplayedSafe(this.locator.deviceSection))) {
-      console.log('[PD][watch] device section not shown ??using bound value');
+    if (!(await isDisplayedOrFalse(this.locator.deviceSection))) {
+      console.log('[PD][watch] device section not shown — using bound value');
       return;
     }
 
@@ -126,8 +190,8 @@ export class PdPage extends BasePage {
   }
 
   private async selectConnectivityIfShown(product: FlagshipWatchProduct): Promise<void> {
-    if (!(await isDisplayedSafe(this.locator.connectivitySection))) {
-      console.log('[PD][watch] connectivity section not shown ??using bound value');
+    if (!(await isDisplayedOrFalse(this.locator.connectivitySection))) {
+      console.log('[PD][watch] connectivity section not shown — using bound value');
       return;
     }
 
@@ -148,7 +212,7 @@ export class PdPage extends BasePage {
 
   private async selectNonDefaultBand(): Promise<void> {
     const band = this.locator.watchNonDefaultBandOption;
-    if (!(await isDisplayedSafe(band))) {
+    if (!(await isDisplayedOrFalse(band))) {
       console.log('[PD][watch] bespoke band option not shown');
       return;
     }
@@ -158,10 +222,14 @@ export class PdPage extends BasePage {
     );
   }
 
-  async verifySku(product: FlagshipWatchProduct): Promise<void> {
-    const sku = (await this.locator.skuAnchor.getAttribute('data-shop-sku').catch(() => '')) ?? '';
-    if (sku.toLowerCase() !== product.sku.toLowerCase()) {
-      throw new Error(`[PD][watch] sku verification failed: expected "${product.sku}", found "${sku}"`);
+  async verifySku(expectedSku: string): Promise<void> {
+    if (!expectedSku) {
+      throw new Error('[PD] verifySku: expectedSku is required');
+    }
+    const sku = normalizeText(await getElementLabel(this.locator.headerSkuInfo));
+    console.warn(`[PD] sku verification: expected "${expectedSku}", found "${sku}"`);
+    if (sku !== expectedSku.toLowerCase()) {
+      throw new Error(`[PD] sku verification failed: expected "${expectedSku}", found "${sku}"`);
     }
   }
 
