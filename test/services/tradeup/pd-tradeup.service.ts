@@ -98,8 +98,7 @@ export class PdTradeUpService {
   private async stepSelectDevice(postalCode?: string): Promise<void> {
     console.warn('[PD.TRADEUP.stepSelectDevice] step select device found');
     await this.setPostalCode(postalCode);
-    await this.selectModel();
-    await this.selectBrand();
+    await this.selectDeviceOptions()
     await this.selectContinueButton();
   }
 
@@ -144,42 +143,19 @@ export class PdTradeUpService {
     }
   }
 
-  private async selectModel(): Promise<void> {
-    console.warn('[PD.TRADEUP.selectModel] step select model found');
-    await driver
-      .execute(() => {
-        const selects = Array.from(
-          document.querySelectorAll<HTMLSelectElement>(
-            'div.menu.sdf-comp-model-menu select.menu__select, li.model select.menu__select'
-          )
-        );
-        for (const sel of selects) {
-          if (sel.options.length > 1) {
-            sel.selectedIndex = 1;
-            sel.dispatchEvent(new Event('change', { bubbles: true }));
-          }
+  private async selectDeviceOptions(): Promise<void> {
+    const optionSelects = await this.locator.tradeUpDeviceOptions;
+    console.warn('[PD.TRADEUP.selectDeviceOptions] option selects found=', optionSelects.length);
+    for (const select of optionSelects) {
+      await driver.execute((el) => {
+        const sel = el as HTMLSelectElement;        
+        if (sel.options.length > 0) {
+          sel.selectedIndex = 0;
+          sel.dispatchEvent(new Event('change', { bubbles: true }));
         }
-      })
-      .catch(() => undefined);
-  }
-
-  private async selectBrand(): Promise<void> {
-    console.warn('[PD.TRADEUP.selectBrand] step select brand found');
-    await driver
-      .execute(() => {
-        const selects = Array.from(
-          document.querySelectorAll<HTMLSelectElement>(
-            'div.menu.sdf-comp-brand-menu select.menu__select, li.brand select.menu__select'
-          )
-        );
-        for (const sel of selects) {
-          if (sel.options.length > 1) {
-            sel.selectedIndex = 1;
-            sel.dispatchEvent(new Event('change', { bubbles: true }));
-          }
-        }
-      })
-      .catch(() => undefined);
+      }, select).catch(() => undefined);      
+    }
+    console.warn('[PD.TRADEUP.selectDeviceOptions] option selects selected done');
   }
 
   private async selectConditionYes(): Promise<void> {

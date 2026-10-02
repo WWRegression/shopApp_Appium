@@ -259,6 +259,10 @@ export class PdLocator {
     );
   }
 
+  get tradeUpDeviceOptions() {
+    return $$('ul.vd-trade-in-popup__product-select li select.menu__select');
+  }
+
   get tradeUpConditionYes() {
     return $(
       [
