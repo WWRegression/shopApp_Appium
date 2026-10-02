@@ -44,6 +44,8 @@ export const config: WebdriverIO.Config = {
       'appium:autoLaunch': false,
       'appium:systemPort': runConfig.systemPort,
       'appium:chromedriverPort': runConfig.chromedriverPort,
+      // Cap the UI idle wait before each action (default 10s); 0 loses taps during screen transitions (device Settings)
+      'appium:settings[waitForIdleTimeout]': 3000,
       ...(runConfig.udid ? { 'appium:udid': runConfig.udid } : {}),
     } as WebdriverIO.Capabilities,
   ],

@@ -63,6 +63,11 @@ export class CheckoutLocator {
     return $('cx-page-layout.CheckoutPageTemplateV2');
   }
 
+  /** Katalon LogIn/checkoutLoginBtn — Login link on the guest checkout */
+  get checkoutLoginButton() {
+    return $('.checkout-login-link a[data-an-tr="account-login"], span[data-an-tr="account-login"]');
+  }
+
   /** All known checkout form components currently in the DOM (may be more than one). */
   get formElements() {
     return $$(CHECKOUT_FORMS.join(', '));

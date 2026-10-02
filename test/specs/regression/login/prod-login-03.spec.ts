@@ -24,7 +24,7 @@ describe('PROD_LOGIN_03', () => {
       await cartPage.clearCart();
 
       // Login on the empty cart page
-      await cartPage.clickLoginOnEmptyCart();
+      await cartPage.clickLoginOnCart();
       await loginPage.clickLoginBtnOnLoginPage();
       await loginPage.loginWithGmailOnSso();
       await loginPage.skipPurpose();

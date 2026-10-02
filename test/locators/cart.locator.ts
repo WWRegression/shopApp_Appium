@@ -12,9 +12,9 @@ export class CartLocator {
     return $('app-sticky-checkout-cta-modal.show .modal__container.sticky-checkout-modal button[data-an-tr="cart-to-checkout"]');
   }
 
-  /** Katalon Cart/loginBtn — guest Sign in button / banner on a cart with items */
+  /** Katalon Cart/loginBtn + Cart/emptyCartLoginBtn — guest Sign in on the cart (with items or empty) */
   get cartLoginButton() {
-    return $('button.guest-signin-btn, button.sign-in-banner__btn');
+    return $('button.guest-signin-btn, button.sign-in-banner__btn, button[data-an-la="empty cart:sign in"]');
   }
 
   /** Katalon Cart/emptyCartLoginBtn — Sign in button on the empty cart (guest) */
@@ -128,8 +128,9 @@ export class CartLocator {
     return $('[an-la*="trade-in" i][an-la*="no" i]');
   }
 
-  get checkoutButton() {
-    return $(
+  /** All matches — CN also has a hidden 0x0 copy, so click the displayed one */
+  get checkoutButtons() {
+    return $$(
       [
         '[data-an-la*="checkout" i]',
         '[data-an-tr*="checkout" i]',

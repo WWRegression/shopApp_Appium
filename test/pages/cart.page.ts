@@ -12,7 +12,8 @@ import {
   jsClick,
   clickIfDisplayed,
   clickElement,
-  isDisplayedOrFalse,  
+  clickFirstDisplayed,
+  isDisplayedOrFalse,
 } from '../helpers/element.helper';
 import { assertEqual, assertElementDisplayed } from '../helpers/validation.helper';
 import { markFailed, markFailedAndStop, FieldCheck } from '../helpers/report.helper';
@@ -48,7 +49,7 @@ export class CartPage extends BasePage {
 
   /** Clicks checkout and waits for the checkout page to load. */
   async clickContinueToCheckout(): Promise<void> {
-    await this.locator.checkoutButton.click();
+    await clickFirstDisplayed(this.locator.checkoutButtons);
     // US asks again in an Express Checkout modal (Katalon Cart/cartToCheckoutBtn_2nd)
     if (await clickIfDisplayed(this.locator.checkoutModalButton, 2000)) {
       console.log('[clickContinueToCheckout] checkout modal — Continue to checkout tapped');
@@ -82,17 +83,9 @@ export class CartPage extends BasePage {
     return this.locator.emptyCartSection.waitForDisplayed({ timeout: waitTime }).then(() => true).catch(() => false);
   }
 
-  /** Katalon LogIn.loginOnEmptyCart — taps Sign in on the empty cart; the login page is handled by LoginPage.clickLoginBtnOnLoginPage(). */
-  async clickLoginOnEmptyCart(): Promise<void> {
-    await this.prepareCartPage();
-    await markFailedAndStop(
-      () => clickElement(this.locator.emptyCartLoginButton, { timeout: 5000 }),
-      'Login failed on the Cart page: empty cart Sign in button not found'
-    );
-  }
-
-  /** Katalon LogIn.loginOnCart(Cart/loginBtn) — taps Sign in on a cart with items; the login page is handled by LoginPage.clickLoginBtnOnLoginPage(). */
+  /** Katalon LogIn.loginOnCart / loginOnEmptyCart — taps the cart's Sign in; the login page is handled by LoginPage.clickLoginBtnOnLoginPage(). */
   async clickLoginOnCart(): Promise<void> {
+    await this.prepareCartPage();
     await markFailedAndStop(
       () => clickElement(this.locator.cartLoginButton, { timeout: 5000 }),
       'Login failed on the Cart page: Sign in button not found'

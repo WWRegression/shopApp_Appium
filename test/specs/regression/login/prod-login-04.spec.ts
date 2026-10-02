@@ -12,8 +12,7 @@ describe('PROD_LOGIN_04', () => {
     await runOrSkip.call(this, 'PROD_LOGIN_04', async () => {
       await loginPage.signInOnDevice();
       await restartApp();
-      await mypagePage.dismissPermissionPopups();
-      await loginPage.openHomeAfterLaunch();
+      await loginPage.openHome();
 
       await mypagePage.logoutOnMypage();
       await mypagePage.verifyLoggedOut();

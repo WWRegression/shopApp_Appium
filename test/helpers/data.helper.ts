@@ -5,6 +5,12 @@ export function normalizePriceDigits(priceText: string): string {
   return (priceText ?? '').replace(/[\s.,]/g, '').toLowerCase();
 }
 
+// "1,250 pts" / "0 Points" / "0 P" → 1250 / 0 / 0 (-1 when there is no number)
+export function parsePoints(pointsText: string): number {
+  const digits = (pointsText ?? '').replace(/\D/g, '');
+  return digits ? Number(digits) : -1;
+}
+
 /** True when normalized prices contain each other (Katalon BC.verifyMatch style). */
 export function pricesMatch(actual: string, expected: string): boolean {
   const a = normalizePriceDigits(actual);

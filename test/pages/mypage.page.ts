@@ -1,15 +1,16 @@
 import { BasePage } from './base.page';
 import { MypageLocator } from '../locators/mypage.locator';
 import { LoginPage } from './login.page';
-import { switchToNative } from '../helpers/context.helper';
+import { prepareWebViewPage, switchToNative } from '../helpers/context.helper';
+import { parsePoints } from '../helpers/data.helper';
 import { getBrowserPages } from '../helpers/device.helper';
 import {
+  clickElement,
   clickIfDisplayed,
   getElementLabel,
   isDisplayedOrFalse,
   scrollUntilVisible,
   waitForDisplayedOrFalse,
-  withoutIdleWait,
 } from '../helpers/element.helper';
 import { flingToEnd, swipeByBoundary, tapAtCoordinates } from '../helpers/gesture.helper';
 import { markFailed } from '../helpers/report.helper';
@@ -160,17 +161,14 @@ export class MypagePage extends BasePage {
   private async openMypage(timeoutMs: number): Promise<void> {
     // logout → verifyLoggedOut → clickLogin each open My Page; skip the BNB tap when it is already shown
     await switchToNative();
-    // Home's rotating banner (e.g. IN) keeps the UI busy, so each lookup would first wait up to 10s for idle
-    await withoutIdleWait(async () => {
-      if (await isDisplayedOrFalse(this.locator.accountPageTitle)) {
-        console.log('[openMypage] already on My Page');
-        return;
-      }
-      await this.selectBnbMenu('mypage');
-      if (!(await waitForDisplayedOrFalse(this.locator.accountPageTitle, {timeout:timeoutMs}))) {
-        console.log('[openMypage] failed to navigate to My Page');
-      }
-    });
+    if (await isDisplayedOrFalse(this.locator.accountPageTitle)) {
+      console.log('[openMypage] already on My Page');
+      return;
+    }
+    await this.selectBnbMenu('mypage');
+    if (!(await waitForDisplayedOrFalse(this.locator.accountPageTitle, { timeout: timeoutMs }))) {
+      console.log('[openMypage] failed to navigate to My Page');
+    }
   }
 
   /** Katalon swipes My Page down to its top before looking for Login; skipped when Login is already visible. */
@@ -191,7 +189,7 @@ export class MypagePage extends BasePage {
     await this.scrollToLoginButton();
 
     const loginButton = this.locator.loginButton;
-    if (!(await waitForDisplayedOrFalse(loginButton, {timeout:5000}))) {
+    if (!(await waitForDisplayedOrFalse(loginButton, { timeout: 5000 }))) {
       console.log('[clickLoginOnMypage] login button not shown');
       return;
     }
@@ -258,7 +256,7 @@ export class MypagePage extends BasePage {
     await this.openMypage(5000);
     await this.scrollToLoginButton();
 
-    const loggedOut = await waitForDisplayedOrFalse(this.locator.loginButton, {timeout:10000});
+    const loggedOut = await waitForDisplayedOrFalse(this.locator.loginButton, { timeout: 10000 });
     console.log(`[verifyLoggedOut] ${loggedOut}`);
     if (!loggedOut) {
       // Katalon: log back in before failing so the next TC doesn't start from a broken login state
@@ -269,14 +267,81 @@ export class MypagePage extends BasePage {
     markFailed([{ label: 'user is not logged out (Login button not found on My Page)', pass: loggedOut }], 'verifyLoggedOut');
   }
 
-  /** Katalon LogIn.isLogInStatus — Logout button must be found at the bottom of My Page. */
-  async verifyLoggedIn(): Promise<void> {
+  /** Katalon LogIn.ensureLoginStatus — logs in with the device account unless already logged in (no failure). */
+  async ensureLoggedIn(): Promise<void> {
+    // A logged-out app can open on the login page (no BNB) — its login button logs in with the device account
+    if (await this.loginPage.isLoginPageShown()) {
+      console.log('[ensureLoggedIn] login page shown — logging in');
+      await this.loginPage.clickLoginBtnOnLoginPage();
+      return;
+    }
+    // "Select profile" (IN) has no BNB to reach My Page — clickLoginOnMypage logs in from it
+    if (!(await this.loginPage.isSelectProfileShownForIn()) && (await this.isLoggedIn())) {
+      console.log('[ensureLoggedIn] already logged in');
+      return;
+    }
+    console.log('[ensureLoggedIn] not logged in — logging in');
+    await this.clickLoginOnMypage();
+    await this.loginPage.clickLoginBtnOnLoginPage();
+  }
+
+  /** True when Logout is found at the bottom of My Page. */
+  private async isLoggedIn(): Promise<boolean> {
     // Katalon's 2s delay isn't needed: openMypage already waits for the My Page title
     await this.openMypage(10000);
+    return this.scrollToLogoutButton();
+  }
 
-    const loggedIn = await this.scrollToLogoutButton();
+  /** Katalon LogIn.isLogInStatus — Logout button must be found at the bottom of My Page. */
+  async verifyLoggedIn(): Promise<void> {
+    let loggedIn = await this.isLoggedIn();
+    if (!loggedIn) {
+      // Login can still be completing in the background (CN authorizes after the tap) — Katalon also re-checks 3 times
+      console.log('[verifyLoggedIn] Logout not found yet — re-checking for up to 15s');
+      loggedIn = await driver
+        .waitUntil(() => this.isLoggedIn(), { timeout: 15000, interval: 2000 })
+        .then(() => true, () => false);
+    }
     console.log(`[verifyLoggedIn] ${loggedIn}`);
     markFailed([{ label: 'user is not logged in (Logout button not found on My Page)', pass: loggedIn }], 'verifyLoggedIn');
+  }
+
+  /** Katalon Reward.checkJoinRewardsTooltipOnMyPage — the "Join Samsung Rewards" tooltip must not show on My Page. */
+  async verifyNoJoinRewardsTooltip(): Promise<void> {
+    await this.openMypage(5000);
+    const shown = await isDisplayedOrFalse(this.locator.joinRewardsTooltip);
+    markFailed([{ label: '"Join Samsung Rewards" tooltip is shown on My Page', pass: !shown }], 'verifyNoJoinRewardsTooltip');
+  }
+
+  /** Katalon Reward.getPointsMyPage — Rewards points shown on the My Page dashboard. */
+  async getRewardsPoints(): Promise<number> {
+    await this.openMypage(5000);
+    const shown = await waitForDisplayedOrFalse(this.locator.rewardsPoints, { timeout: 5000 });
+    markFailed([{ label: 'Rewards points not found on My Page', pass: shown }], 'getRewardsPoints');
+    const points = parsePoints(await getElementLabel(this.locator.rewardsPoints));
+    console.log(`[getRewardsPoints] My Page points=${points}`);
+    return points;
+  }
+
+  /** Katalon Reward.getPointsRewardsPage — opens the Samsung Rewards web page from My Page and reads its points. */
+  async getRewardsPointsOnRewardsPage(): Promise<number> {
+    await clickElement(this.locator.rewardsPoints, { timeout: 3000 });
+    const ready = await prepareWebViewPage('mypageRewards', this.locator.rewardsPagePoints, 15000);
+    // Must be displayed: a hidden dashboard still holds a default "0 P" in the DOM, which would pass by accident
+    const shown = ready && (await waitForDisplayedOrFalse(this.locator.rewardsPagePoints, { timeout: 8000 }));
+    markFailed([{ label: 'Rewards points not shown on the Samsung Rewards page', pass: shown }], 'getRewardsPointsOnRewardsPage');
+    const points = parsePoints(await this.locator.rewardsPagePoints.getText());
+    console.log(`[getRewardsPointsOnRewardsPage] Rewards page points=${points}`);
+    await switchToNative();
+    return points;
+  }
+
+  /** Katalon Reward.comparePointsAcrossPages — the three points values must be the same. */
+  verifyRewardsPointsMatch(homePoints: number, mypagePoints: number, rewardsPagePoints: number): void {
+    const same = homePoints === mypagePoints && homePoints === rewardsPagePoints;
+    const detail = `Home=${homePoints}, My Page=${mypagePoints}, Rewards page=${rewardsPagePoints}`;
+    console.log(`[verifyRewardsPointsMatch] ${same} (${detail})`);
+    markFailed([{ label: 'Rewards points differ', pass: same, detail }], 'verifyRewardsPointsMatch');
   }
 
   async getAccountName(): Promise<string> {

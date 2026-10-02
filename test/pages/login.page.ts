@@ -60,14 +60,14 @@ export class LoginPage extends BasePage {
   }
 
   /** Katalon LogIn.SSOsignOutOnDevice — removes the Samsung account from device Settings, then force-stops the app. */
-  async signOutOnDevice(): Promise<void> {
+  async signOutOnDevice(clearInAppData = true): Promise<void> {
     console.log('[signOutOnDevice] start');
     await forceStopPackage(SAMSUNG_ACCOUNT_PACKAGE);
     await startActivityByAction('android.settings.SYNC_SETTINGS');
     await switchToNative();
-    await waitForDisplayedOrFalse(this.locator.settingsAddAccount, {timeout:5000});
+    await waitForDisplayedOrFalse(this.locator.settingsAddAccount, { timeout: 5000 });
 
-    if (await waitForDisplayedOrFalse(this.locator.samsungAccountItem, {timeout:5000})) {
+    if (await waitForDisplayedOrFalse(this.locator.samsungAccountItem, { timeout: 5000 })) {
       console.log('[signOutOnDevice] removing Samsung account');
       await clickIfDisplayed(this.locator.samsungAccountItem, 5000);
       await clickIfDisplayed(this.locator.removeAccountButton, 5000);
@@ -89,7 +89,7 @@ export class LoginPage extends BasePage {
     await forceStopPackage(SETTINGS_PACKAGE);
     await forceStopPackage(targetPackage());
     // Katalon (IN) Clear Package — a signed-out IN app keeps its profile and opens on "Select profile" instead of the login page
-    if (getRunConfig().siteCode === 'IN') {
+    if (getRunConfig().siteCode === 'IN' && clearInAppData) {
       console.log('[signOutOnDevice] (IN) clearing app data');
       await clearPackage(targetPackage());
       this.appDataCleared = true;
@@ -106,8 +106,7 @@ export class LoginPage extends BasePage {
   /** True when the login page (Sign in / Continue as guest) is shown — the app is logged out. */
   async isLoginPageShown(): Promise<boolean> {
     await switchToNative();
-    // The login page animates (welcome slider), so skip the UI idle wait
-    return withoutIdleWait(() => isDisplayedOrFalse(this.locator.continueAsGuestButton));
+    return isDisplayedOrFalse(this.locator.continueAsGuestButton);
   }
 
   /** Katalon LogIn.longinOnSelectProfile — selects the saved profile, then taps the login button (Continue if no login button). */
@@ -133,13 +132,13 @@ export class LoginPage extends BasePage {
     await startActivityByAction('android.settings.SYNC_SETTINGS');
     await switchToNative();
 
-    if (await waitForDisplayedOrFalse(this.locator.samsungAccountItem, {timeout:5000})) {
+    if (await waitForDisplayedOrFalse(this.locator.samsungAccountItem, { timeout: 5000 })) {
       console.log('[signInOnDevice] Samsung account already on device');
     } else {
       console.log('[signInOnDevice] adding Samsung account');
       // Optional like Katalon — if these miss, loginWithEmailOnSso fails at the Email button with a clear reason
-      await waitForDisplayedOrFalse(this.locator.settingsAddAccount, {timeout:5000});
-      await waitForDisplayedOrFalse(this.locator.samsungAccountItem, {timeout:5000});
+      await clickIfDisplayed(this.locator.settingsAddAccount, 5000);
+      await clickIfDisplayed(this.locator.samsungAccountItem, 5000);
       await this.loginWithEmailOnSso();
     }
 
@@ -151,12 +150,9 @@ export class LoginPage extends BasePage {
   /** Katalon LogIn.loginOnSplashPage — checkout as a guest opens the login page (Sign in / Continue as guest). */
   async verifyLoginPage(timeoutMs = 20000): Promise<void> {
     await switchToNative();
-    // The login page animates (welcome slider), so skip the UI idle wait
-    const shown = await withoutIdleWait(
-      async () =>
-        (await waitForDisplayedOrFalse(this.locator.loginPageLoginButton, {timeout:timeoutMs})) &&
-        (await isDisplayedOrFalse(this.locator.continueAsGuestButton))
-    );
+    const shown =
+      (await waitForDisplayedOrFalse(this.locator.loginPageLoginButton, { timeout: timeoutMs })) &&
+      (await isDisplayedOrFalse(this.locator.continueAsGuestButton));
     console.log(`[verifyLoginPage] ${shown}`);
     markFailed([{ label: 'login page not shown (Sign in / Continue as guest not found)', pass: shown }], 'verifyLoginPage');
   }
@@ -181,19 +177,10 @@ export class LoginPage extends BasePage {
   async clickLoginBtnOnLoginPage(): Promise<void> {
     await switchToNative();
 
-    // The CN login page animates, so skip the UI idle wait there
+    // The CN login page slider never goes idle, so every action here would wait out the idle timeout
     await withoutIdleWait(async () => {
       // US has no login page and opens the SSO login options directly, so stop waiting as soon as either shows
-      await driver
-        .waitUntil(
-          async () =>
-            (await isDisplayedOrFalse(this.locator.loginPageLoginButton)) ||
-            (await isDisplayedOrFalse(this.locator.samsungAccountLogoButton)) ||
-            (await isDisplayedOrFalse(this.locator.emailSsoButton)) ||
-            (await isDisplayedOrFalse(this.locator.gmailSsoButton)),
-          { timeout: 10000, interval: 500 }
-        )
-        .catch(() => undefined);
+      await waitForDisplayedOrFalse(this.locator.loginPageOrSsoOptions, { timeout: 10000 });
 
       await this.agreePrivacyForCn();
 
@@ -265,10 +252,10 @@ export class LoginPage extends BasePage {
   }
 
   /** Katalon Init.purposeSkip — skips the post-login purpose screen if shown (preference "Review Later" left out until seen). */
-  async skipPurpose(timeoutMs = 15000): Promise<void> {
+  async skipPurpose(timeoutMs = 60000): Promise<void> {
     await switchToNative();
 
-    // The purpose screen loads a few seconds after SSO returns, so wait for either screen, Home, or a Back header (e.g. US cart without BNB)
+    // The app reloads after SSO returns (CN can take over 20s), so wait for the purpose screen, Home, or a Back header (e.g. US cart without BNB)
     await driver
       .waitUntil(
         async () =>
@@ -292,8 +279,7 @@ export class LoginPage extends BasePage {
   async loginWithGmailOnSsoIfShown(): Promise<void> {
     // clickLoginBtnOnLoginPage restores the previous (checkout WebView) context, and the Google button is native
     await switchToNative();
-    // The screen right after Sign in is still animating, so check without the UI idle wait (otherwise ~10s per lookup)
-    if (!(await withoutIdleWait(() => waitForDisplayedOrFalse(this.locator.gmailSsoButton, {timeout:3000})))) {
+    if (!(await waitForDisplayedOrFalse(this.locator.gmailSsoButton, { timeout: 3000 }))) {
       console.log('[loginWithGmailOnSsoIfShown] no SSO login options — logged in with the device account');
       return;
     }
@@ -319,41 +305,6 @@ export class LoginPage extends BasePage {
     console.log('[loginWithGmailOnSso] end');
   }
 
-  /** Katalon Common.navigateToPage("HOME") — waits for the app to load after a relaunch, then taps Home if BNB shows. */
-  async openHomeAfterLaunch(timeoutMs = 20000): Promise<void> {
-    await switchToNative();
-    const isAppScreenShown = async () =>
-      (await isDisplayedOrFalse(this.bnbLocator.homeButton)) ||
-      (await this.isSelectProfileShownForIn()) ||
-      (await isDisplayedOrFalse(this.locator.continueAsGuestButton));
-    // Home banner / login page animate, so skip the UI idle wait while waiting for the app
-    const waitForAppScreen = (withPopup: boolean) =>
-      withoutIdleWait(() =>
-        driver
-          .waitUntil(
-            async () =>
-              (await isAppScreenShown()) ||
-              (withPopup && (await isDisplayedOrFalse(this.popupLocator.notificationDenyButton))),
-            { timeout: timeoutMs, interval: 500 }
-          )
-          .catch(() => undefined)
-      );
-
-    await waitForAppScreen(true);
-    // A late notification popup (e.g. IN re-asking after a deny) covers the app — close it, then wait for whichever screen is behind it
-    if (await isDisplayedOrFalse(this.popupLocator.notificationDenyButton)) {
-      await this.dismissPermissionPopups();
-      await waitForAppScreen(false);
-    }
-
-    // Like Katalon (only warns): no BNB on e.g. "Select profile" — the MypagePage steps handle that screen
-    if (!(await isDisplayedOrFalse(this.bnbLocator.homeButton))) {
-      console.log('[openHomeAfterLaunch] BNB not shown (e.g. Select profile screen) — skipping');
-      return;
-    }
-    await this.selectBnbMenu('home');
-  }
-
   /** Katalon Launch.startExistingAppWithGuestUser — guest app while the device keeps a Samsung account. */
   async startAppAsGuest(): Promise<void> {
     // IN can't be a guest with a device account (it shows "Select profile"), so it follows Katalon's IN branch
@@ -365,8 +316,7 @@ export class LoginPage extends BasePage {
     const { MypagePage } = await import('./mypage.page');
     await this.signInOnDevice();
     await restartApp();
-    await this.dismissPermissionPopups();
-    await this.openHomeAfterLaunch();
+    await this.openHome();
     await new MypagePage().logoutOnMypage();
     await this.continueAsGuest();
   }
@@ -379,22 +329,19 @@ export class LoginPage extends BasePage {
   }
 
   /** Katalon LogIn.startAsGuestUser — enters the app as a guest right after launch (skipped if Home is already shown). */
-  async continueAsGuest(timeoutMs = 30000): Promise<void> {
+  async continueAsGuest(timeoutMs = 60000): Promise<void> {
     await switchToNative();
-    // The CN login page animates, so skip the UI idle wait while checking the entry screens
-    const profileShown = await withoutIdleWait(async () => {
+    // The CN login page slider never goes idle, so every action here would wait out the idle timeout
+    await withoutIdleWait(async () => {
       await this.dismissFreshAppPermissionPopups();
       await this.waitForAppLoaded(timeoutMs);
-      return this.isSelectProfileShownForIn();
-    });
-    // Device Settings needs the normal idle wait (taps during screen transitions get lost), so reset outside it
-    if (profileShown) {
-      await this.resetAppFromSelectProfileForIn(timeoutMs);
-    }
-
-    await withoutIdleWait(async () => {
       if (await isDisplayedOrFalse(this.bnbLocator.homeButton)) {
         console.log('[continueAsGuest] app already loaded, skipping');
+        return;
+      }
+      // Like Katalon: "Select profile" (IN with a saved profile) has no guest option — leave it for verifyLoggedOut
+      if (await this.isSelectProfileShownForIn()) {
+        console.log('[continueAsGuest] Select profile shown — no guest option, skipping');
         return;
       }
       await this.clickGuestButton();
@@ -407,42 +354,10 @@ export class LoginPage extends BasePage {
       return;
     }
     this.appDataCleared = false;
-    if (await waitForDisplayedOrFalse(this.popupLocator.notificationDenyButton, {timeout:15000})) {
+    if (await waitForDisplayedOrFalse(this.popupLocator.notificationDenyButton, { timeout: 15000 })) {
       // Katalon clickLocationPermission waits 15s, but the location popup never showed in IN runs — check briefly
       await this.dismissPermissionPopups(5000, 3000);
     }
-  }
-
-  /** Waits for the first app screen (Home, login page or "Select profile"), dismissing a permission popup on top. */
-  private async waitForAppLoaded(timeoutMs: number): Promise<void> {
-    const isAppLoaded = async () =>
-      (await isDisplayedOrFalse(this.bnbLocator.homeButton)) ||
-      (await isDisplayedOrFalse(this.locator.continueAsGuestButton)) ||
-      (await this.isSelectProfileShownForIn());
-
-    await driver
-      .waitUntil(
-        async () => (await isDisplayedOrFalse(this.popupLocator.notificationDenyButton)) || (await isAppLoaded()),
-        { timeout: timeoutMs, interval: 500 }
-      )
-      .catch(() => undefined);
-
-    if (await isDisplayedOrFalse(this.popupLocator.notificationDenyButton)) {
-      await this.dismissPermissionPopups();
-      await driver.waitUntil(isAppLoaded, { timeout: timeoutMs, interval: 500 }).catch(() => undefined);
-    }
-  }
-
-  /** "Select profile" (IN) has no guest option — signs the device account out (clears app data) and relaunches. */
-  private async resetAppFromSelectProfileForIn(timeoutMs: number): Promise<void> {
-    console.log('[resetAppFromSelectProfileForIn] Select profile shown — device sign-out + app data clear, then relaunch');
-    await this.signOutOnDevice();
-    await restartApp();
-    await switchToNative();
-    await withoutIdleWait(async () => {
-      await this.dismissFreshAppPermissionPopups();
-      await this.waitForAppLoaded(timeoutMs);
-    });
   }
 
   /** Taps "as guest" and waits for Home; the login page can ignore the first tap right after launch, so it retries once. */
@@ -454,13 +369,13 @@ export class LoginPage extends BasePage {
       return;
     }
     console.log('[clickGuestButton] guest button tapped');
-    if (!(await waitForDisplayedOrFalse(this.bnbLocator.homeButton, {timeout:5000}))) {
+    if (!(await waitForDisplayedOrFalse(this.bnbLocator.homeButton, { timeout: 5000 }))) {
       await clickIfDisplayed(this.popupLocator.adCloseButton);
       if (await clickIfDisplayed(this.locator.continueAsGuestButton, 1000)) {
         console.log('[clickGuestButton] guest button tapped again');
       }
     }
-    await waitForDisplayedOrFalse(this.bnbLocator.homeButton, {timeout:10000});
+    await waitForDisplayedOrFalse(this.bnbLocator.homeButton, { timeout: 10000 });
   }
 
   /**
@@ -475,7 +390,7 @@ export class LoginPage extends BasePage {
 
     await switchToNative();
 
-    if (!(await waitForDisplayedOrFalse(this.locator.wdsLoginPage, {timeout:timeoutMs}))) {
+    if (!(await waitForDisplayedOrFalse(this.locator.wdsLoginPage, { timeout: timeoutMs }))) {
       console.log('[login] WDS page not visible, skipping');
       return false;
     }

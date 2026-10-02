@@ -27,6 +27,7 @@ export const WEBVIEW_DETECT_ORDER = [
   'checkout',
   'mypageWishlist',
   'mypageProfile',
+  'mypageRewards',
   'bc',
   'pd',
 ] as const;
@@ -427,6 +428,7 @@ function pageUrlPatterns(page: FragmentPage): string[] {
     checkout: ['/checkout'],
     mypageWishlist: ['mypage/wishlist'],
     mypageProfile: ['mypage/profile-setting'],
+    mypageRewards: ['mypage/reward'],
     wdsLogin: ['wds.samsung.com', 'sts.secsso.net'],
     useinsider: ['useinsider'],
   };

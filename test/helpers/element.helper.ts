@@ -75,23 +75,14 @@ export async function scrollUntilVisibleInWebView(
   return isExistingInWebView(target);
 }
 
-/** UiAutomator2 default: each lookup first waits up to this long for the UI to go idle. */
-const DEFAULT_IDLE_TIMEOUT_MS = 10000;
-
-/** How many withoutIdleWait calls are running — only the outermost one restores the idle wait. */
-let idleWaitOffDepth = 0;
-
-/** Runs fn without waiting for UI idle — animated screens (e.g. CN login slider) otherwise make every lookup wait ~10s. */
+/** Runs fn without the UI idle wait — only for screens that never go idle (CN login slider), where every action would wait it out. */
 export async function withoutIdleWait<T>(fn: () => Promise<T>): Promise<T> {
-  if (idleWaitOffDepth++ === 0) {
-    await driver.updateSettings({ waitForIdleTimeout: 0 });
-  }
+  const { waitForIdleTimeout } = (await driver.getSettings()) as { waitForIdleTimeout: number };
+  await driver.updateSettings({ waitForIdleTimeout: 0 });
   try {
     return await fn();
   } finally {
-    if (--idleWaitOffDepth === 0) {
-      await driver.updateSettings({ waitForIdleTimeout: DEFAULT_IDLE_TIMEOUT_MS });
-    }
+    await driver.updateSettings({ waitForIdleTimeout });
   }
 }
 
@@ -121,6 +112,27 @@ export async function clickElement(
   await element.click();
 }
 
+/** Clicks the first displayed match — for selectors that also match hidden copies (e.g. CN cart's 0x0 checkout button). */
+export async function clickFirstDisplayed(
+  elements: ReturnType<typeof $$>,
+  options?: { timeout?: number }
+): Promise<void> {
+  const timeout = options?.timeout ?? 10000;
+  let target: WebdriverIO.Element | undefined;
+  await driver.waitUntil(
+    async () => {
+      for (const el of await elements) {
+        if (await el.isDisplayed().catch(() => false)) {
+          target = el;
+          return true;
+        }
+      }
+      return false;
+    },
+    { timeout, interval: 300, timeoutMsg: `no displayed element within ${timeout}ms` }
+  );
+  await target!.click();
+}
 
 /** Waits for the element to be displayed, then types the value (clickElement counterpart for inputs). */
 export async function setElementValue(

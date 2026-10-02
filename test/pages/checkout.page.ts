@@ -4,9 +4,9 @@ import { BasePage } from './base.page';
 import { CheckoutLocator, CHECKOUT_FORMS } from '../locators/checkout.locator';
 import { prepareWebViewPage } from '../helpers/context.helper';
 import { getSiteData as getSite } from '../../config/site';
-import { scrollAndJsClick, getElementLabel, isDisplayedOrFalse, jsClick } from '../helpers/element.helper';
-import { scrollDown } from '../helpers/gesture.helper';
-import { markFailed } from '../helpers/report.helper';
+import { scrollAndJsClick, getElementLabel, isDisplayedOrFalse, jsClick, clickElement } from '../helpers/element.helper';
+import { scrollDown, scrollElementToCenter } from '../helpers/gesture.helper';
+import { markFailed, markFailedAndStop } from '../helpers/report.helper';
 import type { LoadedSite } from '../../config/site';
 
 /** Katalon Checkout.handleCheckoutEditButton() per-site sequence. */
@@ -68,6 +68,16 @@ export class CheckoutPage extends BasePage {
       }
     }
     return '';
+  }
+
+  /** Katalon LogIn.loginOnCheckout — taps Login on the guest checkout; the login page is handled by LoginPage.clickLoginBtnOnLoginPage(). */
+  async clickLoginOnCheckout(): Promise<void> {
+    const loginButton = this.locator.checkoutLoginButton;
+    await scrollElementToCenter(loginButton).catch(() => undefined);
+    await markFailedAndStop(
+      () => clickElement(loginButton, { timeout: 5000 }),
+      'Login failed on the Checkout page: Login button not found'
+    );
   }
 
   /** Which known checkout forms are on screen right now (usually one, can be more). */

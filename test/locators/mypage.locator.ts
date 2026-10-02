@@ -35,6 +35,21 @@ export class MypageLocator {
     return $(`//android.widget.Button[@index = '2']`);
   }
 
+  /** Katalon MyAccount/MenuDashboard/samsungrewards — Rewards points on the My Page dashboard, e.g. "0 / Points" (English), "10 / 星钻" (CN) */
+  get rewardsPoints() {
+    return $(`//android.view.View[contains(@content-desc, 'Points') or contains(@content-desc, '星钻')]`);
+  }
+
+  /** Katalon MyAccount/MenuDashboard/samsungRewardBadge — "Join Samsung Rewards" tooltip (English, CN) */
+  get joinRewardsTooltip() {
+    return $(`//android.view.View[@content-desc = 'Join Samsung Rewards' or @content-desc = '加入 Samsung Rewards']`);
+  }
+
+  /** Katalon MyAccount/rewardsPointsWebView — points on the Samsung Rewards web page, e.g. "0 P" (global), "10" (CN) */
+  get rewardsPagePoints() {
+    return $('strong.js-point-info, .rewards-points-balance > span:first-of-type');
+  }
+
   get accountName() {
     return $('~YOUR_MYPAGE_ACCOUNT_NAME_SELECTOR');
   }

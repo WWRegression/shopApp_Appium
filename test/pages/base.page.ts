@@ -233,16 +233,7 @@ export class BasePage {
   async dismissPermissionPopups(timeoutMs = 5000, locationTimeoutMs = 1000): Promise<void> {
     await switchToNative();
     // Stop waiting as soon as an app screen is up without the popup, instead of always waiting the full timeout
-    await driver
-      .waitUntil(
-        async () =>
-          (await isDisplayedOrFalse(this.popupLocator.notificationDenyButton)) ||
-          (await isDisplayedOrFalse(this.bnbLocator.homeButton)) ||
-          (await isDisplayedOrFalse(this.appEntryLocator.continueAsGuestButton)) ||
-          (await isDisplayedOrFalse(this.appEntryLocator.selectProfileTitle)),
-        { timeout: timeoutMs, interval: 300 }
-      )
-      .catch(() => undefined);
+    await waitForDisplayedOrFalse(this.appEntryLocator.appScreenOrPermissionPopup, { timeout: timeoutMs });
 
     const notificationShown = await clickIfDisplayed(this.popupLocator.notificationDenyButton, 1000);
     if (notificationShown) {
@@ -257,6 +248,32 @@ export class BasePage {
   async dismissOverlays(): Promise<void> {
     await this.dismissPopupIfShown();
     await this.dismissCookieIfShown();
+  }
+
+  /** Katalon Common.navigateToPage("HOME") — waits for the app's first screen, then taps Home. */
+  async openHome(timeoutMs = 60000): Promise<void> {
+    await switchToNative();
+    // The CN app sometimes takes over 20s to load; the wait ends as soon as a screen shows
+    await this.waitForAppLoaded(timeoutMs);
+
+    // No BNB on the login page / "Select profile" — nothing to tap there
+    if (!(await isDisplayedOrFalse(this.bnbLocator.homeButton))) {
+      console.log('[openHome] BNB not shown (login page or Select profile) — skipping');
+      return;
+    }
+    await this.selectBnbMenu('home');
+  }
+
+  /** Waits for the first app screen (Home, login page or "Select profile"), dismissing a permission popup on top. */
+  protected async waitForAppLoaded(timeoutMs: number): Promise<void> {
+    // One combined lookup per poll — separate lookups each pay the UI idle wait on animated screens (CN login slider)
+    await waitForDisplayedOrFalse(this.appEntryLocator.appScreenOrPermissionPopup, { timeout: timeoutMs });
+
+    // A notification popup (e.g. IN re-asking after a deny) covers the app — close it, then wait for the screen behind it
+    if (await isDisplayedOrFalse(this.popupLocator.notificationDenyButton)) {
+      await this.dismissPermissionPopups();
+      await waitForDisplayedOrFalse(this.appEntryLocator.appScreen, { timeout: timeoutMs });
+    }
   }
 
   /** Switch to Native, dismiss overlays, then scroll up. */
@@ -339,7 +356,7 @@ export class BasePage {
     if (await isDisplayedOrFalse(this.popupLocator.notificationDenyButton)) {
       await this.dismissPermissionPopups();
       // BNB comes back only after the popup's close animation
-      if (await waitForDisplayedOrFalse(this.bnbLocator.menu(menu), {timeout:3000})) {
+      if (await waitForDisplayedOrFalse(this.bnbLocator.menu(menu), { timeout: 3000 })) {
         return;
       }
     }
@@ -363,7 +380,7 @@ export class BasePage {
     // Search (e.g. from checkout) focuses its input, and the keyboard covers BNB
     if (await driver.isKeyboardShown().catch(() => false)) {
       await driver.hideKeyboard().catch(() => undefined);
-      if (await waitForDisplayedOrFalse(this.bnbLocator.menu(menu), {timeout:2000})) {
+      if (await waitForDisplayedOrFalse(this.bnbLocator.menu(menu), { timeout: 2000 })) {
         return;
       }
     }
@@ -371,7 +388,7 @@ export class BasePage {
     // Some sites show no BNB on search either (e.g. US); its header Back leads Home (Katalon ensureBNBVisible 2nd attempt: headerBackBtn)
     if (await isDisplayedOrFalse(this.headerLocator.backButton)) {
       await clickElement(this.headerLocator.backButton);
-      if (await waitForDisplayedOrFalse(this.bnbLocator.menu(menu), {timeout:3000})) {
+      if (await waitForDisplayedOrFalse(this.bnbLocator.menu(menu), { timeout: 3000 })) {
         console.log('[ensureBnbVisible] BNB shown after header Back');
         return;
       }
