@@ -11,6 +11,10 @@ export class PdLocator {
     );
   }
 
+  get webViewContainer() {
+    return $('.android.webkit.WebView');
+  }
+
   get tradeInAddButton() {
     return $('~YOUR_PD_TRADEIN_ADD_SELECTOR');
   }

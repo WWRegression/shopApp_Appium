@@ -6,11 +6,9 @@ import { PdSimService } from '../services/sim/pd-sim.service';
 import { FlagshipWatchProduct } from '../helpers/flagship-sku.helper';
 import { normalizeText, resolveDisplayColor } from '../helpers/data.helper';
 import { markFailedAndStop, markFailed, FieldCheck } from '../helpers/report.helper';
-import { getElementLabel, isDisplayedOrFalse, scrollAndJsClick } from '../helpers/element.helper';
-import { prepareWebViewPage, switchToNative, isWebViewContext, switchToWebView } from '../helpers/context.helper';
-import { scrollDown } from '../helpers/gesture.helper';
+import { getElementLabel, isDisplayedOrFalse, scrollAndJsClick, scrollUntilVisible, waitForDisplayedOrFalse } from '../helpers/element.helper';
+import { prepareWebViewPage, switchToNative, switchToWebView } from '../helpers/context.helper';
 import { ProductOptionFields } from './bc.page';
-import { assertElementDisplayed } from '../helpers/validation.helper';
 import { BasePage } from './base.page';
 import { PdLocator } from '../locators/pd.locator';
 
@@ -102,20 +100,6 @@ export class PdPage extends BasePage {
     );
     await btn.waitForExist({ timeout: 15000 });
     await scrollAndJsClick(btn);
-  }
-
-  /** Katalon PD.verifyNativePDPage — SKU/name visible in Native, not WebView. */
-  async verifyNativePdPage(skuOrName: string): Promise<void> {
-    if (await isWebViewContext()) {
-      // Prefer Native PD; if still WebView-only, fail for BUY_06 intent.
-      await switchToNative();
-    }
-    await driver.pause(1000);
-    for (let i = 0; i < 3; i++) {
-      await scrollDown().catch(() => undefined);
-    }
-    const target = this.locator.nativePdProductName(skuOrName);
-    await assertElementDisplayed(target, `Native PD not shown for "${skuOrName}"`);
   }
 
   /** Katalon PD.verifyPDPageLoadBySKU — WebView PD header contains SKU. */
@@ -230,6 +214,18 @@ export class PdPage extends BasePage {
     console.warn(`[PD] sku verification: expected "${expectedSku}", found "${sku}"`);
     if (sku !== expectedSku.toLowerCase()) {
       throw new Error(`[PD] sku verification failed: expected "${expectedSku}", found "${sku}"`);
+    }
+  }
+
+  async verifySkuForNativePdPage(skuOrName: string): Promise<void> {
+    await switchToNative();
+    if (await waitForDisplayedOrFalse(this.locator.webViewContainer,{timeout:10000})) {
+      throw new Error('PD is in native context');
+    }
+    const skuElement = this.locator.nativePdProductName(skuOrName);
+    await scrollUntilVisible(skuElement);
+    if(!await isDisplayedOrFalse(skuElement)) {
+      throw new Error(`Native PD not shown for "${skuOrName}" in native context`);
     }
   }
 
