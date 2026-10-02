@@ -2,8 +2,15 @@ export type BnbMenu = 'home' | 'shop' | 'offers' | 'cart' | 'mypage';
 
 export const BNB_MENUS: BnbMenu[] = ['home', 'shop', 'offers', 'cart', 'mypage'];
 
-/** Home tab xpath — exported so it can be combined with other screens in one lookup. */
-export const BNB_HOME_BUTTON_XPATH = `//android.view.View[
+/**
+ * Native bottom navigation.
+ * content-desc varies by locale, so keep representative labels.
+ * Extend per-site if needed.
+ */
+export class BnbLocator {
+  get homeButton() {
+    return $(
+      `//android.view.View[
       (contains(@content-desc, "Home") and contains(@content-desc, "Tab 1"))
       or (contains(@content-desc, "الصفحة الرئيسية") and contains(@content-desc, "علامة التبويب 1"))
       or (contains(@content-desc, "Accueil") and contains(@content-desc, "Onglet 1"))
@@ -28,16 +35,8 @@ export const BNB_HOME_BUTTON_XPATH = `//android.view.View[
       or (contains(@content-desc, "Home") and contains(@content-desc, "Separador 1"))
       or (contains(@content-desc, "בית") and contains(@content-desc, "כרטיסייה 1"))
       or (contains(@content-desc, "ホーム") and contains(@content-desc, "タブ"))
-     ]`;
-
-/**
- * Native bottom navigation.
- * content-desc varies by locale, so keep representative labels.
- * Extend per-site if needed.
- */
-export class BnbLocator {
-  get homeButton() {
-    return $(BNB_HOME_BUTTON_XPATH);
+     ]`
+    );
   }
 
   get shopButton() {

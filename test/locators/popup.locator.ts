@@ -1,12 +1,6 @@
 /** X of the full-screen ad overlay ("SHOP NOW") — no ids, so the image beside the ad box */
 const AD_OVERLAY_CLOSE = `//android.widget.Button[@text = 'SHOP NOW' or @content-desc = 'SHOP NOW']/ancestor::android.widget.RelativeLayout[2]/android.widget.ImageView`;
 
-/** Notification permission "Don't allow" xpath — exported so it can be combined with other screens in one lookup. */
-export const NOTIFICATION_DENY_BUTTON_XPATH = `//android.widget.Button[
-  @resource-id = 'com.android.permissioncontroller:id/permission_deny_button'
-  or @resource-id = 'com.android.permissioncontroller:id/permission_deny_and_dont_ask_again_button'
-]`;
-
 export class PopupLocator {
   /** Ad overlay close only — for screens where the broad closeButton could hit a real button (e.g. CN guest button) */
   get adCloseButton() {
@@ -76,7 +70,12 @@ export class PopupLocator {
 
   /** Android notification permission "Don't allow" — Katalon Initialization/notificationDenyBtn */
   get notificationDenyButton() {
-    return $(NOTIFICATION_DENY_BUTTON_XPATH);
+    return $(
+      `//android.widget.Button[
+        @resource-id = 'com.android.permissioncontroller:id/permission_deny_button'
+        or @resource-id = 'com.android.permissioncontroller:id/permission_deny_and_dont_ask_again_button'
+      ]`
+    );
   }
 
   /** Android location permission "While using the app" — Katalon Initialization/locationPremissionAllowBtn */

@@ -13,12 +13,13 @@ describe('PROD_LOGIN_03', () => {
   it('Guest - SSO Gmail login on empty cart page', async function () {
     await runOrSkip.call(this, 'PROD_LOGIN_03', async () => {
       await loginPage.signOutOnDevice();
+      await loginPage.clearAppDataForIn();
       await restartApp();
       await mypagePage.dismissOverlays();
-      await loginPage.continueAsGuest();
+      await loginPage.continueAsGuestIfShown();
 
-      // Try logging out again on My Page to make sure
-      await mypagePage.logoutOnMypage();
+      // Make sure the app is logged out
+      await mypagePage.ensureLoggedOut();
       await mypagePage.verifyLoggedOut();
 
       await cartPage.clearCart();

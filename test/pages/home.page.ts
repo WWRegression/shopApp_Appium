@@ -3,10 +3,28 @@ import { HomeLocator } from '../locators/home.locator';
 import { switchToNative } from '../helpers/context.helper';
 import { parsePoints } from '../helpers/data.helper';
 import { getElementLabel, isDisplayedOrFalse, waitForDisplayedOrFalse } from '../helpers/element.helper';
-import { markFailed } from '../helpers/report.helper';
+import { markFailed, markFailedAndStop } from '../helpers/report.helper';
 
 export class HomePage extends BasePage {
   private readonly locator = new HomeLocator();
+
+  /** True when the header title matches the Home title texts (BasePage.titleTexts.HOME). */
+  async isOnHome(): Promise<boolean> {
+    return this.matchesHeaderTitle('HOME');
+  }
+
+  /** Katalon Common.navigateToPage("HOME") — waits for the app's first screen, selects Home on BNB, then verifies the Home header title. */
+  async prepareHomePage(timeoutMs = 60000): Promise<void> {
+    await switchToNative();
+    // The CN app sometimes takes over 20s to load; the wait ends as soon as a screen shows
+    await this.waitForAppLoaded(timeoutMs);
+    await markFailedAndStop(() => this.selectBnbMenu('home'), '[prepareHomePage] Home tab not available on BNB');
+
+    const ready = await driver
+      .waitUntil(() => this.isOnHome(), { timeout: 5000, interval: 500 })
+      .then(() => true, () => false);
+    markFailed([{ label: 'Home not shown (header title does not match)', pass: ready }], 'prepareHomePage');
+  }
 
   async verifyOnboarding(): Promise<void> {
     await this.dismissOverlays();

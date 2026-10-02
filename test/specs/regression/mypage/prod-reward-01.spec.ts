@@ -10,7 +10,7 @@ describe('PROD_REWARD_01', () => {
   it('Rewards Points match on Home, Account, and Samsung Rewards', async function () {
     await runOrSkip.call(this, 'PROD_REWARD_01', async () => {
       // The previous TC can end on any screen, so start from Home
-      await homePage.openHome();
+      await homePage.prepareHomePage();
       const homePoints = await homePage.getRewardsPoints();
 
       await mypagePage.verifyNoJoinRewardsTooltip();

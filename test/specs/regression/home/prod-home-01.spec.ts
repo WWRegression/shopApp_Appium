@@ -9,7 +9,7 @@ describe('PROD_HOME_01', () => {
   it('Guest User - initial setup, continue as guest, TrustArc cookie', async function () {
     await runOrSkip.call(this, 'PROD_HOME_01', async (site) => {
       await homePage.verifyOnboarding();
-      await loginPage.continueAsGuest();
+      await loginPage.continueAsGuestIfShown();
       await homePage.dismissCookieIfShown();
       void site;
     });

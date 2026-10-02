@@ -1,5 +1,4 @@
 import { runOrSkip } from '../../../helpers/tc-filter.helper';
-import { restartApp } from '../../../helpers/device.helper';
 import { LoginPage } from '../../../pages/login.page';
 import { MypagePage } from '../../../pages/mypage.page';
 
@@ -10,9 +9,9 @@ describe('PROD_LOGIN_04', () => {
 
   it('Registered - logout / login on Account page', async function () {
     await runOrSkip.call(this, 'PROD_LOGIN_04', async () => {
-      await loginPage.signInOnDevice();
-      await restartApp();
-      await loginPage.openHome();
+      // Precondition: logged in with the device account
+      await loginPage.preconditionSignedInOnDevice();
+      await mypagePage.ensureLoggedIn();
 
       await mypagePage.logoutOnMypage();
       await mypagePage.verifyLoggedOut();

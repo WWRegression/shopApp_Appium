@@ -6,7 +6,7 @@ describe('PROD_HOME_05', () => {
 
   it('Guest - change country via login boarding and Shop Country menu', async function () {
     await runOrSkip.call(this, 'PROD_HOME_05', async (site) => {
-      await loginPage.continueAsGuest();
+      await loginPage.continueAsGuestIfShown();
       // TODO: change country using site.countryName
       void site.countryName;
     });

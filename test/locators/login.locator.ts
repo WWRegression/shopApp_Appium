@@ -1,46 +1,17 @@
-import { BNB_HOME_BUTTON_XPATH } from './bnb.locator';
-import { NOTIFICATION_DENY_BUTTON_XPATH } from './popup.locator';
-
 const SAMSUNG_ACCOUNT_ID = 'com.osp.app.signin:id';
-
-// Xpaths kept as constants so several screens can be checked in one lookup (see appScreen / loginPageOrSsoOptions)
-const GUEST_BUTTON_XPATH = `//android.widget.Button[contains(@content-desc, 'as guest') or contains(@content-desc, 'als Gast') or contains(@content-desc, 'Als Gast') or @content-desc = '以访客身份继续浏览']`;
-const SELECT_PROFILE_TITLE_XPATH = `//android.view.View[@content-desc = 'Select profile to continue']`;
-const LOGIN_PAGE_LOGIN_BUTTON_XPATH = `//android.widget.Button[
-  @content-desc = 'Sign in'
-  or contains(@content-desc, 'Sign In')
-  or @content-desc = 'Login'
-  or @content-desc = 'Sign in to your Galaxy'
-  or contains(@content-desc, 'Login with Samsung Account')
-  or contains(@content-desc, 'Anmelden')
-  or @content-desc = '三星账号授权登录'
-]`;
-const SAMSUNG_LOGO_BUTTON_XPATH = `//android.view.View[@content-desc = '其它登录方式']/following-sibling::android.widget.ImageView[2]`;
-const EMAIL_SSO_BUTTON_XPATH = `//*[@resource-id = '${SAMSUNG_ACCOUNT_ID}/idSignInButtonLayout']`;
-const GMAIL_SSO_BUTTON_XPATH = `//android.widget.Button[@resource-id = '${SAMSUNG_ACCOUNT_ID}/simpleSignInButton']`;
 
 /** UK (English) values taken from Katalon Object Repository/LogIn — extend per-site if needed. */
 export class LoginLocator {
   /** Katalon LogIn/loginPageGuestBtn */
   get continueAsGuestButton() {
-    return $(GUEST_BUTTON_XPATH);
+    return $(
+      `//android.widget.Button[contains(@content-desc, 'as guest') or contains(@content-desc, 'als Gast') or contains(@content-desc, 'Als Gast') or @content-desc = '以访客身份继续浏览']`
+    );
   }
 
   /** Title of the "Select profile to continue" screen (seen on IN) — Katalon Home/selectProfileToContinue anchor */
   get selectProfileTitle() {
-    return $(SELECT_PROFILE_TITLE_XPATH);
-  }
-
-  /** First app screen after launch: Home, the login page or "Select profile" — one lookup instead of three */
-  get appScreen() {
-    return $([BNB_HOME_BUTTON_XPATH, GUEST_BUTTON_XPATH, SELECT_PROFILE_TITLE_XPATH].join(' | '));
-  }
-
-  /** appScreen or the notification permission popup that can cover it */
-  get appScreenOrPermissionPopup() {
-    return $(
-      [BNB_HOME_BUTTON_XPATH, GUEST_BUTTON_XPATH, SELECT_PROFILE_TITLE_XPATH, NOTIFICATION_DENY_BUTTON_XPATH].join(' | ')
-    );
+    return $(`//android.view.View[@content-desc = 'Select profile to continue']`);
   }
 
   /** Katalon Home/selectProfileToContinue — radio of the saved profile on "Select profile to continue" */
@@ -57,13 +28,16 @@ export class LoginLocator {
 
   /** Katalon LogIn/loginPageSignInBtn — login button on the login page (Sign in / Login with Samsung Account / 三星账号授权登录) */
   get loginPageLoginButton() {
-    return $(LOGIN_PAGE_LOGIN_BUTTON_XPATH);
-  }
-
-  /** Any way to log in after tapping Login: the login page button, the CN Samsung logo, or the SSO Email / Google buttons */
-  get loginPageOrSsoOptions() {
     return $(
-      [LOGIN_PAGE_LOGIN_BUTTON_XPATH, SAMSUNG_LOGO_BUTTON_XPATH, EMAIL_SSO_BUTTON_XPATH, GMAIL_SSO_BUTTON_XPATH].join(' | ')
+      `//android.widget.Button[
+        @content-desc = 'Sign in'
+        or contains(@content-desc, 'Sign In')
+        or @content-desc = 'Login'
+        or @content-desc = 'Sign in to your Galaxy'
+        or contains(@content-desc, 'Login with Samsung Account')
+        or contains(@content-desc, 'Anmelden')
+        or @content-desc = '三星账号授权登录'
+      ]`
     );
   }
 
@@ -74,17 +48,17 @@ export class LoginLocator {
 
   /** Katalon LogIn/viaSamsungBtnCN — CN "其它登录方式" row, Samsung account logo (2nd icon) */
   get samsungAccountLogoButton() {
-    return $(SAMSUNG_LOGO_BUTTON_XPATH);
+    return $(`//android.view.View[@content-desc = '其它登录方式']/following-sibling::android.widget.ImageView[2]`);
   }
 
   /** Katalon LogIn/viaEmailBtn */
   get emailSsoButton() {
-    return $(EMAIL_SSO_BUTTON_XPATH);
+    return $(`//*[@resource-id = '${SAMSUNG_ACCOUNT_ID}/idSignInButtonLayout']`);
   }
 
   /** Katalon LogIn/viaGmailBtn — "Sign in with Google" */
   get gmailSsoButton() {
-    return $(GMAIL_SSO_BUTTON_XPATH);
+    return $(`//android.widget.Button[@resource-id = '${SAMSUNG_ACCOUNT_ID}/simpleSignInButton']`);
   }
 
   /** Katalon LogIn/addedGmail — account row in the Google account picker */

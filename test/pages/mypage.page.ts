@@ -13,7 +13,7 @@ import {
   waitForDisplayedOrFalse,
 } from '../helpers/element.helper';
 import { flingToEnd, swipeByBoundary, tapAtCoordinates } from '../helpers/gesture.helper';
-import { markFailed } from '../helpers/report.helper';
+import { markFailed, markFailedAndStop } from '../helpers/report.helper';
 
 /** Katalon loginOnMypage taps this offset inside the profile card instead of the element center. */
 const LOGIN_TAP_OFFSET = { x: 350, y: 150 };
@@ -157,18 +157,24 @@ export class MypagePage extends BasePage {
     await driver.back();
   }
 
-  /** Opens My Page via BNB and waits for its title (logs only when missing, like Katalon). */
-  private async openMypage(timeoutMs: number): Promise<void> {
-    // logout → verifyLoggedOut → clickLogin each open My Page; skip the BNB tap when it is already shown
-    await switchToNative();
-    if (await isDisplayedOrFalse(this.locator.accountPageTitle)) {
-      console.log('[openMypage] already on My Page');
+  /** True when the header title matches the My Page title texts (BasePage.titleTexts.ACCOUNT). */
+  async isOnMypage(): Promise<boolean> {
+    return this.matchesHeaderTitle('ACCOUNT');
+  }
+
+  /** Selects My Page on BNB (skipped when already there), then verifies the My Page header title. */
+  async prepareMypage(timeoutMs = 5000): Promise<void> {
+    // logout → verifyLoggedOut → clickLogin each prepare My Page; skip the BNB tap when it is already shown
+    if (await this.isOnMypage()) {
+      console.log('[prepareMypage] already on My Page');
       return;
     }
-    await this.selectBnbMenu('mypage');
-    if (!(await waitForDisplayedOrFalse(this.locator.accountPageTitle, { timeout: timeoutMs }))) {
-      console.log('[openMypage] failed to navigate to My Page');
-    }
+    await markFailedAndStop(() => this.selectBnbMenu('mypage'), '[prepareMypage] My Page tab not available on BNB');
+
+    const ready = await driver
+      .waitUntil(() => this.isOnMypage(), { timeout: timeoutMs, interval: 500 })
+      .then(() => true, () => false);
+    markFailed([{ label: 'My Page not shown (header title does not match)', pass: ready }], 'prepareMypage');
   }
 
   /** Katalon swipes My Page down to its top before looking for Login; skipped when Login is already visible. */
@@ -185,14 +191,12 @@ export class MypagePage extends BasePage {
       await this.loginPage.loginOnSelectProfileForIn();
       return;
     }
-    await this.openMypage(5000);
+    await this.prepareMypage();
     await this.scrollToLoginButton();
 
     const loginButton = this.locator.loginButton;
-    if (!(await waitForDisplayedOrFalse(loginButton, { timeout: 5000 }))) {
-      console.log('[clickLoginOnMypage] login button not shown');
-      return;
-    }
+    const shown = await waitForDisplayedOrFalse(loginButton, { timeout: 5000 });
+    markFailed([{ label: 'Login button not found on My Page', pass: shown }], 'clickLoginOnMypage');
 
     const { x, y } = await loginButton.getLocation();
     const tapX = Math.round(x) + LOGIN_TAP_OFFSET.x;
@@ -215,35 +219,33 @@ export class MypagePage extends BasePage {
     return scrollUntilVisible(this.locator.logoutButton, 5);
   }
 
-  /** Katalon LogIn.logoutOnMypage — logs out from the bottom of My Page if logged in. */
+  /** Katalon LogIn.logoutOnMypage — opens My Page, scrolls to Logout at the bottom and logs out. */
   async logoutOnMypage(): Promise<void> {
-    console.log('[logoutOnMypage] start');
-    // Katalon logoutOnMypage: the login page means logged out — start as guest and stop
-    if (await this.loginPage.isLoginPageShown()) {
-      console.log('[logoutOnMypage] login page shown — already logged out, continuing as guest');
-      await this.loginPage.continueAsGuest();
-      return;
-    }
-    // "Select profile to continue" (IN) is itself the logged-out state
-    if (await this.loginPage.isSelectProfileShownForIn()) {
-      console.log('[logoutOnMypage] Select profile screen shown — already logged out, skipping');
-      return;
-    }
-    await this.openMypage(5000);
-    // Already logged out (e.g. just after guest entry) → nothing to scroll for
-    if (await isDisplayedOrFalse(this.locator.loginButton)) {
-      console.log('[logoutOnMypage] already logged out, skipping');
-      return;
-    }
+    await this.prepareMypage();
     const found = await this.scrollToLogoutButton();
+    markFailed([{ label: 'Logout button not found on My Page', pass: found }], 'logoutOnMypage');
 
-    if (found && (await clickIfDisplayed(this.locator.logoutButton, 3000))) {
-      console.log('[logoutOnMypage] Logout clicked');
-      await clickIfDisplayed(this.locator.logoutOkayButton, 5000);
-      // Katalon waits a fixed 10s; wait only until Logout is gone — verifyLoggedOut checks the Login button afterwards
-      await this.locator.logoutButton.waitForDisplayed({ timeout: 10000, reverse: true }).catch(() => undefined);
+    await clickElement(this.locator.logoutButton, { timeout: 3000 });
+    console.log('[logoutOnMypage] Logout clicked');
+    await clickIfDisplayed(this.locator.logoutOkayButton, 5000);
+    // Katalon waits a fixed 10s; the app reloads after logout, so wait until Logout is gone and the first screen is back
+    await this.locator.logoutButton.waitForDisplayed({ timeout: 10000, reverse: true }).catch(() => undefined);
+    await this.waitForAppLoaded(20000);
+  }
+
+  /** Logs out on My Page unless the app is already logged out (login page, IN "Select profile" or Login shown on My Page). */
+  async ensureLoggedOut(): Promise<void> {
+    // The login page and "Select profile" (IN) have no BNB to reach My Page — both mean logged out
+    if ((await this.loginPage.isLoginPageShown()) || (await this.loginPage.isSelectProfileShownForIn())) {
+      console.log('[ensureLoggedOut] login page or Select profile shown — already logged out');
+      return;
     }
-    console.log('[logoutOnMypage] end');
+    await this.prepareMypage();
+    if (await isDisplayedOrFalse(this.locator.loginButton)) {
+      console.log('[ensureLoggedOut] Login shown on My Page — already logged out');
+      return;
+    }
+    await this.logoutOnMypage();
   }
 
   /** Katalon LogIn.isLogOutStatus — Login button must be shown at the top of My Page. */
@@ -253,26 +255,21 @@ export class MypagePage extends BasePage {
       console.log('[verifyLoggedOut] Select profile screen shown — logged out');
       return;
     }
-    await this.openMypage(5000);
+    await this.prepareMypage();
     await this.scrollToLoginButton();
 
     const loggedOut = await waitForDisplayedOrFalse(this.locator.loginButton, { timeout: 10000 });
     console.log(`[verifyLoggedOut] ${loggedOut}`);
-    if (!loggedOut) {
-      // Katalon: log back in before failing so the next TC doesn't start from a broken login state
-      console.log('[verifyLoggedOut] not logged out — trying to log back in before failing');
-      await this.clickLoginOnMypage().catch(() => undefined);
-      await this.loginPage.clickLoginBtnOnLoginPage().catch(() => undefined);
-    }
     markFailed([{ label: 'user is not logged out (Login button not found on My Page)', pass: loggedOut }], 'verifyLoggedOut');
   }
 
-  /** Katalon LogIn.ensureLoginStatus — logs in with the device account unless already logged in (no failure). */
+  /** Katalon LogIn.ensureLoginStatus — logs in with the device account unless already logged in. */
   async ensureLoggedIn(): Promise<void> {
     // A logged-out app can open on the login page (no BNB) — its login button logs in with the device account
     if (await this.loginPage.isLoginPageShown()) {
       console.log('[ensureLoggedIn] login page shown — logging in');
       await this.loginPage.clickLoginBtnOnLoginPage();
+      await this.loginPage.skipPurpose();
       return;
     }
     // "Select profile" (IN) has no BNB to reach My Page — clickLoginOnMypage logs in from it
@@ -283,13 +280,14 @@ export class MypagePage extends BasePage {
     console.log('[ensureLoggedIn] not logged in — logging in');
     await this.clickLoginOnMypage();
     await this.loginPage.clickLoginBtnOnLoginPage();
+    await this.loginPage.skipPurpose();
   }
 
   /** True when Logout is found at the bottom of My Page. */
   private async isLoggedIn(): Promise<boolean> {
-    // Katalon's 2s delay isn't needed: openMypage already waits for the My Page title
-    await this.openMypage(10000);
-    return this.scrollToLogoutButton();
+    // My Page can still be loading while login completes — return false so verifyLoggedIn re-checks instead of failing
+    const ready = await this.prepareMypage(10000).then(() => true, () => false);
+    return ready && (await this.scrollToLogoutButton());
   }
 
   /** Katalon LogIn.isLogInStatus — Logout button must be found at the bottom of My Page. */
@@ -308,14 +306,14 @@ export class MypagePage extends BasePage {
 
   /** Katalon Reward.checkJoinRewardsTooltipOnMyPage — the "Join Samsung Rewards" tooltip must not show on My Page. */
   async verifyNoJoinRewardsTooltip(): Promise<void> {
-    await this.openMypage(5000);
+    await this.prepareMypage();
     const shown = await isDisplayedOrFalse(this.locator.joinRewardsTooltip);
     markFailed([{ label: '"Join Samsung Rewards" tooltip is shown on My Page', pass: !shown }], 'verifyNoJoinRewardsTooltip');
   }
 
   /** Katalon Reward.getPointsMyPage — Rewards points shown on the My Page dashboard. */
   async getRewardsPoints(): Promise<number> {
-    await this.openMypage(5000);
+    await this.prepareMypage();
     const shown = await waitForDisplayedOrFalse(this.locator.rewardsPoints, { timeout: 5000 });
     markFailed([{ label: 'Rewards points not found on My Page', pass: shown }], 'getRewardsPoints');
     const points = parsePoints(await getElementLabel(this.locator.rewardsPoints));

@@ -1,4 +1,5 @@
 import { BasePage } from './base.page';
+import { HomePage } from './home.page';
 import { LoginLocator } from '../locators/login.locator';
 import { isStgEnvironment } from '../helpers/env.helper';
 import { getRunConfig } from '../../config/run.config';
@@ -40,7 +41,7 @@ const WDS_CREDENTIALS = {
 
 export class LoginPage extends BasePage {
   private readonly locator = new LoginLocator();
-  /** Set when signOutOnDevice wiped the app — the next launch asks for notification permission. */
+  /** Set when clearAppDataForIn wiped the app — the next launch asks for notification permission. */
   private appDataCleared = false;
 
   /** Device Gmail account (wwautokr…@gmail.com) — used for Gmail SSO login. */
@@ -60,7 +61,7 @@ export class LoginPage extends BasePage {
   }
 
   /** Katalon LogIn.SSOsignOutOnDevice — removes the Samsung account from device Settings, then force-stops the app. */
-  async signOutOnDevice(clearInAppData = true): Promise<void> {
+  async signOutOnDevice(): Promise<void> {
     console.log('[signOutOnDevice] start');
     await forceStopPackage(SAMSUNG_ACCOUNT_PACKAGE);
     await startActivityByAction('android.settings.SYNC_SETTINGS');
@@ -88,13 +89,17 @@ export class LoginPage extends BasePage {
 
     await forceStopPackage(SETTINGS_PACKAGE);
     await forceStopPackage(targetPackage());
-    // Katalon (IN) Clear Package — a signed-out IN app keeps its profile and opens on "Select profile" instead of the login page
-    if (getRunConfig().siteCode === 'IN' && clearInAppData) {
-      console.log('[signOutOnDevice] (IN) clearing app data');
-      await clearPackage(targetPackage());
-      this.appDataCleared = true;
-    }
     console.log('[signOutOnDevice] end');
+  }
+
+  /** Katalon (IN) Clear Package — a signed-out IN app keeps its profile and opens on "Select profile" instead of the login page. */
+  async clearAppDataForIn(): Promise<void> {
+    if (getRunConfig().siteCode !== 'IN') {
+      return;
+    }
+    console.log('[clearAppDataForIn] clearing app data');
+    await clearPackage(targetPackage());
+    this.appDataCleared = true;
   }
 
   /** True when the "Select profile to continue" screen is shown (IN shows it instead of My Page when logged out). */
@@ -180,7 +185,16 @@ export class LoginPage extends BasePage {
     // The CN login page slider never goes idle, so every action here would wait out the idle timeout
     await withoutIdleWait(async () => {
       // US has no login page and opens the SSO login options directly, so stop waiting as soon as either shows
-      await waitForDisplayedOrFalse(this.locator.loginPageOrSsoOptions, { timeout: 10000 });
+      await driver
+        .waitUntil(
+          async () =>
+            (await isDisplayedOrFalse(this.locator.loginPageLoginButton)) ||
+            (await isDisplayedOrFalse(this.locator.samsungAccountLogoButton)) ||
+            (await isDisplayedOrFalse(this.locator.emailSsoButton)) ||
+            (await isDisplayedOrFalse(this.locator.gmailSsoButton)),
+          { timeout: 10000, interval: 500 }
+        )
+        .catch(() => undefined);
 
       await this.agreePrivacyForCn();
 
@@ -305,6 +319,28 @@ export class LoginPage extends BasePage {
     console.log('[loginWithGmailOnSso] end');
   }
 
+  /** Precondition: Samsung account on the device and the app relaunched — Home is verified unless the app opens logged out. */
+  async preconditionSignedInOnDevice(): Promise<void> {
+    await this.signInOnDevice();
+    await restartApp();
+    await switchToNative();
+    await this.waitForAppLoaded(60000);
+    // A logged-out app opens on the login page / "Select profile" (no BNB), so there is no Home to prepare
+    if ((await this.isLoginPageShown()) || (await this.isSelectProfileShownForIn())) {
+      console.log('[preconditionSignedInOnDevice] app opened logged out (login page or Select profile)');
+      return;
+    }
+    await new HomePage().prepareHomePage();
+  }
+
+  /** Precondition: Samsung account on the device, app logged out. */
+  async preconditionLoggedOutWithDeviceAccount(): Promise<void> {
+    // mypage.page imports this page, so load it only when needed
+    const { MypagePage } = await import('./mypage.page');
+    await this.preconditionSignedInOnDevice();
+    await new MypagePage().ensureLoggedOut();
+  }
+
   /** Katalon Launch.startExistingAppWithGuestUser — guest app while the device keeps a Samsung account. */
   async startAppAsGuest(): Promise<void> {
     // IN can't be a guest with a device account (it shows "Select profile"), so it follows Katalon's IN branch
@@ -312,43 +348,35 @@ export class LoginPage extends BasePage {
       await this.startAppAsGuestForIn();
       return;
     }
-    // mypage.page imports this page, so load it only when needed
-    const { MypagePage } = await import('./mypage.page');
-    await this.signInOnDevice();
-    await restartApp();
-    await this.openHome();
-    await new MypagePage().logoutOnMypage();
-    await this.continueAsGuest();
+    await this.preconditionLoggedOutWithDeviceAccount();
+    await this.continueAsGuestIfShown();
   }
 
-  /** Katalon startExistingAppWithGuestUser (IN): device sign-out (clears the IN app), relaunch, then enter as guest. */
+  /** Katalon startExistingAppWithGuestUser (IN): device sign-out, app data clear, relaunch, then enter as guest. */
   private async startAppAsGuestForIn(): Promise<void> {
     await this.signOutOnDevice();
+    await this.clearAppDataForIn();
     await restartApp();
+    await this.continueAsGuestIfShown();
+  }
+
+  /** Katalon LogIn.startAsGuestUser — after a launch, continues as guest only when the login page is shown (Home / "Select profile" are left as is). */
+  async continueAsGuestIfShown(timeoutMs = 60000): Promise<void> {
+    await switchToNative();
+    // The CN login page slider never goes idle, so every action here would wait out the idle timeout
+    const loginPageShown = await withoutIdleWait(async () => {
+      await this.dismissFreshAppPermissionPopups();
+      await this.waitForAppLoaded(timeoutMs);
+      return this.isLoginPageShown();
+    });
+    if (!loginPageShown) {
+      console.log('[continueAsGuestIfShown] login page not shown (Home or Select profile) — skipping');
+      return;
+    }
     await this.continueAsGuest();
   }
 
-  /** Katalon LogIn.startAsGuestUser — enters the app as a guest right after launch (skipped if Home is already shown). */
-  async continueAsGuest(timeoutMs = 60000): Promise<void> {
-    await switchToNative();
-    // The CN login page slider never goes idle, so every action here would wait out the idle timeout
-    await withoutIdleWait(async () => {
-      await this.dismissFreshAppPermissionPopups();
-      await this.waitForAppLoaded(timeoutMs);
-      if (await isDisplayedOrFalse(this.bnbLocator.homeButton)) {
-        console.log('[continueAsGuest] app already loaded, skipping');
-        return;
-      }
-      // Like Katalon: "Select profile" (IN with a saved profile) has no guest option — leave it for verifyLoggedOut
-      if (await this.isSelectProfileShownForIn()) {
-        console.log('[continueAsGuest] Select profile shown — no guest option, skipping');
-        return;
-      }
-      await this.clickGuestButton();
-    });
-  }
-
-  /** A wiped app (IN, cleared on device sign-out) asks for notification permission after launch — waits only in that case. */
+  /** A wiped app (IN, cleared by clearAppDataForIn) asks for notification permission after launch — waits only in that case. */
   private async dismissFreshAppPermissionPopups(): Promise<void> {
     if (!this.appDataCleared) {
       return;
@@ -360,22 +388,27 @@ export class LoginPage extends BasePage {
     }
   }
 
-  /** Taps "as guest" and waits for Home; the login page can ignore the first tap right after launch, so it retries once. */
-  private async clickGuestButton(): Promise<void> {
-    // An ad overlay ("SHOP NOW") can cover the login page and swallow the tap; only its X — the broad closeButton matches the CN guest button
-    await clickIfDisplayed(this.popupLocator.adCloseButton);
-    if (!(await clickIfDisplayed(this.locator.continueAsGuestButton, 1000))) {
-      console.log('[clickGuestButton] guest option not available on current screen');
-      return;
-    }
-    console.log('[clickGuestButton] guest button tapped');
-    if (!(await waitForDisplayedOrFalse(this.bnbLocator.homeButton, { timeout: 5000 }))) {
+  /** Taps "Continue as guest" on the login page and verifies Home; the login page can ignore the first tap right after launch, so it retries once. */
+  async continueAsGuest(): Promise<void> {
+    await switchToNative();
+    // The CN login page slider never goes idle, so every action here would wait out the idle timeout
+    const homeShown = await withoutIdleWait(async () => {
+      // An ad overlay ("SHOP NOW") can cover the login page and swallow the tap; only its X — the broad closeButton matches the CN guest button
       await clickIfDisplayed(this.popupLocator.adCloseButton);
-      if (await clickIfDisplayed(this.locator.continueAsGuestButton, 1000)) {
-        console.log('[clickGuestButton] guest button tapped again');
+      await markFailedAndStop(
+        () => clickElement(this.locator.continueAsGuestButton, { timeout: 1000 }),
+        '[continueAsGuest] Continue as guest button not found on the login page'
+      );
+      console.log('[continueAsGuest] guest button tapped');
+      if (!(await waitForDisplayedOrFalse(this.bnbLocator.homeButton, { timeout: 5000 }))) {
+        await clickIfDisplayed(this.popupLocator.adCloseButton);
+        if (await clickIfDisplayed(this.locator.continueAsGuestButton, 1000)) {
+          console.log('[continueAsGuest] guest button tapped again');
+        }
       }
-    }
-    await waitForDisplayedOrFalse(this.bnbLocator.homeButton, { timeout: 10000 });
+      return waitForDisplayedOrFalse(this.bnbLocator.homeButton, { timeout: 10000 });
+    });
+    markFailed([{ label: 'Home not shown after Continue as guest', pass: homeShown }], 'continueAsGuest');
   }
 
   /**

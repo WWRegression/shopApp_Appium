@@ -233,7 +233,13 @@ export class BasePage {
   async dismissPermissionPopups(timeoutMs = 5000, locationTimeoutMs = 1000): Promise<void> {
     await switchToNative();
     // Stop waiting as soon as an app screen is up without the popup, instead of always waiting the full timeout
-    await waitForDisplayedOrFalse(this.appEntryLocator.appScreenOrPermissionPopup, { timeout: timeoutMs });
+    await driver
+      .waitUntil(
+        async () =>
+          (await isDisplayedOrFalse(this.popupLocator.notificationDenyButton)) || (await this.isAppScreenShown()),
+        { timeout: timeoutMs, interval: 500 }
+      )
+      .catch(() => undefined);
 
     const notificationShown = await clickIfDisplayed(this.popupLocator.notificationDenyButton, 1000);
     if (notificationShown) {
@@ -250,30 +256,30 @@ export class BasePage {
     await this.dismissCookieIfShown();
   }
 
-  /** Katalon Common.navigateToPage("HOME") — waits for the app's first screen, then taps Home. */
-  async openHome(timeoutMs = 60000): Promise<void> {
-    await switchToNative();
-    // The CN app sometimes takes over 20s to load; the wait ends as soon as a screen shows
-    await this.waitForAppLoaded(timeoutMs);
-
-    // No BNB on the login page / "Select profile" — nothing to tap there
-    if (!(await isDisplayedOrFalse(this.bnbLocator.homeButton))) {
-      console.log('[openHome] BNB not shown (login page or Select profile) — skipping');
-      return;
-    }
-    await this.selectBnbMenu('home');
-  }
-
   /** Waits for the first app screen (Home, login page or "Select profile"), dismissing a permission popup on top. */
   protected async waitForAppLoaded(timeoutMs: number): Promise<void> {
-    // One combined lookup per poll — separate lookups each pay the UI idle wait on animated screens (CN login slider)
-    await waitForDisplayedOrFalse(this.appEntryLocator.appScreenOrPermissionPopup, { timeout: timeoutMs });
+    await driver
+      .waitUntil(
+        async () =>
+          (await isDisplayedOrFalse(this.popupLocator.notificationDenyButton)) || (await this.isAppScreenShown()),
+        { timeout: timeoutMs, interval: 500 }
+      )
+      .catch(() => undefined);
 
     // A notification popup (e.g. IN re-asking after a deny) covers the app — close it, then wait for the screen behind it
     if (await isDisplayedOrFalse(this.popupLocator.notificationDenyButton)) {
       await this.dismissPermissionPopups();
-      await waitForDisplayedOrFalse(this.appEntryLocator.appScreen, { timeout: timeoutMs });
+      await driver.waitUntil(() => this.isAppScreenShown(), { timeout: timeoutMs, interval: 500 }).catch(() => undefined);
     }
+  }
+
+  /** True when the app's first screen is up: Home, the login page or "Select profile". */
+  private async isAppScreenShown(): Promise<boolean> {
+    return (
+      (await isDisplayedOrFalse(this.bnbLocator.homeButton)) ||
+      (await isDisplayedOrFalse(this.appEntryLocator.continueAsGuestButton)) ||
+      (await isDisplayedOrFalse(this.appEntryLocator.selectProfileTitle))
+    );
   }
 
   /** Switch to Native, dismiss overlays, then scroll up. */

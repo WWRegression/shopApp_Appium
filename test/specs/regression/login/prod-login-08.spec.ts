@@ -11,18 +11,16 @@ describe('PROD_LOGIN_08', () => {
   it('Registered - logout after deleting SSO account from device settings', async function () {
     await runOrSkip.call(this, 'PROD_LOGIN_08', async () => {
       // Precondition: logged in with the device account
-      await loginPage.signInOnDevice();
-      await restartApp();
-      await loginPage.openHome();
+      await loginPage.preconditionSignedInOnDevice();
       await mypagePage.ensureLoggedIn();
 
       // Delete the device account (IN keeps its app data, so it opens on "Select profile")
-      await loginPage.signOutOnDevice(false);
+      await loginPage.signOutOnDevice();
 
       // Verify logout status in app
       await restartApp();
       await mypagePage.dismissOverlays();
-      await loginPage.continueAsGuest();
+      await loginPage.continueAsGuestIfShown();
       await mypagePage.verifyLoggedOut();
 
       // Login for next TC execution
