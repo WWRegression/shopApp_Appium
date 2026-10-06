@@ -139,7 +139,7 @@ export class BnbLocator {
 			or (contains(@content-desc, "Trang của tôi") and contains(@content-desc, "Tab 5"))
 			or (contains(@content-desc, "Halaman saya") and contains(@content-desc, "Tab 5"))
 			or (contains(@content-desc, "หน้าของฉัน") and contains(@content-desc, "แท็บที่ 5"))
-			or (contains(@content-desc, "Ma page") and contains(@content-desc, "Onglet 5"))
+			or (contains(@content-desc, "Ma page") and contains(@content-desc, "Onglet\u00A05"))
 			or (contains(@content-desc, "صفحتي") and contains(@content-desc, "علامة التبويب 5"))
 			or (contains(@content-desc, "Mijn pagina") and contains(@content-desc, "Tabblad 5"))
 			or (contains(@content-desc, "Moje Konto") and contains(@content-desc, "Karta 5"))

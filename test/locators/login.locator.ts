@@ -10,7 +10,36 @@ export class LoginLocator {
   /** Katalon LogIn/loginPageGuestBtn */
   get continueAsGuestButton() {
     return $(
-      `//android.widget.Button[contains(@content-desc, 'as guest') or contains(@content-desc, 'als Gast') or contains(@content-desc, 'Als Gast') or @content-desc = '以访客身份继续浏览']`
+      `//android.widget.Button[
+      contains(@content-desc, 'as guest')
+      or contains(@content-desc, 'als Gast')
+      or contains(@content-desc, 'Als Gast')
+      or contains(@content-desc, '以访客身份继续浏览')
+      or contains(@content-desc, 'تسوّق الآن كضيف')
+      or contains(@content-desc, 'Als Gast shoppen')
+      or contains(@content-desc, 'Shop als gast')
+      or contains(@content-desc, 'Acheter en tant qu’invité')
+      or contains(@content-desc, 'Magasiner en tant qu’invité')
+      or contains(@content-desc, 'Comprar como invitado')
+      or contains(@content-desc, 'Continuar como invitado')
+      or contains(@content-desc, 'Nakupovat jako host')
+      or contains(@content-desc, 'Shoppe als Gast')
+      or contains(@content-desc, 'Continuar como invitado/a')
+      or contains(@content-desc, '以訪客身份購物')
+      or contains(@content-desc, 'Folytatás vendégként')
+      or contains(@content-desc, 'Belanja sebagai tamu')
+      or contains(@content-desc, 'המשך כאורח')
+      or contains(@content-desc, 'Continua come ospite')
+      or contains(@content-desc, 'ゲストとして購入')
+      or contains(@content-desc, 'Kupuj jako gość')
+      or contains(@content-desc, 'Continuar sem registo')
+      or contains(@content-desc, 'Cumpără ca oaspete')
+      or contains(@content-desc, 'Handla som gäst')
+      or contains(@content-desc, 'ดำเนินการต่อโดยไม่เข้าสู่ระบบ')
+      or contains(@content-desc, 'Misafir olarak devam et')
+      or contains(@content-desc, '以訪客身分購物')
+      or contains(@content-desc, 'Mua sắm với tư cách Khách')
+      ]`
     );
   }
 
@@ -35,13 +64,33 @@ export class LoginLocator {
   get loginPageLoginButton() {
     return $(
       `//android.widget.Button[
-        @content-desc = 'Sign in'
-        or contains(@content-desc, 'Sign In')
-        or @content-desc = 'Login'
-        or @content-desc = 'Sign in to your Galaxy'
-        or contains(@content-desc, 'Login with Samsung Account')
-        or contains(@content-desc, 'Anmelden')
-        or @content-desc = '三星账号授权登录'
+      contains(@content-desc, 'Sign in')
+      or contains(@content-desc, 'Sign In')
+      or contains(@content-desc, 'Login')
+      or contains(@content-desc, 'تسجيل')
+      or contains(@content-desc, 'Sign in to your Galaxy')
+      or contains(@content-desc, 'Login with Samsung Account')
+      or contains(@content-desc, 'Anmelden')
+      or contains(@content-desc, 'Inloggen')
+      or contains(@content-desc, 'Se connecter')
+      or contains(@content-desc, 'Connexion / Créer un compte')
+      or contains(@content-desc, 'Iniciar sesión')
+      or contains(@content-desc, 'Přihlásit')
+      or contains(@content-desc, 'Anmelden/Registrieren')
+      or contains(@content-desc, 'Regístrate')
+      or contains(@content-desc, '登入')
+      or contains(@content-desc, 'Bejelentkezés')
+      or contains(@content-desc, 'התחברות / יצירת חשבון')
+      or contains(@content-desc, 'Accedi')
+      or contains(@content-desc, 'ログイン')
+      or contains(@content-desc, 'Inicia sesión')
+      or contains(@content-desc, 'Zaloguj się')
+      or contains(@content-desc, 'Registe-se/Inicie sessão')
+      or contains(@content-desc, 'Autentificare')
+      or contains(@content-desc, 'Logga in')
+      or contains(@content-desc, 'เข้าสู่ระบบ')
+      or contains(@content-desc, 'Giriş yap / Üye ol')
+      or contains(@content-desc, 'Đăng nhập')
       ]`
     );
   }

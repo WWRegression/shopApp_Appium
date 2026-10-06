@@ -14,16 +14,60 @@ export class MypageLocator {
   /** Katalon LogIn/mypageLoginBtn — English, DE; CN '登录' matched exactly since the CN logout button '退出登录' contains it */
   get loginButton() {
     return $(
-      `//*[contains(@content-desc, 'Log-in') or contains(@content-desc, 'Login') or contains(@content-desc, 'Anmelden') or @content-desc = '登录']`
+      `//*[contains(@content-desc, 'Log-in')
+      or contains(@content-desc, 'Login')
+      or contains(@content-desc, 'Anmelden')
+      or contains(@content-desc, '登录')
+      or contains(@content-desc, 'تسجيل الدخول')
+      or contains(@content-desc, 'Inloggen')
+      or contains(@content-desc, 'Se connecter')
+      or contains(@content-desc, 'Connexion')
+      or contains(@content-desc, 'Iniciar sesión')
+      or contains(@content-desc, 'Přihlásit se')
+      or contains(@content-desc, '登入')
+      or contains(@content-desc, 'Bejelentkezés')
+      or contains(@content-desc, 'התחברות')
+      or contains(@content-desc, 'Accedi')
+      or contains(@content-desc, 'ログイン')
+      or contains(@content-desc, 'Inloggen/Account maken')
+      or contains(@content-desc, 'Zaloguj się')
+      or contains(@content-desc, 'Autentificare')
+      or contains(@content-desc, 'Logga in')
+      or contains(@content-desc, 'เข้าสู่ระบบ')
+      or contains(@content-desc, 'Giriş yap')
+      or contains(@content-desc, 'Đăng nhập')]`
     );
   }
 
   /** Katalon LogIn/mypageLogoutBtn — English, DE, CN ('退出登录') */
   get logoutButton() {
     return $(
-      `//*[contains(@content-desc, 'Logout') or contains(@content-desc, 'Log out')
-        or contains(@content-desc, 'Abmelden') or contains(@content-desc, 'Ausloggen') or contains(@content-desc, 'Abmeldung')
-        or contains(@content-desc, '退出')]`
+      `//*[contains(@content-desc, 'Logout')
+      or contains(@content-desc, 'Log out')
+      or contains(@content-desc, 'Abmelden')
+      or contains(@content-desc, 'Ausloggen')
+      or contains(@content-desc, 'Abmeldung')
+      or contains(@content-desc, '退出')
+      or contains(@content-desc, 'تسجيل الخروج')
+      or contains(@content-desc, 'Afmelden')
+      or contains(@content-desc, 'Se déconnecter')
+      or contains(@content-desc, 'Déconnexion')
+      or contains(@content-desc, 'Cerrar sesión')
+      or contains(@content-desc, 'Odhlášení')
+      or contains(@content-desc, '登出')
+      or contains(@content-desc, 'Kijelentkezés')
+      or contains(@content-desc, 'Keluar')
+      or contains(@content-desc, 'התנתקות')
+      or contains(@content-desc, 'Disconnetti')
+      or contains(@content-desc, 'ログアウト')
+      or contains(@content-desc, 'Salir')
+      or contains(@content-desc, 'Wyloguj się')
+      or contains(@content-desc, 'Deconectare')
+      or contains(@content-desc, 'تسجيل خروج')
+      or contains(@content-desc, 'Logga ut')
+      or contains(@content-desc, 'ออกจากระบบ')
+      or contains(@content-desc, 'Çıkış yap')
+      or contains(@content-desc, 'Đăng xuất')]`
     );
   }
 

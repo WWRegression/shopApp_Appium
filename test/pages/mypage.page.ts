@@ -163,9 +163,9 @@ export class MypagePage extends BasePage {
     await driver.back();
   }
 
-  /** True when the header title matches the My Page title texts (BasePage.titleTexts.ACCOUNT). */
+  /** True when the header title matches the My Page title texts (BasePage.titleTexts.MY_PAGE). */
   async isOnMypage(): Promise<boolean> {
-    return this.matchesHeaderTitle('ACCOUNT');
+    return this.matchesHeaderTitle('MY_PAGE');
   }
 
   /** Selects My Page on BNB (skipped when already there), then verifies the My Page header title. */
