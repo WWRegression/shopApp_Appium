@@ -257,19 +257,19 @@ export class BasePage {
   }
 
   /** Waits for the first app screen (Home, login page or "Select profile"), dismissing a permission popup on top. */
-  protected async waitForAppLoaded(timeoutMs: number): Promise<void> {
+  async waitForAppLoaded(timeoutMs: number): Promise<void> {
     await driver
       .waitUntil(
         async () =>
           (await isDisplayedOrFalse(this.popupLocator.notificationDenyButton)) || (await this.isAppScreenShown()),
-        { timeout: timeoutMs, interval: 500 }
+        { timeout: timeoutMs, interval: 1000 }
       )
       .catch(() => undefined);
 
     // A notification popup (e.g. IN re-asking after a deny) covers the app — close it, then wait for the screen behind it
     if (await isDisplayedOrFalse(this.popupLocator.notificationDenyButton)) {
       await this.dismissPermissionPopups();
-      await driver.waitUntil(() => this.isAppScreenShown(), { timeout: timeoutMs, interval: 500 }).catch(() => undefined);
+      await driver.waitUntil(() => this.isAppScreenShown(), { timeout: timeoutMs, interval: 1000 }).catch(() => undefined);
     }
   }
 

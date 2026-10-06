@@ -12,9 +12,9 @@ export class CartLocator {
     return $('app-sticky-checkout-cta-modal.show .modal__container.sticky-checkout-modal button[data-an-tr="cart-to-checkout"]');
   }
 
-  /** Katalon Cart/loginBtn + Cart/emptyCartLoginBtn — guest Sign in on the cart (with items or empty) */
+  /** Katalon Cart/loginBtn + Cart/emptyCartLoginBtn — guest Sign in on the cart (with items or empty); all matches since a hidden one can come first */
   get cartLoginButton() {
-    return $('button.guest-signin-btn, button.sign-in-banner__btn, button[data-an-la="empty cart:sign in"]');
+    return $$('button.guest-signin-btn, button.sign-in-banner__btn, button[data-an-la="empty cart:sign in"]');
   }
 
   /** Katalon Cart/emptyCartLoginBtn — Sign in button on the empty cart (guest) */

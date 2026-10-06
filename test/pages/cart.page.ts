@@ -11,7 +11,6 @@ import {
   dispatchTouchStart,
   jsClick,
   clickIfDisplayed,
-  clickElement,
   clickFirstDisplayed,
   isDisplayedOrFalse,
 } from '../helpers/element.helper';
@@ -87,7 +86,7 @@ export class CartPage extends BasePage {
   async clickLoginOnCart(): Promise<void> {
     await this.prepareCartPage();
     await markFailedAndStop(
-      () => clickElement(this.locator.cartLoginButton, { timeout: 5000 }),
+      () => clickFirstDisplayed(this.locator.cartLoginButton, { timeout: 5000 }),
       'Login failed on the Cart page: Sign in button not found'
     );
   }
@@ -96,7 +95,7 @@ export class CartPage extends BasePage {
   async verifyLoggedInOnCart(): Promise<void> {
     await this.prepareCartPage();
     const loginShown = await isDisplayedOrFalse(this.locator.emptyCartLoginButton);
-    console.log(`[verifyLoggedInOnCart] empty cart Sign in shown=${loginShown}`);
+    console.log(`[verifyLoggedInOnCart] expected empty cart Sign in shown=false actual=${loginShown} result=${loginShown ? 'FAIL' : 'PASS'}`);
     markFailed([{ label: 'user is not logged in (empty cart Sign in button still shown)', pass: !loginShown }], 'verifyLoggedInOnCart');
     await switchToNative();
 

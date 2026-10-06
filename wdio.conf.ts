@@ -1,6 +1,7 @@
 import { getRunConfig, getSpecsForTestType } from './config/run.config';
 import { loadSite } from './config/site';
 import { reportTestResult } from './test/helpers/report.helper';
+import { BasePage } from './test/pages/base.page';
 
 const runConfig = getRunConfig();
 
@@ -74,7 +75,12 @@ export const config: WebdriverIO.Config = {
     if (specs.length === 1 && specs[0].includes('_call-api.spec.ts')) {
       return;
     }
+    // 4 = already in the foreground; otherwise the app (re)starts through loading screens before its first screen (Home, login page or "Select profile")
+    const alreadyOpen = (await driver.queryAppState(siteData.appPackage)) === 4;
     await driver.activateApp(siteData.appPackage);
+    if (!alreadyOpen) {
+      await new BasePage().waitForAppLoaded(60000);
+    }
   },
   afterTest: async function (test, _context, result) {
     const parentTitle =

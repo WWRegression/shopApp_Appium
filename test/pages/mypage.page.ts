@@ -1,6 +1,8 @@
 import { BasePage } from './base.page';
-import { MypageLocator } from '../locators/mypage.locator';
-import { LoginPage } from './login.page';
+import { DASHBOARD_MENUS, MypageLocator, type DashboardMenu } from '../locators/mypage.locator';
+import { LoginPage, SAMSUNG_ACCOUNT_PACKAGE, SAMSUNG_ACCOUNT_SETTINGS_ACTIVITY } from './login.page';
+import { getRunConfig } from '../../config/run.config';
+import type { LoadedSite } from '../../config/site';
 import { prepareWebViewPage, switchToNative } from '../helpers/context.helper';
 import { parsePoints } from '../helpers/data.helper';
 import { getBrowserPages } from '../helpers/device.helper';
@@ -17,6 +19,10 @@ import { markFailed, markFailedAndStop } from '../helpers/report.helper';
 
 /** Katalon loginOnMypage taps this offset inside the profile card instead of the element center. */
 const LOGIN_TAP_OFFSET = { x: 350, y: 150 };
+/** Katalon tapProfiles taps the name line inside the profile card (a center tap does nothing); CL / PE cards are taller. */
+const PROFILE_TAP_OFFSET = { x: 350, y: 230, yForClPe: 260 };
+/** Katalon SiteConfig.RTL — the name line is on the right side of the profile card. */
+const RTL_SITES = ['AE_AR', 'SA', 'IL'];
 
 export class MypagePage extends BasePage {
   private readonly locator = new MypageLocator();
@@ -205,18 +211,18 @@ export class MypagePage extends BasePage {
     await tapAtCoordinates(tapX, tapY);
   }
 
-  /** Scrolls to Logout at the bottom of My Page (Katalon swipes a fixed 2–3 times; one fling is faster). */
+  /** Scrolls to Logout at the bottom of My Page (Katalon swipes a fixed 2–3 times; one fling to the end is faster). */
   private async scrollToLogoutButton(): Promise<boolean> {
-    // Short My Pages (e.g. CN) already show it — flinging a page that doesn't scroll is slow
-    if (await isDisplayedOrFalse(this.locator.logoutButton)) {
-      return true;
+    // At the very end Logout sits above the BNB (US has Select Store below it); mid-page it can hide behind the BNB
+    // Fling once more when Logout is not there yet (the page can still be growing while My Page loads)
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      await flingToEnd();
+      if (await isDisplayedOrFalse(this.locator.logoutButton)) {
+        return true;
+      }
+      console.log(`[scrollToLogoutButton] Logout not shown after fling ${attempt}`);
     }
-    await flingToEnd();
-    if (await isDisplayedOrFalse(this.locator.logoutButton)) {
-      return true;
-    }
-    // The fling may have hit another scrollable (e.g. a banner) — fall back to step scrolling
-    return scrollUntilVisible(this.locator.logoutButton, 5);
+    return false;
   }
 
   /** Katalon LogIn.logoutOnMypage — opens My Page, scrolls to Logout at the bottom and logs out. */
@@ -342,8 +348,97 @@ export class MypagePage extends BasePage {
     markFailed([{ label: 'Rewards points differ', pass: same, detail }], 'verifyRewardsPointsMatch');
   }
 
-  async getAccountName(): Promise<string> {
-    // TODO: Implement account name retrieval
-    return await this.locator.accountName.getText();
+  /** Katalon MyPage.getAvailableDashboardMenu — Rewards / Wishlist are not offered on every site (site.features). */
+  getAvailableDashboardMenus(site: LoadedSite): DashboardMenu[] {
+    return DASHBOARD_MENUS.filter((menu) => menu === 'vouchers' || site.features[menu] !== false);
+  }
+
+  /** Katalon MyPage.tapMenu — selects a dashboard menu (Rewards / Vouchers / Wishlist) on My Page. */
+  async selectDashboardMenu(menu: DashboardMenu): Promise<void> {
+    await switchToNative();
+    await markFailedAndStop(
+      () => clickElement(this.locator.dashboardMenu(menu), { timeout: 5000 }),
+      `[selectDashboardMenu] dashboard menu not found on My Page: ${menu}`
+    );
+  }
+
+  /** Katalon MyPage.verifyMenu — the page opened from the dashboard must show the menu's tab selected. */
+  async verifyDashboardMenuRedirected(menu: DashboardMenu): Promise<void> {
+    const pass = await waitForDisplayedOrFalse(this.locator.dashboardMenuTab(menu), { timeout: 10000 });
+    const actual = (await getElementLabel(this.locator.selectedDashboardTab)).replace(/\n/g, ' / ');
+    console.log(`[verifyDashboardMenuRedirected] expected selected tab=${menu} actual selected tab="${actual}" result=${pass ? 'PASS' : 'FAIL'}`);
+    markFailed(
+      [{ label: `dashboard menu did not open its page: ${menu}`, pass, detail: `expected selected tab=${menu}, actual="${actual}"` }],
+      'verifyDashboardMenuRedirected'
+    );
+  }
+
+  /** Katalon verifyMyPageMenus (Back and verify) — after Back, the tab page is gone and the dashboard menu is shown again. */
+  async verifyReturnedToMypage(menu: DashboardMenu): Promise<void> {
+    const tabPageClosed = await this.locator
+      .dashboardMenuTab(menu)
+      .waitForDisplayed({ timeout: 3000, reverse: true })
+      .then(() => true, () => false);
+    const pass = tabPageClosed && (await waitForDisplayedOrFalse(this.locator.dashboardMenu(menu), { timeout: 3000 }));
+    const actual = (await getElementLabel(this.locator.dashboardMenu(menu))).replace(/\n/g, ' / ');
+    console.log(`[verifyReturnedToMypage] expected=${menu} menu on My Page actual="${actual}" tab page closed=${tabPageClosed} result=${pass ? 'PASS' : 'FAIL'}`);
+    markFailed(
+      [{ label: `not back on My Page after Back: ${menu}`, pass, detail: `menu on My Page="${actual}", tab page closed=${tabPageClosed}` }],
+      'verifyReturnedToMypage'
+    );
+  }
+
+  /** The My Page profile must show the name of the account signed in on the device (not for CN — it shows a random shop nickname). */
+  async verifyProfileName(accountName: string): Promise<void> {
+    if (getRunConfig().siteCode === 'CN') {
+      console.log('[verifyProfileName] CN — skipped (random shop nickname shown instead of the account name)');
+      return;
+    }
+    const profileCard = this.locator.profileCard(accountName);
+    const pass = await waitForDisplayedOrFalse(profileCard, { timeout: 5000 });
+    const actual = (await getElementLabel(profileCard)).replace(/\n/g, ' / ') || '(profile with this name not found)';
+    console.log(`[verifyProfileName] expected name="${accountName}" actual My Page profile="${actual}" result=${pass ? 'PASS' : 'FAIL'}`);
+    markFailed(
+      [{ label: 'account name not shown on the My Page profile', pass, detail: `expected="${accountName}", actual="${actual}"` }],
+      'verifyProfileName'
+    );
+  }
+
+  /** Katalon MyPage.tapProfiles — taps the account name on the My Page profile card. */
+  async clickProfileOnMypage(accountName: string): Promise<void> {
+    const profileCard = this.locator.profileCard(accountName);
+    const shown = await waitForDisplayedOrFalse(profileCard, { timeout: 5000 });
+    markFailed([{ label: 'profile not found on My Page', pass: shown }], 'clickProfileOnMypage');
+
+    const siteCode = getRunConfig().siteCode;
+    const { x, y } = await profileCard.getLocation();
+    const { width } = await profileCard.getSize();
+    const tapX = Math.round(RTL_SITES.includes(siteCode) ? x + width - PROFILE_TAP_OFFSET.x : x + PROFILE_TAP_OFFSET.x);
+    const tapY = Math.round(y) + (['CL', 'PE'].includes(siteCode) ? PROFILE_TAP_OFFSET.yForClPe : PROFILE_TAP_OFFSET.y);
+    console.log(`[clickProfileOnMypage] tap position (${tapX}, ${tapY})`);
+    await tapAtCoordinates(tapX, tapY);
+  }
+
+  /** Selecting the profile must open the Samsung account settings screen (activity only — the name is not compared). */
+  async verifyProfileRedirected(): Promise<void> {
+    await switchToNative();
+    const expected = `${SAMSUNG_ACCOUNT_PACKAGE}/…${SAMSUNG_ACCOUNT_SETTINGS_ACTIVITY}`;
+    let actual = '';
+    const pass = await driver
+      .waitUntil(
+        async () => {
+          const currentPackage = await driver.getCurrentPackage();
+          const currentActivity = await driver.getCurrentActivity();
+          actual = `${currentPackage}/${currentActivity}`;
+          return currentPackage === SAMSUNG_ACCOUNT_PACKAGE && currentActivity.endsWith(SAMSUNG_ACCOUNT_SETTINGS_ACTIVITY);
+        },
+        { timeout: 10000, interval: 500 }
+      )
+      .then(() => true, () => false);
+    console.log(`[verifyProfileRedirected] expected activity="${expected}" actual activity="${actual}" result=${pass ? 'PASS' : 'FAIL'}`);
+    markFailed(
+      [{ label: 'Samsung account settings not opened from the profile', pass, detail: `expected="${expected}", actual="${actual}"` }],
+      'verifyProfileRedirected'
+    );
   }
 }

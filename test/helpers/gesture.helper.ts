@@ -104,11 +104,20 @@ export async function scrollUp(): Promise<void> {
   await driver.pause(300);
 }
 
-/** Flings the first scrollable Native list to its end in one call (UiScrollable.flingToEnd) — much faster than step scrolling. */
-export async function flingToEnd(maxSwings = 10): Promise<void> {
-  await $(`android=new UiScrollable(new UiSelector().scrollable(true)).flingToEnd(${maxSwings})`)
-    .isExisting()
-    .catch(() => false);
+/**
+ * Flings the page to its end — much faster than step scrolling.
+ * A real fling in the screen middle (mobile: flingGesture), not UiScrollable — that picks the first scrollable, which can be a horizontal carousel.
+ */
+export async function flingToEnd(maxSwings = 5): Promise<void> {
+  const { width, height } = await driver.getWindowSize();
+  const area = { left: Math.floor(width * 0.1), top: Math.floor(height * 0.25), width: Math.floor(width * 0.8), height: Math.floor(height * 0.5) };
+  for (let i = 0; i < maxSwings; i++) {
+    // Returns false once the page cannot scroll any further
+    const canScrollMore = await driver.execute('mobile: flingGesture', { ...area, direction: 'down', speed: 7500 }).catch(() => false);
+    if (!canScrollMore) {
+      return;
+    }
+  }
 }
 
 /** Strong swipe toward the top of the screen (finger moves down). */

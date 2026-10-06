@@ -2,6 +2,11 @@ const SAMSUNG_ACCOUNT_ID = 'com.osp.app.signin:id';
 
 /** UK (English) values taken from Katalon Object Repository/LogIn — extend per-site if needed. */
 export class LoginLocator {
+  /** Katalon MyAccount/VerifyMenu/verifyProfiles — account name on the Samsung account settings screen */
+  get samsungAccountName() {
+    return $(`//android.widget.TextView[@resource-id = '${SAMSUNG_ACCOUNT_ID}/user_name']`);
+  }
+
   /** Katalon LogIn/loginPageGuestBtn */
   get continueAsGuestButton() {
     return $(

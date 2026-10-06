@@ -19,6 +19,7 @@ import {
 import {
   clickElement,
   clickIfDisplayed,
+  getElementLabel,
   isDisplayedOrFalse,
   setElementValue,
   waitForDisplayedOrFalse,
@@ -27,7 +28,10 @@ import {
 import { scrollByBoundary } from '../helpers/gesture.helper';
 import { markFailed, markFailedAndStop } from '../helpers/report.helper';
 
-const SAMSUNG_ACCOUNT_PACKAGE = 'com.osp.app.signin';
+export const SAMSUNG_ACCOUNT_PACKAGE = 'com.osp.app.signin';
+/** Samsung account settings screen — opened by this intent action, or from the My Page profile. */
+export const SAMSUNG_ACCOUNT_SETTINGS_ACTIVITY = 'SettingMainPreference';
+const SAMSUNG_ACCOUNT_SETTINGS_ACTION = 'com.samsung.android.samsungaccount.action.OPEN_SASETTINGS';
 const SETTINGS_PACKAGE = 'com.android.settings';
 const KEYCODE_ENTER = 66;
 /** Shared password for the device test accounts (Gmail / proton.me). */
@@ -58,6 +62,28 @@ export class LoginPage extends BasePage {
       email: getAccountEmail(),
       password: ACCOUNT_PASSWORD,
     };
+  }
+
+  /** Name of the Samsung account signed in on the device — read from the Samsung account settings screen, then back to the app. */
+  async getAccountNameOnDevice(): Promise<string> {
+    // CN My Page shows a random shop nickname ("sa_…"), so the account name is not used
+    if (getRunConfig().siteCode === 'CN') {
+      console.log('[getAccountNameOnDevice] CN — skipped');
+      return '';
+    }
+    await startActivityByAction(SAMSUNG_ACCOUNT_SETTINGS_ACTION);
+    await switchToNative();
+    const shown = await waitForDisplayedOrFalse(this.locator.samsungAccountName, { timeout: 10000 });
+    const name = await getElementLabel(this.locator.samsungAccountName);
+    console.log(`[getAccountNameOnDevice] Samsung account name on device="${name}"`);
+
+    await forceStopPackage(SAMSUNG_ACCOUNT_PACKAGE);
+    await driver.activateApp(targetPackage());
+    markFailed(
+      [{ label: 'Samsung account name not found on the device settings (not signed in on the device?)', pass: shown && Boolean(name) }],
+      'getAccountNameOnDevice'
+    );
+    return name;
   }
 
   /** Katalon LogIn.SSOsignOutOnDevice — removes the Samsung account from device Settings, then force-stops the app. */
