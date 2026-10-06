@@ -30,5 +30,26 @@
     "brand": "Apple",
     "device": "Apple iPhone 12 Pro Max 128GB",
     "imei": "351704551369632"
+  },
+  "mypageMenuList": {
+    "myProducts": false,
+    "myOrders": true,
+    "myRepairs": true,
+    "myReferrals": false,
+    "myQRCode": false,
+    "inbox": true,
+    "mySmartThings": false,
+    "orderSupport": false,
+    "myAddresses": false
+  },
+  "shopMenuList": {
+    "studentStore": false,
+    "corporateStore": false,
+    "inStoreMode": false,
+    "samsungPlus": false,
+    "samsungCarePlus": false,
+    "samsungLive": false,
+    "moreSamsungApps": true,
+    "customerSupport": true
   }
 }

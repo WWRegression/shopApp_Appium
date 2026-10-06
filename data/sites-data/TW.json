@@ -29,5 +29,26 @@
     "brand": "SAMSUNG",
     "device": "Galaxy Z Flip4 (256GB，SM-F7210)",
     "imei": "983240737522204"
+  },
+  "mypageMenuList": {
+    "myProducts": false,
+    "myOrders": true,
+    "myRepairs": true,
+    "myReferrals": false,
+    "myQRCode": false,
+    "inbox": true,
+    "mySmartThings": false,
+    "orderSupport": false,
+    "myAddresses": false
+  },
+  "shopMenuList": {
+    "studentStore": true,
+    "corporateStore": false,
+    "inStoreMode": false,
+    "samsungPlus": false,
+    "samsungCarePlus": false,
+    "samsungLive": false,
+    "moreSamsungApps": true,
+    "customerSupport": true
   }
 }

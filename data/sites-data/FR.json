@@ -31,5 +31,26 @@
     "device": "Galaxy Z Fold 6",
     "storage": "256Go",
     "imei": "351787742847020"
+  },
+  "mypageMenuList": {
+    "myProducts": false,
+    "myOrders": true,
+    "myRepairs": true,
+    "myReferrals": false,
+    "myQRCode": false,
+    "inbox": true,
+    "mySmartThings": true,
+    "orderSupport": false,
+    "myAddresses": false
+  },
+  "shopMenuList": {
+    "studentStore": false,
+    "corporateStore": false,
+    "inStoreMode": false,
+    "samsungPlus": true,
+    "samsungCarePlus": false,
+    "samsungLive": true,
+    "moreSamsungApps": true,
+    "customerSupport": true
   }
 }

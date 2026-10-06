@@ -32,5 +32,26 @@
   },
   "tradeUp": {
     "postalCode": "110001"
+  },
+  "mypageMenuList": {
+    "myProducts": false,
+    "myOrders": true,
+    "myRepairs": false,
+    "myReferrals": true,
+    "myQRCode": true,
+    "inbox": true,
+    "mySmartThings": false,
+    "orderSupport": true,
+    "myAddresses": true
+  },
+  "shopMenuList": {
+    "studentStore": false,
+    "corporateStore": false,
+    "inStoreMode": false,
+    "samsungPlus": false,
+    "samsungCarePlus": false,
+    "samsungLive": true,
+    "moreSamsungApps": true,
+    "customerSupport": true
   }
 }

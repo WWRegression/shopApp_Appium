@@ -29,5 +29,26 @@
   },
   "checkout": {
     "eupImei": "355550201160194"
+  },
+  "mypageMenuList": {
+    "myProducts": false,
+    "myOrders": true,
+    "myRepairs": true,
+    "myReferrals": false,
+    "myQRCode": false,
+    "inbox": true,
+    "mySmartThings": false,
+    "orderSupport": false,
+    "myAddresses": false
+  },
+  "shopMenuList": {
+    "studentStore": false,
+    "corporateStore": false,
+    "inStoreMode": false,
+    "samsungPlus": false,
+    "samsungCarePlus": true,
+    "samsungLive": false,
+    "moreSamsungApps": true,
+    "customerSupport": false
   }
 }

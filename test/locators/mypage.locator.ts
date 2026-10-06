@@ -1,6 +1,25 @@
+import { BACK_BUTTON_XPATH } from './header.locator';
+
 export const DASHBOARD_MENUS = ['rewards', 'vouchers', 'wishlist'] as const;
 
 export type DashboardMenu = (typeof DASHBOARD_MENUS)[number];
+
+/** Katalon MyPage.GroupedMenuList.MenuProduct — menus below the dashboard (My Products ~ My Addresses) */
+export const PRODUCT_MENUS = [
+  'myProducts',
+  'myOrders',
+  'myRepairs',
+  'myReferrals',
+  'myQRCode',
+  'inbox',
+  'mySmartThings',
+  'orderSupport',
+  'myAddresses',
+] as const;
+
+export type ProductMenu = (typeof PRODUCT_MENUS)[number];
+
+export type MypageMenu = DashboardMenu | ProductMenu;
 
 export class MypageLocator {
   menuButton(label: string) {
@@ -302,9 +321,182 @@ export class MypageLocator {
     }
   }
 
-  /** Currently selected tab in the tab row of the page opened from the dashboard (read for the actual value in logs) */
-  get selectedDashboardTab() {
+  /** Currently selected tab in the tab row of a page opened from My Page (e.g. My Orders, Vouchers) */
+  get selectedMypageTab() {
     return $(`//android.widget.HorizontalScrollView//android.view.View[@selected = 'true']`);
+  }
+
+  /** Katalon MyAccount/MenuProduct/myProducts (US) */
+  get myProducts() {
+    return $(`//android.view.View[@content-desc = "My Products"]`);
+  }
+
+  /** Katalon MyAccount/MenuProduct/myorders */
+  get myOrders() {
+    return $(
+      `//android.view.View[
+        contains(@content-desc, "Orders")
+        or contains(@content-desc, "Mes commandes")
+        or contains(@content-desc, "تتبع طلباتي")
+        or contains(@content-desc, "pedidos")
+        or contains(@content-desc, "pedido")
+        or contains(@content-desc, "Pesanan")
+        or contains(@content-desc, "I miei ordini")
+        or contains(@content-desc, "Volg bestelling")
+        or contains(@content-desc, "我的订单")
+        or contains(@content-desc, "Moje zamówienia")
+        or contains(@content-desc, "طلباتي")
+        or contains(@content-desc, "Mina beställningar")
+        or contains(@content-desc, "Đơn hàng của tôi")
+        or contains(@content-desc, "Meine Bestellungen")
+        or contains(@content-desc, "我的訂單")
+        or contains(@content-desc, "คำสั่งซื้อของฉัน")
+        or contains(@content-desc, "Moje objednávky")
+        or contains(@content-desc, "Rendeléseim követése")
+        or contains(@content-desc, "Comenzile mele")
+        or contains(@content-desc, "Siparişleri takip et")
+        or contains(@content-desc, "orders")
+        or contains(@content-desc, "ההזמנות שלי")
+        or contains(@content-desc, "注文履歴")
+        or @content-desc = "Order"
+      ]`
+    );
+  }
+
+  /** Katalon MyAccount/MenuProduct/myrepairs (CN shows "服务支持") */
+  get myRepairs() {
+    return $(
+      `//android.view.View[
+        contains(@content-desc, "Repairs")
+        or contains(@content-desc, "Repair")
+        or contains(@content-desc, "Mes réparations")
+        or contains(@content-desc, "تتبّع معاملة الإصلاح الخاصة بي")
+        or contains(@content-desc, "Mi reparación")
+        or contains(@content-desc, "Mes Services")
+        or contains(@content-desc, "Layanan Perbaikan")
+        or contains(@content-desc, "Le mie riparazioni")
+        or contains(@content-desc, "Mijn reparatie")
+        or contains(@content-desc, "服务支持")
+        or contains(@content-desc, "Moje naprawy")
+        or contains(@content-desc, "تتبع الإصلاح الخاص بي")
+        or contains(@content-desc, "Mina reparationer")
+        or contains(@content-desc, "Sửa chữa của tôi")
+        or contains(@content-desc, "檢視服務紀錄")
+        or contains(@content-desc, "การซ่อมแซมของฉัน")
+        or contains(@content-desc, "Meine Reparaturen")
+        or contains(@content-desc, "Moje opravy")
+        or contains(@content-desc, "我的維修")
+        or contains(@content-desc, "Javítás követése")
+        or contains(@content-desc, "Reparațiile mele")
+        or contains(@content-desc, "Tamir takibi")
+        or contains(@content-desc, "Reparatur")
+        or contains(@content-desc, "repair")
+        or contains(@content-desc, "修理")
+        or contains(@content-desc, "As minhas reparações")
+      ]`
+    );
+  }
+
+  /** Katalon MyAccount/MenuProduct/myreferrals */
+  get myReferrals() {
+    return $(
+      `//android.view.View[
+        contains(@content-desc, 'My Referrals')
+        or contains(@content-desc, 'My Referral')
+        or contains(@content-desc, 'Mis referidos')
+        or contains(@content-desc, 'Moje polecenia')
+        or contains(@content-desc, 'การแนะนำของฉัน')
+        or contains(@content-desc, 'Mes Recommandations')
+        or contains(@content-desc, 'ترشيحي')
+      ]
+      | //android.widget.ImageView[contains(@content-desc, 'My Referral')]`
+    );
+  }
+
+  /** Katalon MyAccount/MenuProduct/myqrcode */
+  get myQRCode() {
+    return $(`//android.view.View[contains(@content-desc, 'QR') and .//android.widget.ImageView]`);
+  }
+
+  /** Katalon MyAccount/MenuProduct/inbox */
+  get inbox() {
+    return $(
+      `//android.view.View[(
+        contains(@content-desc, "Inbox")
+        or contains(@content-desc, "Boîte de réception")
+        or contains(@content-desc, "Notificaciones")
+        or contains(@content-desc, "Incluido en la caja")
+        or contains(@content-desc, "Bandeja de entrada")
+        or contains(@content-desc, "Kotak Masuk")
+        or contains(@content-desc, "Messaggi")
+        or contains(@content-desc, "Notification")
+        or contains(@content-desc, "消息通知")
+        or contains(@content-desc, "Skrzynka odbiorcza")
+        or contains(@content-desc, "الرسائل الواردة")
+        or contains(@content-desc, "Inkorg")
+        or contains(@content-desc, "Hộp thư")
+        or contains(@content-desc, "Posteingang")
+        or contains(@content-desc, "收件匣")
+        or contains(@content-desc, "กล่องข้อความ")
+        or contains(@content-desc, "Doručená pošta")
+        or contains(@content-desc, "Üzenetek")
+        or contains(@content-desc, "Căsuță de inbox")
+        or contains(@content-desc, "Bildirimler")
+        or contains(@content-desc, "Benachrichtigung")
+        or contains(@content-desc, "As minhas notificações")
+        or contains(@content-desc, "תיבת הודעות")
+        or contains(@content-desc, "通知")
+        or contains(@content-desc, "Notificação")
+      ) and .//android.widget.ImageView]`
+    );
+  }
+
+  /** Katalon MyAccount/MenuProduct/mySmartThings */
+  get mySmartThings() {
+    return $(`//android.view.View[contains(@content-desc, "SmartThings")]`);
+  }
+
+  /** Katalon MyAccount/MenuProduct/orderSupport (IN) */
+  get orderSupport() {
+    return $(`//android.view.View[contains(@content-desc, 'Support')]`);
+  }
+
+  /** Katalon MyAccount/MenuProduct/myAddresses (IN) */
+  get myAddresses() {
+    return $(`//android.view.View[contains(@content-desc, 'Addresses')]`);
+  }
+
+  productMenu(menu: ProductMenu) {
+    switch (menu) {
+      case 'myProducts':
+        return this.myProducts;
+      case 'myOrders':
+        return this.myOrders;
+      case 'myRepairs':
+        return this.myRepairs;
+      case 'myReferrals':
+        return this.myReferrals;
+      case 'myQRCode':
+        return this.myQRCode;
+      case 'inbox':
+        return this.inbox;
+      case 'mySmartThings':
+        return this.mySmartThings;
+      case 'orderSupport':
+        return this.orderSupport;
+      case 'myAddresses':
+        return this.myAddresses;
+    }
+  }
+
+  /** Back button of a page opened from My Page — My Page itself has none */
+  get subPageBackButton() {
+    return $(BACK_BUTTON_XPATH);
+  }
+
+  /** Title next to Back on a page opened from My Page (US nests it in a container) */
+  get subPageTitle() {
+    return $(`(${BACK_BUTTON_XPATH}/following-sibling::*/descendant-or-self::*[@content-desc])[1]`);
   }
 
   /** Katalon MyAccount/profiles — profile card showing every word of the account name; CN by its greeting ('欢迎光临') since it shows a random "sa_…" nickname */

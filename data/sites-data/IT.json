@@ -37,5 +37,26 @@
   "checkout": {
     "fiscalCode": "MRTMTT25D09F205Z",
     "iban": "IT69H0300203280165147682131"
+  },
+  "mypageMenuList": {
+    "myProducts": false,
+    "myOrders": true,
+    "myRepairs": true,
+    "myReferrals": false,
+    "myQRCode": false,
+    "inbox": true,
+    "mySmartThings": true,
+    "orderSupport": false,
+    "myAddresses": false
+  },
+  "shopMenuList": {
+    "studentStore": true,
+    "corporateStore": false,
+    "inStoreMode": false,
+    "samsungPlus": false,
+    "samsungCarePlus": false,
+    "samsungLive": false,
+    "moreSamsungApps": true,
+    "customerSupport": true
   }
 }

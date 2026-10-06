@@ -22,5 +22,26 @@
     "keyword": "שעונים",
     "haSku": "RF65DB970E22EU",
     "vdSku": "QE77S90HATXIL"
+  },
+  "mypageMenuList": {
+    "myProducts": false,
+    "myOrders": true,
+    "myRepairs": false,
+    "myReferrals": false,
+    "myQRCode": false,
+    "inbox": true,
+    "mySmartThings": false,
+    "orderSupport": false,
+    "myAddresses": false
+  },
+  "shopMenuList": {
+    "studentStore": false,
+    "corporateStore": false,
+    "inStoreMode": false,
+    "samsungPlus": false,
+    "samsungCarePlus": false,
+    "samsungLive": false,
+    "moreSamsungApps": false,
+    "customerSupport": true
   }
 }

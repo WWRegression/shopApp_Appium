@@ -29,5 +29,26 @@
     "category": "Điện thoại",
     "device": "Galaxy Z Fold4 12GB/256GB",
     "imei": "351787742847020"
+  },
+  "mypageMenuList": {
+    "myProducts": false,
+    "myOrders": true,
+    "myRepairs": true,
+    "myReferrals": false,
+    "myQRCode": true,
+    "inbox": true,
+    "mySmartThings": false,
+    "orderSupport": false,
+    "myAddresses": false
+  },
+  "shopMenuList": {
+    "studentStore": true,
+    "corporateStore": true,
+    "inStoreMode": true,
+    "samsungPlus": false,
+    "samsungCarePlus": false,
+    "samsungLive": true,
+    "moreSamsungApps": true,
+    "customerSupport": true
   }
 }

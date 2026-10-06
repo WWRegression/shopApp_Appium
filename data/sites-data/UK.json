@@ -31,5 +31,26 @@
     "device": "Galaxy Z Fold5 5G",
     "storage": "512GB",
     "imei": "352218222242424"
+  },
+  "mypageMenuList": {
+    "myProducts": false,
+    "myOrders": true,
+    "myRepairs": true,
+    "myReferrals": false,
+    "myQRCode": true,
+    "inbox": true,
+    "mySmartThings": true,
+    "orderSupport": false,
+    "myAddresses": false
+  },
+  "shopMenuList": {
+    "studentStore": true,
+    "corporateStore": false,
+    "inStoreMode": false,
+    "samsungPlus": false,
+    "samsungCarePlus": false,
+    "samsungLive": true,
+    "moreSamsungApps": true,
+    "customerSupport": true
   }
 }

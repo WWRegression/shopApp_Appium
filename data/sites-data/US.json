@@ -27,5 +27,26 @@
   "tradeIn": {
     "brand": "Samsung",
     "device": "Galaxy Z Flip6"
+  },
+  "mypageMenuList": {
+    "myProducts": true,
+    "myOrders": true,
+    "myRepairs": false,
+    "myReferrals": true,
+    "myQRCode": true,
+    "inbox": true,
+    "mySmartThings": false,
+    "orderSupport": false,
+    "myAddresses": false
+  },
+  "shopMenuList": {
+    "studentStore": false,
+    "corporateStore": false,
+    "inStoreMode": false,
+    "samsungPlus": false,
+    "samsungCarePlus": false,
+    "samsungLive": false,
+    "moreSamsungApps": true,
+    "customerSupport": true
   }
 }

@@ -32,5 +32,26 @@
   "checkout": {
     "fiscalCode": "BACXHUHBXXX",
     "iban": "CZ5650518378528124337138"
+  },
+  "mypageMenuList": {
+    "myProducts": false,
+    "myOrders": true,
+    "myRepairs": true,
+    "myReferrals": false,
+    "myQRCode": false,
+    "inbox": true,
+    "mySmartThings": false,
+    "orderSupport": false,
+    "myAddresses": false
+  },
+  "shopMenuList": {
+    "studentStore": false,
+    "corporateStore": false,
+    "inStoreMode": false,
+    "samsungPlus": false,
+    "samsungCarePlus": false,
+    "samsungLive": true,
+    "moreSamsungApps": true,
+    "customerSupport": true
   }
 }

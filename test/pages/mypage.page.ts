@@ -1,5 +1,12 @@
 import { BasePage } from './base.page';
-import { DASHBOARD_MENUS, MypageLocator, type DashboardMenu } from '../locators/mypage.locator';
+import {
+  DASHBOARD_MENUS,
+  MypageLocator,
+  PRODUCT_MENUS,
+  type DashboardMenu,
+  type MypageMenu,
+  type ProductMenu,
+} from '../locators/mypage.locator';
 import { LoginPage, SAMSUNG_ACCOUNT_PACKAGE, SAMSUNG_ACCOUNT_SETTINGS_ACTIVITY } from './login.page';
 import { getRunConfig } from '../../config/run.config';
 import type { LoadedSite } from '../../config/site';
@@ -14,7 +21,7 @@ import {
   scrollUntilVisible,
   waitForDisplayedOrFalse,
 } from '../helpers/element.helper';
-import { flingToEnd, swipeByBoundary, tapAtCoordinates } from '../helpers/gesture.helper';
+import { flingToEnd, flingToStart, swipeByBoundary, tapAtCoordinates } from '../helpers/gesture.helper';
 import { markFailed, markFailedAndStop } from '../helpers/report.helper';
 
 /** Katalon loginOnMypage taps this offset inside the profile card instead of the element center. */
@@ -23,6 +30,8 @@ const LOGIN_TAP_OFFSET = { x: 350, y: 150 };
 const PROFILE_TAP_OFFSET = { x: 350, y: 230, yForClPe: 260 };
 /** Katalon SiteConfig.RTL — the name line is on the right side of the profile card. */
 const RTL_SITES = ['AE_AR', 'SA', 'IL'];
+/** Words that name the same menu — sites swap them between the menu and its page (US menu "Inbox" opens "Notification", IN the reverse). */
+const SAME_MENU_WORDS = [['inbox', 'notification']];
 
 export class MypagePage extends BasePage {
   private readonly locator = new MypageLocator();
@@ -150,10 +159,16 @@ export class MypagePage extends BasePage {
     return null;
   }
 
-  /** Checks whether the label's key word appears in text — both values come from the same screen, so no per-language data is needed. */
+  /** Checks whether any key word of the label appears in text — both values come from the same screen, so no per-language data is needed. */
   private matchesLabel(text: string, itemLabel: string): boolean {
-    const keyword = itemLabel.split(' ').find((w) => w.length > 2) ?? itemLabel;
-    return text.toLowerCase().includes(keyword);
+    const target = text.toLowerCase();
+    const words = itemLabel.toLowerCase().split(/\s+/).filter((w) => w.length > 2);
+    return (words.length ? words : [itemLabel.toLowerCase()]).some((word) => {
+      // Singular / plural: "My Addresses" opens "Address"
+      const stem = word.replace(/e?s$/, '');
+      const sameMenu = SAME_MENU_WORDS.find((group) => group.includes(stem) || group.includes(word)) ?? [stem];
+      return sameMenu.some((name) => target.includes(name));
+    });
   }
 
   /** Android system back — returns to the sub-menu list screen. */
@@ -365,7 +380,7 @@ export class MypagePage extends BasePage {
   /** Katalon MyPage.verifyMenu — the page opened from the dashboard must show the menu's tab selected. */
   async verifyDashboardMenuRedirected(menu: DashboardMenu): Promise<void> {
     const pass = await waitForDisplayedOrFalse(this.locator.dashboardMenuTab(menu), { timeout: 10000 });
-    const actual = (await getElementLabel(this.locator.selectedDashboardTab)).replace(/\n/g, ' / ');
+    const actual = (await getElementLabel(this.locator.selectedMypageTab)).replace(/\n/g, ' / ');
     console.log(`[verifyDashboardMenuRedirected] expected selected tab=${menu} actual selected tab="${actual}" result=${pass ? 'PASS' : 'FAIL'}`);
     markFailed(
       [{ label: `dashboard menu did not open its page: ${menu}`, pass, detail: `expected selected tab=${menu}, actual="${actual}"` }],
@@ -373,17 +388,77 @@ export class MypagePage extends BasePage {
     );
   }
 
-  /** Katalon verifyMyPageMenus (Back and verify) — after Back, the tab page is gone and the dashboard menu is shown again. */
-  async verifyReturnedToMypage(menu: DashboardMenu): Promise<void> {
-    const tabPageClosed = await this.locator
-      .dashboardMenuTab(menu)
+  /** Katalon MyPage.getAvailableProductMenu — menus below the dashboard shown on the site (data/sites-data mypageMenuList). */
+  getAvailableProductMenus(site: LoadedSite): ProductMenu[] {
+    return PRODUCT_MENUS.filter((menu) => site.mypageMenuList?.[menu] === true);
+  }
+
+  /** Katalon MyPage.tapMenu — selects a menu below the dashboard on My Page and returns its name for the redirect check. */
+  async selectProductMenu(menu: ProductMenu): Promise<string> {
+    await switchToNative();
+    const menuElement = this.locator.productMenu(menu);
+    if (!(await isDisplayedOrFalse(menuElement))) {
+      // scrollUntilVisible only scrolls down — start from the top, since My Page can be left scrolled past the menu
+      await flingToStart();
+      await scrollUntilVisible(menuElement, 3);
+    }
+    const menuLabel = (await getElementLabel(menuElement)).replace(/\n/g, ' ');
+    // Baseline of WebView pages, so the redirect check only reads the page this click opens
+    this.knownPageIds.clear();
+    for (const page of await getBrowserPages()) {
+      this.knownPageIds.add(page.id);
+    }
+    await markFailedAndStop(
+      () => clickElement(menuElement, { timeout: 5000 }),
+      `[selectProductMenu] menu not found on My Page: ${menu}`
+    );
+    return menuLabel;
+  }
+
+  /** The opened page must carry the clicked menu's name — WebView page title (CDP, no context switch), selected tab or title next to Back. */
+  async verifyProductMenuRedirected(menuLabel: string): Promise<void> {
+    let actual = '';
+    const pass = await driver
+      .waitUntil(
+        async () => {
+          actual = await this.getOpenedPageName();
+          return this.matchesLabel(actual, menuLabel);
+        },
+        { timeout: 10000, interval: 500 }
+      )
+      .then(() => true, () => false);
+    console.log(`[verifyProductMenuRedirected] expected menu="${menuLabel}" actual page="${actual}" result=${pass ? 'PASS' : 'FAIL'}`);
+    markFailed(
+      [{ label: `menu did not open its page: ${menuLabel}`, pass, detail: `expected menu="${menuLabel}", actual page="${actual}"` }],
+      'verifyProductMenuRedirected'
+    );
+  }
+
+  /** Names the opened page shows: title of the newly opened WebView page, the selected tab and the title next to Back. */
+  private async getOpenedPageName(): Promise<string> {
+    const newPage = (await getBrowserPages()).find((page) => !this.knownPageIds.has(page.id));
+    const names = [
+      newPage?.title ?? '',
+      await getElementLabel(this.locator.selectedMypageTab),
+      await getElementLabel(this.locator.subPageTitle),
+    ];
+    return names.filter(Boolean).join(' | ').replace(/\n/g, ' / ');
+  }
+
+  /** Katalon verifyMyPageMenus (Back and verify) — after Back, the opened page is gone and the menu is shown on My Page again. */
+  async verifyReturnedToMypage(menu: MypageMenu): Promise<void> {
+    await switchToNative();
+    const isDashboard = (DASHBOARD_MENUS as readonly string[]).includes(menu);
+    const menuElement = isDashboard ? this.locator.dashboardMenu(menu as DashboardMenu) : this.locator.productMenu(menu as ProductMenu);
+    // Every page opened from My Page has a Back button, My Page itself has none
+    const pageClosed = await this.locator.subPageBackButton
       .waitForDisplayed({ timeout: 3000, reverse: true })
       .then(() => true, () => false);
-    const pass = tabPageClosed && (await waitForDisplayedOrFalse(this.locator.dashboardMenu(menu), { timeout: 3000 }));
-    const actual = (await getElementLabel(this.locator.dashboardMenu(menu))).replace(/\n/g, ' / ');
-    console.log(`[verifyReturnedToMypage] expected=${menu} menu on My Page actual="${actual}" tab page closed=${tabPageClosed} result=${pass ? 'PASS' : 'FAIL'}`);
+    const pass = pageClosed && (await waitForDisplayedOrFalse(menuElement, { timeout: 3000 }));
+    const actual = (await getElementLabel(menuElement)).replace(/\n/g, ' / ');
+    console.log(`[verifyReturnedToMypage] expected=${menu} menu on My Page actual="${actual}" page closed=${pageClosed} result=${pass ? 'PASS' : 'FAIL'}`);
     markFailed(
-      [{ label: `not back on My Page after Back: ${menu}`, pass, detail: `menu on My Page="${actual}", tab page closed=${tabPageClosed}` }],
+      [{ label: `not back on My Page after Back: ${menu}`, pass, detail: `menu on My Page="${actual}", page closed=${pageClosed}` }],
       'verifyReturnedToMypage'
     );
   }

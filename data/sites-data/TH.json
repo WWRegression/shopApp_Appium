@@ -30,5 +30,26 @@
     "device": "S23 Ultra",
     "storage": "256GB",
     "imei": "524644035655028"
+  },
+  "mypageMenuList": {
+    "myProducts": false,
+    "myOrders": true,
+    "myRepairs": true,
+    "myReferrals": true,
+    "myQRCode": true,
+    "inbox": true,
+    "mySmartThings": false,
+    "orderSupport": false,
+    "myAddresses": false
+  },
+  "shopMenuList": {
+    "studentStore": true,
+    "corporateStore": false,
+    "inStoreMode": true,
+    "samsungPlus": false,
+    "samsungCarePlus": false,
+    "samsungLive": true,
+    "moreSamsungApps": true,
+    "customerSupport": true
   }
 }

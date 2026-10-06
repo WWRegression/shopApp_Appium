@@ -38,11 +38,25 @@
     "policy": true,
     "settings": true,
     "accountManagement": true,
-    "logout": false
+    "logout": false,
+    "myProducts": false,
+    "myOrders": true,
+    "myRepairs": true,
+    "myReferrals": true,
+    "myQRCode": false,
+    "inbox": true,
+    "mySmartThings": true,
+    "orderSupport": false,
+    "myAddresses": false
   },
   "shopMenuList": {
-    "samsungEducationStore": true,
-    "samsungGovermentStore": true,
-    "moreSamsungApps": true
+    "studentStore": true,
+    "corporateStore": true,
+    "inStoreMode": false,
+    "samsungPlus": false,
+    "samsungCarePlus": false,
+    "samsungLive": false,
+    "moreSamsungApps": true,
+    "customerSupport": true
   }
 }

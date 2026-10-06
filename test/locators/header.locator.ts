@@ -1,5 +1,30 @@
 export type HeaderIcon = 'search' | 'back' | 'chat';
 
+/** Back button in the header, by its content-desc in each language (CN '返回') */
+export const BACK_BUTTON_XPATH = `//android.widget.Button[
+  contains(@content-desc, 'Back')
+  or contains(@content-desc, 'رجوع')
+  or contains(@content-desc, 'Zurück')
+  or contains(@content-desc, 'Terug')
+  or contains(@content-desc, 'Retour')
+  or contains(@content-desc, 'Arrière')
+  or contains(@content-desc, 'Atrás')
+  or contains(@content-desc, '返回')
+  or contains(@content-desc, 'Retroceder')
+  or contains(@content-desc, 'Zpět')
+  or contains(@content-desc, '上一頁')
+  or contains(@content-desc, 'Vissza')
+  or contains(@content-desc, 'Kembali')
+  or contains(@content-desc, 'Indietro')
+  or contains(@content-desc, 'Wstecz')
+  or contains(@content-desc, 'Voltar')
+  or contains(@content-desc, 'Înapoi')
+  or contains(@content-desc, 'กลับ')
+  or contains(@content-desc, 'Geri')
+  or contains(@content-desc, 'Tillbaka')
+  or contains(@content-desc, 'Quay lại')
+]`;
+
 /**
  * Native app header.
  * content-desc varies by locale, so keep a small set of representative labels.
@@ -54,29 +79,7 @@ export class HeaderLocator {
 
   get backButton() {
     return $(
-      `//android.widget.Button[
-        contains(@content-desc, 'Back')
-        or contains(@content-desc, 'رجوع')
-        or contains(@content-desc, 'Zurück')
-        or contains(@content-desc, 'Terug')
-        or contains(@content-desc, 'Retour')
-        or contains(@content-desc, 'Arrière')
-        or contains(@content-desc, 'Atrás')
-        or contains(@content-desc, '返回')
-        or contains(@content-desc, 'Retroceder')
-        or contains(@content-desc, 'Zpět')
-        or contains(@content-desc, '上一頁')
-        or contains(@content-desc, 'Vissza')
-        or contains(@content-desc, 'Kembali')
-        or contains(@content-desc, 'Indietro')
-        or contains(@content-desc, 'Wstecz')
-        or contains(@content-desc, 'Voltar')
-        or contains(@content-desc, 'Înapoi')
-        or contains(@content-desc, 'กลับ')
-        or contains(@content-desc, 'Geri')
-        or contains(@content-desc, 'Tillbaka')
-        or contains(@content-desc, 'Quay lại')
-      ]
+      `${BACK_BUTTON_XPATH}
       |
       //android.widget.FrameLayout[1]/android.view.View[1]/android.view.View[1]/android.view.View[1]/android.view.View[1]/android.widget.Button[1]`
     );
