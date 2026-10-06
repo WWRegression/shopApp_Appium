@@ -7,6 +7,7 @@ import { normalizeText, isExactTokenMatch, stripMarkerText, normalizeProductName
 import { ShopPage, type CategoryMismatch } from './shop.page';
 import { BcPage } from './bc.page';
 import { PdPage } from './pd.page';
+import { isDisplayedOrFalse } from '../helpers/element.helper';
 
 export type PfTabTarget = { tab: string } | { product: string };
 export type WishState = 'add' | 'remove';
@@ -66,7 +67,13 @@ export class PfPage extends BasePage {
       for (const card of cards) {
         const desc = (await card.getAttribute('content-desc').catch(() => '')) ?? '';
         if (this.matchPfCard(desc, query)) {
-          await (card).click({ x: 150 });
+          const image = this.pflocator.pfCardImage(card);
+          if(await isDisplayedOrFalse(image)) {
+            await image.click();
+          } else {
+            const xPos = Math.round((await card.getSize()).width/6);
+            await card.click({ x: xPos});
+          }
           return;
         }
       }

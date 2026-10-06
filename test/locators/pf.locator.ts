@@ -4,8 +4,7 @@ export class PfLocator {
    * ImageView fallback covers cases where the Total-header path misses a card.
    */
   get productGrid() {
-    return $$(
-      `//android.view.View[
+    return $$(`//android.view.View[
         contains(@content-desc, 'Total') or
         contains(@content-desc, 'Totaal') or
         contains(@content-desc, 'Totale') or
@@ -30,20 +29,18 @@ export class PfLocator {
         /android.view.View
         /android.view.View[@content-desc and @content-desc != '']
       |
-      //android.widget.ImageView[
-        @content-desc and @content-desc != '' and
-        not(contains(@content-desc, 'Filter')) and
-        not(contains(@content-desc, '篩選')) and
-        not(contains(@content-desc, '筛选')) and
-        not(contains(@content-desc, '필터')) and
-        not(contains(@content-desc, 'フィルター')) and
-        not(ancestor::android.widget.ImageView)
-      ]`
-    );
+      //android.view.View[@content-desc != '' and not(ancestor::android.widget.ImageView)
+        and .//android.widget.ImageView[@content-desc != ''] 
+      ]
+      |
+      //android.view.View[@content-desc != '' and not(ancestor::android.widget.ImageView) 
+        and .//android.widget.ImageView and .//android.widget.Button
+      ]
+    `);
   }
 
   /** Product image inside a matched card. */
-  cardImage(card: WebdriverIO.Element) {
-    return card.$('.//android.widget.ImageView');
+  pfCardImage(card: WebdriverIO.Element) {
+    return card.$('.//android.widget.ImageView[not(@content-desc)]');
   }
 }

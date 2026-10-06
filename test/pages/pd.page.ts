@@ -6,7 +6,7 @@ import { PdSimService } from '../services/sim/pd-sim.service';
 import { FlagshipWatchProduct } from '../helpers/flagship-sku.helper';
 import { normalizeText, resolveDisplayColor } from '../helpers/data.helper';
 import { markFailedAndStop, markFailed, FieldCheck } from '../helpers/report.helper';
-import { getElementLabel, isDisplayedOrFalse, scrollAndJsClick, scrollUntilVisible, waitForDisplayedOrFalse } from '../helpers/element.helper';
+import { getElementLabel, scrollAndJsClick, clickIfDisplayed, scrollUntilVisible, isDisplayedOrFalse, waitForDisplayedOrFalse } from '../helpers/element.helper';
 import { prepareWebViewPage, switchToNative, switchToWebView } from '../helpers/context.helper';
 import { ProductOptionFields } from './bc.page';
 import { BasePage } from './base.page';
@@ -102,23 +102,12 @@ export class PdPage extends BasePage {
     await scrollAndJsClick(btn);
   }
 
-  /** Katalon PD.verifyPDPageLoadBySKU — WebView PD header contains SKU. */
-  async verifyPdLoadedBySku(sku: string): Promise<void> {
-    await this.preparePdPage();
-    const info = this.locator.headerSkuInfo;
-    const text = ((await info.getText().catch(() => '')) ?? '').toLowerCase().replace(/\s+/g, '');
-    const expected = sku.toLowerCase().replace(/\s+/g, '');
-    if (!text.includes(expected)) {
-      console.warn(`[PD] SKU soft-mismatch header="${text}" expected="${expected}"`);
-    }
-  }
-
-  /** Katalon PD.selectAR + verifyARExecution (Google Lens / quicksearchbox). */
   async openArAndVerify(timeoutMs = 20000): Promise<void> {
     await switchToWebView();
     const ar = this.locator.arButton;
-    await ar.waitForExist({ timeout: 15000 });
-    await scrollAndJsClick(ar);
+    if (!await clickIfDisplayed(ar,timeoutMs)) {
+      throw new Error('AR button not displayed');
+    }
 
     const deadline = Date.now() + timeoutMs;
     while (Date.now() < deadline) {
@@ -222,6 +211,7 @@ export class PdPage extends BasePage {
     if (await waitForDisplayedOrFalse(this.locator.webViewContainer,{timeout:10000})) {
       throw new Error('PD is in native context');
     }
+    console.warn('[PD.verifySkuForNativePdPage] Native PD Page');
     const skuElement = this.locator.nativePdProductName(skuOrName);
     await scrollUntilVisible(skuElement);
     if(!await isDisplayedOrFalse(skuElement)) {
