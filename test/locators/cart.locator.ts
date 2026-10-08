@@ -174,6 +174,39 @@ export class CartLocator {
     );
   }
 
+  get scPlusModal() {
+    return $(
+      [
+        '.hubble-care-popup-new.is-opened',
+        'app-samsung-care-v2.modal.show',
+      ].join(', ')
+    );
+  }
+
+  get scPlusPlanOption() {
+    return $(
+      [
+        'mat-radio-group .smc-option',
+      ].join(', ')
+    );
+  }
+
+  get scPlusTermsCheckboxes() {
+    return $$(
+      [
+        '.modal__checkbox-wrapper mat-checkbox input',
+      ].join(', ')
+    );
+  }
+
+  get scPlusConfirmButton() {
+    return $(
+      [
+        'button[data-an-la*="samsung care:"i][data-an-la*="confirm"i]',
+      ].join(', ')
+    );
+  }
+
   get eupAddButton() {
     return $("button[data-an-la='add service:samsung flex'], [an-la*='eup' i]");
   }

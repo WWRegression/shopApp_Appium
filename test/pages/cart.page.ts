@@ -23,7 +23,7 @@ export class CartPage extends BasePage {
   private readonly locator = new CartLocator();
 
   readonly tradeIn = new CartTradeInService();
-  readonly scPlus = new CartScPlusService();
+  readonly scPlus = new CartScPlusService(this);
   readonly eup = new CartEupService();
   readonly sim = new CartSimService();
   readonly tradeUp = new CartTradeUpService();
@@ -154,7 +154,7 @@ export class CartPage extends BasePage {
   }
 
   /** Get the quantity of the cart item */
-  private async getCartTotalCount(): Promise<number> {
+  async getCartTotalCount(): Promise<number> {
     const cartTotalCountSection = await this.locator.cartTotalCountSection.getText();
     return parseNumber(cartTotalCountSection);
   }
