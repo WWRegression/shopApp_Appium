@@ -75,6 +75,7 @@ export class LoginLocator {
       or contains(@content-desc, 'Se connecter')
       or contains(@content-desc, 'Connexion / Créer un compte')
       or contains(@content-desc, 'Iniciar sesión')
+      or contains(@content-desc, '三星账号授权登录')
       or contains(@content-desc, 'Přihlásit')
       or contains(@content-desc, 'Anmelden/Registrieren')
       or contains(@content-desc, 'Regístrate')

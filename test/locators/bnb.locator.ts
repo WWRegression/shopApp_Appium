@@ -14,6 +14,7 @@ export class BnbLocator {
       (contains(@content-desc, "Home") and contains(@content-desc, "Tab 1"))
       or (contains(@content-desc, "الصفحة الرئيسية") and contains(@content-desc, "علامة التبويب 1"))
       or (contains(@content-desc, "Accueil") and contains(@content-desc, "Onglet 1"))
+      or (contains(@content-desc, "Accueil") and contains(@content-desc, "Onglet\u00A01"))
       or (contains(@content-desc, "Inicio") and contains(@content-desc, "Pestaña 1"))
       or (contains(@content-desc, "Início") and contains(@content-desc, "Separador 1"))
       or (contains(@content-desc, "Halaman Utama") and contains(@content-desc, "Tab 1"))
@@ -104,6 +105,7 @@ export class BnbLocator {
       or (contains(@content-desc, "Carrito") and contains(@content-desc, "Pestaña 4"))
       or (contains(@content-desc, "Mon panier") and contains(@content-desc, "Onglet 4"))
       or (contains(@content-desc, "Troli") and contains(@content-desc, "Tab 4"))
+      or (contains(@content-desc, "עגלה") and contains(@content-desc, "כרטיסייה 4"))
       or (contains(@content-desc, "Carrello") and contains(@content-desc, "Scheda 4"))
       or (contains(@content-desc, "购物车") and contains(@content-desc, "4 个标签"))
       or (contains(@content-desc, "Warenkorb") and contains(@content-desc, "Tab 4"))
@@ -128,7 +130,7 @@ export class BnbLocator {
     return $(
       `//android.view.View[
 			(contains(@content-desc, "My Page") and contains(@content-desc, "Tab 5"))
-			or (contains(@content-desc, "My page") and contains(@content-desc, "Tab 5"))
+      or (contains(@content-desc, "My page") and contains(@content-desc, "Tab 5"))
       or (contains(@content-desc, "My Page") and contains(@content-desc, "Flik 5"))
 			or (contains(@content-desc, "Mein Account") and contains(@content-desc, "Tab 5"))
 			or (contains(@content-desc, "Mon compte") and contains(@content-desc, "Onglet 5"))
@@ -140,6 +142,7 @@ export class BnbLocator {
 			or (contains(@content-desc, "Halaman saya") and contains(@content-desc, "Tab 5"))
 			or (contains(@content-desc, "หน้าของฉัน") and contains(@content-desc, "แท็บที่ 5"))
 			or (contains(@content-desc, "Ma page") and contains(@content-desc, "Onglet\u00A05"))
+      or (contains(@content-desc, "Ma page") and contains(@content-desc, "Onglet 5"))
 			or (contains(@content-desc, "صفحتي") and contains(@content-desc, "علامة التبويب 5"))
 			or (contains(@content-desc, "Mijn pagina") and contains(@content-desc, "Tabblad 5"))
 			or (contains(@content-desc, "Moje Konto") and contains(@content-desc, "Karta 5"))

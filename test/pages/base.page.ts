@@ -133,7 +133,7 @@ export class BasePage {
 			'Ma page',
 			'Mi página',
 			'个人中心',
-			'Moje strán',
+			'Moje stránka',
 			'Mein Account',
 			'Mi cuenta',
 			'Mon compte',
