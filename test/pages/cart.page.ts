@@ -6,17 +6,10 @@ import { CartEupService } from '../services/eup/cart-eup.service';
 import { CartSimService } from '../services/sim/cart-sim.service';
 import { CartTradeUpService } from '../services/tradeup/cart-tradeup.service';
 import { switchToNative, prepareWebViewPage } from '../helpers/context.helper';
-import {
-  getElementLabel,
-  dispatchTouchStart,
-  jsClick,
-  clickIfDisplayed,
-  clickFirstDisplayed,
-  isDisplayedOrFalse,
-} from '../helpers/element.helper';
-import { assertEqual, assertElementDisplayed } from '../helpers/validation.helper';
+import { getElementLabel, clickIfDisplayed, clickFirstDisplayed, isDisplayedOrFalse, jsTouchStart, jsClick } from '../helpers/element.helper';
+import { assertEqual } from '../helpers/validation.helper';
 import { markFailed, markFailedAndStop, FieldCheck } from '../helpers/report.helper';
-import { removeNonWordChars } from '../helpers/data.helper';
+import { parseNumber, removeNonWordChars } from '../helpers/data.helper';
 
 export interface CartItemOptions {
   deviceName?: string;
@@ -143,6 +136,7 @@ export class CartPage extends BasePage {
 
   /** Verifies a sku is present in the cart. */
   async verifySku(sku: string): Promise<void> {
+    await this.prepareCartPage();
     await console.warn('verifySku: start');
     const skus = await this.getCartItemSkus();
     const target = sku.toLowerCase();
@@ -159,75 +153,59 @@ export class CartPage extends BasePage {
     return ((await el.getText().catch(() => '')) ?? '').trim();
   }
 
-  /**
-   * Auto-detects the cart UI variant:
-   *  - stepper: + button carries a value/data-modelunit quantity — sum it.
-   *  - row-per-unit (e.g. IN): one row per unit, no quantity value — count rows.
-   */
-  private async getSkuQuantity(sku: string): Promise<number> {
-    const elements = await this.locator.quantityAddButton(sku);
-
-    let total = 0;
-    for (const el of elements) {
-      const raw =
-        (await el.getAttribute('value').catch(() => null)) ??
-        (await el.getAttribute('data-modelunit').catch(() => null));
-      const parsed = raw ? parseInt(raw, 10) : NaN;
-      total += Number.isFinite(parsed) ? parsed : 1;
-    }
-    return total;
+  /** Get the quantity of the cart item */
+  private async getCartTotalCount(): Promise<number> {
+    const cartTotalCountSection = await this.locator.cartTotalCountSection.getText();
+    return parseNumber(cartTotalCountSection);
   }
 
-  /** Increments quantity via the stepper + button. Only responds to a touchstart dispatch, not click(). */
-  async addQuantity(sku: string): Promise<void> {
+  /** Increments quantity via the stepper + button. */
+  async increaseQuantity(sku: string): Promise<void> {
+    const before_cartCount = await this.getCartTotalCount();
+    const before_bnbCount = await this.getBNBCartCount();
+    await this.selectBnbMenu('cart');
+    console.warn(`[increaseQuantity] before_bnbCount: ${before_bnbCount} | before_cartCount: ${before_cartCount}`);
+
     await this.prepareCartPage();
-    const before = await this.getSkuQuantity(sku);
-
-    const elements = await this.locator.quantityAddButton(sku);
-    const target = elements[0];
-    markFailed([{ label: 'add-quantity control found', pass: Boolean(target), detail: `sku=${sku}` }], 'addQuantity');
-    await dispatchTouchStart(target);
-    await driver.pause(1500);
-
-    assertEqual(await this.getSkuQuantity(sku), before + 1);
+    const increaseButton = await this.locator.quantityIncreaseButton(sku);
+    await jsTouchStart(increaseButton);
+    await jsClick(increaseButton);
+    await driver.pause(3000);
+    // await this.locator.checkoutButtons.waitForEnabled({ timeout: 3000 });
+    
+    const after_cartCount = await this.getCartTotalCount();
+    const after_bnbCount = await this.getBNBCartCount();
+    console.warn(`[increaseQuantity] after_bnbCount: ${after_bnbCount} | after_cartCount: ${after_cartCount}`);
+    
+    assertEqual(after_cartCount, before_cartCount + 1);
+    assertEqual(after_bnbCount, before_bnbCount + 1);
   }
 
-  /** Decrements quantity via the stepper - button, or removes the row itself when there's no stepper. */
-  async reduceQuantity(sku: string): Promise<void> {
+  /** Decrements quantity via the stepper - button. */
+  async decreaseQuantity(sku: string): Promise<void> {
+    const before_bnbCount = await this.getBNBCartCount();
+    await this.selectBnbMenu('cart');
+
     await this.prepareCartPage();
-    const before = await this.getSkuQuantity(sku);
+    const before_cartCount = await this.getCartTotalCount();
+    console.warn(`[decreaseQuantity] before_bnbCount: ${before_bnbCount} | before_cartCount: ${before_cartCount}`);
 
-    const steppers = await this.locator.quantityReduceButton(sku);
-    const stepperTarget = steppers[0];
-
-    if (stepperTarget && (await stepperTarget.isDisplayed().catch(() => false))) {
-      await dispatchTouchStart(stepperTarget);
+    const decreaseButton = await this.locator.quantityDecreaseButton(sku);
+    if (await isDisplayedOrFalse(decreaseButton)) {
+      await jsTouchStart(decreaseButton);
+      await jsClick(decreaseButton);      
     } else {
-      const rowRemove = this.locator.rowRemoveButton(sku);
-      await rowRemove.waitForDisplayed({ timeout: 5000 });
-      await jsClick(rowRemove);
+      await this.removeOneCartItem();
+    }    
+    await driver.pause(3000);
+    // await this.locator.checkoutButtons.waitForEnabled({ timeout: 3000 });
+    
+    const after_cartCount = await this.getCartTotalCount();
+    const after_bnbCount = await this.getBNBCartCount();
+    console.warn(`[decreaseQuantity] after_bnbCount: ${after_bnbCount} | after_cartCount: ${after_cartCount}`);
 
-      const confirmButton = this.locator.removeConfirmButton;
-      if (await confirmButton.isDisplayed().catch(() => false)) {
-        await confirmButton.click();
-      }
-    }
-    await driver.pause(1500);
-
-    assertEqual(await this.getSkuQuantity(sku), before - 1);
-  }
-
-  /** Reads the item count from the BNB cart tab's content-desc (leading number). */
-  async getCartIconQuantity(): Promise<number> {
-    await this.prepareHeaderBnb();
-    const desc = await getElementLabel(this.bnbLocator.menu('cart'));
-    const firstLine = desc.split(/\r?\n/)[0] ?? '';
-    const match = firstLine.match(/\d+/);
-    return match ? parseInt(match[0], 10) : 0;
-  }
-
-  async verifyCartIconQuantity(expected: number): Promise<void> {
-    assertEqual(await this.getCartIconQuantity(), expected);
+    assertEqual(after_cartCount, before_cartCount - 1);
+    assertEqual(after_bnbCount, before_bnbCount - 1);
   }
 
   /**

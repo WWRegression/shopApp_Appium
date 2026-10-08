@@ -4,6 +4,7 @@ import { BnbLocator, BNB_MENUS, type BnbMenu } from '../locators/bnb.locator';
 import { LoginLocator } from '../locators/login.locator';
 import { switchToNative } from '../helpers/context.helper';
 import { scrollUp } from '../helpers/gesture.helper';
+import { assertEqual } from '../helpers/validation.helper';
 import {
   clickElement,
   clickIfDisplayed,
@@ -277,15 +278,13 @@ export class BasePage {
   }
 
   async matchesHeaderTitle(expected: keyof typeof BasePage.titleTexts ): Promise<boolean> {
-	console.warn('[matchesHeaderTitle] start');
+    console.warn('[matchesHeaderTitle] start');
     const title = (await this.getHeaderTitle()).trim();
     if (!title) {
       return false;
     }
-	console.warn('[matchesHeaderTitle] title:', title, 'expected:', expected);
-	return BasePage.titleTexts[expected].some(
-		(text) => matchesText(title, text)
-	  );
+    console.warn('[matchesHeaderTitle] title:', title, 'expected:', expected);
+    return BasePage.titleTexts[expected].some((text) => matchesText(title, text));
   }
 
   private async getHeaderTitle(): Promise<string> {
@@ -293,7 +292,22 @@ export class BasePage {
     return getElementLabel(this.headerLocator.title);
   }
 
-  /** BNB */
+  // BNB
+  /** Reads the item count from the BNB cart tab's content-desc (leading number). */
+  async getBNBCartCount(): Promise<number> {
+    await this.prepareHeaderBnb();
+    await this.ensureBnbVisible('cart');
+    const desc = await getElementLabel(this.bnbLocator.menu('cart'));
+    const firstLine = desc.split(/\r?\n/)[0] ?? '';
+    const match = firstLine.match(/\d+/);
+    return match ? parseInt(match[0], 10) : 0;
+  }
+
+  /** Verifies the BNB cart tab count. */
+  async verifyCartIconQuantity(expected: number): Promise<void> {
+    assertEqual(await this.getBNBCartCount(), expected);
+  }
+
   async selectBnbMenu(menu: BnbMenu): Promise<void> {
     await this.prepareHeaderBnb();
     await this.ensureBnbVisible(menu);

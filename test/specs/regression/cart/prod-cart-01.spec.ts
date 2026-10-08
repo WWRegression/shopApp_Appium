@@ -19,26 +19,23 @@ describe('PROD_CART_01', () => {
       await searchPage.searchByKeyword(site.product.sku);
       await pfPage.selectPfCard({ mode: 'first' });
 
+      await bcPage.prepareBcPage();
       await bcPage.selectOptions(site.product); 
       await bcPage.galaxyClub.selectNoForService();
+
       await bcPage.tradeIn.selectNoForService();
       await bcPage.scPlus.selectNoForService();
       await bcPage.clickAddToCart();
       await splashPage.clickSplashContinue();
 
-      const sku = await cartPage.getFirstItemSku();
-      await cartPage.verifySku(sku);
-
-      const baseQty = await cartPage.getCartIconQuantity();
-
+      await cartPage.verifySku(site.product.sku);
+      
       // Step1: Add quantity and verify cart icon quantity
-      await cartPage.addQuantity(sku);
-      await cartPage.verifyCartIconQuantity(baseQty + 1);
-
+      await cartPage.increaseQuantity(site.product.sku);
+      
       // Step2: Reduce quantity and verify cart icon quantity
-      await cartPage.reduceQuantity(sku);
-      await cartPage.verifyCartIconQuantity(baseQty);
-
+      await cartPage.decreaseQuantity(site.product.sku);
+      
       // Step3: Clear cart and verify cart icon quantity
       await cartPage.clearCart();
       await cartPage.verifyCartIconQuantity(0);

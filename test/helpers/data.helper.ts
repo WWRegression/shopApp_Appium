@@ -1,5 +1,9 @@
 import { currentSiteCode } from './tc-filter.helper';
 
+export function parseNumber(inputText: string): number {
+  return Number(inputText.match(/\d+/)?.[0] ?? 0);
+}
+
 // "$1,234.56" / "1.234,56" → comparable digit string
 export function normalizePriceDigits(priceText: string): string {
   return (priceText ?? '').replace(/[\s.,]/g, '').toLowerCase();

@@ -147,9 +147,14 @@ export async function setElementValue(
 
 /** DOM HTMLElement.click() — overlay / position:fixed / hidden input. */
 export async function jsClick(el: ChainablePromiseElement | WebdriverIO.Element): Promise<void> {
-  await driver.execute('arguments[0].click();', await el);
+  const script = "arguments[0].click();";
+  await driver.execute(script, await el);
 }
 
+export async function jsTouchStart(el: ChainablePromiseElement | WebdriverIO.Element): Promise<void> {
+  const script = "arguments[0].dispatchEvent(new TouchEvent('touchstart', { bubbles: true }));";
+  await driver.execute(script, await el);  
+}
 /**
  * scrollIntoView (center) then HTMLElement.click().
  * Failures (missing element etc.) are swallowed after WDIO fallback attempt.

@@ -17,9 +17,14 @@ export class CartLocator {
     return $$('button.guest-signin-btn, button.sign-in-banner__btn, button[data-an-la="empty cart:sign in"]');
   }
 
-  /** Katalon Cart/emptyCartLoginBtn — Sign in button on the empty cart (guest) */
+  /** Cart/emptyCartLoginBtn — Sign in button on the empty cart (guest) */
   get emptyCartLoginButton() {
     return $('button[data-an-la="empty cart:sign in"]');
+  }
+  
+  /** Cart total count section */
+  get cartTotalCountSection() {
+    return $('.item-counter-container p.item-count');
   }
 
   get removeItemButton() {
@@ -55,31 +60,8 @@ export class CartLocator {
     );
   }
 
-  /**
-   * Quantity-increase control. Matches both cart UI variants:
-   *  - stepper + button (carries value/data-modelunit)
-   *  - buy-one-more button (adds a new row on click)
-   */
-  quantityAddButton(sku: string) {
-    return $$(
-      [
-        `[data-modelcode="${sku}"] cart-item-counter button.btn-qty-plus`,
-        `.cart-item[data-modelcode="${sku}"] button[data-an-la="plus button"]`,
-        `.btn-qty-plus[data-modelcode="${sku}"]`,
-        `.btn-buy-one-more[data-modelcode="${sku}"]`,
-      ].join(', ')
-    );
-  }
-
-  /** Quantity-decrease stepper button. Not present on row-per-unit UIs — use rowRemoveButton instead. */
-  quantityReduceButton(sku: string) {
-    return $$(
-      [
-        `cart-item-counter[data-modelcode="${sku}"] button[data-an-tr="cart-product-remove"]:not([disabled])`,
-        `.cart-item[data-modelcode="${sku}"] .cart-item__quantity button[data-an-tr="cart-product-remove"]:not([disabled])`,
-        `div[data-modelcode="${sku}"] cart-item-counter button[data-an-tr="cart-product-remove"]:not([disabled])`,
-      ].join(', ')
-    );
+  cartItem(sku: string) {
+    return $(`.cart-item[data-modelcode="${sku}" i]`);
   }
 
   /** Removes an entire row (one unit) on row-per-unit UIs — pair with removeConfirmButton. */
@@ -98,6 +80,35 @@ export class CartLocator {
   /** Storage/color etc, split across multiple spans (e.g. "Pistachio", ", ", "1 TB"). */
   cartItemOptions(sku: string) {
     return $$(`.cart-item[data-modelcode="${sku}" i] .cart-item__options`);
+  }
+
+  /** Quantity-increase button */
+  quantityIncreaseButton(sku: string) {
+    return $(
+      [        
+        `.cart-item[data-modelcode="${sku}"] button.btn-qty-plus`,
+        `.cart-item[data-modelcode="${sku}"] button.btn-buy-one-more`,
+      ].join(', ')
+    );
+  }
+
+  /** Quantity-decrease button */
+  quantityDecreaseButton(sku: string) {
+    return $(
+      [
+        `.cart-item[data-modelcode="${sku}"] button.decrement_focus:not([disabled])`        
+      ].join(', ')
+    );
+  }
+
+  itemPrice(sku: string) {
+    return $(
+      [
+        `.cart-item[data-modelcode="${sku}" i] .price-container .price__current`,
+        `.cart-item[data-modelcode="${sku}" i] .price-special__current`,
+        `.cart-item[data-modelcode="${sku}" i] .price`,
+      ].join(', ')
+    );
   }
 
   get tradeInRemoveButton() {
@@ -192,16 +203,6 @@ export class CartLocator {
 
   get tradeUpPriceLabel() {
     return $('div[data-modelcode="TRADE-UP"] .service-item__actions div.action-text');
-  }
-
-  itemPrice(sku: string) {
-    return $(
-      [
-        `.cart-item[data-modelcode="${sku}" i] .price-container .price__current`,
-        `.cart-item[data-modelcode="${sku}" i] .price-special__current`,
-        `.cart-item[data-modelcode="${sku}" i] .price`,
-      ].join(', ')
-    );
   }
 
   get simAddButton() {

@@ -1,7 +1,6 @@
 import { BasePage } from './base.page';
 import { SplashLocator } from '../locators/splash.locator';
-import { isDisplayedOrFalse, scrollAndWdioClick } from '../helpers/element.helper';
-import { switchToWebView, isCurrentWebViewPage } from '../helpers/context.helper';
+import { isDisplayedOrFalse, scrollAndWdioClick, waitForDisplayedOrFalse } from '../helpers/element.helper';
 
 /**
  * Post-ATC splash (addon / gift / popup) → cart.
@@ -18,11 +17,6 @@ export class SplashPage extends BasePage {
 
     for (let i = 0; i < maxAttempts; i++) {
       console.warn('[SplashPage] attempt:', i);
-      if (await this.isOnCart()) {
-        console.warn('[SplashPage] already on cart');
-        return;
-      }
-      console.warn('[SplashPage] not on cart');
 
       if (await this.clickContinueOnPopup()) {
         continue;
@@ -31,13 +25,18 @@ export class SplashPage extends BasePage {
       if (await this.clickContinueButton()) {
         continue;
       }
+
+      if(!await waitForDisplayedOrFalse(this.locator.continueButton, {timeout:1000})) {
+        console.warn('[SplashPage] continue button not found');
+        return;
+      }
     }
     console.warn('[SplashPage] done without cart confirmation; prepareCartPage will verify');
   }
 
   private async clickContinueButton(): Promise<boolean> {
     const continueBtn = this.locator.continueButton;
-    if (await isDisplayedOrFalse(continueBtn)) {
+    if (await waitForDisplayedOrFalse(continueBtn, {timeout:3000})) {
       console.warn('[clickContinueButton] clicking continue on footer');
       await scrollAndWdioClick(continueBtn);
       await driver.pause(1000);
@@ -54,20 +53,6 @@ export class SplashPage extends BasePage {
       await driver.pause(1000);
       return true;
     }
-    return false;
-  }
-
-  private async isOnCart(): Promise<boolean> {
-    if (await isCurrentWebViewPage('cart').catch(() => false)) {
-      console.warn('[splash] on cart (url)');
-      return true;
-    }
-    if (await this.matchesHeaderTitle('CART').catch(() => false)) {
-      console.warn('[splash] on cart (header title)');
-      await switchToWebView(3000).catch(() => false);
-      return true;
-    }
-    await switchToWebView(3000).catch(() => false);
     return false;
   }
 }
