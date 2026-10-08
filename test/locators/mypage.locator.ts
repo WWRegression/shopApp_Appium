@@ -36,11 +36,11 @@ export class MypageLocator {
       `//*[contains(@content-desc, 'Log-in')
       or contains(@content-desc, 'Login')
       or contains(@content-desc, 'Anmelden')
-      or contains(@content-desc, '登录')
+      or @content-desc='登录'
       or contains(@content-desc, 'تسجيل الدخول')
       or contains(@content-desc, 'Inloggen')
       or contains(@content-desc, 'Se connecter')
-      or contains(@content-desc, 'Connexion')
+      or @content-desc='Connexion'
       or contains(@content-desc, 'Iniciar sesión')
       or contains(@content-desc, 'Přihlásit se')
       or contains(@content-desc, '登入')
@@ -70,8 +70,9 @@ export class MypageLocator {
       or contains(@content-desc, 'تسجيل الخروج')
       or contains(@content-desc, 'Afmelden')
       or contains(@content-desc, 'Se déconnecter')
-      or contains(@content-desc, 'Déconnexion')
+      or @content-desc='Déconnexion'
       or contains(@content-desc, 'Cerrar sesión')
+      or @content-desc='退出登录'
       or contains(@content-desc, 'Odhlášení')
       or contains(@content-desc, '登出')
       or contains(@content-desc, 'Kijelentkezés')
