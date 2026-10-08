@@ -6,7 +6,7 @@ describe('PROD_SHOP_06', () => {
 
   it('1 filter and 1 sort-by option work on PF', async function () {
     await runOrSkip.call(this, 'PROD_SHOP_06', async () => {
-      await shopPage.openFirstCategory();
+      await shopPage.openCategory('mobile');
       // TODO: reimplement using new PfPage API
     });
   });

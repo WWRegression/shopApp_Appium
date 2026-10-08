@@ -187,13 +187,15 @@ export class LoginLocator {
   /** Katalon Initialization/purposeNextBtn */
   get purposeNextButton() {
     return $(
-      `//android.widget.Button[@content-desc = 'Next' or @content-desc = 'Ok' or @content-desc = 'Weiter' or @content-desc = 'Nächste' or @content-desc = '下一页']`
+      `//android.widget.Button[@content-desc = 'Next' or @content-desc = 'Ok' or @content-desc = 'Weiter' or @content-desc = 'Nächste' or @content-desc = 'Siguiente' or @content-desc = '下一页']`
     );
   }
 
   /** Katalon Initialization/purposeSkipBtn */
   get purposeSkipButton() {
-    return $(`//android.widget.Button[@content-desc = 'Skip' or @content-desc = 'Überspringen' or @content-desc = '跳过']`);
+    return $(
+      `//android.widget.Button[@content-desc = 'Skip' or @content-desc = 'Überspringen' or @content-desc = 'Omitir' or @content-desc = 'Saltar' or @content-desc = '跳过']`
+    );
   }
 
   /** Device Settings > Accounts (device language, English) — Katalon LogIn/settingAddAccount */

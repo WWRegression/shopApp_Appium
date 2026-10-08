@@ -326,6 +326,16 @@ export class LoginPage extends BasePage {
     await this.loginWithGmailOnSso();
   }
 
+  /** Logs in with the email account only when the Samsung account SSO screen shows (no device account, e.g. IN guest); skipped otherwise. */
+  async loginWithEmailOnSsoIfShown(): Promise<void> {
+    await switchToNative();
+    if (!(await waitForDisplayedOrFalse(this.locator.emailSsoButton, { timeout: 3000 }))) {
+      console.log('[loginWithEmailOnSsoIfShown] no SSO login options — logged in with the device account');
+      return;
+    }
+    await this.loginWithEmailOnSso();
+  }
+
   /** Katalon LogIn.SSOloginViaGmail — picks the device Gmail account (this.gmailAccount()) in the Google picker. */
   async loginWithGmailOnSso(): Promise<void> {
     const { email } = this.gmailAccount();

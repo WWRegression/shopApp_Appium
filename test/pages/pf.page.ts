@@ -1,9 +1,11 @@
 import { BasePage } from './base.page';
 import { PfLocator } from '../locators/pf.locator';
 import { switchToNative, getCurrentWebViewPage } from '../helpers/context.helper';
-import { scrollDown } from '../helpers/gesture.helper';
+import { scrollByBoundary, scrollDown } from '../helpers/gesture.helper';
 import { currentSiteCode } from '../helpers/tc-filter.helper';
 import { normalizeText, isExactTokenMatch, stripMarkerText, normalizeProductName } from '../helpers/data.helper';
+import { clickElement, scrollUntilVisible, waitForDisplayedOrFalse } from '../helpers/element.helper';
+import { markFailed } from '../helpers/report.helper';
 import { ShopPage, type CategoryMismatch } from './shop.page';
 import { BcPage } from './bc.page';
 import { PdPage } from './pd.page';
@@ -138,7 +140,8 @@ export class PfPage extends BasePage {
     return null;
   }
 
-  async getPfNameselectPf(): Promise<string | null> {
+  /** Katalon Shop.verifyProductNameBetweenPFandPD (PF part) — taps the first PF card and returns its normalized product name. */
+  async selectFirstPfCard(): Promise<string | null> {
     if (!(await this.isPfCardDisplayed())) {
       return null;
     }
@@ -167,8 +170,11 @@ export class PfPage extends BasePage {
     L0Title?: string,
     L1Title?: string,
   ): void {
-    if (this.productNameIncludes(pfName, bcPdName)) {
-      console.log(`PF/PD product name match: ${L0Title} > ${L1Title} (PF: "${pfName}", BC/PD: "${bcPdName}")`);
+    const pass = this.productNameIncludes(pfName, bcPdName);
+    console.log(
+      `[verifyProductNameMatch] ${L0Title}${L1Title ? ` > ${L1Title}` : ''} expected="${pfName}" actual="${bcPdName}" result=${pass ? 'PASS' : 'FAIL'}`
+    );
+    if (pass) {
       return;
     }
 
@@ -184,12 +190,7 @@ export class PfPage extends BasePage {
   }
 
   async isPfCardDisplayed(): Promise<boolean> {
-    try {
-      await this.pflocator.productGrid[0].waitForDisplayed({ timeout: 5000 });
-      return true;
-    } catch {
-      return false;
-    }
+    return waitForDisplayedOrFalse(this.pflocator.productGrid[0], { timeout: 5000 });
   }
 
   async selectPfCardExcluding(_keywords: string[]): Promise<void> {
@@ -292,7 +293,37 @@ export class PfPage extends BasePage {
     // TODO: Implement sort apply action
   }
 
-  async clickWish(_expect: WishState): Promise<void> {
-    // TODO: Implement wish icon toggle
+  /** Katalon Shop.clickWishListBtn — taps the first "add to wishlist" heart on PF and returns that card's SKU. */
+  async clickAddToWishlist(): Promise<string> {
+    await switchToNative();
+    const icon = this.pflocator.wishlistIcon();
+    // PF cards render a few seconds after landing; scrolling earlier skips the first cards
+    await waitForDisplayedOrFalse(icon, { timeout: 10000 });
+    markFailed([{ label: 'add-to-wishlist heart not found on PF', pass: await scrollUntilVisible(icon) }], 'clickAddToWishlist');
+
+    // The SKU sits anywhere in the label ("Add to wishlist SM-A185FZKDEUB", CN "添加 SM-F9710ZGDCHC 至我的收藏")
+    const label = (await icon.getAttribute('content-desc')) ?? '';
+    const sku = label.split(/\s+/).find((token) => /^[A-Z0-9]+-[A-Z0-9]+$/.test(token)) ?? '';
+    markFailed([{ label: 'SKU not found in the wishlist heart label', pass: Boolean(sku), detail: label }], 'clickAddToWishlist');
+
+    // Nudge so the floating Chat button cannot sit on top of the heart
+    await scrollByBoundary('down', 0.1);
+    await clickElement(this.pflocator.wishlistIcon(sku), { timeout: 5000 });
+    console.log(`[clickAddToWishlist] sku=${sku}`);
+    return sku;
+  }
+
+  /** Katalon Shop.verifyLoginPopup — a guest tapping the wishlist heart gets the login popup. */
+  async verifyLoginPopup(): Promise<void> {
+    await switchToNative();
+    const shown = await waitForDisplayedOrFalse(this.pflocator.loginConfirmModal, { timeout: 5000 });
+    console.log(`[verifyLoginPopup] expected=login popup actual=${shown ? 'login popup' : 'not shown'} result=${shown ? 'PASS' : 'FAIL'}`);
+    markFailed([{ label: 'Login popup failed to appear on guest wishlist action', pass: shown }], 'verifyLoginPopup');
+  }
+
+  /** Continue on the wishlist login popup — starts the login (auto login with a device account, else the login / SSO screens). */
+  async clickContinueOnLoginPopup(): Promise<void> {
+    await switchToNative();
+    await clickElement(this.pflocator.loginPopupContinueButton, { timeout: 5000 });
   }
 }
