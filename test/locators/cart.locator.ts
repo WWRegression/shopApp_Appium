@@ -228,7 +228,6 @@ export class CartLocator {
   get tradeUpRemoveButton() {
     return $(
       [
-        'div[data-modelcode="TRADE-IN"] button:is([data-an-la="remove-item"], [data-an-la="remove item"], [data-an-tr="cart-product-remove"])',
         'div[data-modelcode="TRADE-UP"] button[data-an-la="remove item"]',
       ].join(', ')
     );

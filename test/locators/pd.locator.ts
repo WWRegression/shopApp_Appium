@@ -219,7 +219,14 @@ export class PdLocator {
   }
 
   get tradeUpModal() {
-    return $('#ce-trade-up-popup-section .layer-popup__inner.layer-popup__looping');
+    return $(
+      [
+        '#ce-trade-up-popup-section .layer-popup__inner.layer-popup__looping',
+        '.siel-trade-in-popup__contents',
+        '.trade-in-popup-v3__step--show',
+        '.layer-popup__looping--first.hidden + .cn-trade-in-layer-popup__inner',
+      ].join(', ')
+    );
   }
 
   get tradeUpCurrentStep() {
@@ -284,7 +291,7 @@ export class PdLocator {
   }
 
   get tradeUpRemoveButton() {
-    return $('button[an-la="trade-in:delete"], a[an-la="trade-in:delete"], a[an-la="trade-up:delete"]');
+    return $('a[an-la="trade-up:delete"], a[an-la="trade-in:delete"]');
   }
 
   // ---- End of Trade-Up ----
