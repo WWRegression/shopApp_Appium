@@ -1,4 +1,3 @@
-/** Known checkout form component tags — used directly as form ids. Site-dependent, not every site shows every one of these. */
 export const CHECKOUT_FORMS = [
   'app-customer-info-v2',
   'app-customer-address-v2',
@@ -28,7 +27,6 @@ export const CHECKOUT_FORMS = [
   'app-delivery-info-cn'
 ] as const;
 
-/** Input/select fields eligible for auto-fill. */
 const FIELD_SELECTOR_PARTS = [
   "input[name]:not([type='checkbox']):not([type='radio']):not([disabled])",
   "input[formcontrolname]:not([type='checkbox'])",
@@ -39,7 +37,6 @@ const FIELD_SELECTOR_PARTS = [
   'mat-select[formcontrolname]',
 ];
 
-/** Payment-method title elements — collapsed by default, one per available payment method. */
 const PAYMENT_METHOD_TITLE_SELECTOR = [
   ...[
     'h2.payment-title',
@@ -48,15 +45,12 @@ const PAYMENT_METHOD_TITLE_SELECTOR = [
     'div[class="payment-step_body"] app-payment-mode-flat-item',
   ].map((s) => `app-checkout-step-payment ${s}`),
   '.payment-banks .payment-mode',
-  // CN has no app-checkout-step-payment — its flat payment modes sit directly under app-payment-modes-flat
   'app-payment-modes-flat app-payment-mode-flat-item',
 ].join(', ');
 
-/** Marks the button/div that submits the order for the currently-expanded payment method. */
 const SUBMIT_ORDER_BUTTON_LOADER_SELECTOR = 'button[appsubmitorderbuttonloader], div[appsubmitorderbuttonloader], button[data-an-tr="checkout-payment-detail"], .express-payment-mode-wrapper > div, #samsungPayContainer > button, button.fe0yvp1';
 
 export class CheckoutLocator {
-  /** The active step panel — proves the checkout page has loaded and started its flow. */
   get activeStep() {
     return $("mat-expansion-panel[data-activestepname][class*='active']");
   }
@@ -65,27 +59,22 @@ export class CheckoutLocator {
     return $('cx-page-layout.CheckoutPageTemplateV2');
   }
 
-  /** Katalon LogIn/checkoutLoginBtn — Login link on the guest checkout */
   get checkoutLoginButton() {
     return $('.checkout-login-link a[data-an-tr="account-login"], span[data-an-tr="account-login"]');
   }
 
-  /** All known checkout form components currently in the DOM (may be more than one). */
   get formElements() {
     return $$(CHECKOUT_FORMS.join(', '));
   }
 
-  /** Fillable fields inside a given form component. */
   fieldsIn(formTag: string) {
     return $$(FIELD_SELECTOR_PARTS.map((s) => `${formTag} ${s}`).join(', '));
   }
 
-  /** Validation errors left over after trying to advance a step. */
   get invalidFields() {
     return $$('.ng-invalid, ul.error, ul.error li, mat-error, .mat-mdc-form-field-error');
   }
 
-   /** "cart-to-checkout" deliberately excluded — that's the cart page's own button, not a step-continue button. */
   get moveToNextButton() {
     return $(
       [
@@ -96,9 +85,7 @@ export class CheckoutLocator {
     );
   }
 
-  /** US address popup after Next on the delivery address — "Use suggested address" (Confirm your address) or "Use this address" (Address verification). */
   get addressPopupUseAddressButton() {
-    // By data-an-la, not class: .save-btn is "Use suggested address" on one popup and "Edit address" on the other
     return $(
       'app-address-recommendation-modal button[data-an-la*="use suggested address" i], app-address-recommendation-modal button[data-an-la*="use this address" i]'
     );
@@ -108,17 +95,14 @@ export class CheckoutLocator {
     return $('button[data-an-la*="use this address" i]');
   }
 
-  /** The not-yet-selected delivery method tab. */
   get deliveryMethodButton() {
     return $('[aria-selected="false"] mat-icon[data-mat-icon-name="delivery-icon"]');
   }
 
-  /** Not-yet-selected delivery option radio — the wrapping div is the label's parent, not a descendant, so click the input itself. */
   get deliveryOptionButton() {
     return $('ul[class*="delivery_list"] input[type="radio"]:not(:checked)');
   }
 
-  /** Checkboxes to proactively check if present: required T&C, and "save this address". */
   get autoCheckCheckbox() {
     return $(
       [
@@ -130,34 +114,28 @@ export class CheckoutLocator {
     );
   }
 
-  /** "New address" option in the saved/new address radio group — not yet selected. */
   get newAddressRadio() {
     return $("input[name='addressOptionShipping'][value='NEW_ADDRESS']:not(:checked)");
   }
 
-  /** Switches the address search box to manual line1/town/postcode fields (first-time checkout, no saved address). */
   get enterAddressManuallyLink() {
     return $('button.enter-address-method');
   }
 
-  /** Rewards opt-in checkbox — should never be shown (verifyNoRewardOptIn asserts on this). */
   get rewardOptIn() {
     return $('app-rewards-opt-in input[type="checkbox"], app-rewards-opt-in-v2 input[type="checkbox"]');
   }
 
-  /** Estimated reward points banner — a different element than rewardOptIn, this one should be shown. */
   get rewardArea() {
     return $(
       'div[class*="summary-rewards-benefit"], div[class*="rewards-estimated-points"], div[class*="rewards-points-value"], app-signin-option-cn div.guest-signin-estimated-points'
     );
   }
 
-  /** Currently-selected text preview on a mat-select trigger, if any. */
   selectedValueOf(field: WebdriverIO.Element) {
     return field.$('.mat-mdc-select-min-line');
   }
 
-  /** Order Summary header — collapsed by default, but "Order Summary (N)" + total price already show here. */
   get orderSummary() {
     return $('.view-order-container, .order-summary-wrapper');
   }
@@ -166,20 +144,16 @@ export class CheckoutLocator {
     return $('~YOUR_CHECKOUT_PLACE_ORDER_SELECTOR');
   }
 
-  /** All available (collapsed-by-default) payment method titles. */
   get paymentMethodTitles() {
     return $$(PAYMENT_METHOD_TITLE_SELECTOR);
   }
 
-  /** Present once a payment method panel has expanded. */
   get paymentMethodExpanded() {
     return $(
-      // US renders the accordion under app-payment-modes-us (section.payment-modes), outside .payment-modes-type
       '.payment-modes-type mat-expansion-panel-header.mat-expanded[role="button"], app-checkout-step-payment .payment-modes mat-expansion-panel-header.mat-expanded[role="button"], .accordion-toggle[aria-expanded="true"], .payment-banks .payment-mode.selected'
     );
   }
 
-  /** All button/div elements marking the submit-order loader for whichever payment method is expanded. */
   get submitOrderButtonLoaders() {
     return $$(SUBMIT_ORDER_BUTTON_LOADER_SELECTOR);
   }
@@ -192,7 +166,6 @@ export class CheckoutLocator {
     return $('[data-an-la="checkout:delivery options:edit"]');
   }
 
-  /** Address shown on the payment step — compared against savedAddressInfo after an Edit-button navigation. */
   get paymentPreviewAddress() {
     return $('.details__shipping-address, .address__formatted-address, .delivery-address-fullname');
   }
@@ -201,7 +174,6 @@ export class CheckoutLocator {
     return $('.address-box label');
   }
 
-  /** Collapsed-by-default Order Summary expand toggle. */
   get viewOrderToggle() {
     return $('mat-icon[data-an-la="view more"]');
   }
@@ -210,7 +182,6 @@ export class CheckoutLocator {
     return $('[data-an-la="order summary:edit"], [data-an-la="order summary:edit cart"]');
   }
 
-  /** Confirmation button on the "leave checkout?" modal shown when editing Order Summary. */
   get leaveCheckoutConfirmButton() {
     return $('[data-an-la="leave the checkout page:yes"]');
   }

@@ -1,5 +1,5 @@
 /**
- * Result DB helper (Katalon Keywords/ReportHandler.groovy 참고).
+ * Result DB helper.
  *
  * Sanity/Phase3:
  *   EXEC procInsertShopAppResult agentIp, testType, releaseName, site, tcId, apkVersion, status, reason

@@ -257,7 +257,7 @@ export class BasePage {
   }
 
   /**
-   * Katalon Init.clickNotification / clickLocationPermission — deny notifications, allow location.
+   * Deny notifications, allow location.
    * The location popup is awaited only after a notification popup; pass a long locationTimeoutMs only for a freshly wiped app.
    */
   async dismissPermissionPopups(timeoutMs = 5000, locationTimeoutMs = 1000): Promise<void> {
@@ -287,7 +287,7 @@ export class BasePage {
     await clickIfDisplayed(this.popupLocator.promoCloseButton);
   }
 
-  /** Katalon Init.selectCountry — on the country list (first launch or Shop > Country), selects `countryName` and confirms. */
+  /** On the country list (first launch or Shop > Country), selects `countryName` and confirms. */
   async selectCountry(countryName?: string): Promise<void> {
     // Single-country apps (no countryName in site data) have no country list
     if (!countryName) {
@@ -466,7 +466,7 @@ export class BasePage {
       }
     }
 
-    // Some sites show no BNB on search either (e.g. US); its header Back leads Home (Katalon ensureBNBVisible 2nd attempt: headerBackBtn)
+    // Some sites show no BNB on search either (e.g. US); its header Back leads Home
     if (await isDisplayedOrFalse(this.headerLocator.backButton)) {
       await clickElement(this.headerLocator.backButton);
       if (await waitForDisplayedOrFalse(this.bnbLocator.menu(menu), { timeout: 3000 })) {

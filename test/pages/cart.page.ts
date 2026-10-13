@@ -76,7 +76,7 @@ export class CartPage extends BasePage {
     return this.locator.emptyCartSection.waitForDisplayed({ timeout: waitTime }).then(() => true).catch(() => false);
   }
 
-  /** Katalon LogIn.loginOnCart / loginOnEmptyCart — taps the cart's Sign in; the login page is handled by LoginPage.clickLoginBtnOnLoginPage(). */
+  /** Taps the cart's Sign in; the login page is handled by LoginPage.clickLoginBtnOnLoginPage(). */
   async clickLoginOnCart(): Promise<void> {
     await this.prepareCartPage();
     await markFailedAndStop(
@@ -85,7 +85,7 @@ export class CartPage extends BasePage {
     );
   }
 
-  /** Katalon LogIn.verifyLoggedInCartPage — cart loads and the empty cart Sign in button is gone. */
+  /** Cart loads and the empty cart Sign in button is gone. */
   async verifyLoggedInOnCart(): Promise<void> {
     await this.prepareCartPage();
     const loginShown = await isDisplayedOrFalse(this.locator.emptyCartLoginButton);

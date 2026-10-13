@@ -59,23 +59,23 @@ export async function adb(...args: string[]): Promise<string> {
   return adbAsync(args);
 }
 
-/** adb am force-stop (Katalon Launch.forceStopPakage). */
+/** adb am force-stop. */
 export async function forceStopPackage(appPackage: string): Promise<void> {
   await adb('shell', 'am', 'force-stop', appPackage);
 }
 
-/** adb pm clear — wipes the app's data (Katalon Launch.clearPackage). */
+/** adb pm clear — wipes the app's data. */
 export async function clearPackage(appPackage: string): Promise<void> {
   await adb('shell', 'pm', 'clear', appPackage);
 }
 
-/** adb am start -a <action> (Katalon Launch.startPackageByAction). */
+/** adb am start -a <action>. */
 export async function startActivityByAction(action: string): Promise<void> {
   await adb('shell', 'am', 'start', '-a', action);
   await driver.pause(1000);
 }
 
-/** Force-stops and relaunches the app (Katalon Launch.startExistingApp). */
+/** Force-stops and relaunches the app. */
 export async function restartApp(appPackage = targetPackage()): Promise<void> {
   await forceStopPackage(appPackage);
   await driver.activateApp(appPackage);

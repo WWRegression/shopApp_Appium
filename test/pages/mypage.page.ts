@@ -25,11 +25,11 @@ import {
 import { flingToEnd, flingToStart, swipeByBoundary, tapAtCoordinates } from '../helpers/gesture.helper';
 import { markFailed, markFailedAndStop } from '../helpers/report.helper';
 
-/** Katalon loginOnMypage taps this offset inside the profile card instead of the element center. */
+/** Tap offset inside the profile card used for Login, instead of the element center. */
 const LOGIN_TAP_OFFSET = { x: 350, y: 150 };
-/** Katalon tapProfiles taps the name line inside the profile card (a center tap does nothing); CL / PE cards are taller. */
+/** Tap offset on the name line inside the profile card (a center tap does nothing); CL / PE cards are taller. */
 const PROFILE_TAP_OFFSET = { x: 350, y: 230, yForClPe: 260 };
-/** Katalon SiteConfig.RTL — the name line is on the right side of the profile card. */
+/** The name line is on the right side of the profile card. */
 const RTL_SITES = ['AE_AR', 'SA', 'IL'];
 /** Words that name the same menu — sites swap them between the menu and its page (US menu "Inbox" opens "Notification", IN the reverse). */
 const SAME_MENU_WORDS = [['inbox', 'notification']];
@@ -40,7 +40,7 @@ export class MypagePage extends BasePage {
   /** Page ids captured as a baseline before the loop starts — excluded when detecting new items. */
   private readonly knownPageIds = new Set<string>();
 
-  /** Katalon MyPage.tapMenu() equivalent — scrolls to and clicks the menu button with this on-screen label. */
+  /** Scrolls to and clicks the menu button with this on-screen label. */
   async selectMenu(label: string): Promise<void> {
     console.log(`[selectMenu] label="${label}"`);
     const button = this.locator.menuButton(label);
@@ -110,7 +110,7 @@ export class MypagePage extends BasePage {
   }
 
   /**
-   * Verifies the clicked sub-menu actually navigated there. Katalon
+   * Verifies the clicked sub-menu actually navigated there.
    * MyPage.verifySubMenus() equivalent. Checks whether the label appears in
    * the url (webview) or header title (native). The url is read directly
    * from the chrome devtools socket, staying in NATIVE — no Appium context
@@ -211,16 +211,16 @@ export class MypagePage extends BasePage {
     markFailedAndStop([{ label: 'My Page not shown (header title does not match)', pass: ready }], 'prepareMypage');
   }
 
-  /** Katalon swipes My Page down to its top before looking for Login; skipped when Login is already visible. */
+  /** Swipes My Page down to its top before looking for Login; skipped when Login is already visible. */
   private async scrollToLoginButton(): Promise<void> {
     if (!(await isDisplayedOrFalse(this.locator.loginButton))) {
       await swipeByBoundary('down', 0.95);
     }
   }
 
-  /** Katalon LogIn.loginOnMypage (My Page part) — taps Login; the login page is handled by LoginPage.clickLoginBtnOnLoginPage(). */
+  /** Taps Login; the login page is handled by LoginPage.clickLoginBtnOnLoginPage(). */
   async clickLoginOnMypage(): Promise<void> {
-    // Katalon loginOnMypage(IN): logged-out IN shows "Select profile to continue" instead of My Page
+    // IN: logged-out IN shows "Select profile to continue" instead of My Page
     if (await this.loginPage.isSelectProfileShownForIn()) {
       await this.loginPage.loginOnSelectProfileForIn();
       return;
@@ -239,7 +239,7 @@ export class MypagePage extends BasePage {
     await tapAtCoordinates(tapX, tapY);
   }
 
-  /** Scrolls to Logout at the bottom of My Page (Katalon swipes a fixed 2–3 times; one fling to the end is faster). */
+  /** Scrolls to Logout at the bottom of My Page with one fling to the end. */
   private async scrollToLogoutButton(): Promise<boolean> {
     // At the very end Logout sits above the BNB (US has Select Store below it); mid-page it can hide behind the BNB
     // Fling once more when Logout is not there yet (the page can still be growing while My Page loads)
@@ -253,7 +253,7 @@ export class MypagePage extends BasePage {
     return false;
   }
 
-  /** Katalon LogIn.logoutOnMypage — opens My Page, scrolls to Logout at the bottom and logs out. */
+  /** Opens My Page, scrolls to Logout at the bottom and logs out. */
   async logoutOnMypage(): Promise<void> {
     await this.prepareMypage();
     const found = await this.scrollToLogoutButton();
@@ -262,7 +262,7 @@ export class MypagePage extends BasePage {
     await clickElement(this.locator.logoutButton, { timeout: 3000 });
     console.log('[logoutOnMypage] Logout clicked');
     await clickIfDisplayed(this.locator.logoutOkayButton, 5000);
-    // Katalon waits a fixed 10s; the app reloads after logout, so wait until Logout is gone and the first screen is back
+    // The app reloads after logout, so wait until Logout is gone and the first screen is back
     await this.locator.logoutButton.waitForDisplayed({ timeout: 10000, reverse: true }).catch(() => undefined);
     await this.waitForAppLoaded(20000);
   }
@@ -282,9 +282,9 @@ export class MypagePage extends BasePage {
     await this.logoutOnMypage();
   }
 
-  /** Katalon LogIn.isLogOutStatus — Login button must be shown at the top of My Page. */
+  /** Login button must be shown at the top of My Page. */
   async verifyLoggedOut(): Promise<void> {
-    // Katalon isLogOutStatus(IN): the "Select profile to continue" screen itself means logged out
+    // IN: the "Select profile to continue" screen itself means logged out
     if (await this.loginPage.isSelectProfileShownForIn()) {
       console.log('[verifyLoggedOut] Select profile screen shown — logged out');
       return;
@@ -297,7 +297,7 @@ export class MypagePage extends BasePage {
     markFailedAndStop([{ label: 'user is not logged out (Login button not found on My Page)', pass: loggedOut }], 'verifyLoggedOut');
   }
 
-  /** Katalon LogIn.ensureLoginStatus — logs in with the device account unless already logged in. */
+  /** Logs in with the device account unless already logged in. */
   async ensureLoggedIn(): Promise<void> {
     // A logged-out app can open on the login page (no BNB) — its login button logs in with the device account
     if (await this.loginPage.isLoginPageShown()) {
@@ -324,30 +324,30 @@ export class MypagePage extends BasePage {
     return ready && (await this.scrollToLogoutButton());
   }
 
-  /** Katalon LogIn.isLogInStatus — Logout button must be found at the bottom of My Page. */
+  /** Logout button must be found at the bottom of My Page. */
   async verifyLoggedIn(options: { continueOnFail?: boolean } = {}): Promise<void> {
     let loggedIn = await this.isLoggedIn();
     if (!loggedIn) {
-      // Login can still be completing in the background (CN authorizes after the tap) — Katalon also re-checks 3 times
+      // Login can still be completing in the background (CN authorizes after the tap), so it is re-checked
       console.log('[verifyLoggedIn] Logout not found yet — re-checking for up to 15s');
       loggedIn = await driver
         .waitUntil(() => this.isLoggedIn(), { timeout: 15000, interval: 2000 })
         .then(() => true, () => false);
     }
     console.log(`[verifyLoggedIn] ${loggedIn}`);
-    // Katalon stops here, except in HOME_02 where it records the failure and goes on
+    // Stops here, except in HOME_02 where the failure is recorded and the TC goes on
     const mark = options.continueOnFail ? markFailed : markFailedAndStop;
     mark([{ label: 'user is not logged in (Logout button not found on My Page)', pass: loggedIn }], 'verifyLoggedIn');
   }
 
-  /** Katalon Reward.checkJoinRewardsTooltipOnMyPage — the "Join Samsung Rewards" tooltip must not show on My Page. */
+  /** The "Join Samsung Rewards" tooltip must not show on My Page. */
   async verifyNoJoinRewardsTooltip(): Promise<void> {
     await this.prepareMypage();
     const shown = await isDisplayedOrFalse(this.locator.joinRewardsTooltip);
     markFailed([{ label: '"Join Samsung Rewards" tooltip is shown on My Page', pass: !shown }], 'verifyNoJoinRewardsTooltip');
   }
 
-  /** Katalon Reward.getPointsMyPage — Rewards points shown on the My Page dashboard. */
+  /** Rewards points shown on the My Page dashboard. */
   async getRewardsPoints(): Promise<number> {
     await this.prepareMypage();
     const shown = await waitForDisplayedOrFalse(this.locator.rewardsPoints, { timeout: 5000 });
@@ -357,7 +357,7 @@ export class MypagePage extends BasePage {
     return points;
   }
 
-  /** Katalon Reward.getPointsRewardsPage — opens the Samsung Rewards web page from My Page and reads its points. */
+  /** Opens the Samsung Rewards web page from My Page and reads its points. */
   async getRewardsPointsOnRewardsPage(): Promise<number> {
     await clickElement(this.locator.rewardsPoints, { timeout: 3000 });
     const ready = await prepareWebViewPage('mypageRewards', this.locator.rewardsPagePoints, 15000);
@@ -370,7 +370,7 @@ export class MypagePage extends BasePage {
     return points;
   }
 
-  /** Katalon Reward.comparePointsAcrossPages — the three points values must be the same. */
+  /** The three points values must be the same. */
   verifyRewardsPointsMatch(homePoints: number, mypagePoints: number, rewardsPagePoints: number): void {
     const same = homePoints === mypagePoints && homePoints === rewardsPagePoints;
     const detail = `Home=${homePoints}, My Page=${mypagePoints}, Rewards page=${rewardsPagePoints}`;
@@ -378,12 +378,12 @@ export class MypagePage extends BasePage {
     markFailed([{ label: 'Rewards points differ', pass: same, detail }], 'verifyRewardsPointsMatch');
   }
 
-  /** Katalon MyPage.getAvailableDashboardMenu — Rewards / Wishlist are not offered on every site (site.features). */
+  /** Rewards / Wishlist are not offered on every site (site.features). */
   getAvailableDashboardMenus(site: LoadedSite): DashboardMenu[] {
     return DASHBOARD_MENUS.filter((menu) => menu === 'vouchers' || site.features[menu] !== false);
   }
 
-  /** Katalon MyPage.tapMenu — selects a dashboard menu (Rewards / Vouchers / Wishlist) on My Page. */
+  /** Selects a dashboard menu (Rewards / Vouchers / Wishlist) on My Page. */
   async selectDashboardMenu(menu: DashboardMenu): Promise<void> {
     await switchToNative();
     await markFailedAndStop(
@@ -392,7 +392,7 @@ export class MypagePage extends BasePage {
     );
   }
 
-  /** Katalon MyPage.verifyMenu — the page opened from the dashboard must show the menu's tab selected. */
+  /** The page opened from the dashboard must show the menu's tab selected. */
   async verifyDashboardMenuRedirected(menu: DashboardMenu): Promise<void> {
     const pass = await waitForDisplayedOrFalse(this.locator.dashboardMenuTab(menu), { timeout: 10000 });
     const actual = (await getElementLabel(this.locator.selectedMypageTab)).replace(/\n/g, ' / ');
@@ -403,12 +403,12 @@ export class MypagePage extends BasePage {
     );
   }
 
-  /** Katalon MyPage.getAvailableProductMenu — menus below the dashboard shown on the site (data/sites-data mypageMenuList). */
+  /** Menus below the dashboard shown on the site (data/sites-data mypageMenuList). */
   getAvailableProductMenus(site: LoadedSite): ProductMenu[] {
     return PRODUCT_MENUS.filter((menu) => site.mypageMenuList?.[menu] === true);
   }
 
-  /** Katalon MyPage.tapMenu — selects a menu below the dashboard on My Page and returns its name for the redirect check. */
+  /** Selects a menu below the dashboard on My Page and returns its name for the redirect check. */
   async selectProductMenu(menu: ProductMenu): Promise<string> {
     await switchToNative();
     const menuElement = this.locator.productMenu(menu);
@@ -460,7 +460,7 @@ export class MypagePage extends BasePage {
     return names.filter(Boolean).join(' | ').replace(/\n/g, ' / ');
   }
 
-  /** Katalon verifyMyPageMenus (Back and verify) — after Back, the opened page is gone and the menu is shown on My Page again. */
+  /** After Back, the opened page is gone and the menu is shown on My Page again. */
   async verifyReturnedToMypage(menu: MypageMenu): Promise<void> {
     await switchToNative();
     const isDashboard = (DASHBOARD_MENUS as readonly string[]).includes(menu);
@@ -494,7 +494,7 @@ export class MypagePage extends BasePage {
     );
   }
 
-  /** Katalon MyPage.tapProfiles — taps the account name on the My Page profile card. */
+  /** Taps the account name on the My Page profile card. */
   async clickProfileOnMypage(accountName: string): Promise<void> {
     const profileCard = this.locator.profileCard(accountName);
     const shown = await waitForDisplayedOrFalse(profileCard, { timeout: 5000 });
@@ -545,14 +545,14 @@ export class MypagePage extends BasePage {
     }
   }
 
-  /** Katalon MyPage.isNotificationLoaded — My Page > Settings > Push Notification, then verifies the notification switch is shown. */
+  /** My Page > Settings > Push Notification, then verifies the notification switch is shown. */
   async prepareNotificationPage(): Promise<void> {
     await this.selectSettingsMenus([this.locator.pushNotificationMenu], 'prepareNotificationPage');
     const ready = await waitForDisplayedOrFalse(this.locator.pushNotificationSwitch, { timeout: 5000 });
     markFailedAndStop([{ label: 'Push Notification page not shown (switch not found)', pass: ready }], 'prepareNotificationPage');
   }
 
-  /** Katalon MyPage.isNotificationStatusChecked — the switch must match the option chosen at first launch ('yes' = on); then goes back to Settings. */
+  /** The switch must match the option chosen at first launch ('yes' = on); then goes back to Settings. */
   async verifyNotification(option: 'yes' | 'no'): Promise<void> {
     await switchToNative();
     const checked = (await this.locator.pushNotificationSwitch.getAttribute('checked').catch(() => '')) === 'true';
@@ -566,7 +566,7 @@ export class MypagePage extends BasePage {
     await this.pressBack();
   }
 
-  /** Katalon MyPage.isTrustarcLoaded / isTrustArcCookieInInitialState — My Page > Settings > Personal Data Management > Cookie Preferences, then verifies the TrustArc choices are shown. */
+  /** My Page > Settings > Personal Data Management > Cookie Preferences, then verifies the TrustArc choices are shown. */
   async prepareCookiePreferencesPage(): Promise<void> {
     // Only the sites marked in site data (initialSetup.trustArcCookie) have cookie preferences to check
     if (!getSiteData().initialSetup?.trustArcCookie) {
@@ -582,7 +582,7 @@ export class MypagePage extends BasePage {
     markFailedAndStop([{ label: 'Cookie Preferences not shown (TrustArc choices not found)', pass: ready }], 'prepareCookiePreferencesPage');
   }
 
-  /** Katalon MyPage.verifyInitialCheckboxSelections — every cookie category must still hold the choice made at first launch ('decline' = NO, 'accept' = YES); then closes with Save. */
+  /** Every cookie category must still hold the choice made at first launch ('decline' = NO, 'accept' = YES); then closes with Save. */
   async verifyTrustArcCookie(choice: 'accept' | 'decline'): Promise<void> {
     if (!getSiteData().initialSetup?.trustArcCookie) {
       console.log('[verifyTrustArcCookie] TrustArc cookie is not required for this site — skipped');
@@ -605,7 +605,7 @@ export class MypagePage extends BasePage {
       [{ label: 'TrustArc cookie does not match the first-launch choice', pass, detail: `expected every category ${expected ? 'NO' : 'YES'}, actual ${actual}` }],
       'verifyTrustArcCookie'
     );
-    // Katalon closes the TrustArc choices with "Save" after the check
+    // Close the TrustArc choices with "Save" after the check
     await clickElement(this.locator.trustArcSaveButton, { timeout: 5000 });
   }
 }

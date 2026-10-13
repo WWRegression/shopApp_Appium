@@ -12,7 +12,6 @@ describe('PROD_LOGIN_06', () => {
 
   it('Guest - auto login via Login CTA on cart', async function () {
     await runOrSkip.call(this, 'PROD_LOGIN_06', async (site) => {
-      // Katalon Launch.startExistingAppWithGuestUser
       await loginPage.startAppAsGuest();
       await mypagePage.verifyLoggedOut();
 
@@ -25,7 +24,7 @@ describe('PROD_LOGIN_06', () => {
       await loginPage.clickLoginBtnOnLoginPage();
       await loginPage.loginWithGmailOnSsoIfShown();
 
-      // Katalon Cart.verifyCartLoad — redirected back to the cart; the WebView reconnects slowly after login (Katalon waits 15s + 10s)
+      // Redirected back to the cart; the WebView reconnects slowly after login
       await cartPage.prepareCartPage(25000);
       await mypagePage.verifyLoggedIn();
     });

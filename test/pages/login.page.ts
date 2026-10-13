@@ -37,7 +37,7 @@ const KEYCODE_ENTER = 66;
 /** Shared password for the device test accounts (Gmail / proton.me). */
 const ACCOUNT_PASSWORD = 'wise1004!';
 
-/** STG(WDS) 로그인 계정 — 팀 계정에 맞게 수정 (Katalon WDS_ID/PW 대응). */
+/** STG(WDS) 로그인 계정 — 팀 계정에 맞게 수정. */
 const WDS_CREDENTIALS = {
   userId: '',
   password: '',
@@ -86,7 +86,7 @@ export class LoginPage extends BasePage {
     return name;
   }
 
-  /** Katalon LogIn.SSOsignOutOnDevice — removes the Samsung account from device Settings, then force-stops the app. */
+  /** Removes the Samsung account from device Settings, then force-stops the app. */
   async signOutOnDevice(): Promise<void> {
     console.log('[signOutOnDevice] start');
     await forceStopPackage(SAMSUNG_ACCOUNT_PACKAGE);
@@ -118,7 +118,7 @@ export class LoginPage extends BasePage {
     console.log('[signOutOnDevice] end');
   }
 
-  /** Katalon (IN) Clear Package — a signed-out IN app keeps its profile and opens on "Select profile" instead of the login page. */
+  /** A signed-out IN app keeps its profile and opens on "Select profile" instead of the login page. */
   async clearAppDataForIn(): Promise<void> {
     if (getRunConfig().siteCode !== 'IN') {
       return;
@@ -140,7 +140,7 @@ export class LoginPage extends BasePage {
     return isDisplayedOrFalse(this.locator.continueAsGuestButton);
   }
 
-  /** Katalon LogIn.longinOnSelectProfile — selects the saved profile, then taps the login button (IN) or Continue and the login button on the next page (US). */
+  /** Selects the saved profile, then taps the login button (IN) or Continue and the login button on the next page (US). */
   async loginOnSelectProfileForIn(): Promise<void> {
     console.log('[loginOnSelectProfileForIn] logging in from Select profile screen');
     await markFailedAndStop(
@@ -160,7 +160,7 @@ export class LoginPage extends BasePage {
     }
   }
 
-  /** Katalon Init.setupEnvironment (registered user) — after the setup is applied the app can reopen logged out on "Select profile to continue"; logs in with the saved profile. */
+  /** After the setup is applied the app can reopen logged out on "Select profile to continue"; logs in with the saved profile. */
   async loginOnSelectProfileIfShown(): Promise<void> {
     if (!(await this.isSelectProfileShownForIn())) {
       return;
@@ -168,7 +168,7 @@ export class LoginPage extends BasePage {
     await this.loginOnSelectProfileForIn();
   }
 
-  /** Katalon LogIn.SSOsignInOnDevice — adds the Samsung account (this.emailAccount()) in device Settings if missing, then force-stops the app. */
+  /** Adds the Samsung account (this.emailAccount()) in device Settings if missing, then force-stops the app. */
   async signInOnDevice(): Promise<void> {
     console.log('[signInOnDevice] start');
     await forceStopPackage(SAMSUNG_ACCOUNT_PACKAGE);
@@ -179,7 +179,7 @@ export class LoginPage extends BasePage {
       console.log('[signInOnDevice] Samsung account already on device');
     } else {
       console.log('[signInOnDevice] adding Samsung account');
-      // Optional like Katalon — if these miss, loginWithEmailOnSso fails at the Email button with a clear reason
+      // Optional: if these miss, loginWithEmailOnSso fails at the Email button with a clear reason
       await clickIfDisplayed(this.locator.settingsAddAccount, 5000);
       await clickIfDisplayed(this.locator.samsungAccountItem, 5000);
       await this.loginWithEmailOnSso();
@@ -190,7 +190,7 @@ export class LoginPage extends BasePage {
     console.log('[signInOnDevice] end');
   }
 
-  /** Katalon LogIn.loginOnSplashPage — checkout as a guest opens the login page (Sign in / Continue as guest). */
+  /** Checkout as a guest opens the login page (Sign in / Continue as guest). */
   async verifyLoginPage(timeoutMs = 20000): Promise<void> {
     await switchToNative();
     const shown =
@@ -200,23 +200,23 @@ export class LoginPage extends BasePage {
     markFailedAndStop([{ label: 'login page not shown (Sign in / Continue as guest not found)', pass: shown }], 'verifyLoginPage');
   }
 
-  /** Katalon LogIn/loginPageTnC — CN login buttons stay disabled until the privacy agreement is checked. */
+  /** CN login buttons stay disabled until the privacy agreement is checked. */
   private async agreePrivacyForCn(): Promise<void> {
     if (await clickIfDisplayed(this.locator.loginPagePrivacyCheckbox, 500)) {
       console.log('[agreePrivacyForCn] privacy agreement checked');
     }
   }
 
-  /** Katalon LogIn/viaSamsungBtnCN — CN phone-login page has no login button, only the Samsung account logo. */
+  /** CN phone-login page has no login button, only the Samsung account logo. */
   private async clickSamsungLogoForCn(): Promise<void> {
     if (await clickIfDisplayed(this.locator.samsungAccountLogoButton, 500)) {
       console.log('[clickSamsungLogoForCn] Samsung account logo tapped');
-      // Katalon waits a fixed 5s; move on as soon as the login page has gone (at most the same 5s)
+      // Move on as soon as the login page has gone (5s at most)
       await this.locator.samsungAccountLogoButton.waitForDisplayed({ timeout: 5000, reverse: true }).catch(() => undefined);
     }
   }
 
-  /** Katalon LogIn.loginOnSSOMainPage — taps the login button on the login page (CN: privacy agreement first, logo on the phone-login page). */
+  /** Taps the login button on the login page (CN: privacy agreement first, logo on the phone-login page). */
   async clickLoginBtnOnLoginPage(): Promise<void> {
     await switchToNative();
 
@@ -238,7 +238,7 @@ export class LoginPage extends BasePage {
 
       if (await clickIfDisplayed(this.locator.loginPageLoginButton, 500)) {
         console.log('[clickLoginBtnOnLoginPage] login button tapped on login page');
-        // Katalon waits a fixed 5s; move on as soon as the login page has gone (at most the same 5s)
+        // Move on as soon as the login page has gone (5s at most)
         await this.locator.loginPageLoginButton.waitForDisplayed({ timeout: 5000, reverse: true }).catch(() => undefined);
       } else {
         await this.clickSamsungLogoForCn();
@@ -246,7 +246,7 @@ export class LoginPage extends BasePage {
     });
   }
 
-  /** Katalon HOME_02 (CN, IN) — CN and IN do not log in automatically on first launch, so they log in from the login page. */
+  /** CN and IN do not log in automatically on first launch, so they log in from the login page. */
   async clickLoginBtnOnLoginPageForCnIn(): Promise<void> {
     // Other sites must log in automatically with the device account — logging in here would hide a broken auto-login
     if (!['CN', 'IN'].includes(getRunConfig().siteCode)) {
@@ -255,7 +255,7 @@ export class LoginPage extends BasePage {
     await this.clickLoginBtnOnLoginPage();
   }
 
-  /** Katalon LogIn.SSOloginViaEmail — Samsung account login with this.emailAccount(). */
+  /** Samsung account login with this.emailAccount(). */
   async loginWithEmailOnSso(): Promise<void> {
     const { email, password } = this.emailAccount();
     markFailedAndStop([{ label: 'account email not found on device', pass: Boolean(email) }], 'loginWithEmailOnSso');
@@ -282,7 +282,7 @@ export class LoginPage extends BasePage {
     console.log('[loginWithEmailOnSso] end');
   }
 
-  /** Katalon SSOloginVia* tail — handles the optional terms / simple-login prompts until the SSO screens close. */
+  /** Handles the optional terms / simple-login prompts until the SSO screens close. */
   private async finishSsoLogin(tag: string, timeoutMs = 20000): Promise<void> {
     let cancelPending = true;
     let goneChecks = 0;
@@ -312,7 +312,7 @@ export class LoginPage extends BasePage {
     console.log(`[${tag}] SSO screens still shown after ${timeoutMs}ms`);
   }
 
-  /** Katalon Init.purposeSkip — skips the post-login purpose screen if shown, or taps "Review Later" on the preference review sheet. */
+  /** Skips the post-login purpose screen if shown, or taps "Review Later" on the preference review sheet. */
   async skipPurpose(timeoutMs = 60000): Promise<void> {
     await switchToNative();
 
@@ -342,7 +342,7 @@ export class LoginPage extends BasePage {
     }
   }
 
-  /** Katalon LogIn.loginOnSplashPage(IN) — logs in with Gmail only when SSO options show (no device account); skipped otherwise. */
+  /** Logs in with Gmail only when SSO options show (no device account); skipped otherwise. */
   async loginWithGmailOnSsoIfShown(): Promise<void> {
     // clickLoginBtnOnLoginPage restores the previous (checkout WebView) context, and the Google button is native
     await switchToNative();
@@ -363,7 +363,7 @@ export class LoginPage extends BasePage {
     await this.loginWithEmailOnSso();
   }
 
-  /** Katalon LogIn.SSOloginViaGmail — picks the device Gmail account (this.gmailAccount()) in the Google picker. */
+  /** Picks the device Gmail account (this.gmailAccount()) in the Google picker. */
   async loginWithGmailOnSso(): Promise<void> {
     const { email } = this.gmailAccount();
     markFailedAndStop([{ label: 'Gmail account not found on device', pass: Boolean(email) }], 'loginWithGmailOnSso');
@@ -404,9 +404,9 @@ export class LoginPage extends BasePage {
     await new MypagePage().ensureLoggedOut();
   }
 
-  /** Katalon Launch.startExistingAppWithGuestUser — guest app while the device keeps a Samsung account. */
+  /** Guest app while the device keeps a Samsung account. */
   async startAppAsGuest(): Promise<void> {
-    // IN can't be a guest with a device account (it shows "Select profile"), so it follows Katalon's IN branch
+    // IN cannot be a guest with a device account (it shows "Select profile"), so it takes its own path
     if (getRunConfig().siteCode === 'IN') {
       await this.startAppAsGuestForIn();
       return;
@@ -415,7 +415,7 @@ export class LoginPage extends BasePage {
     await this.continueAsGuestIfShown();
   }
 
-  /** Katalon startExistingAppWithGuestUser (IN): device sign-out, app data clear, relaunch, then enter as guest. */
+  /** IN: device sign-out, app data clear, relaunch, then enter as guest. */
   private async startAppAsGuestForIn(): Promise<void> {
     await this.signOutOnDevice();
     await this.clearAppDataForIn();
@@ -423,7 +423,7 @@ export class LoginPage extends BasePage {
     await this.continueAsGuestIfShown();
   }
 
-  /** Katalon LogIn.startAsGuestUser — after a launch, continues as guest only when the login page is shown (Home / "Select profile" are left as is). */
+  /** After a launch, continues as guest only when the login page is shown (Home / "Select profile" are left as is). */
   async continueAsGuestIfShown(timeoutMs = 60000): Promise<void> {
     await switchToNative();
     // The CN login page slider never goes idle, so every action here would wait out the idle timeout
@@ -439,7 +439,7 @@ export class LoginPage extends BasePage {
     await this.continueAsGuest();
   }
 
-  /** Katalon LogIn.checkoutContinueAsGuestUserOnNative — guest checkout can open the login page; continues as guest only when it shows. */
+  /** Guest checkout can open the login page; continues as guest only when it shows. */
   async continueAsGuestToCheckoutIfShown(timeoutMs = 5000): Promise<void> {
     await switchToNative();
     // The CN login page slider never goes idle, so every action here would wait out the idle timeout
@@ -454,7 +454,7 @@ export class LoginPage extends BasePage {
     }
     this.appDataCleared = false;
     if (await waitForDisplayedOrFalse(this.popupLocator.notificationDenyButton, { timeout: 15000 })) {
-      // Katalon clickLocationPermission waits 15s, but the location popup never showed in IN runs — check briefly
+      // Check briefly
       await this.dismissPermissionPopups(5000, 3000);
     }
   }
@@ -503,7 +503,6 @@ export class LoginPage extends BasePage {
   }
 
   /**
-   * Katalon LogIn.wdsLogin 대응.
    * STG가 아니면 no-op. WDS 페이지가 보이면 ID/PW 입력 후 Login.
    */
   async wdsLoginIfNeeded(timeoutMs = 15000): Promise<boolean> {
@@ -528,7 +527,7 @@ export class LoginPage extends BasePage {
 
     console.log('[login] WDS page shown, starting login');
 
-    // sts.secsso.net WebView 준비 (Katalon: switchToWebView + window scan)
+    // sts.secsso.net WebView 준비 (switchToWebView + window scan)
     await switchToWebView(10000).catch(() => undefined);
     await switchToNative();
 

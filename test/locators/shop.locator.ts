@@ -2,7 +2,6 @@ import { BACK_BUTTON_XPATH } from './header.locator';
 import { getRunConfig } from '../../config/run.config';
 import type { Site } from '../../config/site';
 
-/** Shop L0 (Mobiles / Phones / …), all locales. */
 const MOBILE_L0 = `//android.widget.ImageView[
 	@content-desc='Mobiles' or
 	@content-desc='Mobile' or
@@ -62,7 +61,6 @@ const WEARABLE_L0 = `//*[@class = 'android.view.View' and (
 	@content-desc = 'Watches'
 )]`;
 
-/** Shop L1 (Smartphones / …), all locales. */
 const SMARTPHONE_L1 = `//*[@class = 'android.view.View']/descendant::*[@class = 'android.widget.ImageView' and (
 	@content-desc='Smartphones' or
 	@content-desc='Smartphone' or
@@ -124,7 +122,6 @@ const WATCH_L1 = `//android.widget.ImageView[
 	contains(@content-desc, 'Watch')
 ]`;
 
-/** US-only: "See All X" instead of a named L1 tab. */
 const VIEW_ALL_L1 = `//android.widget.ImageView[
 	@content-desc="See All Phones" or
 	@content-desc="See All TVs" or
@@ -133,7 +130,6 @@ const VIEW_ALL_L1 = `//android.widget.ImageView[
 
 export type ShopCategory = 'mobile' | 'watch';
 
-/** L0 banner xpath + L1 tab xpath to reach PF for a shop category. */
 interface ShopCategoryPath {
   L0: string;
   L1: string;
@@ -155,13 +151,10 @@ const SITE_CATEGORY_PATH: Record<string, Partial<Record<ShopCategory, ShopCatego
   },
 };
 
-/** Shop footer menus — which ones a site shows is defined in sites-data shopMenuList. */
 export type ShopMenu = keyof NonNullable<Site['shopMenuList']>;
 
-/** Customer Support sub-menus that have a Katalon Shop/VerifyMenu page. */
 export type ShopSubMenu = 'supportHome' | 'shopQnA' | 'contact' | 'services';
 
-/** Menus whose landing page has a verify locator (`<menu>Page`). */
 export type ShopMenuPage = Exclude<ShopMenu, 'customerSupport'> | ShopSubMenu;
 
 export class ShopLocator {
@@ -209,7 +202,6 @@ export class ShopLocator {
     return $(`(//android.view.View[@index='0']//android.view.View[@index='1']//android.widget.Button)[1]`);
   }
 
-  /** Katalon Shop/Menus/studentStore */
   get studentStore() {
     return $(
       `//android.view.View[
@@ -237,7 +229,6 @@ export class ShopLocator {
     );
   }
 
-  /** Katalon Shop/Menus/corporateStore */
   get corporateStore() {
     return $(
       `//android.view.View[
@@ -255,7 +246,6 @@ export class ShopLocator {
     );
   }
 
-  /** Katalon Shop/Menus/inStoreMode */
   get inStoreMode() {
     return $(
       `//android.view.View[
@@ -266,7 +256,6 @@ export class ShopLocator {
     );
   }
 
-  /** Katalon Shop/Menus/samsungPlus */
   get samsungPlus() {
     return $(
       `//android.view.View[
@@ -275,7 +264,6 @@ export class ShopLocator {
     );
   }
 
-  /** Katalon Shop/Menus/samsungCarePlus */
   get samsungCarePlus() {
     return $(
       `//android.view.View[
@@ -284,7 +272,6 @@ export class ShopLocator {
     );
   }
 
-  /** Katalon Shop/Menus/samsungLive */
   get samsungLive() {
     return $(
       `//android.view.View[
@@ -300,7 +287,6 @@ export class ShopLocator {
     );
   }
 
-  /** Katalon Shop/Menus/moreSamsungApps */
   get moreSamsungApps() {
     return $(
       `//android.view.View[
@@ -333,7 +319,6 @@ export class ShopLocator {
     );
   }
 
-  /** Katalon Shop/Menus/customerSupport */
   get customerSupport() {
     return $(
       `(//*[@class='android.view.View'
@@ -367,7 +352,6 @@ export class ShopLocator {
     );
   }
 
-  /** Katalon Shop/VerifyMenu/studentStore */
   get studentStorePage() {
     return $(
       `${BACK_BUTTON_XPATH}/following-sibling::android.view.View[
@@ -413,7 +397,6 @@ export class ShopLocator {
     );
   }
 
-  /** Katalon Shop/VerifyMenu/corporateStore */
   get corporateStorePage() {
     return $(
       `${BACK_BUTTON_XPATH}/following-sibling::android.view.View[
@@ -435,7 +418,6 @@ export class ShopLocator {
     );
   }
 
-  /** Katalon Shop/VerifyMenu/inStoreMode */
   get inStoreModePage() {
     return $(
       `//android.view.View[(
@@ -446,21 +428,18 @@ export class ShopLocator {
     );
   }
 
-  /** Katalon Shop/VerifyMenu/samsungPlus */
   get samsungPlusPage() {
     return $(
       `//android.webkit.WebView[contains(@text, 'Samsung +')]`
     );
   }
 
-  /** Katalon Shop/VerifyMenu/samsungCarePlus */
   get samsungCarePlusPage() {
     return $(
       `//android.webkit.WebView[contains(@text, 'Samsung Care+')]`
     );
   }
 
-  /** Katalon Shop/VerifyMenu/samsungLive */
   get samsungLivePage() {
     return $(
       `//android.webkit.WebView[
@@ -475,7 +454,6 @@ export class ShopLocator {
     );
   }
 
-  /** Katalon Shop/VerifyMenu/moreSamsungApps */
   get moreSamsungAppsPage() {
     return $(
       `//android.widget.ImageView[
@@ -486,7 +464,6 @@ export class ShopLocator {
     );
   }
 
-  /** Katalon Shop/VerifyMenu/supportHome */
   get supportHomePage() {
     return $(
       `//android.webkit.WebView[
@@ -526,7 +503,6 @@ export class ShopLocator {
     );
   }
 
-  /** Katalon Shop/VerifyMenu/shopQnA */
   get shopQnAPage() {
     return $(
       `//android.webkit.WebView[
@@ -556,7 +532,6 @@ export class ShopLocator {
     );
   }
 
-  /** Katalon Shop/VerifyMenu/contact */
   get contactPage() {
     return $(
       `//android.webkit.WebView[
@@ -601,28 +576,20 @@ export class ShopLocator {
     );
   }
 
-  /** Katalon Shop/VerifyMenu/services */
   get servicesPage() {
     return $(
       `//*[@class = 'android.view.View' and @content-desc = 'Online Support']`
     );
   }
 
-  /** Footer menu by its shopMenuList key. */
   shopMenu(menu: ShopMenu) {
     return this[menu];
   }
 
-  /** Katalon Shop/VerifyMenu — landing page of the menu. */
   shopMenuPage(menu: ShopMenuPage) {
     return this[`${menu}Page`];
   }
 
-  /**
-   * Customer Support items, counted at runtime.
-   * Expanded footer: clickable rows after the (non-clickable) footer menus.
-   * Online Support page (digital service center): clickable tiles.
-   */
   get customerSupportItems() {
     return $$(
       `//android.view.View[@clickable = 'true' and preceding-sibling::android.view.View[@clickable = 'false' and @content-desc != '']]
@@ -630,12 +597,10 @@ export class ShopLocator {
     );
   }
 
-  /** Customer Support item at `index` (0-based), same match as customerSupportItems. */
   customerSupportItem(index: number) {
     return this.customerSupportItems[index];
   }
 
-  /** Katalon Shop/Menus/subMoreSamsungApps */
   moreSamsungAppIcon(name: string) {
     return $(`//android.widget.ImageView[starts-with(@content-desc,'${name}')]`);
   }
@@ -644,10 +609,6 @@ export class ShopLocator {
     return $$('//android.widget.ImageView[@content-desc]');
   }
 
-  /**
-   * Shop footer country row. UK dump: android.view.View content-desc="country/united kingdom".
-   * Not a Button, and the label is lowercase with a slash.
-   */
   get countryMenu() {
     return $(
       `//android.view.View[

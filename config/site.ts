@@ -110,7 +110,7 @@ export interface Site {
     iban?: string;
     eupImei?: string;
   };
-  /** My Page menus shown on the site — product menus (myProducts ~ myAddresses) follow Katalon MyPage availableByCountry / unavailableByCountry */
+  /** My Page menus shown on the site — product menus (myProducts ~ myAddresses) vary by country */
   mypageMenuList?: Partial<Record<ProductMenu, boolean>> & {
     support?: boolean;
     policy?: boolean;
@@ -118,7 +118,7 @@ export interface Site {
     accountManagement?: boolean;
     logout?: boolean;
   };
-  /** Shop main menus shown on the site (Katalon Data Files/ShopMenuMatrix.xlsx); customerSupport = has the expandable Customer Support (any sub_ menu) — its items are counted at runtime */
+  /** Shop main menus shown on the site; customerSupport = has the expandable Customer Support (any sub_ menu) — its items are counted at runtime */
   shopMenuList?: {
     studentStore?: boolean;
     corporateStore?: boolean;

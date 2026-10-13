@@ -4,8 +4,8 @@ import { assertElementDisplayed } from '../../helpers/validation.helper';
 
 type TradeUpSteps = 'selectDevice' | 'checkCondition' | 'applyDiscount';
 /**
- * PD Trade-Up (VD/HA). Katalon PDTradeUpHandler — simplified WebView path.
- * AE/AE_AR/VN fall back to Trade-In style entry in Katalon; here we still use Trade-Up yes.
+ * PD Trade-Up (VD/HA), simplified WebView path.
+ * AE/AE_AR/VN also use Trade-Up yes here.
  */
 export class PdTradeUpService {
   private readonly locator = new PdLocator();

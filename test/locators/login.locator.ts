@@ -1,13 +1,10 @@
 const SAMSUNG_ACCOUNT_ID = 'com.osp.app.signin:id';
 
-/** UK (English) values taken from Katalon Object Repository/LogIn — extend per-site if needed. */
 export class LoginLocator {
-  /** Katalon MyAccount/VerifyMenu/verifyProfiles — account name on the Samsung account settings screen */
   get samsungAccountName() {
     return $(`//android.widget.TextView[@resource-id = '${SAMSUNG_ACCOUNT_ID}/user_name']`);
   }
 
-  /** Katalon LogIn/loginPageGuestBtn */
   get continueAsGuestButton() {
     return $(
       `//android.widget.Button[
@@ -43,24 +40,20 @@ export class LoginLocator {
     );
   }
 
-  /** Title of the "Select profile to continue" screen (seen on IN) — Katalon Home/selectProfileToContinue anchor */
   get selectProfileTitle() {
     return $(`//android.view.View[@content-desc = 'Select profile to continue']`);
   }
 
-  /** Katalon Home/selectProfileToContinue — radio of the saved profile on "Select profile to continue" */
   get selectProfileRadio() {
     return $(
       `(//android.view.View[@content-desc = 'Select profile to continue']/following-sibling::android.view.View//android.widget.ImageView)[last()]`
     );
   }
 
-  /** "Continue" on "Select profile to continue" (enabled after a profile is selected) */
   get selectProfileContinueButton() {
     return $(`//android.widget.Button[@content-desc = 'Continue']`);
   }
 
-  /** Katalon LogIn/loginPageSignInBtn — login button on the login page (Sign in / Login with Samsung Account / 三星账号授权登录) */
   get loginPageLoginButton() {
     return $(
       `//android.widget.Button[
@@ -96,34 +89,28 @@ export class LoginLocator {
     );
   }
 
-  /** Katalon LogIn/loginPageTnC — CN SSO privacy agreement checkbox (must be checked before any login button works) */
   get loginPagePrivacyCheckbox() {
     return $(`//android.widget.CheckBox[@checked = 'false' and ..//*[@content-desc = '《隐私政策》']]`);
   }
 
-  /** Katalon LogIn/viaSamsungBtnCN — CN "其它登录方式" row, Samsung account logo (2nd icon) */
   get samsungAccountLogoButton() {
     return $(`//android.view.View[@content-desc = '其它登录方式']/following-sibling::android.widget.ImageView[2]`);
   }
 
-  /** Katalon LogIn/viaEmailBtn */
   get emailSsoButton() {
     return $(`//*[@resource-id = '${SAMSUNG_ACCOUNT_ID}/idSignInButtonLayout']`);
   }
 
-  /** Katalon LogIn/viaGmailBtn — "Sign in with Google" */
   get gmailSsoButton() {
     return $(`//android.widget.Button[@resource-id = '${SAMSUNG_ACCOUNT_ID}/simpleSignInButton']`);
   }
 
-  /** Katalon LogIn/addedGmail — account row in the Google account picker */
   googleAccountItem(email: string) {
     return $(
       `//android.widget.TextView[@resource-id = 'com.google.android.gms:id/account_name' and @text = '${email}']`
     );
   }
 
-  /** Katalon LogIn/emailEdit */
   get emailInput() {
     return $(
       `//android.widget.AutoCompleteTextView
@@ -131,7 +118,6 @@ export class LoginLocator {
     );
   }
 
-  /** Katalon LogIn/addAccountLogoArea — tapped to dismiss the keyboard */
   get addAccountLogoArea() {
     return $(
       `//*[(@class = 'android.widget.LinearLayout' and @resource-id = '${SAMSUNG_ACCOUNT_ID}/app_logo_parent')
@@ -139,12 +125,10 @@ export class LoginLocator {
     );
   }
 
-  /** Katalon LogIn/emailNextBtn */
   get emailNextButton() {
     return $('//android.widget.Button');
   }
 
-  /** Katalon LogIn/emailPasswordEdit */
   get passwordInput() {
     return $(
       `//android.widget.EditText[@resource-id = '${SAMSUNG_ACCOUNT_ID}/etSignInPassword']
@@ -152,7 +136,6 @@ export class LoginLocator {
     );
   }
 
-  /** Katalon LogIn/allAgreeChk */
   get allAgreeCheckbox() {
     return $(
       `//android.widget.ImageView[@resource-id = '${SAMSUNG_ACCOUNT_ID}/dotted_line']
@@ -160,7 +143,6 @@ export class LoginLocator {
     );
   }
 
-  /** Katalon LogIn/agreeBtn */
   get agreeButton() {
     return $(
       `//android.widget.Button[@resource-id = '${SAMSUNG_ACCOUNT_ID}/center_text']
@@ -169,14 +151,12 @@ export class LoginLocator {
     );
   }
 
-  /** Any element of the SSO screens (Samsung account app or the Google account picker) — gone once SSO hands back */
   get ssoScreenElement() {
     return $(
       `//*[starts-with(@resource-id, '${SAMSUNG_ACCOUNT_ID}/') or starts-with(@resource-id, 'com.google.android.gms:id/')]`
     );
   }
 
-  /** Katalon LogIn/simpleLoginCancelBtn */
   get simpleLoginCancelButton() {
     return $(
       `//android.widget.FrameLayout[@resource-id = '${SAMSUNG_ACCOUNT_ID}/action_bar_root']
@@ -184,43 +164,36 @@ export class LoginLocator {
     );
   }
 
-  /** Katalon Initialization/purposeNextBtn */
   get purposeNextButton() {
     return $(
       `//android.widget.Button[@content-desc = 'Next' or @content-desc = 'Ok' or @content-desc = 'Weiter' or @content-desc = 'Nächste' or @content-desc = 'Siguiente' or @content-desc = '下一页']`
     );
   }
 
-  /** Katalon Initialization/preferenceReviewBtn — "Review Later" on the preference review sheet shown instead of the purpose screen */
   get preferenceReviewLaterButton() {
     return $(`//android.widget.Button[@content-desc = 'Review Later']`);
   }
 
-  /** Katalon Initialization/purposeSkipBtn */
   get purposeSkipButton() {
     return $(
       `//android.widget.Button[@content-desc = 'Skip' or @content-desc = 'Überspringen' or @content-desc = 'Omitir' or @content-desc = 'Saltar' or @content-desc = '跳过']`
     );
   }
 
-  /** Device Settings > Accounts (device language, English) — Katalon LogIn/settingAddAccount */
   get settingsAddAccount() {
     return $(`//android.widget.TextView[@resource-id = 'android:id/title' and @text = 'Add account']`);
   }
 
-  /** Katalon LogIn/samsungAccountItem */
   get samsungAccountItem() {
     return $(`//android.widget.TextView[@text = 'Samsung account']`);
   }
 
-  /** Katalon LogIn/removeAccountBtn */
   get removeAccountButton() {
     return $(
       `//android.widget.Button[@resource-id = 'com.android.settings:id/button' and @text = 'Remove account']`
     );
   }
 
-  /** Katalon LogIn/removeAccountConfirmBtn */
   get removeAccountConfirmButton() {
     return $(
       `//android.widget.LinearLayout[@resource-id = 'com.android.settings:id/parentPanel']
@@ -228,7 +201,6 @@ export class LoginLocator {
     );
   }
 
-  /** Katalon LogIn/signOutBtn */
   get signOutButton() {
     return $(
       `//android.widget.Button[@resource-id = '${SAMSUNG_ACCOUNT_ID}/sign_out_button' and @text = 'Sign out']
@@ -236,17 +208,14 @@ export class LoginLocator {
     );
   }
 
-  /** Katalon LogIn/verifyNumberConfirmBtn */
   get verifyNumberConfirmButton() {
     return $(`//android.widget.Button[@text = 'Confirm']`);
   }
 
-  /** Katalon LogIn/confirmPasswordEdit */
   get confirmPasswordInput() {
     return $(`//android.widget.EditText[@resource-id = '${SAMSUNG_ACCOUNT_ID}/confirm_password']`);
   }
 
-  /** Katalon Object Repository/LogIn/wdsLoginPage */
   get wdsLoginPage() {
     return $(
       "//*[@class='android.webkit.WebView' and (@text='WMC' or @text='Sign In' or .='WMC' or .='Sign In')] | //*[@content-desc='Sign-in']"

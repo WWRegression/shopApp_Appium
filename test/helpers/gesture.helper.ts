@@ -12,9 +12,9 @@
  *   scrollDown         One-page Native list scroll down (scrollGesture).
  *   scrollUp           Short W3C-pointer drag up — reveals Header/BNB after long pages.
  *   swipeToTop         Strong swipe toward top of screen.
- *   swipeByBoundary    Directional swipe in a boundary box (Katalon swipeByBoundary).
+ *   swipeByBoundary    Directional swipe in a boundary box.
  *   scrollByBoundary   Directional scroll in a boundary box, N attempts.
- *   scrollByElement    Directional scroll relative to an element (Katalon scrollByElementId).
+ *   scrollByElement    Directional scroll relative to an element.
  *
  * [WebView document — native gesture does NOT move the inner scroller]
  *   scrollWebViewDown      document.scrollBy ≈ 55% of viewport height.
@@ -49,7 +49,7 @@ function gestureCommand(kind: GestureKind): 'mobile: swipeGesture' | 'mobile: sc
 
 /**
  * Swipe or scroll inside a screen rectangle.
- * Prefer an explicit boundary when porting Katalon; DEFAULT_BOUNDARY is only a fallback.
+ * Prefer an explicit boundary; DEFAULT_BOUNDARY is only a fallback.
  */
 export async function gestureByBoundary(
   kind: GestureKind,
@@ -138,7 +138,6 @@ export async function swipeToTop(): Promise<void> {
 
 /**
  * Directional swipe inside a boundary box.
- * Katalon: ScrollActions.swipeByBoundary
  */
 export async function swipeByBoundary(
   direction: GestureDirection,
@@ -150,7 +149,6 @@ export async function swipeByBoundary(
 
 /**
  * Directional scroll inside a boundary box, repeated `attempts` times.
- * Katalon: ScrollActions.scrollByBoundary
  */
 export async function scrollByBoundary(
   direction: GestureDirection,
@@ -163,7 +161,6 @@ export async function scrollByBoundary(
 
 /**
  * Directional scroll relative to an element's bounds (gesture area only).
- * Katalon: ScrollActions.scrollByElementId
  */
 export async function scrollByElement(
   element: ChainablePromiseElement,
@@ -206,13 +203,12 @@ export async function scrollElementToCenter(
 
 /**
  * Tap a raw screen coordinate (when the hit target is not the element bbox center).
- * Katalon: UI.tapAtCoordinates
  */
 export async function tapAtCoordinates(x: number, y: number): Promise<void> {
   await driver.execute('mobile: clickGesture', { x, y });
 }
 
-/** Long press on an element (mobile: longClickGesture). Katalon: ScrollActions.longTapAtCoordinates */
+/** Long press on an element (mobile: longClickGesture). */
 export async function longPressElement(element: ChainablePromiseElement, durationMs = 2000): Promise<void> {
   await driver.execute('mobile: longClickGesture', { elementId: await element.elementId, duration: durationMs });
 }

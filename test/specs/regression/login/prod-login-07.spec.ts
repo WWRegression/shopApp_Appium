@@ -14,7 +14,6 @@ describe('PROD_LOGIN_07', () => {
 
   it('Guest - auto login via Login CTA on checkout', async function () {
     await runOrSkip.call(this, 'PROD_LOGIN_07', async (site) => {
-      // Katalon Launch.startExistingAppWithGuestUser
       await loginPage.startAppAsGuest();
       await mypagePage.verifyLoggedOut();
 
@@ -29,7 +28,7 @@ describe('PROD_LOGIN_07', () => {
       await loginPage.clickLoginBtnOnLoginPage();
       await loginPage.skipPurpose();
 
-      // Katalon Checkout.verifyCheckoutPage — redirected back to the checkout
+      // Redirected back to the checkout
       await checkoutPage.prepareCheckoutPage();
       await mypagePage.verifyLoggedIn();
     });

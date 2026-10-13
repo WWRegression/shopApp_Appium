@@ -4,7 +4,7 @@ import { prepareWebViewPage, switchToNative } from '../helpers/context.helper';
 import { isDisplayedOrFalse, jsClick, scrollUntilVisible } from '../helpers/element.helper';
 import { markFailedAndStop } from '../helpers/report.helper';
 
-/** My Account > Settings > Personal Data Management > Addresses. Ported from Katalon's Address.groovy. */
+/** My Account > Settings > Personal Data Management > Addresses. */
 export class MypageProfilePage extends BasePage {
   private readonly locator = new MypageProfileLocator();
 

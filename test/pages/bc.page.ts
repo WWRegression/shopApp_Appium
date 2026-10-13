@@ -55,7 +55,7 @@ export class BcPage extends BasePage {
    * Longer than cart: PF to BC often needs extra time for the buy window to appear.
    */
   async prepareBcPage(): Promise<void> {
-    // A fresh IN app asks for the location permission when the product page opens (Katalon BC.addProductToCart)
+    // A fresh IN app asks for the location permission when the product page opens
     if (getRunConfig().siteCode === 'IN') {
       await clickIfDisplayed(this.popupLocator.locationAllowButton, 5000);
     }

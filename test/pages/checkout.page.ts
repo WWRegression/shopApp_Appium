@@ -9,7 +9,7 @@ import { scrollDown, scrollElementToCenter } from '../helpers/gesture.helper';
 import { markFailed, markFailedAndStop } from '../helpers/report.helper';
 import type { LoadedSite } from '../../config/site';
 
-/** Katalon Checkout.handleCheckoutEditButton() per-site sequence. */
+/** Which Edit button(s) to verify on the payment step, per site. */
 const EDIT_SEQUENCE_BY_SITE: Record<string, Array<'customer' | 'delivery'>> = {
   default: ['customer'],
   SE: ['customer', 'delivery'],
@@ -41,18 +41,19 @@ export class CheckoutPage extends BasePage {
     'app-customer-info-v2': () => this.fillContactInfo('app-customer-info-v2'),
     'app-customer-address-v2': () => this.fillAddressInfo('app-customer-address-v2'),
     'app-checkout-step-delivery': () => this.selectDeliveryOptionIfPresent(),
-    // CN renders its own contact / address / invoice components
+    // CN uses its own contact / address / invoice forms
     'app-customer-info': () => this.fillContactInfo('app-customer-info'),
     'app-customer-address-cn': () => this.fillAddressInfo('app-customer-address-cn'),
     'app-billing-address-cn': () => this.fillContactInfo('app-billing-address-cn'),
   };
 
+  /** Switches to the checkout WebView and stops the TC when the checkout page is not reached. */
   async prepareCheckoutPage(): Promise<void> {
     const ready = await prepareWebViewPage('checkout', this.locator.checkoutLayout, 20000);
     markFailedAndStop([{ label: 'checkout page reached', pass: ready }], 'prepareCheckoutPage');
   }
 
-  /** Best-effort order/item price text for BUY_09 consistency check. */
+  /** Returns the order/item price text shown on checkout ('' when none is found). */
   async getDisplayedItemPrice(): Promise<string> {
     await this.prepareCheckoutPage();
     const candidates = [
@@ -75,7 +76,7 @@ export class CheckoutPage extends BasePage {
     return '';
   }
 
-  /** Katalon LogIn.loginOnCheckout — taps Login on the guest checkout; the login page is handled by LoginPage.clickLoginBtnOnLoginPage(). */
+  /** Clicks Login on the guest checkout; the login page that opens is handled by LoginPage. */
   async clickLoginOnCheckout(): Promise<void> {
     const loginButton = this.locator.checkoutLoginButton;
     await scrollElementToCenter(loginButton).catch(() => undefined);
@@ -85,7 +86,7 @@ export class CheckoutPage extends BasePage {
     );
   }
 
-  /** Which known checkout forms are on screen right now (usually one, can be more). */
+  /** Returns the known checkout forms currently displayed (usually one, can be more). */
   private async getVisibleForms(): Promise<CheckoutFormId[]> {
     const elements = await this.locator.formElements;
     const visible: CheckoutFormId[] = [];
@@ -99,6 +100,7 @@ export class CheckoutPage extends BasePage {
     return visible;
   }
 
+  /** True while a loading spinner or overlay is displayed. */
   private async isLoadingVisible(): Promise<boolean> {
     return driver.execute<boolean, []>(() => {
       const spinnerSelector =
@@ -111,21 +113,21 @@ export class CheckoutPage extends BasePage {
     });
   }
 
-  /** Waits for the loading spinner/overlay to clear ??polled, no fixed sleep. */
+  /** Waits until the loading spinner/overlay is gone, so the next step does not act on a busy page. */
   private async waitForPageStable(timeoutMs = 8000): Promise<void> {
     await driver
       .waitUntil(async () => !(await this.isLoadingVisible()), { timeout: timeoutMs, interval: 300 })
       .catch(() => undefined);
   }
 
-  /** The outer cx-page-layout can render before its lazy-loaded step component mounts ??wait for a real form to exist, not just the shell. */
+  /** Waits until a checkout form exists; the page shell renders before its step form mounts. */
   private async waitForAnyFormToExist(timeoutMs = 8000): Promise<void> {
     await driver
       .waitUntil(async () => (await this.locator.formElements.length) > 0, { timeout: timeoutMs, interval: 300 })
       .catch(() => undefined);
   }
 
-  /** Playwright ref nextStep() ??after clicking, check *why* it didn't advance instead of clicking blind. */
+  /** Clicks Next on the current step and logs the fields still invalid when the step does not advance. */
   private async clickMoveToNext(): Promise<void> {
     await this.locator.moveToNextButton.waitForClickable({ timeout: 10000 });
     await this.locator.moveToNextButton.click();
@@ -148,11 +150,11 @@ export class CheckoutPage extends BasePage {
     }
 
     if (invalidLabels.length > 0) {
-      console.log(`clickMoveToNext: form still invalid ??${JSON.stringify(invalidLabels)}`);
+      console.log(`clickMoveToNext: form still invalid: ${JSON.stringify(invalidLabels)}`);
     }
   }
 
-  /** US only: Next on the delivery address opens an address popup — continues with "Use suggested address" / "Use this address". */
+  /** Clicks "Use suggested address" / "Use this address" on the address popup; the popup shows on US only. */
   private async clickUseAddressOnPopupIfShown(): Promise<void> {
     if (getSite().siteCode !== 'US') {
       return;
@@ -164,11 +166,11 @@ export class CheckoutPage extends BasePage {
     const label = await getElementLabel(button);
     await clickElement(button);
     console.log(`[clickUseAddressOnPopupIfShown] "${label}" clicked`);
-    // The step stays on delivery after the popup closes — proceedToPayment clicks Next again on its next pass
+    // The step stays on delivery after the popup closes, so the caller clicks Next again
     await button.waitForDisplayed({ timeout: 5000, reverse: true }).catch(() => undefined);
   }
 
-  /** One round trip for the whole form instead of several `getAttribute` calls per field over the wire. */
+  /** Reads every field of a form (key, required, value, visibility) in one browser call. */
   private async getFieldDescriptors(formTag: string): Promise<FieldDescriptor[]> {
     return driver.execute<FieldDescriptor[], [string]>((tag) => {
       const fieldSelector =
@@ -195,8 +197,7 @@ export class CheckoutPage extends BasePage {
             : tagName === 'select'
               ? Boolean((el as HTMLSelectElement).value)
               : Boolean(el.querySelector('.mat-mdc-select-min-line')?.textContent?.trim());
-        // Search-style address field ??same key fillAddressInfo() already fills across every site.
-        // The CN address line is one too: typing opens a smart-address list (div.dropWindow mat-option) that stays over the form until one is picked.
+        // Autocomplete fields open a suggestion list after typing: the address search box, and the CN address line
         const isAutocomplete = key === 'searchaddress' || (key === 'line1' && tag === 'app-customer-address-cn');
 
         return { index, tag: tagName, key, required, hasValue, isAutocomplete, visible: el.offsetParent !== null };
@@ -205,8 +206,7 @@ export class CheckoutPage extends BasePage {
   }
 
   private async setInputValue(field: ChainablePromiseElement, value: string, isAutocomplete: boolean): Promise<void> {
-    // setValue() doesn't reliably flip this Angular form's validity state ??use the native setter + dispatch events.
-    // A native tap can land on the floating label overlapping an empty field ??click via JS instead.
+    // Native setter + events so the Angular form sees the value; JS click avoids the floating label over an empty field
     await jsClick(field).catch(() => undefined);
     await driver.execute(
       (el, val) => {
@@ -225,7 +225,7 @@ export class CheckoutPage extends BasePage {
       return;
     }
 
-    // A search-style input (e.g. address autocomplete) can drop a mat-option list ??same primitive as a select.
+    // Autocomplete: pick the first suggestion so the list closes
     const suggestion = $('(//mat-option)[1]');
     const suggestionAppeared = await suggestion
       .waitForExist({ timeout: 3000 })
@@ -236,19 +236,19 @@ export class CheckoutPage extends BasePage {
     }
   }
 
-  /** Pick `value` if given, else the first option ??caller already knows the field is empty. */
+  /** Selects the option matching `value`, or the first enabled option when there is no match. */
   private async fillSelectField(field: ChainablePromiseElement, value: string | undefined): Promise<void> {
     await scrollAndJsClick(field).catch(() => undefined);
-    // Dependent selects (CN province -> city -> district) load their options after the previous one is picked
+    // Dependent selects (CN province > city > district) load options after the previous one is picked
     await $('(//mat-option)[1]').waitForExist({ timeout: 3000 }).catch(() => undefined);
     const match = value ? $(`//mat-option[contains(., "${value}")]`) : undefined;
-    // Fallback skips a disabled placeholder such as IN "Select a Floor"
+    // Skips a disabled placeholder option (IN "Select a Floor")
     const target =
       match && (await match.isExisting().catch(() => false)) ? match : $('(//mat-option[not(@aria-disabled="true")])[1]');
     await scrollAndJsClick(target).catch(() => undefined);
   }
 
-  /** Fills only the required fields in `formId` from `valueMap`, keyed by name/formcontrolname (lowercased). */
+  /** Fills the required fields of a form from `valueMap`, keyed by field name (lowercase). */
   private async fillFormFields(formId: CheckoutFormId, valueMap: Record<string, string | undefined>): Promise<void> {
     const descriptors = await this.getFieldDescriptors(formId);
     const fields = this.locator.fieldsIn(formId);
@@ -261,6 +261,7 @@ export class CheckoutPage extends BasePage {
       const value = valueMap[desc.key];
       const field = fields[desc.index];
 
+      // Inputs are set only when a value is given; hidden selects are skipped (CN keeps a hidden billing form)
       if (desc.tag === 'input') {
         if (value) {
           await this.setInputValue(field, value, desc.isAutocomplete);
@@ -271,11 +272,12 @@ export class CheckoutPage extends BasePage {
     }
   }
 
+  /** Fills the contact fields (name, email, phone) with the site customer data. */
   async fillContactInfo(formId: CheckoutFormId, overrides?: Partial<LoadedSite['customer']>): Promise<void> {
     const data = { ...getSite().customer, ...overrides };
     await this.fillFormFields(formId, {
       firstname: data.firstName,
-      // CN has a single name field (Katalon maps fullname to the first name)
+      // CN has a single full-name field
       fullname: data.firstName,
       lastname: data.lastName,
       email: data.email,
@@ -283,12 +285,14 @@ export class CheckoutPage extends BasePage {
     });
   }
 
+  /** Fills the delivery address fields with the site shipping data. */
   async fillAddressInfo(formId: CheckoutFormId, overrides?: Partial<LoadedSite['shipping']>): Promise<void> {
+    // Switch to "New address" when a saved address is preselected
     if (await this.locator.newAddressRadio.isExisting().catch(() => false)) {
       await scrollAndJsClick(this.locator.newAddressRadio).catch(() => undefined);
     }
 
-    // No saved address defaults to a search box ??switch to manual fields if they're not rendered yet.
+    // Without a saved address the form shows a search box, so switch to manual entry
     const hasManualFields = (await this.getFieldDescriptors(formId)).some((d) => d.key === 'line1');
     if (!hasManualFields && (await this.locator.enterAddressManuallyLink.isExisting().catch(() => false))) {
       await scrollAndJsClick(this.locator.enterAddressManuallyLink).catch(() => undefined);
@@ -299,11 +303,12 @@ export class CheckoutPage extends BasePage {
       line1: data.address1,
       line2: data.address2,
       postalcode: data.postalCode,
-      // "Suburb" is a select/autocomplete with formcontrolname "town" (confirmed on device).
+      // "Suburb" (AU) uses the field name "town"
       town: data.town,
-      // TODO: confirm real name/formcontrolname for "State" on device ??best guess until verified.
+      // TODO: confirm the field name of "State"
       state: data.district,
       district: data.district,
+      // IN has a required "Floor" select
       floor: data.floor,
       regioniso: data.searchText,
       searchaddress: data.searchText,
@@ -311,8 +316,9 @@ export class CheckoutPage extends BasePage {
     });
   }
 
-  /** isExisting() not isDisplayed() ??these radios report as not displayed despite being real. */
+  /** Selects the delivery method and option when the step offers them. */
   private async selectDeliveryOptionIfPresent(): Promise<void> {
+    // isExisting, not isDisplayed: these radios report as not displayed
     for (const el of [this.locator.deliveryMethodButton, this.locator.deliveryOptionButton]) {
       if (await el.isExisting().catch(() => false)) {
         await scrollAndJsClick(el).catch(() => undefined);
@@ -320,22 +326,22 @@ export class CheckoutPage extends BasePage {
     }
   }
 
-  /** Page-wide, called once per proceedToPayment() pass rather than per form ??the selector isn't form-scoped. */
+  /** Checks the required checkboxes (terms, save address) of the current step. */
   private async checkRequiredCheckboxes(): Promise<void> {
-    // Re-queried each time ??:not(:checked) shrinks as each checkbox gets checked.
+    // Re-queried on each loop: the unchecked set shrinks as boxes get checked
     for (let i = 0; i < 5 && (await this.locator.autoCheckCheckbox.isExisting().catch(() => false)); i++) {
       await scrollAndJsClick(this.locator.autoCheckCheckbox).catch(() => undefined);
     }
   }
 
-  /** Fallback for any step not in `formHandlers` ??new countries only need an entry there for real data or bespoke interaction. */
+  /** Fills a form that has no dedicated handler: required selects only. */
   private async fillGenericStep(formId: CheckoutFormId): Promise<void> {
     await this.fillFormFields(formId, {});
   }
 
-  /** Katalon Checkout.verifyRewardTnC — the rewards opt-in checkbox must not be exposed on any checkout step. */
+  /** Records a failure when the rewards opt-in checkbox is shown on the current step; it must stay hidden. */
   private async verifyNoRewardOptIn(): Promise<void> {
-    // Displayed, not present: US keeps a hidden 0x0 opt-in in the DOM on the delivery step
+    // Checked by visibility: US keeps a hidden opt-in in the DOM on the delivery step
     const exposed = await this.locator.rewardOptIn.isDisplayed().catch(() => false);
     const step = await this.getCurrentCheckoutStep();
     console.log(
@@ -344,16 +350,16 @@ export class CheckoutPage extends BasePage {
     markFailed([{ label: 'reward opt-in hidden', pass: !exposed, detail: `exposed on ${step}` }], 'verifyNoRewardOptIn');
   }
 
-  /** The estimated reward points banner should always show up during checkout. */
+  /** Stops the TC when the estimated reward points area is not shown on checkout. */
   async verifyRewardArea(): Promise<void> {
     const shown = await this.locator.rewardArea.isDisplayed().catch(() => false);
     markFailedAndStop([{ label: 'reward area shown', pass: shown }], 'verifyRewardArea');
   }
 
-  /** Expand the first payment method, then confirm its submit-order loader's id/data-an-la carries its own title. */
+  /** Verifies the payment step: expands the first payment method and checks its submit-order button matches the method title. */
   async checkPaymentMethod(): Promise<void> {
     const forms = await this.getVisibleForms();
-    // CN shows its payment modes in app-payment-modes-flat, without app-checkout-step-payment
+    // CN lists payment methods in app-payment-modes-flat instead of app-checkout-step-payment
     const onPaymentPage = forms.includes('app-checkout-step-payment') || forms.includes('app-payment-modes-flat');
     markFailedAndStop([{ label: 'payment step reached', pass: onPaymentPage }], 'checkPaymentMethod');
 
@@ -362,7 +368,7 @@ export class CheckoutPage extends BasePage {
     markFailedAndStop([{ label: 'payment method titles found', pass: hasTitles }], 'checkPaymentMethod');
 
     const first = titles[0];
-    // CN (Katalon checkPaymentMethod): flat payment buttons, nothing to expand — only the first one must be clickable
+    // CN: flat payment buttons with nothing to expand, so only the first one is checked to be clickable
     if (getSite().siteCode === 'CN') {
       const clickable = await first.isClickable().catch(() => false);
       console.log(`[checkPaymentMethod] expected first payment method="clickable" actual="${clickable ? 'clickable' : 'not clickable'}" result=${clickable ? 'PASS' : 'FAIL'}`);
@@ -378,7 +384,7 @@ export class CheckoutPage extends BasePage {
     await this.locator.paymentMethodExpanded.waitForExist({ timeout: 10000 });
     await this.waitForPageStable();
 
-    // A combined label like "Credit Card/ Debit Card" maps to a loader keyed on just one half.
+    // A combined title like "Credit Card/ Debit Card" matches a loader named after one half
     const titleParts = title
       .toLowerCase()
       .split('/')
@@ -398,23 +404,27 @@ export class CheckoutPage extends BasePage {
     markFailedAndStop([{ label: 'submit-order loader matched title', pass: matched, detail: title }], 'checkPaymentMethod');
   }
 
-  /** The active step's data-activestepname, e.g. CHECKOUT_STEP_CONTACT_INFO / _DELIVERY / _PAYMENT. */
+  /** Returns the active step name, e.g. CHECKOUT_STEP_CONTACT_INFO / _DELIVERY / _PAYMENT. */
   async getCurrentCheckoutStep(): Promise<string> {
     return (await this.locator.activeStep.getAttribute('data-activestepname').catch(() => '')) ?? '';
   }
 
+  /** Strips commas/spaces and lowercases an address so two renderings can be compared. */
   private normalizeAddress(text: string): string {
     return text.replace(/[,\s]+/g, '').toLowerCase().trim();
   }
 
+  /** Returns the normalized address shown on the payment step. */
   async getAddressInfoFromPayment(): Promise<string> {
     return this.normalizeAddress(await getElementLabel(this.locator.paymentPreviewAddress));
   }
 
+  /** Returns the normalized saved address shown on the contact/delivery step. */
   async getSavedAddressInfo(): Promise<string> {
     return this.normalizeAddress(await getElementLabel(this.locator.savedAddressInfo));
   }
 
+  /** Records a failure when the saved address and the payment-step address do not match. */
   private verifyAddressMatch(paymentAddress: string, savedAddress: string): void {
     const matches =
       Boolean(paymentAddress) &&
@@ -426,7 +436,7 @@ export class CheckoutPage extends BasePage {
     );
   }
 
-  /** Katalon Checkout.verifyEditInCustomerDetails() ??Edit button must land back on the Contact Info step. */
+  /** Clicks Edit on Customer Details and verifies it returns to the Contact Info step. */
   async verifyEditInCustomerDetails(paymentAddress?: string): Promise<void> {
     await scrollAndJsClick(this.locator.editCustomerDetailsButton);
     const step = await this.getCurrentCheckoutStep();
@@ -435,12 +445,13 @@ export class CheckoutPage extends BasePage {
       'verifyEditInCustomerDetails'
     );
 
+    // Only some sites show a saved address on this step to compare
     if (paymentAddress && ADDRESS_MATCH_SITES_CUSTOMER.includes(getSite().siteCode)) {
       this.verifyAddressMatch(paymentAddress, await this.getSavedAddressInfo());
     }
   }
 
-  /** Katalon Checkout.verifyEditInDeliveryOptions() ??Edit button must land back on the Delivery step. */
+  /** Clicks Edit on Delivery Options and verifies it returns to the Delivery step. */
   async verifyEditInDeliveryOptions(paymentAddress?: string): Promise<void> {
     await scrollAndJsClick(this.locator.editDeliveryOptionsButton);
     const step = await this.getCurrentCheckoutStep();
@@ -449,12 +460,13 @@ export class CheckoutPage extends BasePage {
       'verifyEditInDeliveryOptions'
     );
 
+    // Only some sites show a saved address on this step to compare
     if (paymentAddress && ADDRESS_MATCH_SITES_DELIVERY.includes(getSite().siteCode)) {
       this.verifyAddressMatch(paymentAddress, await this.getSavedAddressInfo());
     }
   }
 
-  /** Katalon Checkout.handleCheckoutEditButton() ??which Edit button(s) to check varies by site. */
+  /** Verifies the Edit button(s) of the payment step; which ones exist varies by site. */
   async handleCheckoutEditButton(paymentAddress?: string): Promise<void> {
     const sequence = EDIT_SEQUENCE_BY_SITE[getSite().siteCode] ?? EDIT_SEQUENCE_BY_SITE.default;
     for (const type of sequence) {
@@ -463,12 +475,9 @@ export class CheckoutPage extends BasePage {
     }
   }
 
-  /**
-   * Katalon Checkout.verifyEditInOrderSummary() ??editing Order Summary leaves checkout entirely
-   * and returns to Cart (unlike the Customer/Delivery edit buttons, which stay inside checkout).
-   * CN has no Order Summary section. Caller must verify the Cart landing (e.g. cartPage.prepareCartPage()).
-   */
+  /** Clicks Edit on Order Summary, which leaves checkout for the cart; the caller verifies the cart. */
   async verifyEditInOrderSummary(): Promise<void> {
+    // CN has no Order Summary section
     if (getSite().siteCode === 'CN') {
       return;
     }
@@ -486,18 +495,18 @@ export class CheckoutPage extends BasePage {
     }
   }
 
-  /** Every pass: fill whatever's visible (handlers skip fields already filled), then try to advance. */
+  /** Fills each checkout step and clicks Next until the payment step is reached; stops the TC when it never gets there. */
   async proceedToPayment(options: { verifyRewardOptIn?: boolean } = {}, maxIterations = 15): Promise<void> {
     await this.waitForAnyFormToExist();
     let lastVisible: CheckoutFormId[] = [];
 
     for (let i = 0; i < maxIterations; i++) {
       const visible = await this.getVisibleForms();
-      // Katalon checks the reward opt-in on every step, only in the TCs that verify rewards (CHECKOUT_01/03)
+      // The reward opt-in can show on any step, so it is checked on every pass
       if (options.verifyRewardOptIn) {
         await this.verifyNoRewardOptIn();
       }
-      // Stop by the step name as well: CN has no app-checkout-step-payment, and Next on its payment step submits the order
+      // Also stop by step name: CN has no app-checkout-step-payment, and Next on its payment step submits the order
       if (visible.includes('app-checkout-step-payment') || (await this.getCurrentCheckoutStep()) === 'CHECKOUT_STEP_PAYMENT') {
         return;
       }

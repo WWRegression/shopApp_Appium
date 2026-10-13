@@ -21,7 +21,7 @@ export class CartLocator {
     return $('app-sticky-checkout-cta-modal.show button[data-an-tr="cart-to-checkout"]');
   }
 
-  /** Katalon Cart/loginBtn + Cart/emptyCartLoginBtn — guest Sign in on the cart (with items or empty); all matches since a hidden one can come first */
+  /** Guest Sign in on the cart (with items or empty); all matches since a hidden one can come first */
   get cartLoginButton() {
     return $$('button.guest-signin-btn, button.sign-in-banner__btn, button[data-an-la="empty cart:sign in"]');
   }

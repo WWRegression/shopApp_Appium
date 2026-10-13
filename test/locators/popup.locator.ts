@@ -81,7 +81,7 @@ export class PopupLocator {
     );
   }
 
-  /** Android notification permission "Allow" — Katalon Initialization/allowNotificationBtn */
+  /** Android notification permission "Allow" */
   get notificationAllowButton() {
     return $(`//android.widget.Button[@resource-id = 'com.android.permissioncontroller:id/permission_allow_button']`);
   }
@@ -102,7 +102,7 @@ export class PopupLocator {
     );
   }
 
-  /** Android location permission "While using the app" — Katalon Initialization/locationPremissionAllowBtn */
+  /** Android location permission "While using the app" */
   get locationAllowButton() {
     return $(`//*[@resource-id = 'com.android.permissioncontroller:id/permission_allow_foreground_only_button']`);
   }

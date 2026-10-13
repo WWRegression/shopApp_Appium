@@ -46,7 +46,7 @@ const PRODUCT_API_BASE_BY_ENV: Record<AppEnvironment, string> = {
   stg: 'https://stg2.shop.samsung.com/tokocommercewebservices/v2',
 };
 
-/** CN is served from its own API host (Katalon API.getProductAPIBase); the global host fails from the CN WebView. */
+/** CN is served from its own API host; the global host fails from the CN WebView. */
 const CN_PRODUCT_API_BASE = 'https://p1-smz-api-cdn.shop.samsung.com.cn/tokocommercewebservices/v2';
 
 function productApiBase(siteCode: string): string {
@@ -140,7 +140,7 @@ function isUnlockedModelForUs(model: SearchModelItem): boolean {
   return /\(unlocked\)/i.test(model.displayName ?? '');
 }
 
-/** Katalon CALL_API (US): the US finder returns no stock text, so models count as in stock (findValidSku checks the real stock); IM keeps Unlocked models only. */
+/** US: the finder returns no stock text, so models count as in stock (findValidSku checks the real stock); IM keeps Unlocked models only. */
 function filterProductsForUs(productList: SearchProductItem[], type: ProductType): SearchProductItem[] {
   return productList
     .map((item) => ({

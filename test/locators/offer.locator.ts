@@ -1,4 +1,4 @@
-/** Names of the default "all products" category tab per language — Katalon Offers/featuredCategory */
+/** Names of the default "all products" category tab per language */
 export const ALL_OFFERS_TAB_LABELS = [
   'Featured',
   'All offers',
@@ -29,7 +29,7 @@ export const ALL_OFFERS_TAB_LABELS = [
 ];
 
 export class OfferLocator {
-  /** Katalon Offers/RTBitem — RTB banner currently shown at the top of Offers */
+  /** RTB banner currently shown at the top of Offers */
   get rtbItem() {
     return $(`//android.widget.ScrollView//android.view.View[@scrollable = 'true']/android.view.View[@clickable = 'true']`);
   }
@@ -39,7 +39,7 @@ export class OfferLocator {
     return $$(`//android.widget.ScrollView//android.view.View[@scrollable = 'true']/../following-sibling::android.widget.Button`);
   }
 
-  /** Katalon Home/errorPage — error / empty page shown when a redirect fails */
+  /** Error / empty page shown when a redirect fails */
   get errorPage() {
     return $(
       `//android.widget.ImageView[
@@ -55,32 +55,32 @@ export class OfferLocator {
     );
   }
 
-  /** Katalon Offers/categoryFilterSection — horizontal row of category tabs (text only, e.g. "All offers", "Smartphones") */
+  /** Horizontal row of category tabs (text only, e.g. "All offers", "Smartphones") */
   get categoryTabBar() {
     return $(`//android.widget.HorizontalScrollView`);
   }
 
-  /** Katalon Offers/offerCategoryIcons — category tabs currently in the row; content-desc = "<name>\\nTab N of M" */
+  /** Category tabs currently in the row; content-desc = "<name>\\nTab N of M" */
   get categoryTabs() {
     return $$(`//android.widget.HorizontalScrollView//android.view.View[@clickable = 'true']`);
   }
 
-  /** Katalon Offers/selectView — category tab by its name */
+  /** Category tab by its name */
   categoryTab(name: string) {
     return $(`//android.widget.HorizontalScrollView//android.view.View[@clickable = 'true' and starts-with(@content-desc, '${name}')]`);
   }
 
-  /** Katalon Offers/selectedOfferCategory — the category tab that is selected now */
+  /** The category tab that is selected now */
   get selectedCategoryTab() {
     return $(`//android.widget.HorizontalScrollView//android.view.View[@selected = 'true']`);
   }
 
-  /** Katalon Offers/offerContents — offer shown in the content block below the category tabs */
+  /** Offer shown in the content block below the category tabs */
   get offerContents() {
     return $(`//android.widget.ScrollView/android.view.View[last()]//*[@clickable = 'true']`);
   }
 
-  /** Katalon Offers/tncArea — Terms and Conditions shown when a category has no offer content */
+  /** Terms and Conditions shown when a category has no offer content */
   get tncArea() {
     return $(
       `//android.view.View[
@@ -98,7 +98,7 @@ export class OfferLocator {
     );
   }
 
-  /** Katalon Offers/noOngoingOffers — "no ongoing offers" image */
+  /** "no ongoing offers" image */
   get noOngoingOffers() {
     return $(
       `//android.widget.ScrollView//android.widget.ImageView[@clickable = 'false' and (

@@ -22,7 +22,7 @@ import { markFailed, markFailedAndStop } from '../helpers/report.helper';
 export type CategoryMismatch = string;
 export type { ShopMenu };
 
-/** Katalon Shop/MoreSamsungApps — icon name to expected Android package. */
+/** Icon name to expected Android package. */
 const MORE_SAMSUNG_APPS = [
   { labels: ['Smart Switch'], packageName: 'com.sec.android.easyMover' },
   { labels: ['SmartThings'], packageName: 'com.samsung.android.oneconnect' },
@@ -117,7 +117,7 @@ const MORE_SAMSUNG_APPS = [
   },
 ] as const;
 
-/** Katalon Shop/Menus — Customer Support item label to its VerifyMenu page. Unlisted items only need to leave the list. */
+/** Customer Support item label to its VerifyMenu page. Unlisted items only need to leave the list. */
 const SHOP_SUB_MENU_LABELS: Record<ShopSubMenu, string[]> = {
   supportHome: [
     'Support Home', 'Support', 'الصفحة الرئيسية للدعم', 'Support-Startseite', 'Accueil assistance',
@@ -148,7 +148,7 @@ const SHOP_MENU_URL_PATHS: Partial<Record<ShopMenuPage, string>> = {
   shopQnA: '/shop-faq',
 };
 
-/** Play Store / Galaxy Store — Katalon treats these as pass when an app install is redirected. */
+/** Play Store / Galaxy Store — an app-install redirect counts as a pass. */
 const STORE_PACKAGES = [
   'com.android.vending',
   'com.sec.android.app.samsungapps',
@@ -158,12 +158,12 @@ const STORE_PACKAGES = [
 export class ShopPage extends BasePage {
   private readonly shoplocator = new ShopLocator();
 
-  /** Shop tab -> L0 category -> L1 subcategory, down to the PF list. Katalon Shop.moveToPF. */
+  /** Shop tab -> L0 category -> L1 subcategory, down to the PF list. */
   async openCategory(category: ShopCategory): Promise<void> {
     await this.selectBnbMenu('shop');
 
     const path = this.shoplocator.categoryPath(currentSiteCode(), category);
-    // L0 is required; L1 is optional — some sites land on PF from L0 alone (Katalon taps L1 only when present)
+    // L0 is required; L1 is optional — some sites land on PF from L0 alone, so L1 is tapped only when present
     await clickElement($(path.L0), { timeout: 15000 });
     await clickIfDisplayed($(path.L1), 5000);
   }
@@ -173,7 +173,7 @@ export class ShopPage extends BasePage {
     await clickElement(this.shoplocator.L0Categories[0], { timeout: 15000 });
   }
 
-  /** Katalon Shop.getCategoryList — category titles of the current depth, scrolling until no new one appears. */
+  /** Category titles of the current depth, scrolling until no new one appears. */
   async getCategories(depth: 'L0' | 'L1', maxScrolls = 10): Promise<string[]> {
     const categoryTitleList = new Set<string>();
     let previousLastCategoryY = -1;
@@ -229,7 +229,7 @@ export class ShopPage extends BasePage {
     return Array.from(categoryTitleList);
   }
 
-  /** Katalon Shop.tapCategoryListItem — scrolls (up to 3 times) to the category and taps it. */
+  /** Scrolls (up to 3 times) to the category and taps it. */
   async selectCategory(categoryTitle: string): Promise<boolean> {
     const targetCategory = this.shoplocator.categoryTitleByName(categoryTitle);
     const maxAttempts = 3;
@@ -370,7 +370,7 @@ export class ShopPage extends BasePage {
     return this.matchesHeaderTitle('SHOP');
   }
 
-  /** Katalon Shop.moveToShopAndVerify — selects Shop on BNB, then verifies the Shop header title. */
+  /** Selects Shop on BNB, then verifies the Shop header title. */
   async prepareShopPage(timeoutMs = 5000): Promise<void> {
     await switchToNative();
     if (await this.isOnShop()) {
@@ -384,13 +384,13 @@ export class ShopPage extends BasePage {
     markFailedAndStop([{ label: 'Shop not shown (header title does not match)', pass: ready }], 'prepareShopPage');
   }
 
-  /** Katalon Shop.getShopMenuListForSite — footer menus the site shows (sites-data shopMenuList). */
+  /** Footer menus the site shows (sites-data shopMenuList). */
   getShopMenus(site: LoadedSite): ShopMenu[] {
     const menuList = site.shopMenuList ?? {};
     return (Object.keys(menuList) as ShopMenu[]).filter((menu) => menuList[menu]);
   }
 
-  /** Katalon Shop.scrollUntilMenuVisible + tap. A missing menu is left to the page verify that follows. */
+  /** Scrolls until the menu is visible and taps it. A missing menu is left to the page verify that follows. */
   async selectShopMenu(menu: ShopMenu): Promise<void> {
     await switchToNative();
     const menuElement = this.shoplocator.shopMenu(menu);
@@ -398,7 +398,7 @@ export class ShopPage extends BasePage {
     await clickElement(menuElement, { timeout: 3000 }).catch(() => console.log(`[selectShopMenu] menu not found on Shop: ${menu}`));
   }
 
-  /** Katalon Shop/VerifyMenu — the landing page is shown natively, or the app WebView opened the menu's URL. */
+  /** The landing page is shown natively, or the app WebView opened the menu's URL. */
   async verifyShopMenuPage(mismatches: CategoryMismatch[], menu: ShopMenuPage): Promise<void> {
     await switchToNative();
     const urlPath = SHOP_MENU_URL_PATHS[menu];
@@ -436,7 +436,7 @@ export class ShopPage extends BasePage {
     return count;
   }
 
-  /** Katalon Shop.tapShopDropdownMenu — taps item `index` and returns its label. Re-opens Customer Support if Back closed it. */
+  /** Taps item `index` and returns its label. Re-opens Customer Support if Back closed it. */
   async selectCustomerSupportItem(index: number): Promise<string> {
     await switchToNative();
     if ((await this.shoplocator.customerSupportItems.length) === 0) {
@@ -476,7 +476,7 @@ export class ShopPage extends BasePage {
     }
   }
 
-  /** Katalon Shop.verifyMenu — external browser/app is closed, otherwise Android Back (skipped when already on Shop). */
+  /** External browser/app is closed, otherwise Android Back (skipped when already on Shop). */
   async closeShopMenuPage(): Promise<void> {
     await switchToNative();
     if (await closeExternalBrowserIfOpen()) {
@@ -488,7 +488,7 @@ export class ShopPage extends BasePage {
   }
 
   /**
-   * Katalon Shop.verifyMoreSamsungAppsNavigation — tap each More Samsung Apps icon
+   * Tap each More Samsung Apps icon
    * and check the launched Android package (store packages also pass).
    */
   async verifyMoreSamsungApps(mismatches: CategoryMismatch[]): Promise<void> {
@@ -538,7 +538,7 @@ export class ShopPage extends BasePage {
     return [packageName];
   }
 
-  /** Katalon waits 3s after tap; wait a bit more if the shop app is still in front. */
+  /** Waits 3s after the tap, and a bit more if the shop app is still in front. */
   private async launchedPackage(expected: string[], shopPackage: string): Promise<string> {
     await driver.pause(3000);
     let actual = String((await driver.getCurrentPackage().catch(() => '')) ?? '');
@@ -619,7 +619,7 @@ export class ShopPage extends BasePage {
     );
   }
 
-  /** Katalon Shop.scrollUntilMenuVisible — scroll until the footer menu is on screen (displayed, not just in the tree). */
+  /** Scroll until the footer menu is on screen (displayed, not just in the tree). */
   private async scrollUntilMenuVisible(
     menuElement: ChainablePromiseElement,
     maxScroll = 10

@@ -12,7 +12,7 @@ export interface FieldCheck {
 }
 
 /**
- * Stops the TC here (Katalon KeywordUtil.markFailedAndStop) — for failures the next step cannot go on from.
+ * Stops the TC here — for failures the next step cannot go on from.
  * - (checks, context): throws once listing every failed check.
  * - (action, reason): runs the action; on failure throws one clear Error with the reason (a function builds it at failure time).
  */
@@ -33,7 +33,7 @@ export function markFailedAndStop(
 
 const recordedFailures: string[] = [];
 
-/** Records the failed checks and lets the TC go on (Katalon KeywordUtil.markFailed); runOrSkip fails the TC with them once its steps are done. */
+/** Records the failed checks and lets the TC go on; runOrSkip fails the TC with them once its steps are done. */
 export function markFailed(checks: FieldCheck[], context: string): void {
   try {
     throwIfFailed(checks, context);

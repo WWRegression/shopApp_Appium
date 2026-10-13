@@ -1,5 +1,5 @@
 /**
- * Test environment helpers (Katalon TestEnvContext / API URL 대응).
+ * Test environment helpers.
  *
  * Flagship UAT     → environment: stg  (WDS 로그인, stg URL)
  * Flagship PostUnpack → environment: prod
@@ -18,7 +18,6 @@ export function isFlagshipTest(): boolean {
   return currentTestType() === 'flagship';
 }
 
-/** Katalon TestEnvContext.isStgEnvironment() */
 export function isStgEnvironment(): boolean {
   return currentEnvironment() === 'stg';
 }
@@ -30,13 +29,12 @@ export function isFlagshipStg(): boolean {
 
 /**
  * Shop web base URL (product info API 등).
- * Katalon API.isSkuInfoAvailable baseUrl 대응.
  */
 export function getShopBaseUrl(siteCode = getRunConfig().siteCode): string {
   const code = siteCode.toLowerCase();
   if (isStgEnvironment()) {
     if (code === 'cn') {
-      // CN STG URL — Katalon 주석상 업데이트 필요. 당분간 CDN 유지.
+      // CN STG URL — 업데이트 필요. 당분간 CDN 유지.
       return 'https://p1-smz-api-cdn.shop.samsung.com.cn';
     }
     return 'https://stg2.shop.samsung.com';
@@ -49,8 +47,8 @@ export function getShopBaseUrl(siteCode = getRunConfig().siteCode): string {
 }
 
 /**
- * Product search/API host (Katalon API.getProductAPIBase 참고).
- * 현재 Katalon STG/PROD 모두 api.shop.samsung.com 을 쓰는 구간이 있어 host는 동일.
+ * Product search/API host.
+ * STG/PROD 모두 api.shop.samsung.com 을 쓰는 구간이 있어 host는 동일.
  * Shop HTML/simple product API는 getShopBaseUrl() 사용.
  */
 export function getProductApiBase(siteCode = getRunConfig().siteCode): string {

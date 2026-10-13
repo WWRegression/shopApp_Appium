@@ -21,7 +21,6 @@ describe('PROD_CHECKOUT_03', () => {
 
   it('Guest User - BC product to cart then payment', async function () {
     await runOrSkip.call(this, 'PROD_CHECKOUT_03', async (site) => {
-      // Katalon Launch.startExistingAppWithGuestUser
       await loginPage.startAppAsGuest();
       await mypagePage.verifyLoggedOut();
 
@@ -53,7 +52,7 @@ describe('PROD_CHECKOUT_03', () => {
 
       await checkoutPage.checkPaymentMethod();
 
-      // Katalon LogIn.checkoutContinueAsGuestUserOnNative — the checkout must have stayed a guest checkout
+      // The checkout must have stayed a guest checkout
       await mypagePage.verifyLoggedOut();
     });
   });

@@ -6,7 +6,7 @@ import { storageLabelVariants } from '../helpers/data.helper';
  */
 export class BcLocator {
   get bcLayout() {
-    // Early-appearing BC anchors (Katalon BC/BCLayout + sticky/price bar).
+    // Early-appearing BC anchors.
     return $(
       [
         '.bc-page',
@@ -307,7 +307,7 @@ export class BcLocator {
   /**
    * Bespoke SKUs default to the "default band" model — an extra click on any other,
    * available band-type option is required to reach the bespoke target SKU
-   * (Katalon: BC.selectNoneDefaultBand). First not-checked/not-disabled/not-oos match wins.
+   * First not-checked/not-disabled/not-oos match wins.
    */
   get watchNonDefaultBandOption() {
     return $('input.input-band-type:not(:checked):not([disabled]):not([is-oos="true" i])');

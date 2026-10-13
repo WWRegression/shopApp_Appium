@@ -15,7 +15,7 @@ export function parsePoints(pointsText: string): number {
   return digits ? Number(digits) : -1;
 }
 
-/** True when normalized prices contain each other (Katalon BC.verifyMatch style). */
+/** True when normalized prices contain each other. */
 export function pricesMatch(actual: string, expected: string): boolean {
   const a = normalizePriceDigits(actual);
   const b = normalizePriceDigits(expected);

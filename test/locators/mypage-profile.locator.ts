@@ -1,6 +1,6 @@
 export type AddressTab = 'shipping' | 'billing';
 
-/** Address book locators. Ported from Katalon's Address.groovy + Object Repository. */
+/** Address book locators. */
 export class MypageProfileLocator {
   // ── Native navigation (Account page → Address book) ──────────────────────
 

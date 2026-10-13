@@ -17,7 +17,6 @@ export type WishState = 'add' | 'remove';
 /**
  * Matching intent for a PF card, not a product type — the caller (spec) picks the mode,
  * PfPage only knows how to scroll+tap, and matchPfCard only knows how to compare text.
- * Katalon pfcardScrollandClick/matchesPfCard.
  */
 export type PfCardQuery =
   | { mode: 'first' }
@@ -25,7 +24,7 @@ export type PfCardQuery =
   | { mode: 'exact'; product: string; exclusiveOnly?: boolean }
   | { mode: 'watch'; device: string; connectivity?: string; caseSize?: string };
 
-/** Katalon LOCALIZE_ONLINE_EXCLUSIVE_TEXT — site → the "Online Exclusive" phrase shown on PF cards. */
+/** Site → the "Online Exclusive" phrase shown on PF cards. */
 const ONLINE_EXCLUSIVE_TEXT_BY_SITE: Record<string, string> = {
   AE_AR: 'فقط عبر samsung.com',
   BE: 'Online Exclusive',
@@ -60,7 +59,7 @@ export class PfPage extends BasePage {
   bcPage = new BcPage();
   pdPage = new PdPage();
 
-  /** Scrolls the PF list and taps the first card matching query. Katalon pfcardScrollandClick. */
+  /** Scrolls the PF list and taps the first card matching query. */
   async selectPfCard(query: PfCardQuery, maxScrolls = 30): Promise<void> {
     await switchToNative();
 
@@ -122,7 +121,7 @@ export class PfPage extends BasePage {
     }
   }
 
-  /** Falls back to the English phrase for sites not in the table (Katalon does the same). */
+  /** Falls back to the English phrase for sites not in the table. */
   private getOnlineExclusiveText(siteCode: string): string {
     return ONLINE_EXCLUSIVE_TEXT_BY_SITE[siteCode.toUpperCase()] ?? 'Samsung.com only';
   }
@@ -140,7 +139,7 @@ export class PfPage extends BasePage {
     return null;
   }
 
-  /** Katalon Shop.verifyProductNameBetweenPFandPD (PF part) — taps the first PF card and returns its normalized product name. */
+  /** Taps the first PF card and returns its normalized product name. */
   async selectFirstPfCard(): Promise<string | null> {
     if (!(await this.isPfCardDisplayed())) {
       return null;
@@ -293,7 +292,7 @@ export class PfPage extends BasePage {
     // TODO: Implement sort apply action
   }
 
-  /** Katalon Shop.clickWishListBtn — taps the first "add to wishlist" heart on PF and returns that card's SKU. */
+  /** Taps the first "add to wishlist" heart on PF and returns that card's SKU. */
   async clickAddToWishlist(): Promise<string> {
     await switchToNative();
     const icon = this.pflocator.wishlistIcon();
@@ -313,7 +312,7 @@ export class PfPage extends BasePage {
     return sku;
   }
 
-  /** Katalon Shop.verifyLoginPopup — a guest tapping the wishlist heart gets the login popup. */
+  /** A guest tapping the wishlist heart gets the login popup. */
   async verifyLoginPopup(): Promise<void> {
     await switchToNative();
     const shown = await waitForDisplayedOrFalse(this.pflocator.loginConfirmModal, { timeout: 5000 });

@@ -87,7 +87,7 @@ export async function withoutIdleWait<T>(fn: () => Promise<T>): Promise<T> {
 }
 
 /**
- * Native list scroll until locator.exists (Katalon scrollUntilElementFound).
+ * Native list scroll until locator.exists.
  * Uses mobile scrollGesture via scrollDown — for Native lists, not WebView DOM.
  */
 export async function scrollUntilVisible(

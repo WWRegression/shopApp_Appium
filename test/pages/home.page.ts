@@ -23,7 +23,7 @@ export class HomePage extends BasePage {
     return this.matchesHeaderTitle('HOME');
   }
 
-  /** Katalon Common.navigateToPage("HOME") — waits for the app's first screen, selects Home on BNB, then verifies the Home header title. */
+  /** Waits for the app's first screen, selects Home on BNB, then verifies the Home header title. */
   async prepareHomePage(timeoutMs = 60000): Promise<void> {
     await switchToNative();
     // The CN app sometimes takes over 20s to load; the wait ends as soon as a screen shows
@@ -36,14 +36,14 @@ export class HomePage extends BasePage {
     markFailedAndStop([{ label: 'Home not shown (header title does not match)', pass: ready }], 'prepareHomePage');
   }
 
-  /** Katalon Init.clickLocationPermission — allows location ("While using the app") when the permission popup shows. */
+  /** Allows location ("While using the app") when the permission popup shows. */
   async allowLocationPermissionIfShown(timeoutMs = 10000): Promise<void> {
     await switchToNative();
     const allowed = await clickIfDisplayed(this.popupLocator.locationAllowButton, timeoutMs);
     console.log(`[allowLocationPermissionIfShown] ${allowed ? 'location permission allowed' : 'no location permission popup'}`);
   }
 
-  /** Katalon UI.checkCookiePopupAndClosePopups — the cookie popup must show after the initial setup (TrustArc sites already answered it). */
+  /** The cookie popup must show after the initial setup (TrustArc sites already answered it). */
   async verifyCookiePopup(): Promise<void> {
     // Only the sites marked in site data (initialSetup.cookiePopup) must show it
     if (!getSiteData().initialSetup?.cookiePopup) {
@@ -64,7 +64,7 @@ export class HomePage extends BasePage {
     markFailed([{ label: 'Cookie popup not found on site', pass: shown }], 'verifyCookiePopup');
   }
 
-  /** Katalon Init.checkAndClickTrustArcCookie — clicks Accept all (registered user) or Decline all (guest user) on the TrustArc consent. */
+  /** Clicks Accept all (registered user) or Decline all (guest user) on the TrustArc consent. */
   async clickTrustArcCookie(choice: 'accept' | 'decline'): Promise<void> {
     // Only the sites marked in site data (initialSetup.trustArcCookie) show the consent
     if (!getSiteData().initialSetup?.trustArcCookie) {
@@ -77,7 +77,7 @@ export class HomePage extends BasePage {
     const button = choice === 'accept' ? this.locator.trustArcAcceptButton : this.locator.trustArcDeclineButton;
     const shown = await waitForDisplayedOrFalse(button, { timeout: 30000 });
     console.log(`[clickTrustArcCookie] expected=TrustArc cookie shown actual=${shown ? 'shown' : 'not shown'} result=${shown ? 'PASS' : 'FAIL'}`);
-    // Katalon records this failure and goes on — the next step stops the TC if the consent is still in the way
+    // The next step stops the TC if the consent is still in the way
     markFailed([{ label: 'TrustArc cookie not found on site', pass: shown }], 'clickTrustArcCookie');
     if (!shown) {
       return;
@@ -86,7 +86,7 @@ export class HomePage extends BasePage {
     console.log(`[clickTrustArcCookie] clicked "${choice} all"`);
   }
 
-  /** Katalon Init.clickTnC — checks the first-launch T&C checkbox when the screen has one (CN: then "同意"). */
+  /** Checks the first-launch T&C checkbox when the screen has one (CN: then "同意"). */
   async clickTncCheckbox(): Promise<void> {
     await switchToNative();
     const checkbox = this.locator.tncCheckbox;
@@ -110,7 +110,7 @@ export class HomePage extends BasePage {
   /** Set by selectNotification when the choice was made on the Android permission popup (IN) — there is no Get Started screen then. */
   private notificationOnPermissionPopup = false;
 
-  /** Katalon Init.clickNotification — selects "Yes" or "No" for notifications (IN: Allow / Don't allow on the Android permission popup). */
+  /** Selects "Yes" or "No" for notifications (IN: Allow / Don't allow on the Android permission popup). */
   async selectNotification(option: 'yes' | 'no'): Promise<void> {
     await switchToNative();
     const radio = this.locator.notificationRadio(option);
@@ -127,7 +127,7 @@ export class HomePage extends BasePage {
     console.log(`[selectNotification] selected "${option}"`);
   }
 
-  /** Katalon Init.clickNotification — "Get Started" closes the initial setup. */
+  /** "Get Started" closes the initial setup. */
   async clickGetStarted(): Promise<void> {
     if (this.notificationOnPermissionPopup) {
       console.log('[clickGetStarted] notification was answered on the permission popup, no Get Started screen — skipped');
@@ -140,14 +140,14 @@ export class HomePage extends BasePage {
     console.log('[clickGetStarted] clicked');
   }
 
-  /** Katalon Init.clickNotification(yes) — after "Yes", Android asks for the notification permission; allows it. */
+  /** After "Yes", Android asks for the notification permission; allows it. */
   async allowNotificationPermissionIfShown(): Promise<void> {
     await switchToNative();
     const allowed = await clickIfDisplayed(this.popupLocator.notificationAllowButton, 5000);
     console.log(`[allowNotificationPermissionIfShown] ${allowed ? 'notification permission allowed' : 'no notification permission popup'}`);
   }
 
-  /** Katalon Init.setupEnvironment — long-presses the Home header title to open the setup screen, sets "Enable Webview Debugging" to Yes and applies. */
+  /** Long-presses the Home header title to open the setup screen, sets "Enable Webview Debugging" to Yes and applies. */
   async enableWebviewDebugging(): Promise<void> {
     // TODO: remove once the CN build has the setup screen
     if (getRunConfig().siteCode === 'CN') {
@@ -180,7 +180,7 @@ export class HomePage extends BasePage {
     // TODO: Verify T&C folded by default and hyperlink redirections
   }
 
-  /** Katalon Reward.getPointsHomePage — Rewards points shown on Home; fails when the account has not joined Rewards. */
+  /** Rewards points shown on Home; fails when the account has not joined Rewards. */
   async getRewardsPoints(): Promise<number> {
     await switchToNative();
     // The points badge shows up a few seconds after Home itself

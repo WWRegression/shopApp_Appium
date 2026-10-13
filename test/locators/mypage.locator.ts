@@ -4,7 +4,7 @@ export const DASHBOARD_MENUS = ['rewards', 'vouchers', 'wishlist'] as const;
 
 export type DashboardMenu = (typeof DASHBOARD_MENUS)[number];
 
-/** Katalon MyPage.GroupedMenuList.MenuProduct — menus below the dashboard (My Products ~ My Addresses) */
+/** Menus below the dashboard (My Products ~ My Addresses) */
 export const PRODUCT_MENUS = [
   'myProducts',
   'myOrders',
@@ -30,7 +30,7 @@ export class MypageLocator {
     return $$('//android.view.View[@content-desc and .//android.widget.ImageView]');
   }
 
-  /** Katalon LogIn/mypageLoginBtn — English, DE; CN '登录' matched exactly since the CN logout button '退出登录' contains it */
+  /** English, DE; CN '登录' matched exactly since the CN logout button '退出登录' contains it */
   get loginButton() {
     return $(
       `//*[contains(@content-desc, 'Log-in')
@@ -58,7 +58,7 @@ export class MypageLocator {
     );
   }
 
-  /** Katalon LogIn/mypageLogoutBtn — English, DE, CN ('退出登录') */
+  /** English, DE, CN ('退出登录') */
   get logoutButton() {
     return $(
       `//*[contains(@content-desc, 'Logout')
@@ -91,12 +91,12 @@ export class MypageLocator {
     );
   }
 
-  /** Katalon LogIn/mypageLogoutOkayBtn — logout confirm dialog (Okay is index 2, followed by Cancel; index alone also hits the header Chat button) */
+  /** Logout confirm dialog (Okay is index 2, followed by Cancel; index alone also hits the header Chat button) */
   get logoutOkayButton() {
     return $(`//android.widget.Button[@index = '2' and following-sibling::android.widget.Button]`);
   }
 
-  /** Katalon MyAccount/MenuDashboard/samsungrewards — Rewards points on the My Page dashboard, e.g. "0 / Points" (English), "10 / 星钻" (CN) */
+  /** Rewards points on the My Page dashboard, e.g. "0 / Points" (English), "10 / 星钻" (CN) */
   get rewardsPoints() {
     return $(
       `//android.view.View[
@@ -133,17 +133,17 @@ export class MypageLocator {
     );
   }
 
-  /** Katalon MyAccount/MenuDashboard/samsungRewardBadge — "Join Samsung Rewards" tooltip (English, CN) */
+  /** "Join Samsung Rewards" tooltip (English, CN) */
   get joinRewardsTooltip() {
     return $(`//android.view.View[@content-desc = 'Join Samsung Rewards' or @content-desc = '加入 Samsung Rewards']`);
   }
 
-  /** Katalon MyAccount/rewardsPointsWebView — points on the Samsung Rewards web page, e.g. "0 P" (global), "10" (CN) */
+  /** Points on the Samsung Rewards web page, e.g. "0 P" (global), "10" (CN) */
   get rewardsPagePoints() {
     return $('strong.js-point-info, .rewards-points-balance > span:first-of-type');
   }
 
-  /** Katalon MyAccount/MenuDashboard/vouchers — Vouchers on the My Page dashboard */
+  /** Vouchers on the My Page dashboard */
   get vouchers() {
     return $(
       `//android.view.View[
@@ -175,7 +175,7 @@ export class MypageLocator {
     );
   }
 
-  /** Katalon MyAccount/MenuDashboard/wishlist — Wishlist on the My Page dashboard */
+  /** Wishlist on the My Page dashboard */
   get wishlist() {
     return $(
       `//android.view.View[
@@ -216,7 +216,7 @@ export class MypageLocator {
     }
   }
 
-  /** Katalon MyAccount/VerifyMenu/samsungRewards — Rewards tab selected on the page opened from the dashboard */
+  /** Rewards tab selected on the page opened from the dashboard */
   get rewardsTab() {
     return $(
       `//android.widget.HorizontalScrollView//android.view.View[@selected = 'true' and (
@@ -249,7 +249,7 @@ export class MypageLocator {
     );
   }
 
-  /** Katalon MyAccount/VerifyMenu/vouchers — Vouchers tab selected on the page opened from the dashboard */
+  /** Vouchers tab selected on the page opened from the dashboard */
   get vouchersTab() {
     return $(
       `//android.widget.HorizontalScrollView//android.view.View[@selected = 'true' and (
@@ -281,7 +281,7 @@ export class MypageLocator {
     );
   }
 
-  /** Katalon MyAccount/VerifyMenu/wishlist — Wishlist tab selected on the page opened from the dashboard */
+  /** Wishlist tab selected on the page opened from the dashboard */
   get wishlistTab() {
     return $(
       `//android.widget.HorizontalScrollView//android.view.View[@selected = 'true' and (
@@ -327,12 +327,11 @@ export class MypageLocator {
     return $(`//android.widget.HorizontalScrollView//android.view.View[@selected = 'true']`);
   }
 
-  /** Katalon MyAccount/MenuProduct/myProducts (US) */
+  /** US only */
   get myProducts() {
     return $(`//android.view.View[@content-desc = "My Products"]`);
   }
 
-  /** Katalon MyAccount/MenuProduct/myorders */
   get myOrders() {
     return $(
       `//android.view.View[
@@ -364,7 +363,7 @@ export class MypageLocator {
     );
   }
 
-  /** Katalon MyAccount/MenuProduct/myrepairs (CN shows "服务支持") */
+  /** CN shows "服务支持" */
   get myRepairs() {
     return $(
       `//android.view.View[
@@ -398,7 +397,6 @@ export class MypageLocator {
     );
   }
 
-  /** Katalon MyAccount/MenuProduct/myreferrals */
   get myReferrals() {
     return $(
       `//android.view.View[
@@ -414,12 +412,10 @@ export class MypageLocator {
     );
   }
 
-  /** Katalon MyAccount/MenuProduct/myqrcode */
   get myQRCode() {
     return $(`//android.view.View[contains(@content-desc, 'QR') and .//android.widget.ImageView]`);
   }
 
-  /** Katalon MyAccount/MenuProduct/inbox */
   get inbox() {
     return $(
       `//android.view.View[(
@@ -452,17 +448,16 @@ export class MypageLocator {
     );
   }
 
-  /** Katalon MyAccount/MenuProduct/mySmartThings */
   get mySmartThings() {
     return $(`//android.view.View[contains(@content-desc, "SmartThings")]`);
   }
 
-  /** Katalon MyAccount/MenuProduct/orderSupport (IN) */
+  /** IN only */
   get orderSupport() {
     return $(`//android.view.View[contains(@content-desc, 'Support')]`);
   }
 
-  /** Katalon MyAccount/MenuProduct/myAddresses (IN) */
+  /** IN only */
   get myAddresses() {
     return $(`//android.view.View[contains(@content-desc, 'Addresses')]`);
   }
@@ -500,7 +495,7 @@ export class MypageLocator {
     return $(`(${BACK_BUTTON_XPATH}/following-sibling::*/descendant-or-self::*[@content-desc])[1]`);
   }
 
-  /** Katalon MyAccount/profiles — profile card showing every word of the account name; CN by its greeting ('欢迎光临') since it shows a random "sa_…" nickname */
+  /** Profile card showing every word of the account name; CN by its greeting ('欢迎光临') since it shows a random "sa_…" nickname */
   profileCard(accountName: string) {
     const hasName =
       accountName
@@ -511,7 +506,7 @@ export class MypageLocator {
     return $(`//android.widget.ImageView[(${hasName}) or contains(@content-desc, '欢迎光临')]`);
   }
 
-  /** Katalon MyAccount/MenuAccountSupport/settings — "Settings" row at the bottom of My Page */
+  /** "Settings" row at the bottom of My Page */
   get settingsMenu() {
     return $(
       `//android.widget.ImageView[
@@ -538,7 +533,7 @@ export class MypageLocator {
     );
   }
 
-  /** Katalon MyAccount/MenuAccountSupport/personalDataManagement — row on the Settings page */
+  /** Row on the Settings page */
   get personalDataManagementMenu() {
     return $(
       `//*[
@@ -565,7 +560,7 @@ export class MypageLocator {
     );
   }
 
-  /** Katalon MyAccount/MenuAccountSupport/cookiePreferences — row on the Personal Data Management page */
+  /** Row on the Personal Data Management page */
   get cookiePreferencesMenu() {
     return $(
       `//*[
@@ -586,7 +581,7 @@ export class MypageLocator {
     );
   }
 
-  /** Katalon MyAccount/MenuAccountSupport/trustCookieMoreInfoBtn — opens the per-category choices when the consent shows its summary first */
+  /** Opens the per-category choices when the consent shows its summary first */
   get trustArcMoreInfoButton() {
     return $(
       `//android.widget.Button[
@@ -608,7 +603,7 @@ export class MypageLocator {
     );
   }
 
-  /** Katalon MyAccount/MenuAccountSupport/trustCookieSaveBtn — "Save" under the per-category choices */
+  /** "Save" under the per-category choices */
   get trustArcSaveButton() {
     return $(
       `//android.widget.Button[
@@ -628,12 +623,12 @@ export class MypageLocator {
     );
   }
 
-  /** Katalon MyPage.verifyInitialCheckboxSelections — "NO" inputs of the cookie categories (WebView) */
+  /** "NO" inputs of the cookie categories (WebView) */
   get trustArcNoInputs() {
     return $$('input[id*="no"]');
   }
 
-  /** Katalon MyAccount/MenuSettings/settingsSubMenu/pushNotification — row on the Settings page */
+  /** Row on the Settings page */
   get pushNotificationMenu() {
     return $(
       `//*[
@@ -669,7 +664,7 @@ export class MypageLocator {
     );
   }
 
-  /** Katalon MyAccount/VerifyMenu/pushNotification — the switch on the Push Notification page */
+  /** The switch on the Push Notification page */
   get pushNotificationSwitch() {
     return $(`//android.widget.Switch`);
   }

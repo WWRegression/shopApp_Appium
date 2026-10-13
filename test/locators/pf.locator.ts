@@ -45,7 +45,7 @@ export class PfLocator {
   }
 
   /**
-   * Katalon Shop/addWishListBtn — "add to wishlist" heart; its label carries the SKU ("Add to wishlist SM-A185FZKDEUB").
+   * "add to wishlist" heart; its label carries the SKU ("Add to wishlist SM-A185FZKDEUB").
    * Without `sku`, the first one on PF.
    */
   wishlistIcon(sku = '') {
@@ -75,7 +75,7 @@ export class PfLocator {
       ) and contains(@content-desc, '${sku}')])[1]`);
   }
 
-  /** Katalon Shop/loginConfirmModal — login popup shown to a guest who taps the wishlist heart. */
+  /** Login popup shown to a guest who taps the wishlist heart. */
   get loginConfirmModal() {
     return $(`//*[@class='android.view.View' and (
       normalize-space(@content-desc)='Log-in' or

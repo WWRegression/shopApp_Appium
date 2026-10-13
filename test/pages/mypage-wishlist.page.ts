@@ -5,12 +5,12 @@ import { prepareWebViewPage, switchToNative } from '../helpers/context.helper';
 import { clickIfDisplayed, isDisplayedOrFalse, jsClick, waitForDisplayedOrFalse } from '../helpers/element.helper';
 import { markFailedAndStop } from '../helpers/report.helper';
 
-/** My Page > Wishlist. Ported from the wishlist part of Katalon's Shop.groovy. */
+/** My Page > Wishlist. */
 export class MypageWishlistPage extends BasePage {
   private readonly locator = new MypageWishlistLocator();
   private readonly mypagePage = new MypagePage();
 
-  /** Katalon Shop.moveToWishList — My Page > Wishlist, then waits for the WebView to render. */
+  /** My Page > Wishlist, then waits for the WebView to render. */
   async prepareWishlistPage(): Promise<void> {
     await this.mypagePage.prepareMypage();
     await this.mypagePage.selectDashboardMenu('wishlist');
@@ -19,7 +19,7 @@ export class MypageWishlistPage extends BasePage {
     markFailedAndStop([{ label: 'wishlist page reached', pass: ready }], 'prepareWishlistPage');
   }
 
-  /** Katalon Shop.removeWishList — removes cards until the empty state shows. */
+  /** Removes cards until the empty state shows. */
   async clearWishlist(maxRemovals = 20): Promise<void> {
     await this.prepareWishlistPage();
 
@@ -41,7 +41,7 @@ export class MypageWishlistPage extends BasePage {
     await switchToNative();
   }
 
-  /** Katalon Shop.isExistProductWishList — the SKU added from PF must be listed. */
+  /** The SKU added from PF must be listed. */
   async verifyAddedToWishlist(sku: string): Promise<void> {
     await this.prepareWishlistPage();
     const found = await waitForDisplayedOrFalse(this.locator.productCard(sku), { timeout: 10000 });
@@ -49,7 +49,7 @@ export class MypageWishlistPage extends BasePage {
     markFailedAndStop([{ label: 'product was not added to the wishlist', pass: found, detail: `sku=${sku}` }], 'verifyAddedToWishlist');
   }
 
-  /** Katalon Shop/addToCartInWishPage — "Add to cart" on the card of this SKU, then Skip/OK if a popup follows. Caller is already on the wishlist. */
+  /** "Add to cart" on the card of this SKU, then Skip/OK if a popup follows. Caller is already on the wishlist. */
   async clickAddToCart(sku: string): Promise<void> {
     const addToCart = this.locator.addToCartButton(sku);
     await markFailedAndStop(async () => {
@@ -57,13 +57,13 @@ export class MypageWishlistPage extends BasePage {
       await jsClick(addToCart);
     }, `[clickAddToCart] Add to cart not found for ${sku}`);
 
-    // Katalon Shop/continueBtnInWishPage — free gift Skip, then the OK that can follow it
+    // Free gift Skip, then the OK that can follow it
     if (await clickIfDisplayed(this.locator.continueButton, 10000)) {
       await clickIfDisplayed(this.locator.continueButton, 3000);
     }
   }
 
-  /** Katalon Shop.removeWishList — opens the wishlist and taps remove on the card of this SKU. */
+  /** Opens the wishlist and taps remove on the card of this SKU. */
   async clickRemoveFromWishlist(sku: string): Promise<void> {
     await this.prepareWishlistPage();
     const removeButton = this.locator.productRemoveButton(sku);
