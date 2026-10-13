@@ -9,6 +9,7 @@
   "shipping": {
     "address1": "Address1test",
     "address2": "test Road",
+    "floor": "Ground Floor",
     "postalCode": "110001"
   },
   "product": {

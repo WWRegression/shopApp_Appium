@@ -71,6 +71,8 @@ export interface Site {
     address2?: string;
     apartment?: string;
     district?: string;
+    /** IN delivery address "Floor" select, e.g. "Ground Floor". */
+    floor?: string;
     landmark?: string;
     postalCode?: string;
     town?: string;

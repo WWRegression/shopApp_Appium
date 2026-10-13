@@ -48,6 +48,8 @@ const PAYMENT_METHOD_TITLE_SELECTOR = [
     'div[class="payment-step_body"] app-payment-mode-flat-item',
   ].map((s) => `app-checkout-step-payment ${s}`),
   '.payment-banks .payment-mode',
+  // CN has no app-checkout-step-payment — its flat payment modes sit directly under app-payment-modes-flat
+  'app-payment-modes-flat app-payment-mode-flat-item',
 ].join(', ');
 
 /** Marks the button/div that submits the order for the currently-expanded payment method. */
@@ -91,6 +93,14 @@ export class CheckoutLocator {
         "button[data-an-tr='checkout-order-detail']",
         "button[class*='continue-btn']:not(.enter-address-method)",
       ].join(', ')
+    );
+  }
+
+  /** US address popup after Next on the delivery address — "Use suggested address" (Confirm your address) or "Use this address" (Address verification). */
+  get addressPopupUseAddressButton() {
+    // By data-an-la, not class: .save-btn is "Use suggested address" on one popup and "Edit address" on the other
+    return $(
+      'app-address-recommendation-modal button[data-an-la*="use suggested address" i], app-address-recommendation-modal button[data-an-la*="use this address" i]'
     );
   }
 
@@ -138,7 +148,7 @@ export class CheckoutLocator {
   /** Estimated reward points banner — a different element than rewardOptIn, this one should be shown. */
   get rewardArea() {
     return $(
-      'div[class*="summary-rewards-benefit"], div[class*="rewards-estimated-points"], div[class*="rewards-points-value"]'
+      'div[class*="summary-rewards-benefit"], div[class*="rewards-estimated-points"], div[class*="rewards-points-value"], app-signin-option-cn div.guest-signin-estimated-points'
     );
   }
 
@@ -164,7 +174,8 @@ export class CheckoutLocator {
   /** Present once a payment method panel has expanded. */
   get paymentMethodExpanded() {
     return $(
-      '.payment-modes-type mat-expansion-panel-header.mat-expanded[role="button"], .accordion-toggle[aria-expanded="true"], .payment-banks .payment-mode.selected'
+      // US renders the accordion under app-payment-modes-us (section.payment-modes), outside .payment-modes-type
+      '.payment-modes-type mat-expansion-panel-header.mat-expanded[role="button"], app-checkout-step-payment .payment-modes mat-expansion-panel-header.mat-expanded[role="button"], .accordion-toggle[aria-expanded="true"], .payment-banks .payment-mode.selected'
     );
   }
 

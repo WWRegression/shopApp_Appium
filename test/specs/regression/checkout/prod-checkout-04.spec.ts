@@ -16,7 +16,7 @@ describe('PROD_CHECKOUT_04', () => {
       await cartPage.clickContinueToCheckout();
       await checkoutPage.prepareCheckoutPage();
 
-      await checkoutPage.runCheckout();
+      await checkoutPage.proceedToPayment();
 
       let paymentAddress: string | undefined;
       if ((await checkoutPage.getCurrentCheckoutStep()) === 'CHECKOUT_STEP_PAYMENT') {

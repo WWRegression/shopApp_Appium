@@ -44,9 +44,8 @@ describe('PROD_CHECKOUT_01', () => {
       await cartPage.clickContinueToCheckout();
       await checkoutPage.prepareCheckoutPage();
 
-      await checkoutPage.runCheckout();
+      await checkoutPage.proceedToPayment({ verifyRewardOptIn: true });
 
-      await checkoutPage.verifyNoRewardOptIn();
       await checkoutPage.verifyRewardArea();
 
       await checkoutPage.checkPaymentMethod();

@@ -26,7 +26,16 @@ export class SplashPage extends BasePage {
         continue;
       }
 
-      if(!await waitForDisplayedOrFalse(this.locator.continueButton, {timeout:1000})) {
+      // Nothing to click yet: the CN "added to cart" popup can take over 4s to show, so give either button a last chance
+      const moreToClick = await driver
+        .waitUntil(
+          async () =>
+            (await isDisplayedOrFalse(this.locator.continueButtonOnPopup)) ||
+            (await isDisplayedOrFalse(this.locator.continueButton)),
+          { timeout: 4000, interval: 500 }
+        )
+        .then(() => true, () => false);
+      if (!moreToClick) {
         console.warn('[SplashPage] continue button not found');
         return;
       }

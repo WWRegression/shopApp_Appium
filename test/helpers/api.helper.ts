@@ -60,6 +60,8 @@ function productApiBase(siteCode: string): string {
 
 interface SearchModelItem {
   modelCode: string;
+  /** US carries the carrier here, e.g. "Galaxy Z Fold8 256GB (Unlocked)" / "(Verizon)". */
+  displayName?: string;
   stockStatusText?: string;
 }
 
@@ -131,6 +133,23 @@ async function searchProducts(site: LoadedSite, type: ProductType, num = 48): Pr
     `&start=1&num=${num}&sort=recommended&onlyFilterInfoYN=N&keySummaryYN=Y`;
   const data = await fetchJson<{ response?: { resultData?: { productList?: SearchProductItem[] } } }>(url);
   return data.response?.resultData?.productList ?? [];
+}
+
+/** US lists every carrier variant of a phone (Unlocked / AT&T / Verizon / T-Mobile); a carrier model opens the carrier's setup page at checkout. */
+function isUnlockedModelForUs(model: SearchModelItem): boolean {
+  return /\(unlocked\)/i.test(model.displayName ?? '');
+}
+
+/** Katalon CALL_API (US): the US finder returns no stock text, so models count as in stock (findValidSku checks the real stock); IM keeps Unlocked models only. */
+function filterProductsForUs(productList: SearchProductItem[], type: ProductType): SearchProductItem[] {
+  return productList
+    .map((item) => ({
+      ...item,
+      modelList: (item.modelList ?? [])
+        .filter((model) => type !== 'IM' || isUnlockedModelForUs(model))
+        .map((model) => ({ ...model, stockStatusText: model.stockStatusText ?? 'inStock' })),
+    }))
+    .filter((item) => item.modelList.length > 0);
 }
 
 /** Numeric familyRecord only, excludes Galaxy A / *FE / F-prefix bundles, sorted ascending. */
@@ -298,11 +317,17 @@ function getCurrentSkuFor(site: LoadedSite, type: ProductType): string | undefin
 
 /** Resolves a fresh, valid sku for the site+type, preferring the current sku when still valid. */
 export async function resolveProduct(site: LoadedSite, type: ProductType): Promise<ResolvedProduct | undefined> {
-  const productList = await searchProducts(site, type);
+  const isUs = site.siteCode.toUpperCase() === 'US';
+  const searched = await searchProducts(site, type);
+  const productList = isUs ? filterProductsForUs(searched, type) : searched;
   const { topN, perFamily } = SEARCH_COUNT_BY_TYPE[type];
   const candidateSkus = getRandomInStockSkus(productList, topN, perFamily);
 
-  const current = getCurrentSkuFor(site, type);
+  let current = getCurrentSkuFor(site, type);
+  // A carrier sku kept in US.json (e.g. Verizon) must not win over the Unlocked candidates
+  if (isUs && type === 'IM' && !productList.some((item) => item.modelList?.some((model) => model.modelCode === current))) {
+    current = undefined;
+  }
   const skuList = current ? [current, ...candidateSkus] : candidateSkus;
 
   const validSku = await findValidSku(site, type, skuList);

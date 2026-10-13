@@ -4,7 +4,7 @@ import { BasePage } from './base.page';
 import { CheckoutLocator, CHECKOUT_FORMS } from '../locators/checkout.locator';
 import { prepareWebViewPage } from '../helpers/context.helper';
 import { getSiteData as getSite } from '../../config/site';
-import { scrollAndJsClick, getElementLabel, isDisplayedOrFalse, jsClick, clickElement } from '../helpers/element.helper';
+import { scrollAndJsClick, getElementLabel, isDisplayedOrFalse, jsClick, clickElement, waitForDisplayedOrFalse } from '../helpers/element.helper';
 import { scrollDown, scrollElementToCenter } from '../helpers/gesture.helper';
 import { markFailed, markFailedAndStop } from '../helpers/report.helper';
 import type { LoadedSite } from '../../config/site';
@@ -31,6 +31,7 @@ interface FieldDescriptor {
   required: boolean;
   hasValue: boolean;
   isAutocomplete: boolean;
+  visible: boolean;
 }
 
 export class CheckoutPage extends BasePage {
@@ -40,6 +41,10 @@ export class CheckoutPage extends BasePage {
     'app-customer-info-v2': () => this.fillContactInfo('app-customer-info-v2'),
     'app-customer-address-v2': () => this.fillAddressInfo('app-customer-address-v2'),
     'app-checkout-step-delivery': () => this.selectDeliveryOptionIfPresent(),
+    // CN renders its own contact / address / invoice components
+    'app-customer-info': () => this.fillContactInfo('app-customer-info'),
+    'app-customer-address-cn': () => this.fillAddressInfo('app-customer-address-cn'),
+    'app-billing-address-cn': () => this.fillContactInfo('app-billing-address-cn'),
   };
 
   async prepareCheckoutPage(): Promise<void> {
@@ -147,6 +152,22 @@ export class CheckoutPage extends BasePage {
     }
   }
 
+  /** US only: Next on the delivery address opens an address popup — continues with "Use suggested address" / "Use this address". */
+  private async clickUseAddressOnPopupIfShown(): Promise<void> {
+    if (getSite().siteCode !== 'US') {
+      return;
+    }
+    const button = this.locator.addressPopupUseAddressButton;
+    if (!(await waitForDisplayedOrFalse(button, { timeout: 5000 }))) {
+      return;
+    }
+    const label = await getElementLabel(button);
+    await clickElement(button);
+    console.log(`[clickUseAddressOnPopupIfShown] "${label}" clicked`);
+    // The step stays on delivery after the popup closes — proceedToPayment clicks Next again on its next pass
+    await button.waitForDisplayed({ timeout: 5000, reverse: true }).catch(() => undefined);
+  }
+
   /** One round trip for the whole form instead of several `getAttribute` calls per field over the wire. */
   private async getFieldDescriptors(formTag: string): Promise<FieldDescriptor[]> {
     return driver.execute<FieldDescriptor[], [string]>((tag) => {
@@ -175,9 +196,10 @@ export class CheckoutPage extends BasePage {
               ? Boolean((el as HTMLSelectElement).value)
               : Boolean(el.querySelector('.mat-mdc-select-min-line')?.textContent?.trim());
         // Search-style address field ??same key fillAddressInfo() already fills across every site.
-        const isAutocomplete = key === 'searchaddress';
+        // The CN address line is one too: typing opens a smart-address list (div.dropWindow mat-option) that stays over the form until one is picked.
+        const isAutocomplete = key === 'searchaddress' || (key === 'line1' && tag === 'app-customer-address-cn');
 
-        return { index, tag: tagName, key, required, hasValue, isAutocomplete };
+        return { index, tag: tagName, key, required, hasValue, isAutocomplete, visible: el.offsetParent !== null };
       });
     }, formTag);
   }
@@ -217,8 +239,12 @@ export class CheckoutPage extends BasePage {
   /** Pick `value` if given, else the first option ??caller already knows the field is empty. */
   private async fillSelectField(field: ChainablePromiseElement, value: string | undefined): Promise<void> {
     await scrollAndJsClick(field).catch(() => undefined);
+    // Dependent selects (CN province -> city -> district) load their options after the previous one is picked
+    await $('(//mat-option)[1]').waitForExist({ timeout: 3000 }).catch(() => undefined);
     const match = value ? $(`//mat-option[contains(., "${value}")]`) : undefined;
-    const target = match && (await match.isExisting().catch(() => false)) ? match : $('(//mat-option)[1]');
+    // Fallback skips a disabled placeholder such as IN "Select a Floor"
+    const target =
+      match && (await match.isExisting().catch(() => false)) ? match : $('(//mat-option[not(@aria-disabled="true")])[1]');
     await scrollAndJsClick(target).catch(() => undefined);
   }
 
@@ -239,7 +265,7 @@ export class CheckoutPage extends BasePage {
         if (value) {
           await this.setInputValue(field, value, desc.isAutocomplete);
         }
-      } else if (!desc.hasValue) {
+      } else if (!desc.hasValue && desc.visible) {
         await this.fillSelectField(field, value);
       }
     }
@@ -249,6 +275,8 @@ export class CheckoutPage extends BasePage {
     const data = { ...getSite().customer, ...overrides };
     await this.fillFormFields(formId, {
       firstname: data.firstName,
+      // CN has a single name field (Katalon maps fullname to the first name)
+      fullname: data.firstName,
       lastname: data.lastName,
       email: data.email,
       phone: data.mobile,
@@ -275,6 +303,9 @@ export class CheckoutPage extends BasePage {
       town: data.town,
       // TODO: confirm real name/formcontrolname for "State" on device ??best guess until verified.
       state: data.district,
+      district: data.district,
+      floor: data.floor,
+      regioniso: data.searchText,
       searchaddress: data.searchText,
       phone: getSite().customer.mobile,
     });
@@ -289,7 +320,7 @@ export class CheckoutPage extends BasePage {
     }
   }
 
-  /** Page-wide, called once per runCheckout() pass rather than per form ??the selector isn't form-scoped. */
+  /** Page-wide, called once per proceedToPayment() pass rather than per form ??the selector isn't form-scoped. */
   private async checkRequiredCheckboxes(): Promise<void> {
     // Re-queried each time ??:not(:checked) shrinks as each checkbox gets checked.
     for (let i = 0; i < 5 && (await this.locator.autoCheckCheckbox.isExisting().catch(() => false)); i++) {
@@ -302,10 +333,15 @@ export class CheckoutPage extends BasePage {
     await this.fillFormFields(formId, {});
   }
 
-  /** The rewards opt-in checkbox should never show up during checkout. */
-  async verifyNoRewardOptIn(): Promise<void> {
-    const shown = await this.locator.rewardOptIn.isDisplayed().catch(() => false);
-    markFailed([{ label: 'reward opt-in hidden', pass: !shown }], 'verifyNoRewardOptIn');
+  /** Katalon Checkout.verifyRewardTnC — the rewards opt-in checkbox must not be exposed on any checkout step. */
+  private async verifyNoRewardOptIn(): Promise<void> {
+    // Displayed, not present: US keeps a hidden 0x0 opt-in in the DOM on the delivery step
+    const exposed = await this.locator.rewardOptIn.isDisplayed().catch(() => false);
+    const step = await this.getCurrentCheckoutStep();
+    console.log(
+      `[verifyNoRewardOptIn] step=${step} expected opt-in="hidden" actual opt-in="${exposed ? 'exposed' : 'hidden'}" result=${exposed ? 'FAIL' : 'PASS'}`
+    );
+    markFailed([{ label: 'reward opt-in hidden', pass: !exposed, detail: `exposed on ${step}` }], 'verifyNoRewardOptIn');
   }
 
   /** The estimated reward points banner should always show up during checkout. */
@@ -316,7 +352,9 @@ export class CheckoutPage extends BasePage {
 
   /** Expand the first payment method, then confirm its submit-order loader's id/data-an-la carries its own title. */
   async checkPaymentMethod(): Promise<void> {
-    const onPaymentPage = (await this.getVisibleForms()).includes('app-checkout-step-payment');
+    const forms = await this.getVisibleForms();
+    // CN shows its payment modes in app-payment-modes-flat, without app-checkout-step-payment
+    const onPaymentPage = forms.includes('app-checkout-step-payment') || forms.includes('app-payment-modes-flat');
     markFailedAndStop([{ label: 'payment step reached', pass: onPaymentPage }], 'checkPaymentMethod');
 
     const titles = await this.locator.paymentMethodTitles;
@@ -324,6 +362,13 @@ export class CheckoutPage extends BasePage {
     markFailedAndStop([{ label: 'payment method titles found', pass: hasTitles }], 'checkPaymentMethod');
 
     const first = titles[0];
+    // CN (Katalon checkPaymentMethod): flat payment buttons, nothing to expand — only the first one must be clickable
+    if (getSite().siteCode === 'CN') {
+      const clickable = await first.isClickable().catch(() => false);
+      console.log(`[checkPaymentMethod] expected first payment method="clickable" actual="${clickable ? 'clickable' : 'not clickable'}" result=${clickable ? 'PASS' : 'FAIL'}`);
+      markFailedAndStop([{ label: 'first payment method clickable', pass: clickable }], 'checkPaymentMethod');
+      return;
+    }
     const title = await getElementLabel(first);
     markFailedAndStop([{ label: 'payment method title text', pass: title.length > 0 }], 'checkPaymentMethod');
 
@@ -442,13 +487,18 @@ export class CheckoutPage extends BasePage {
   }
 
   /** Every pass: fill whatever's visible (handlers skip fields already filled), then try to advance. */
-  async runCheckout(maxIterations = 15): Promise<void> {
+  async proceedToPayment(options: { verifyRewardOptIn?: boolean } = {}, maxIterations = 15): Promise<void> {
     await this.waitForAnyFormToExist();
     let lastVisible: CheckoutFormId[] = [];
 
     for (let i = 0; i < maxIterations; i++) {
       const visible = await this.getVisibleForms();
-      if (visible.includes('app-checkout-step-payment')) {
+      // Katalon checks the reward opt-in on every step, only in the TCs that verify rewards (CHECKOUT_01/03)
+      if (options.verifyRewardOptIn) {
+        await this.verifyNoRewardOptIn();
+      }
+      // Stop by the step name as well: CN has no app-checkout-step-payment, and Next on its payment step submits the order
+      if (visible.includes('app-checkout-step-payment') || (await this.getCurrentCheckoutStep()) === 'CHECKOUT_STEP_PAYMENT') {
         return;
       }
       lastVisible = visible;
@@ -461,13 +511,14 @@ export class CheckoutPage extends BasePage {
       await this.checkRequiredCheckboxes();
       await this.waitForPageStable();
       await this.clickMoveToNext();
+      await this.clickUseAddressOnPopupIfShown();
       await this.waitForAnyFormToExist();
       await this.waitForPageStable();
     }
 
     markFailedAndStop(
       [{ label: 'reached payment step', pass: false, detail: `stuck at: ${lastVisible.join(', ') || 'unknown'}` }],
-      `runCheckout (${maxIterations} iterations)`
+      `proceedToPayment (${maxIterations} iterations)`
     );
   }
 

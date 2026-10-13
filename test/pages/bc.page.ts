@@ -6,9 +6,10 @@ import { BcEupService } from '../services/eup/bc-eup.service';
 import { BcSimService } from '../services/sim/bc-sim.service';
 import { BcGalaxyClubService } from '../services/galaxyclub/bc-galaxyclub.service';
 import { prepareWebViewPage, isCurrentWebViewPage } from '../helpers/context.helper';
+import { getRunConfig } from '../../config/run.config';
 import { scrollWebViewDown } from '../helpers/gesture.helper';
 import { storageCapacityMatches, pickStorageLabel } from '../helpers/data.helper';
-import { scrollAndJsClick, scrollAndWdioClick, scrollUntilVisibleInWebView } from '../helpers/element.helper';
+import { clickIfDisplayed, scrollAndJsClick, scrollAndWdioClick, scrollUntilVisibleInWebView } from '../helpers/element.helper';
 
 
 /** Fields BC accepts from site JSON / Flagship phone / watch. kind, ram, isPFDefaultSKU are catalog-only. */
@@ -54,6 +55,10 @@ export class BcPage extends BasePage {
    * Longer than cart: PF to BC often needs extra time for the buy window to appear.
    */
   async prepareBcPage(): Promise<void> {
+    // A fresh IN app asks for the location permission when the product page opens (Katalon BC.addProductToCart)
+    if (getRunConfig().siteCode === 'IN') {
+      await clickIfDisplayed(this.popupLocator.locationAllowButton, 5000);
+    }
     const ready = await prepareWebViewPage('bc', this.locator.bcLayout, 20000);
     if (!ready) {
       throw new Error('prepareBcPage: BC not ready within 20s');

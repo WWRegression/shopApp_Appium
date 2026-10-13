@@ -10,6 +10,8 @@ export class SearchLocator {
       [
         "//android.view.View[contains(@content-desc, 'field Double tap to enter search term')]/parent::android.widget.Button",
         "//android.view.View[contains(@content-desc, '搜索')]/parent::android.widget.Button",
+        // IN shows the newer search bar (with a microphone) whose input is a real EditText
+        '//android.widget.EditText',
       ].join(' | ')
     );
   }

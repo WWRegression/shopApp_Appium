@@ -439,6 +439,14 @@ export class LoginPage extends BasePage {
     await this.continueAsGuest();
   }
 
+  /** Katalon LogIn.checkoutContinueAsGuestUserOnNative — guest checkout can open the login page; continues as guest only when it shows. */
+  async continueAsGuestToCheckoutIfShown(timeoutMs = 5000): Promise<void> {
+    await switchToNative();
+    // The CN login page slider never goes idle, so every action here would wait out the idle timeout
+    const tapped = await withoutIdleWait(() => clickIfDisplayed(this.locator.continueAsGuestButton, timeoutMs));
+    console.log(`[continueAsGuestToCheckoutIfShown] ${tapped ? 'guest button tapped' : 'login page not shown — skipping'}`);
+  }
+
   /** A wiped app (IN, cleared by clearAppDataForIn) asks for notification permission after launch — waits only in that case. */
   private async dismissFreshAppPermissionPopups(): Promise<void> {
     if (!this.appDataCleared) {

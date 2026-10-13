@@ -20,7 +20,7 @@ describe('PROD_CHECKOUT_02', () => {
       await cartPage.clickContinueToCheckout();
       await checkoutPage.prepareCheckoutPage();
 
-      await checkoutPage.runCheckout();
+      await checkoutPage.proceedToPayment();
 
       await checkoutPage.checkPaymentMethod();
 
