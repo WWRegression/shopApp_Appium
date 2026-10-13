@@ -41,10 +41,11 @@ export class CartPage extends BasePage {
 
   /** Clicks checkout and waits for the checkout page to load. */
   async clickContinueToCheckout(): Promise<void> {
-    await clickFirstDisplayed(this.locator.checkoutButtons);
-    // US asks again in an Express Checkout modal (Katalon Cart/cartToCheckoutBtn_2nd)
-    if (await clickIfDisplayed(this.locator.checkoutModalButton, 2000)) {
-      console.log('[clickContinueToCheckout] checkout modal — Continue to checkout tapped');
+    if(await clickIfDisplayed(this.locator.checkoutButton, 3000)) {
+      console.warn('[clickContinueToCheckout] checkout button clicked');
+    }
+    if(await clickIfDisplayed(this.locator.modalCheckoutButton, 3000)) {
+      console.warn('[clickContinueToCheckout] modal checkout button clicked');
     }
   }
 

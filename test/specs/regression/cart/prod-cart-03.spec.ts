@@ -1,8 +1,8 @@
 import { runOrSkip } from '../../../helpers/tc-filter.helper';
 import { SearchPage } from '../../../pages/search.page';
 import { PfPage } from '../../../pages/pf.page';
-import { SplashPage } from '../../../pages/splash.page';
 import { BcPage } from '../../../pages/bc.page';
+import { SplashPage } from '../../../pages/splash.page';
 import { CartPage } from '../../../pages/cart.page';
 import { CheckoutPage } from '../../../pages/checkout.page';
 

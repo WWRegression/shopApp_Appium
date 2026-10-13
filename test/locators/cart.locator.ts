@@ -7,9 +7,18 @@ export class CartLocator {
     return $('cx-cart-details .cart-details__empty, app-cart-details-cn .cart-details__empty');
   }
 
-  /** Katalon Cart/cartToCheckoutBtn_2nd — "Continue to checkout" scoped to the open Express Checkout modal (e.g. US). */
-  get checkoutModalButton() {
-    return $('app-sticky-checkout-cta-modal.show .modal__container.sticky-checkout-modal button[data-an-tr="cart-to-checkout"]');
+  get checkoutButton() {
+    return $(
+      [
+        'cx-cart-totals-v2 button[data-an-tr="cart-to-checkout" i]:not(div.hideContinueCta *):not([disabled])',
+        'cx-cart-totals-v2 button.sticky-cart-totals__checkout-btn:not([disabled])',
+        'app-sticky-cart-totals-cn [data-an-tr="cart-to-checkout" i]',        
+      ].join(', ')
+    );
+  }
+
+  get modalCheckoutButton() {
+    return $('app-sticky-checkout-cta-modal.show button[data-an-tr="cart-to-checkout"]');
   }
 
   /** Katalon Cart/loginBtn + Cart/emptyCartLoginBtn — guest Sign in on the cart (with items or empty); all matches since a hidden one can come first */
@@ -139,17 +148,6 @@ export class CartLocator {
     return $('[an-la*="trade-in" i][an-la*="no" i]');
   }
 
-  /** All matches — CN also has a hidden 0x0 copy, so click the displayed one */
-  get checkoutButtons() {
-    return $$(
-      [
-        '[data-an-la*="checkout" i]',
-        '[data-an-tr*="checkout" i]',
-        'button[class*="checkout"]',
-        'a[href*="checkout"]',
-      ].join(', ')
-    );
-  }
 
   get scPlusAddButton() {
     return $(
@@ -207,23 +205,21 @@ export class CartLocator {
     );
   }
 
+  /** EUP -------------------------------------------------------------- */
   get eupAddButton() {
     return $("button[data-an-la='add service:samsung flex'], [an-la*='eup' i]");
   }
 
-  get eupNoButton() {
-    return $('[an-la*="eup" i][an-la*="no" i]');
-  }
-
   get eupRemoveButton() {
     return $(
-      '[data-modeldisplay="Samsung Upgrade"] button[data-an-la="remove item"], [data-modeldisplay*="Flex" i] button[data-an-la*="remove" i]'
+      '[data-modeldisplay="Samsung Upgrade"] button[data-an-la="remove item"]'
     );
   }
 
   get eupAppliedLabel() {
     return this.eupRemoveButton;
   }
+  /** EUP END -------------------------------------------------------------- */
 
   get tradeUpRemoveButton() {
     return $(
