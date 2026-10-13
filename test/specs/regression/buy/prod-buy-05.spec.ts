@@ -13,7 +13,7 @@ describe('PROD_BUY_05', () => {
   const cartPage = new CartPage();
   
 
-  it('add Trade-Up on PD and verify Trade-Un in cart', async function () {
+  it('add Trade-Up on PD and verify Trade-Up in cart', async function () {
     await runOrSkip.call(this, 'PROD_BUY_05', async (site) => {
       await cartPage.clearCart();
 
