@@ -3,7 +3,7 @@ import { MypageWishlistLocator } from '../locators/mypage-wishlist.locator';
 import { MypagePage } from './mypage.page';
 import { prepareWebViewPage, switchToNative } from '../helpers/context.helper';
 import { clickIfDisplayed, isDisplayedOrFalse, jsClick, waitForDisplayedOrFalse } from '../helpers/element.helper';
-import { markFailed, markFailedAndStop } from '../helpers/report.helper';
+import { markFailedAndStop } from '../helpers/report.helper';
 
 /** My Page > Wishlist. Ported from the wishlist part of Katalon's Shop.groovy. */
 export class MypageWishlistPage extends BasePage {
@@ -16,7 +16,7 @@ export class MypageWishlistPage extends BasePage {
     await this.mypagePage.selectDashboardMenu('wishlist');
 
     const ready = await prepareWebViewPage('mypageWishlist', this.locator.pageContainer);
-    markFailed([{ label: 'wishlist page reached', pass: ready }], 'prepareWishlistPage');
+    markFailedAndStop([{ label: 'wishlist page reached', pass: ready }], 'prepareWishlistPage');
   }
 
   /** Katalon Shop.removeWishList — removes cards until the empty state shows. */
@@ -37,7 +37,7 @@ export class MypageWishlistPage extends BasePage {
 
     const empty = await isDisplayedOrFalse(this.locator.emptySection);
     console.log(`[clearWishlist] wishlist empty=${empty}`);
-    markFailed([{ label: 'wishlist could not be emptied', pass: empty }], 'clearWishlist');
+    markFailedAndStop([{ label: 'wishlist could not be emptied', pass: empty }], 'clearWishlist');
     await switchToNative();
   }
 
@@ -46,7 +46,7 @@ export class MypageWishlistPage extends BasePage {
     await this.prepareWishlistPage();
     const found = await waitForDisplayedOrFalse(this.locator.productCard(sku), { timeout: 10000 });
     console.log(`[verifyAddedToWishlist] expected=${sku} actual=${found ? sku : 'not listed'} result=${found ? 'PASS' : 'FAIL'}`);
-    markFailed([{ label: 'product was not added to the wishlist', pass: found, detail: `sku=${sku}` }], 'verifyAddedToWishlist');
+    markFailedAndStop([{ label: 'product was not added to the wishlist', pass: found, detail: `sku=${sku}` }], 'verifyAddedToWishlist');
   }
 
   /** Katalon Shop/addToCartInWishPage — "Add to cart" on the card of this SKU, then Skip/OK if a popup follows. Caller is already on the wishlist. */
@@ -80,7 +80,7 @@ export class MypageWishlistPage extends BasePage {
       .waitForDisplayed({ timeout: 10000, reverse: true })
       .then(() => true, () => false);
     console.log(`[verifyRemovedFromWishlist] expected=${sku} removed actual=${removed ? 'removed' : 'still listed'} result=${removed ? 'PASS' : 'FAIL'}`);
-    markFailed([{ label: 'product was not removed from the wishlist', pass: removed, detail: `sku=${sku}` }], 'verifyRemovedFromWishlist');
+    markFailedAndStop([{ label: 'product was not removed from the wishlist', pass: removed, detail: `sku=${sku}` }], 'verifyRemovedFromWishlist');
     await switchToNative();
   }
 }

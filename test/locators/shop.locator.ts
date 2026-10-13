@@ -663,28 +663,4 @@ export class ShopLocator {
       ]`
     );
   }
-
-  /** Country picker row. Full label, including the parenthesis, e.g. "Chile (Español)". */
-  countryListItem(countryName: string) {
-    const name = countryName.replace(/'/g, '');
-    return $(`//android.widget.RadioButton[contains(@content-desc, '${name}')]`);
-  }
-
-  /** Katalon Initialization/continueBtn — confirm on the country list. */
-  get countryContinueButton() {
-    return $(
-      `//android.widget.Button[
-        @content-desc = 'Continue' or
-        @content-desc = 'Ok' or
-        @content-desc = 'OK' or
-        @content-desc = 'ACEPTAR' or
-        @content-desc = 'Weiter' or
-        @content-desc = 'Continuar' or
-        @content-desc = 'Siguiente' or
-        @content-desc = 'Next' or
-        @content-desc = 'Következő' or
-        @content-desc = 'Onayla'
-      ]`
-    );
-  }
 }

@@ -1,6 +1,9 @@
 {
   "siteCode": "TR",
   "countryName": "Türkiye (Türkçe)",
+  "initialSetup": {
+    "trustArcCookie": true
+  },
   "customer": {
     "firstName": "KK",
     "lastName": "Katalon",

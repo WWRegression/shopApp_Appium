@@ -1,6 +1,9 @@
 {
   "siteCode": "PE",
   "countryName": "Perú (Español)",
+  "initialSetup": {
+    "cookiePopup": true
+  },
   "customer": {
     "firstName": "KK",
     "lastName": "Katalon",

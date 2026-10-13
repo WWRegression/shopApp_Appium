@@ -2,6 +2,9 @@
   "siteCode": "IT",
   "countryName": "Italia (Italiano)",
   "phoneCountryCode": "Italia",
+  "initialSetup": {
+    "trustArcCookie": true
+  },
   "customer": {
     "firstName": "KK",
     "lastName": "Katalon",

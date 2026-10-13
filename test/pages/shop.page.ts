@@ -1,7 +1,7 @@
 import { BasePage } from './base.page';
 import { ShopLocator, ShopCategory, type ShopMenu, type ShopMenuPage, type ShopSubMenu } from '../locators/shop.locator';
 import type { LoadedSite } from '../../config/site';
-import { flingToStart, gestureByBoundary, swipeByBoundary, scrollByBoundary, tapAtCoordinates } from '../helpers/gesture.helper'
+import { gestureByBoundary, swipeByBoundary, scrollByBoundary, tapAtCoordinates } from '../helpers/gesture.helper'
 import {
   switchToNative,
   getCurrentWebViewPage,
@@ -222,7 +222,7 @@ export class ShopPage extends BasePage {
     }
 
     if (depth === 'L0') {
-      markFailed([{ label: 'No L0 category banners were found on the Shop page', pass: categoryTitleList.size > 0 }], 'getCategories');
+      markFailedAndStop([{ label: 'No L0 category banners were found on the Shop page', pass: categoryTitleList.size > 0 }], 'getCategories');
     }
     await gestureByBoundary('scroll', 'up', 1.0, { height: 1000 }, 3);
     console.log(`[getCategories] ${depth}=[ ${[...categoryTitleList].join(', ')} ]`);
@@ -381,7 +381,7 @@ export class ShopPage extends BasePage {
     const ready = await driver
       .waitUntil(() => this.isOnShop(), { timeout: timeoutMs, interval: 500 })
       .then(() => true, () => false);
-    markFailed([{ label: 'Shop not shown (header title does not match)', pass: ready }], 'prepareShopPage');
+    markFailedAndStop([{ label: 'Shop not shown (header title does not match)', pass: ready }], 'prepareShopPage');
   }
 
   /** Katalon Shop.getShopMenuListForSite — footer menus the site shows (sites-data shopMenuList). */
@@ -596,23 +596,16 @@ export class ShopPage extends BasePage {
       `[changeCountry] Country menu not found`
     );
 
-    const item = this.shoplocator.countryListItem(countryName);
-    let found = await isDisplayedOrFalse(item);
-    if (!found) {
-      await flingToStart();
-      found = await isDisplayedOrFalse(item);
-    }
-    markFailed(
-      [{ label: 'target country not found in the list', pass: found, detail: countryName }],
-      'changeCountry'
-    );
-    await clickElement(item, { timeout: 5000 });
-    await clickElement(this.shoplocator.countryContinueButton, { timeout: 8000 });
-    console.log(`[changeCountry] selected "${countryName}"`);
+    await this.selectCountry(countryName);
   }
 
   /** Shop footer country row must show the country name (text before the language parenthesis). */
-  async verifyCountry(countryName: string): Promise<void> {
+  async verifyCountry(countryName?: string): Promise<void> {
+    // Single-country apps (no countryName in site data) have no country to compare
+    if (!countryName) {
+      console.log('[verifyCountry] no countryName for this site — skipped');
+      return;
+    }
     await this.prepareShopPage();
     const menu = this.shoplocator.countryMenu;
     const shown = (await isDisplayedOrFalse(menu)) || (await this.scrollUntilMenuVisible(menu));

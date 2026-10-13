@@ -1,6 +1,9 @@
 {
   "siteCode": "HK_EN",
   "countryName": "Hong Kong & Macau SAR, China (English)",
+  "initialSetup": {
+    "cookiePopup": true
+  },
   "customer": {
     "firstName": "KK",
     "lastName": "Katalon",

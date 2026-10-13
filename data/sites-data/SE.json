@@ -2,6 +2,9 @@
   "siteCode": "SE",
   "countryName": "Sverige (Svenska)",
   "phoneCountryCode": "+46",
+  "initialSetup": {
+    "trustArcCookie": true
+  },
   "customer": {
     "firstName": "KK",
     "lastName": "Katalon",

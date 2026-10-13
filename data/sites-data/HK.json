@@ -1,6 +1,9 @@
 {
   "siteCode": "HK",
   "countryName": "香港及澳門特別行政區 (繁體中文)",
+  "initialSetup": {
+    "cookiePopup": true
+  },
   "customer": {
     "firstName": "KK",
     "lastName": "Katalon",

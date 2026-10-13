@@ -1,6 +1,9 @@
 {
   "siteCode": "CA",
   "countryName": "Canada (English)",
+  "initialSetup": {
+    "trustArcCookie": true
+  },
   "customer": {
     "firstName": "ww",
     "lastName": "Katalon",

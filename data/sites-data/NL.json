@@ -2,6 +2,9 @@
   "siteCode": "NL",
   "countryName": "Nederland (Dutch)",
   "phoneCountryCode": "+31",
+  "initialSetup": {
+    "trustArcCookie": true
+  },
   "customer": {
     "firstName": "KK",
     "lastName": "Katalon",

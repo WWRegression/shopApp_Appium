@@ -2,6 +2,9 @@
   "siteCode": "ES",
   "countryName": "España (Español)",
   "phoneCountryCode": "+34",
+  "initialSetup": {
+    "trustArcCookie": true
+  },
   "customer": {
     "firstName": "KK",
     "lastName": "Katalon",

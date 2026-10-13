@@ -5,7 +5,7 @@ import { PdEupService } from '../services/eup/pd-eup.service';
 import { PdSimService } from '../services/sim/pd-sim.service';
 import { FlagshipWatchProduct } from '../helpers/flagship-sku.helper';
 import { normalizeText, resolveDisplayColor } from '../helpers/data.helper';
-import { markFailedAndStop, markFailed, FieldCheck } from '../helpers/report.helper';
+import { markFailedAndStop, FieldCheck } from '../helpers/report.helper';
 import { getElementLabel, scrollAndJsClick, clickIfDisplayed, scrollUntilVisible, isDisplayedOrFalse, waitForDisplayedOrFalse } from '../helpers/element.helper';
 import { prepareWebViewPage, switchToNative, switchToWebView } from '../helpers/context.helper';
 import { ProductOptionFields } from './bc.page';
@@ -243,6 +243,6 @@ export class PdPage extends BasePage {
       const normalized = normalizeText(value);
       checks.push({ label, pass: summary.includes(normalized) || header.includes(normalized), detail: `expected "${value}"` });
     }
-    markFailed(checks, '[PD][watch] options');
+    markFailedAndStop(checks, '[PD][watch] options');
   }
 }

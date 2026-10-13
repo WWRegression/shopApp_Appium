@@ -2,6 +2,9 @@
   "siteCode": "PL",
   "countryName": "Polska (Polski)",
   "phoneCountryCode": "+48",
+  "initialSetup": {
+    "trustArcCookie": true
+  },
   "customer": {
     "firstName": "KK",
     "lastName": "Katalon",

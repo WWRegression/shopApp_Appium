@@ -2,15 +2,18 @@ import { PopupLocator } from '../locators/popup.locator';
 import { HeaderLocator, type HeaderIcon } from '../locators/header.locator';
 import { BnbLocator, BNB_MENUS, type BnbMenu } from '../locators/bnb.locator';
 import { LoginLocator } from '../locators/login.locator';
+import { HomeLocator } from '../locators/home.locator';
 import { switchToNative } from '../helpers/context.helper';
-import { scrollUp } from '../helpers/gesture.helper';
+import { flingToStart, scrollUp } from '../helpers/gesture.helper';
 import { assertEqual } from '../helpers/validation.helper';
+import { markFailedAndStop } from '../helpers/report.helper';
 import {
   clickElement,
   clickIfDisplayed,
   isDisplayedOrFalse,
   matchesText,
   getElementLabel,
+  scrollUntilVisible,
   waitForDisplayedOrFalse,
 } from '../helpers/element.helper';
 
@@ -29,6 +32,7 @@ export class BasePage {
   protected readonly popupLocator = new PopupLocator();
   protected readonly headerLocator = new HeaderLocator();
   protected readonly bnbLocator = new BnbLocator();
+  protected readonly homeLocator = new HomeLocator();
   /** App entry screens (guest splash, profile select) — used to tell when the app is up without a permission popup */
   private readonly appEntryLocator = new LoginLocator();
 
@@ -194,6 +198,50 @@ export class BasePage {
 	};
   
   /** Popup */
+  /** Union of every popup closeTopPopup handles — one lookup answers "is anything on top". */
+  private static anyPopupXpath = '';
+
+  private async isAnyPopupShown(): Promise<boolean> {
+    if (!BasePage.anyPopupXpath) {
+      const popups = [
+        this.popupLocator.notificationDenyButton,
+        this.popupLocator.locationAllowButton,
+        this.popupLocator.adSkipButton,
+        this.popupLocator.adCloseButton,
+        this.appEntryLocator.purposeSkipButton,
+        this.popupLocator.cookieAcceptButton,
+        this.popupLocator.promoCloseButton,
+      ];
+      const selectors = await Promise.all(popups.map(async (popup) => String((await popup).selector)));
+      BasePage.anyPopupXpath = selectors.join(' | ');
+    }
+    return isDisplayedOrFalse($(BasePage.anyPopupXpath));
+  }
+
+  /** Closes the popup on top (permission, CN ad splash, "SHOP NOW" ad, purpose pages, cookie, welcome / promotion) — one per call; false when nothing was closed. */
+  async closeTopPopup(options: { keepCookie?: boolean } = {}): Promise<boolean> {
+    if (!(await this.isAnyPopupShown())) {
+      return false;
+    }
+    if (await this.isPermissionPopupShown()) {
+      await this.dismissPermissionPopups(1000);
+      return true;
+    }
+    if ((await clickIfDisplayed(this.popupLocator.adSkipButton)) || (await clickIfDisplayed(this.popupLocator.adCloseButton))) {
+      return true;
+    }
+    // The interest / purpose pages can open again after login completes (IN, UK) — "Skip" closes one page
+    if (await clickIfDisplayed(this.appEntryLocator.purposeSkipButton)) {
+      return true;
+    }
+    // Before the welcome / promotion X — the same locator matches the cookie popup's X
+    if (await isDisplayedOrFalse(this.popupLocator.cookieAcceptButton)) {
+      // The cookie popup stays up until verifyCookiePopup has checked it
+      return !options.keepCookie && (await clickIfDisplayed(this.popupLocator.cookieAcceptButton));
+    }
+    return clickIfDisplayed(this.popupLocator.promoCloseButton);
+  }
+
   async dismissPopupIfShown(): Promise<void> {
     const closeButton = this.popupLocator.closeButton;
     if (await isDisplayedOrFalse(closeButton)) {
@@ -216,11 +264,10 @@ export class BasePage {
     await switchToNative();
     // Stop waiting as soon as an app screen is up without the popup, instead of always waiting the full timeout
     await driver
-      .waitUntil(
-        async () =>
-          (await isDisplayedOrFalse(this.popupLocator.notificationDenyButton)) || (await this.isAppScreenShown()),
-        { timeout: timeoutMs, interval: 500 }
-      )
+      .waitUntil(async () => (await this.isPermissionPopupShown()) || (await this.isAppScreenShown()), {
+        timeout: timeoutMs,
+        interval: 500,
+      })
       .catch(() => undefined);
 
     const notificationShown = await clickIfDisplayed(this.popupLocator.notificationDenyButton, 1000);
@@ -236,23 +283,57 @@ export class BasePage {
   async dismissOverlays(): Promise<void> {
     await this.dismissPopupIfShown();
     await this.dismissCookieIfShown();
+    // Promotion bottom sheet (first launch on US, CN) — after the cookie popup, whose X the same locator matches
+    await clickIfDisplayed(this.popupLocator.promoCloseButton);
   }
 
-  /** Waits for the first app screen (Home, login page or "Select profile"), dismissing a permission popup on top. */
+  /** Katalon Init.selectCountry — on the country list (first launch or Shop > Country), selects `countryName` and confirms. */
+  async selectCountry(countryName?: string): Promise<void> {
+    // Single-country apps (no countryName in site data) have no country list
+    if (!countryName) {
+      console.log('[selectCountry] no countryName for this site — skipped');
+      return;
+    }
+    await switchToNative();
+    const item = this.homeLocator.countryListItem(countryName);
+    await waitForDisplayedOrFalse(this.homeLocator.countryContinueButton, { timeout: 10000 });
+
+    let found = await scrollUntilVisible(item, 15);
+    if (!found) {
+      // The list can open scrolled past the target
+      await flingToStart();
+      found = await scrollUntilVisible(item, 15);
+    }
+    markFailedAndStop([{ label: 'target country not found in the list', pass: found, detail: countryName }], 'selectCountry');
+
+    await clickElement(item, { timeout: 5000 });
+    await clickElement(this.homeLocator.countryContinueButton, { timeout: 8000 });
+    console.log(`[selectCountry] selected "${countryName}"`);
+  }
+
+  /** Waits for the first app screen (Home, login page or "Select profile"), closing the popups that open on top of it. */
   async waitForAppLoaded(timeoutMs: number): Promise<void> {
     await driver
       .waitUntil(
-        async () =>
-          (await isDisplayedOrFalse(this.popupLocator.notificationDenyButton)) || (await this.isAppScreenShown()),
+        async () => {
+          // The first-launch cookie popup covers Home and stays up for verifyCookiePopup, so it counts as loaded
+          if ((await this.isAppScreenShown()) || (await isDisplayedOrFalse(this.popupLocator.cookieAcceptButton))) {
+            return true;
+          }
+          await this.closeTopPopup({ keepCookie: true });
+          return false;
+        },
         { timeout: timeoutMs, interval: 1000 }
       )
       .catch(() => undefined);
+  }
 
-    // A notification popup (e.g. IN re-asking after a deny) covers the app — close it, then wait for the screen behind it
-    if (await isDisplayedOrFalse(this.popupLocator.notificationDenyButton)) {
-      await this.dismissPermissionPopups();
-      await driver.waitUntil(() => this.isAppScreenShown(), { timeout: timeoutMs, interval: 1000 }).catch(() => undefined);
-    }
+  /** True when an Android permission popup (notification or location) is on top of the app. */
+  protected async isPermissionPopupShown(): Promise<boolean> {
+    return (
+      (await isDisplayedOrFalse(this.popupLocator.notificationDenyButton)) ||
+      (await isDisplayedOrFalse(this.popupLocator.locationAllowButton))
+    );
   }
 
   /** True when the app's first screen is up: Home, the login page or "Select profile". */
@@ -353,11 +434,10 @@ export class BasePage {
       return;
     }
 
-    // A notification popup can pop up a few seconds after launch (e.g. IN re-asking after a deny) and cover BNB
-    if (await isDisplayedOrFalse(this.popupLocator.notificationDenyButton)) {
-      await this.dismissPermissionPopups();
-      // BNB comes back only after the popup's close animation
-      if (await waitForDisplayedOrFalse(this.bnbLocator.menu(menu), { timeout: 3000 })) {
+    // Popups cover BNB (permission a few seconds after launch, CN ad splash, cookie, welcome / promotion) — close them one by one
+    for (let closed = 0; closed < 5 && (await this.closeTopPopup()); closed += 1) {
+      // BNB comes back only after the popup's close animation; another popup can be underneath
+      if (await waitForDisplayedOrFalse(this.bnbLocator.menu(menu), { timeout: 1500 })) {
         return;
       }
     }

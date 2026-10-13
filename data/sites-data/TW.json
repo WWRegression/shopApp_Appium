@@ -1,6 +1,9 @@
 {
   "siteCode": "TW",
   "countryName": "台灣 (繁體中文)",
+  "initialSetup": {
+    "cookiePopup": true
+  },
   "customer": {
     "firstName": "KK",
     "lastName": "Katalon",

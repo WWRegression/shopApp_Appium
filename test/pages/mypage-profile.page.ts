@@ -2,7 +2,7 @@ import { BasePage } from './base.page';
 import { MypageProfileLocator, AddressTab } from '../locators/mypage-profile.locator';
 import { prepareWebViewPage, switchToNative } from '../helpers/context.helper';
 import { isDisplayedOrFalse, jsClick, scrollUntilVisible } from '../helpers/element.helper';
-import { markFailed } from '../helpers/report.helper';
+import { markFailedAndStop } from '../helpers/report.helper';
 
 /** My Account > Settings > Personal Data Management > Addresses. Ported from Katalon's Address.groovy. */
 export class MypageProfilePage extends BasePage {
@@ -32,7 +32,7 @@ export class MypageProfilePage extends BasePage {
   async prepareAddressPage(): Promise<void> {
     await this.navigateToAddressManagement();
     const ready = await prepareWebViewPage('mypageProfile', this.locator.pageContainer);
-    markFailed([{ label: 'address page reached', pass: ready }], 'prepareAddressPage');
+    markFailedAndStop([{ label: 'address page reached', pass: ready }], 'prepareAddressPage');
   }
 
   async activateTab(tab: AddressTab): Promise<void> {
@@ -69,14 +69,14 @@ export class MypageProfilePage extends BasePage {
   async clearAllAddresses(): Promise<void> {
     await this.activateTab('shipping');
     await this.deleteAllInActiveTab();
-    markFailed(
+    markFailedAndStop(
       [{ label: 'shipping addresses cleared', pass: !(await this.locator.deleteButton.isDisplayed().catch(() => false)) }],
       'clearAllAddresses'
     );
 
     await this.activateTab('billing');
     await this.deleteAllInActiveTab();
-    markFailed(
+    markFailedAndStop(
       [{ label: 'billing addresses cleared', pass: !(await this.locator.deleteButton.isDisplayed().catch(() => false)) }],
       'clearAllAddresses'
     );

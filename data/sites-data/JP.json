@@ -1,6 +1,9 @@
 {
   "siteCode": "JP",
   "countryName": "日本 (日本語)",
+  "initialSetup": {
+    "cookiePopup": true
+  },
   "customer": {
     "firstName": "KK",
     "lastName": "Katalon",

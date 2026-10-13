@@ -2,6 +2,9 @@
   "siteCode": "AT",
   "countryName": "Österreich (Deutsch)",
   "phoneCountryCode": "Österreich",
+  "initialSetup": {
+    "trustArcCookie": true
+  },
   "customer": {
     "firstName": "KK",
     "lastName": "Katalon",

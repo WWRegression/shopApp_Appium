@@ -50,6 +50,11 @@ export interface Site {
   siteCode: string;
   countryName?: string;
   phoneCountryCode?: string;
+  /** First-launch checks: sites that must show the TrustArc cookie / the cookie popup */
+  initialSetup?: {
+    trustArcCookie?: boolean;
+    cookiePopup?: boolean;
+  };
   excludedTcs?: string[];
   menus?: Record<string, boolean>;
   customer: {

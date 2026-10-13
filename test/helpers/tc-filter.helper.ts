@@ -1,5 +1,6 @@
 import { getRunConfig } from '../../config/run.config';
 import { getSiteData, loadSite, LoadedSite } from '../../config/site';
+import { takeRecordedFailures } from './report.helper';
 import {
   TestCaseMeta,
   TestSuite,
@@ -51,7 +52,21 @@ export async function runOrSkip(
     this.skip();
   }
 
-  await fn(site, meta);
+  // Failures recorded by markFailed fail the TC once its steps are done
+  takeRecordedFailures();
+  try {
+    await fn(site, meta);
+  } catch (error) {
+    const recorded = takeRecordedFailures();
+    if (recorded.length === 0) {
+      throw error;
+    }
+    throw new Error([...recorded, (error as Error).message].join(' / '), { cause: error as Error });
+  }
+  const recorded = takeRecordedFailures();
+  if (recorded.length > 0) {
+    throw new Error(recorded.join(' / '));
+  }
 }
 
 export function getRunnableTestCases(

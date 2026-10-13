@@ -1,5 +1,8 @@
 {
   "siteCode": "US",
+  "initialSetup": {
+    "trustArcCookie": true
+  },
   "customer": {
     "firstName": "KK",
     "lastName": "Katalon",

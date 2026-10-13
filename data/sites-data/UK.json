@@ -2,6 +2,9 @@
   "siteCode": "UK",
   "countryName": "United Kingdom (English)",
   "phoneCountryCode": "+44",
+  "initialSetup": {
+    "trustArcCookie": true
+  },
   "customer": {
     "firstName": "KK",
     "lastName": "Katalon",

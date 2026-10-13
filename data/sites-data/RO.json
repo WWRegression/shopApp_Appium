@@ -1,6 +1,9 @@
 {
   "siteCode": "RO",
   "countryName": "România  (Română)",
+  "initialSetup": {
+    "trustArcCookie": true
+  },
   "customer": {
     "firstName": "KK",
     "lastName": "Katalon",

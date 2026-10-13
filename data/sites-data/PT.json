@@ -2,6 +2,9 @@
   "siteCode": "PT",
   "countryName": "Portugal (Português)",
   "phoneCountryCode": "+351",
+  "initialSetup": {
+    "trustArcCookie": true
+  },
   "customer": {
     "firstName": "KK",
     "lastName": "Katalon",

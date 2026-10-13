@@ -510,4 +510,167 @@ export class MypageLocator {
         .join(' and ') || 'false()';
     return $(`//android.widget.ImageView[(${hasName}) or contains(@content-desc, '欢迎光临')]`);
   }
+
+  /** Katalon MyAccount/MenuAccountSupport/settings — "Settings" row at the bottom of My Page */
+  get settingsMenu() {
+    return $(
+      `//android.widget.ImageView[
+        @content-desc = 'Settings' or
+        @content-desc = 'Paramètres' or
+        @content-desc = 'الإعدادات' or
+        @content-desc = 'Ajustes' or
+        @content-desc = 'Pengaturan' or
+        @content-desc = 'Impostazioni' or
+        @content-desc = 'Configuración' or
+        @content-desc = 'Instellingen' or
+        @content-desc = '设定' or
+        @content-desc = 'Ustawienia' or
+        @content-desc = 'Inställningar' or
+        @content-desc = 'Cài đặt' or
+        @content-desc = '設定' or
+        @content-desc = 'การตั้งค่า' or
+        @content-desc = 'Einstellungen' or
+        @content-desc = 'Nastavení' or
+        @content-desc = 'Beállítások' or
+        @content-desc = 'Setări' or
+        @content-desc = 'Ayarlar'
+      ]`
+    );
+  }
+
+  /** Katalon MyAccount/MenuAccountSupport/personalDataManagement — row on the Settings page */
+  get personalDataManagementMenu() {
+    return $(
+      `//*[
+        @content-desc = 'Personal Data Management' or
+        @content-desc = 'Gestion des données personnelles' or
+        @content-desc = 'إدارة البيانات الشخصية' or
+        @content-desc = 'Gestión de datos personales' or
+        @content-desc = 'Manajemen Data Pribadi' or
+        @content-desc = 'Gestione dei dati personali' or
+        @content-desc = 'Verwaltung der personenbezogenen Daten' or
+        @content-desc = 'Beheer van persoonlijke gegevens' or
+        @content-desc = '个人数据管理' or
+        @content-desc = 'Zarządzanie danymi osobowymi' or
+        @content-desc = 'Hantering av personuppgifter' or
+        @content-desc = 'Quản lý Dữ liệu Cá nhân' or
+        @content-desc = '個人資料管理' or
+        @content-desc = 'การจัดการข้อมูลส่วนตัว' or
+        @content-desc = 'Správa osobních údajů' or
+        @content-desc = 'Personenbezogene Daten verwalten' or
+        @content-desc = 'Személyes adatok kezelése' or
+        @content-desc = 'Gestionare date cu caracter personal' or
+        @content-desc = 'Kişisel Verilerin Yönetimi'
+      ]`
+    );
+  }
+
+  /** Katalon MyAccount/MenuAccountSupport/cookiePreferences — row on the Personal Data Management page */
+  get cookiePreferencesMenu() {
+    return $(
+      `//*[
+        @content-desc = 'Cookie Preferences' or
+        @content-desc = 'Préférences en matière de témoins' or
+        @content-desc = 'Cookies' or
+        @content-desc = 'Mes préférences de cookies' or
+        @content-desc = 'Preferenze Cookie' or
+        @content-desc = 'Cookie-voorkeuren' or
+        @content-desc = 'Preferencje plików cookie' or
+        @content-desc = 'Cookie inställningar' or
+        @content-desc = 'Cookie-Einstellungen' or
+        @content-desc = 'Předvolby souborů cookies' or
+        @content-desc = 'Süti beállítások' or
+        @content-desc = 'Preferințe de marketing' or
+        @content-desc = 'Çerez tercihleri'
+      ]`
+    );
+  }
+
+  /** Katalon MyAccount/MenuAccountSupport/trustCookieMoreInfoBtn — opens the per-category choices when the consent shows its summary first */
+  get trustArcMoreInfoButton() {
+    return $(
+      `//android.widget.Button[
+        contains(@text, 'Plus de renseignements') or
+        contains(@text, 'Anpassen') or
+        contains(@text, 'Více informací') or
+        contains(@text, 'Más información') or
+        contains(@text, 'En savoir plus') or
+        contains(@text, 'További információ') or
+        contains(@text, 'Più informazioni') or
+        contains(@text, 'Cookies beheren') or
+        contains(@text, 'Więcej informacji') or
+        contains(@text, 'Mai multe informaţii') or
+        contains(@text, 'Daha fazla bilgi') or
+        contains(@text, 'More Info') or
+        contains(@text, 'Hantera val') or
+        contains(@text, 'More info')
+      ]`
+    );
+  }
+
+  /** Katalon MyAccount/MenuAccountSupport/trustCookieSaveBtn — "Save" under the per-category choices */
+  get trustArcSaveButton() {
+    return $(
+      `//android.widget.Button[
+        contains(@text, 'Enregistrer') or
+        contains(@text, 'Speichern') or
+        contains(@text, 'Uložit') or
+        contains(@text, 'Guardar') or
+        contains(@text, 'Mentés') or
+        contains(@text, 'Salva') or
+        contains(@text, 'Bewaar Voorkeuren') or
+        contains(@text, 'Zapisz swoje wybory i zamknij') or
+        contains(@text, 'Salvare') or
+        contains(@text, 'Kaydet') or
+        contains(@text, 'Save') or
+        contains(@text, 'Spara')
+      ]`
+    );
+  }
+
+  /** Katalon MyPage.verifyInitialCheckboxSelections — "NO" inputs of the cookie categories (WebView) */
+  get trustArcNoInputs() {
+    return $$('input[id*="no"]');
+  }
+
+  /** Katalon MyAccount/MenuSettings/settingsSubMenu/pushNotification — row on the Settings page */
+  get pushNotificationMenu() {
+    return $(
+      `//*[
+        @content-desc = 'الإشعارات' or
+        @content-desc = 'Push Notifications' or
+        @content-desc = 'Push notifications' or
+        @content-desc = 'Notifications poussées' or
+        @content-desc = 'Notificações Push' or
+        @content-desc = 'Mis Notificaciones' or
+        @content-desc = 'Notificaciones push' or
+        @content-desc = 'Notificaciones' or
+        @content-desc = 'Mes notifications' or
+        @content-desc = 'Notifikasi' or
+        @content-desc = 'Notifiche Push' or
+        @content-desc = '推送通知接收提醒' or
+        @content-desc = 'Push-Benachrichtigungen' or
+        @content-desc = 'Pushberichten' or
+        @content-desc = 'Powiadomienia push' or
+        @content-desc = 'تنبيهات التطبيق' or
+        @content-desc = 'Notiser' or
+        @content-desc = 'บริการการแจ้งเตือน' or
+        @content-desc = '通知' or
+        @content-desc = 'Thông báo' or
+        @content-desc = 'Push notifikace' or
+        @content-desc = '推送通知' or
+        @content-desc = 'Értesítések' or
+        @content-desc = 'Push Notification' or
+        @content-desc = 'Notificaciones Push' or
+        @content-desc = 'Notificare push' or
+        @content-desc = 'Bildirimler' or
+        @content-desc = '通知をオンにする'
+      ]`
+    );
+  }
+
+  /** Katalon MyAccount/VerifyMenu/pushNotification — the switch on the Push Notification page */
+  get pushNotificationSwitch() {
+    return $(`//android.widget.Switch`);
+  }
 }

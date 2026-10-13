@@ -1,6 +1,9 @@
 {
   "siteCode": "ID",
   "countryName": "Indonesia (Bahasa Indonesia)",
+  "initialSetup": {
+    "cookiePopup": true
+  },
   "customer": {
     "firstName": "KK",
     "lastName": "Katalon",

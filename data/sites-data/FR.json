@@ -2,6 +2,9 @@
   "siteCode": "FR",
   "countryName": "France (Français)",
   "phoneCountryCode": "+33(0)",
+  "initialSetup": {
+    "trustArcCookie": true
+  },
   "customer": {
     "firstName": "KK",
     "lastName": "Katalon",

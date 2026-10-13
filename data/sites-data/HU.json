@@ -1,6 +1,9 @@
 {
   "siteCode": "HU",
   "countryName": "Magyarország (Magyar)",
+  "initialSetup": {
+    "trustArcCookie": true
+  },
   "customer": {
     "firstName": "KK",
     "lastName": "Katalon",

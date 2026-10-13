@@ -2,6 +2,9 @@
   "siteCode": "DE",
   "countryName": "Deutschland (Deutsch)",
   "phoneCountryCode": "+49",
+  "initialSetup": {
+    "trustArcCookie": true
+  },
   "customer": {
     "firstName": "KK",
     "lastName": "Katalon",

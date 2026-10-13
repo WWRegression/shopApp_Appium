@@ -1,6 +1,9 @@
 {
   "siteCode": "TH",
   "countryName": "ประเทศไทย (ไทย)",
+  "initialSetup": {
+    "cookiePopup": true
+  },
   "customer": {
     "firstName": "KK Katalon",
     "mobile": "661234567",

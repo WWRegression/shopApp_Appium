@@ -1,10 +1,23 @@
 /** X of the full-screen ad overlay ("SHOP NOW") — no ids, so the image beside the ad box */
 const AD_OVERLAY_CLOSE = `//android.widget.Button[@text = 'SHOP NOW' or @content-desc = 'SHOP NOW']/ancestor::android.widget.RelativeLayout[2]/android.widget.ImageView`;
 
+/** X of a native popup over a scrim (promotion sheet, welcome dialog; the cookie popup has the same X) — no ids or fixed texts, so an unlabelled image while a full-screen scrim is up */
+const SCRIM_POPUP_CLOSE = `//android.widget.ImageView[@clickable = 'true' and not(@content-desc)][//android.view.View[@clickable = 'true' and @content-desc and starts-with(@bounds, '[0,0]')]]`;
+
 export class PopupLocator {
   /** Ad overlay close only — for screens where the broad closeButton could hit a real button (e.g. CN guest button) */
   get adCloseButton() {
     return $(AD_OVERLAY_CLOSE);
+  }
+
+  /** CN ad splash shown while Home loads (Onboarding_Advertisement, a few seconds) — "跳过" (skip) at the top right */
+  get adSkipButton() {
+    return $(`//android.widget.Button[@content-desc = '跳过']`);
+  }
+
+  /** Promotion / welcome popup X — also matches the cookie popup's X, so use it only when the cookie popup is not shown */
+  get promoCloseButton() {
+    return $(SCRIM_POPUP_CLOSE);
   }
 
   get closeButton() {
@@ -68,12 +81,23 @@ export class PopupLocator {
     );
   }
 
-  /** Android notification permission "Don't allow" — Katalon Initialization/notificationDenyBtn */
+  /** Android notification permission "Allow" — Katalon Initialization/allowNotificationBtn */
+  get notificationAllowButton() {
+    return $(`//android.widget.Button[@resource-id = 'com.android.permissioncontroller:id/permission_allow_button']`);
+  }
+
+  /** Android notification permission "Don't allow". Every permission dialog shares this deny id, so the location dialog is excluded. */
   get notificationDenyButton() {
     return $(
       `//android.widget.Button[
-        @resource-id = 'com.android.permissioncontroller:id/permission_deny_button'
-        or @resource-id = 'com.android.permissioncontroller:id/permission_deny_and_dont_ask_again_button'
+        (
+          @resource-id = 'com.android.permissioncontroller:id/permission_deny_button'
+          or @resource-id = 'com.android.permissioncontroller:id/permission_deny_and_dont_ask_again_button'
+        )
+        and not(
+          ancestor::*[@resource-id = 'com.android.permissioncontroller:id/grant_dialog']
+            //*[@resource-id = 'com.android.permissioncontroller:id/permission_allow_foreground_only_button']
+        )
       ]`
     );
   }

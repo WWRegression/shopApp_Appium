@@ -1,6 +1,9 @@
 {
   "siteCode": "VN",
   "countryName": "Việt Nam (Tiếng Việt)",
+  "initialSetup": {
+    "cookiePopup": true
+  },
   "customer": {
     "firstName": "KK Katalon",
     "mobile": "0912345678",

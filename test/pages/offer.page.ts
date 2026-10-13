@@ -23,13 +23,13 @@ export class OfferPage extends BasePage {
     const ready = await driver
       .waitUntil(() => this.isOnOffer(), { timeout: 5000, interval: 500 })
       .then(() => true, () => false);
-    markFailed([{ label: 'Offers not shown (header title does not match)', pass: ready }], 'prepareOfferPage');
+    markFailedAndStop([{ label: 'Offers not shown (header title does not match)', pass: ready }], 'prepareOfferPage');
   }
 
   /** Katalon Offer.isRTBPresent — the RTB banner must be shown at the top of Offers. */
   async verifyRtbShown(): Promise<void> {
     const shown = await waitForDisplayedOrFalse(this.locator.rtbItem, { timeout: 5000 });
-    markFailed([{ label: 'RTB section not found on Offers', pass: shown }], 'verifyRtbShown');
+    markFailedAndStop([{ label: 'RTB section not found on Offers', pass: shown }], 'verifyRtbShown');
   }
 
   /** Katalon Offer.redirectAndValidateRTBs — opens every RTB and checks that it does not land on an error page. */
@@ -46,11 +46,11 @@ export class OfferPage extends BasePage {
         .waitForDisplayed({ timeout: 5000, reverse: true })
         .then(() => true)
         .catch(() => false);
-      markFailed([{ label: `RTB did not open a page (still on Offers): ${title}`, pass: leftOffers }], 'verifyRtbRedirects');
+      markFailedAndStop([{ label: `RTB did not open a page (still on Offers): ${title}`, pass: leftOffers }], 'verifyRtbRedirects');
 
       // Katalon checkErrorPage: an error page within 3s means the redirect failed
       const errorShown = await waitForDisplayedOrFalse(this.locator.errorPage, { timeout: 3000 });
-      markFailed([{ label: `RTB redirected to an error page: ${title}`, pass: !errorShown }], 'verifyRtbRedirects');
+      markFailedAndStop([{ label: `RTB redirected to an error page: ${title}`, pass: !errorShown }], 'verifyRtbRedirects');
       console.log(`[verifyRtbRedirects] redirected: ${title}`);
 
       await this.returnToOffers();
@@ -119,12 +119,12 @@ export class OfferPage extends BasePage {
   /** Katalon Offer.verifyFeaturedCategory — the tab selected by default must be the "all products" tab (e.g. "All offers"). */
   async verifyAllOffersTabSelected(): Promise<void> {
     const selected = await waitForDisplayedOrFalse(this.locator.selectedCategoryTab, { timeout: 3000 });
-    markFailed([{ label: 'no category tab is selected by default', pass: selected }], 'verifyAllOffersTabSelected');
+    markFailedAndStop([{ label: 'no category tab is selected by default', pass: selected }], 'verifyAllOffersTabSelected');
 
     const name = await this.getCategoryTabName(this.locator.selectedCategoryTab);
     const isAllOffers = ALL_OFFERS_TAB_LABELS.some((label) => name.includes(label));
     console.log(`[verifyAllOffersTabSelected] default tab="${name}" allOffers=${isAllOffers}`);
-    markFailed(
+    markFailedAndStop(
       [{ label: `the tab selected by default is not the "all products" tab: ${name}`, pass: isAllOffers }],
       'verifyAllOffersTabSelected'
     );
@@ -154,7 +154,7 @@ export class OfferPage extends BasePage {
 
   /** Katalon Offer.verifyCategoryFilterIconCount — the tab row is only shown with 3 or more categories. */
   verifyCategoryTabCount(names: string[]): void {
-    markFailed(
+    markFailedAndStop(
       [{ label: 'category tabs are shown, but there are fewer than 3', pass: names.length >= 3, detail: `count=${names.length}` }],
       'verifyCategoryTabCount'
     );

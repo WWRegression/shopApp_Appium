@@ -1,6 +1,9 @@
 {
   "siteCode": "AE",
   "countryName": "United Arab Emirates (English)",
+  "initialSetup": {
+    "cookiePopup": true
+  },
   "customer": {
     "firstName": "KK",
     "lastName": "Katalon",

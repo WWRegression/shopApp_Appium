@@ -2,6 +2,9 @@
   "siteCode": "BE_FR",
   "countryName": "Belgium (Français)",
   "phoneCountryCode": "+32",
+  "initialSetup": {
+    "trustArcCookie": true
+  },
   "customer": {
     "firstName": "KK",
     "lastName": "Katalon",

@@ -1,6 +1,9 @@
 {
   "siteCode": "SG",
   "countryName": "Singapore (English)",
+  "initialSetup": {
+    "cookiePopup": true
+  },
   "customer": {
     "firstName": "KK",
     "lastName": "Katalon",

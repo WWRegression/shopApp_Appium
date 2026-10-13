@@ -1,6 +1,9 @@
 {
   "siteCode": "CO",
   "countryName": "Colombia (Español)",
+  "initialSetup": {
+    "cookiePopup": true
+  },
   "customer": {
     "firstName": "KK",
     "lastName": "Katalon",

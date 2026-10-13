@@ -1,6 +1,9 @@
 {
   "siteCode": "CL",
   "countryName": "Chile (Español)",
+  "initialSetup": {
+    "cookiePopup": true
+  },
   "customer": {
     "firstName": "KK",
     "lastName": "Katalon",

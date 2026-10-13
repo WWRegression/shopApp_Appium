@@ -191,6 +191,11 @@ export class LoginLocator {
     );
   }
 
+  /** Katalon Initialization/preferenceReviewBtn — "Review Later" on the preference review sheet shown instead of the purpose screen */
+  get preferenceReviewLaterButton() {
+    return $(`//android.widget.Button[@content-desc = 'Review Later']`);
+  }
+
   /** Katalon Initialization/purposeSkipBtn */
   get purposeSkipButton() {
     return $(

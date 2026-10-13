@@ -1,6 +1,9 @@
 {
   "siteCode": "MX",
   "countryName": "México (Español)",
+  "initialSetup": {
+    "cookiePopup": true
+  },
   "customer": {
     "firstName": "KK",
     "lastName": "Katalon",

@@ -8,7 +8,7 @@ import { CartTradeUpService } from '../services/tradeup/cart-tradeup.service';
 import { switchToNative, prepareWebViewPage } from '../helpers/context.helper';
 import { getElementLabel, clickIfDisplayed, clickFirstDisplayed, isDisplayedOrFalse, jsTouchStart, jsClick } from '../helpers/element.helper';
 import { assertEqual } from '../helpers/validation.helper';
-import { markFailed, markFailedAndStop, FieldCheck } from '../helpers/report.helper';
+import { markFailedAndStop, FieldCheck } from '../helpers/report.helper';
 import { parseNumber, removeNonWordChars } from '../helpers/data.helper';
 
 export interface CartItemOptions {
@@ -89,7 +89,7 @@ export class CartPage extends BasePage {
     await this.prepareCartPage();
     const loginShown = await isDisplayedOrFalse(this.locator.emptyCartLoginButton);
     console.log(`[verifyLoggedInOnCart] expected empty cart Sign in shown=false actual=${loginShown} result=${loginShown ? 'FAIL' : 'PASS'}`);
-    markFailed([{ label: 'user is not logged in (empty cart Sign in button still shown)', pass: !loginShown }], 'verifyLoggedInOnCart');
+    markFailedAndStop([{ label: 'user is not logged in (empty cart Sign in button still shown)', pass: !loginShown }], 'verifyLoggedInOnCart');
     await switchToNative();
 
     // Some sites (e.g. US) reopen cart without BNB after login — go back only then, so BNB-tab carts are untouched
@@ -130,7 +130,7 @@ export class CartPage extends BasePage {
   /** Sku of the first cart item. */
   async getFirstItemSku(): Promise<string> {
     const [first] = await this.getCartItemSkus();
-    markFailed([{ label: 'cart has items', pass: Boolean(first) }], 'getFirstItemSku');
+    markFailedAndStop([{ label: 'cart has items', pass: Boolean(first) }], 'getFirstItemSku');
     return first;
   }
 
@@ -235,6 +235,6 @@ export class CartPage extends BasePage {
       console.log(`[Cart] check ${label}: expected="${value}" -> found=${found}`);
       checks.push({ label, pass: found, detail: `expected "${value}"` });
     }
-    markFailed(checks, 'verifyOptions');
+    markFailedAndStop(checks, 'verifyOptions');
   }
 }

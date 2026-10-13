@@ -22,6 +22,7 @@
  *
  * [Tap]
  *   tapAtCoordinates   mobile: clickGesture at raw (x, y).
+ *   longPressElement   mobile: longClickGesture on an element.
  *
  * Layout: types → primitives → Native convenience → WebView → tap.
  */
@@ -209,4 +210,9 @@ export async function scrollElementToCenter(
  */
 export async function tapAtCoordinates(x: number, y: number): Promise<void> {
   await driver.execute('mobile: clickGesture', { x, y });
+}
+
+/** Long press on an element (mobile: longClickGesture). Katalon: ScrollActions.longTapAtCoordinates */
+export async function longPressElement(element: ChainablePromiseElement, durationMs = 2000): Promise<void> {
+  await driver.execute('mobile: longClickGesture', { elementId: await element.elementId, duration: durationMs });
 }

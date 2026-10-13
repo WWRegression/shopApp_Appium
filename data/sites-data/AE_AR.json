@@ -1,6 +1,9 @@
 {
   "siteCode": "AE_AR",
   "countryName": "الإمارات العربية المتحدة (العربي)",
+  "initialSetup": {
+    "cookiePopup": true
+  },
   "customer": {
     "firstName": "KK",
     "lastName": "Katalon",

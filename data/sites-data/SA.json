@@ -1,6 +1,9 @@
 {
   "siteCode": "SA",
   "countryName": "Saudi Arabia (Arabic)",
+  "initialSetup": {
+    "cookiePopup": true
+  },
   "customer": {
     "firstName": "KK",
     "lastName": "Katalon",

@@ -1,6 +1,9 @@
 {
   "siteCode": "ZA",
   "countryName": "South Africa (English)",
+  "initialSetup": {
+    "cookiePopup": true
+  },
   "customer": {
     "firstName": "KK",
     "lastName": "Katalon",

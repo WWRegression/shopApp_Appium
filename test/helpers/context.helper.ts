@@ -38,7 +38,7 @@ export type WebViewPage = (typeof WEBVIEW_DETECT_ORDER)[number];
 export type CurrentPage = NativePage | WebViewPage | 'unknown';
 
 /** WebView URL lookup keys (Navigate / Detect). */
-export type PageUrlKey = WebViewPage | 'site' | 'useinsider';
+export type PageUrlKey = WebViewPage | 'site' | 'useinsider' | 'trustArc';
 
 export interface WebViewPageResult {
   page: WebViewPage | 'unknown';
@@ -431,6 +431,7 @@ function pageUrlPatterns(page: FragmentPage): string[] {
     mypageRewards: ['mypage/reward'],
     wdsLogin: ['wds.samsung.com', 'sts.secsso.net'],
     useinsider: ['useinsider'],
+    trustArc: ['appassets.androidplatform.net'],
   };
   return patterns[page];
 }
@@ -509,7 +510,7 @@ function matchPageByUrl(href: string, page: PageUrlKey, siteCode: string): boole
   }
 
   const matched = hrefIncludesAny(href, pageUrlPatterns(page));
-  if (page === 'wdsLogin' || page === 'useinsider') {
+  if (page === 'wdsLogin' || page === 'useinsider' || page === 'trustArc') {
     return matched;
   }
   return isOnSite(href, siteCode) && matched;

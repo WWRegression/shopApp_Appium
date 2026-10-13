@@ -44,7 +44,7 @@ export class CheckoutPage extends BasePage {
 
   async prepareCheckoutPage(): Promise<void> {
     const ready = await prepareWebViewPage('checkout', this.locator.checkoutLayout, 20000);
-    markFailed([{ label: 'checkout page reached', pass: ready }], 'prepareCheckoutPage');
+    markFailedAndStop([{ label: 'checkout page reached', pass: ready }], 'prepareCheckoutPage');
   }
 
   /** Best-effort order/item price text for BUY_09 consistency check. */
@@ -311,21 +311,21 @@ export class CheckoutPage extends BasePage {
   /** The estimated reward points banner should always show up during checkout. */
   async verifyRewardArea(): Promise<void> {
     const shown = await this.locator.rewardArea.isDisplayed().catch(() => false);
-    markFailed([{ label: 'reward area shown', pass: shown }], 'verifyRewardArea');
+    markFailedAndStop([{ label: 'reward area shown', pass: shown }], 'verifyRewardArea');
   }
 
   /** Expand the first payment method, then confirm its submit-order loader's id/data-an-la carries its own title. */
   async checkPaymentMethod(): Promise<void> {
     const onPaymentPage = (await this.getVisibleForms()).includes('app-checkout-step-payment');
-    markFailed([{ label: 'payment step reached', pass: onPaymentPage }], 'checkPaymentMethod');
+    markFailedAndStop([{ label: 'payment step reached', pass: onPaymentPage }], 'checkPaymentMethod');
 
     const titles = await this.locator.paymentMethodTitles;
     const hasTitles = (await titles.length) > 0;
-    markFailed([{ label: 'payment method titles found', pass: hasTitles }], 'checkPaymentMethod');
+    markFailedAndStop([{ label: 'payment method titles found', pass: hasTitles }], 'checkPaymentMethod');
 
     const first = titles[0];
     const title = await getElementLabel(first);
-    markFailed([{ label: 'payment method title text', pass: title.length > 0 }], 'checkPaymentMethod');
+    markFailedAndStop([{ label: 'payment method title text', pass: title.length > 0 }], 'checkPaymentMethod');
 
     if (!(await this.locator.paymentMethodExpanded.isExisting().catch(() => false))) {
       await scrollAndJsClick(first);
@@ -350,7 +350,7 @@ export class CheckoutPage extends BasePage {
       }
     }
 
-    markFailed([{ label: 'submit-order loader matched title', pass: matched, detail: title }], 'checkPaymentMethod');
+    markFailedAndStop([{ label: 'submit-order loader matched title', pass: matched, detail: title }], 'checkPaymentMethod');
   }
 
   /** The active step's data-activestepname, e.g. CHECKOUT_STEP_CONTACT_INFO / _DELIVERY / _PAYMENT. */
@@ -465,7 +465,7 @@ export class CheckoutPage extends BasePage {
       await this.waitForPageStable();
     }
 
-    markFailed(
+    markFailedAndStop(
       [{ label: 'reached payment step', pass: false, detail: `stuck at: ${lastVisible.join(', ') || 'unknown'}` }],
       `runCheckout (${maxIterations} iterations)`
     );

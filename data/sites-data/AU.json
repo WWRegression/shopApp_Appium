@@ -1,6 +1,9 @@
 {
   "siteCode": "AU",
   "countryName": "Australia (English)",
+  "initialSetup": {
+    "cookiePopup": true
+  },
   "customer": {
     "firstName": "KK",
     "lastName": "Katalon",

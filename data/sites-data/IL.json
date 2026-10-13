@@ -1,6 +1,9 @@
 {
   "siteCode": "IL",
   "countryName": "ישראל (עברית)",
+  "initialSetup": {
+    "cookiePopup": true
+  },
   "customer": {
     "firstName": "KK",
     "lastName": "Katalon",

@@ -9,6 +9,7 @@ import {
 } from '../locators/mypage.locator';
 import { LoginPage, SAMSUNG_ACCOUNT_PACKAGE, SAMSUNG_ACCOUNT_SETTINGS_ACTIVITY } from './login.page';
 import { getRunConfig } from '../../config/run.config';
+import { getSiteData } from '../../config/site';
 import type { LoadedSite } from '../../config/site';
 import { prepareWebViewPage, switchToNative } from '../helpers/context.helper';
 import { parsePoints } from '../helpers/data.helper';
@@ -193,9 +194,21 @@ export class MypagePage extends BasePage {
     await markFailedAndStop(() => this.selectBnbMenu('mypage'), '[prepareMypage] My Page tab not available on BNB');
 
     const ready = await driver
-      .waitUntil(() => this.isOnMypage(), { timeout: timeoutMs, interval: 500 })
+      .waitUntil(
+        async () => {
+          if (await this.isOnMypage()) {
+            return true;
+          }
+          // A popup opening over the app (e.g. the "SHOP NOW" ad) swallows the BNB tap — close it and select the tab again
+          if (await this.closeTopPopup()) {
+            await this.selectBnbMenu('mypage');
+          }
+          return false;
+        },
+        { timeout: timeoutMs, interval: 500 }
+      )
       .then(() => true, () => false);
-    markFailed([{ label: 'My Page not shown (header title does not match)', pass: ready }], 'prepareMypage');
+    markFailedAndStop([{ label: 'My Page not shown (header title does not match)', pass: ready }], 'prepareMypage');
   }
 
   /** Katalon swipes My Page down to its top before looking for Login; skipped when Login is already visible. */
@@ -217,7 +230,7 @@ export class MypagePage extends BasePage {
 
     const loginButton = this.locator.loginButton;
     const shown = await waitForDisplayedOrFalse(loginButton, { timeout: 5000 });
-    markFailed([{ label: 'Login button not found on My Page', pass: shown }], 'clickLoginOnMypage');
+    markFailedAndStop([{ label: 'Login button not found on My Page', pass: shown }], 'clickLoginOnMypage');
 
     const { x, y } = await loginButton.getLocation();
     const tapX = Math.round(x) + LOGIN_TAP_OFFSET.x;
@@ -244,7 +257,7 @@ export class MypagePage extends BasePage {
   async logoutOnMypage(): Promise<void> {
     await this.prepareMypage();
     const found = await this.scrollToLogoutButton();
-    markFailed([{ label: 'Logout button not found on My Page', pass: found }], 'logoutOnMypage');
+    markFailedAndStop([{ label: 'Logout button not found on My Page', pass: found }], 'logoutOnMypage');
 
     await clickElement(this.locator.logoutButton, { timeout: 3000 });
     console.log('[logoutOnMypage] Logout clicked');
@@ -281,7 +294,7 @@ export class MypagePage extends BasePage {
 
     const loggedOut = await waitForDisplayedOrFalse(this.locator.loginButton, { timeout: 10000 });
     console.log(`[verifyLoggedOut] ${loggedOut}`);
-    markFailed([{ label: 'user is not logged out (Login button not found on My Page)', pass: loggedOut }], 'verifyLoggedOut');
+    markFailedAndStop([{ label: 'user is not logged out (Login button not found on My Page)', pass: loggedOut }], 'verifyLoggedOut');
   }
 
   /** Katalon LogIn.ensureLoginStatus — logs in with the device account unless already logged in. */
@@ -312,7 +325,7 @@ export class MypagePage extends BasePage {
   }
 
   /** Katalon LogIn.isLogInStatus — Logout button must be found at the bottom of My Page. */
-  async verifyLoggedIn(): Promise<void> {
+  async verifyLoggedIn(options: { continueOnFail?: boolean } = {}): Promise<void> {
     let loggedIn = await this.isLoggedIn();
     if (!loggedIn) {
       // Login can still be completing in the background (CN authorizes after the tap) — Katalon also re-checks 3 times
@@ -322,7 +335,9 @@ export class MypagePage extends BasePage {
         .then(() => true, () => false);
     }
     console.log(`[verifyLoggedIn] ${loggedIn}`);
-    markFailed([{ label: 'user is not logged in (Logout button not found on My Page)', pass: loggedIn }], 'verifyLoggedIn');
+    // Katalon stops here, except in HOME_02 where it records the failure and goes on
+    const mark = options.continueOnFail ? markFailed : markFailedAndStop;
+    mark([{ label: 'user is not logged in (Logout button not found on My Page)', pass: loggedIn }], 'verifyLoggedIn');
   }
 
   /** Katalon Reward.checkJoinRewardsTooltipOnMyPage — the "Join Samsung Rewards" tooltip must not show on My Page. */
@@ -336,7 +351,7 @@ export class MypagePage extends BasePage {
   async getRewardsPoints(): Promise<number> {
     await this.prepareMypage();
     const shown = await waitForDisplayedOrFalse(this.locator.rewardsPoints, { timeout: 5000 });
-    markFailed([{ label: 'Rewards points not found on My Page', pass: shown }], 'getRewardsPoints');
+    markFailedAndStop([{ label: 'Rewards points not found on My Page', pass: shown }], 'getRewardsPoints');
     const points = parsePoints(await getElementLabel(this.locator.rewardsPoints));
     console.log(`[getRewardsPoints] My Page points=${points}`);
     return points;
@@ -348,7 +363,7 @@ export class MypagePage extends BasePage {
     const ready = await prepareWebViewPage('mypageRewards', this.locator.rewardsPagePoints, 15000);
     // Must be displayed: a hidden dashboard still holds a default "0 P" in the DOM, which would pass by accident
     const shown = ready && (await waitForDisplayedOrFalse(this.locator.rewardsPagePoints, { timeout: 8000 }));
-    markFailed([{ label: 'Rewards points not shown on the Samsung Rewards page', pass: shown }], 'getRewardsPointsOnRewardsPage');
+    markFailedAndStop([{ label: 'Rewards points not shown on the Samsung Rewards page', pass: shown }], 'getRewardsPointsOnRewardsPage');
     const points = parsePoints(await this.locator.rewardsPagePoints.getText());
     console.log(`[getRewardsPointsOnRewardsPage] Rewards page points=${points}`);
     await switchToNative();
@@ -473,7 +488,7 @@ export class MypagePage extends BasePage {
     const pass = await waitForDisplayedOrFalse(profileCard, { timeout: 5000 });
     const actual = (await getElementLabel(profileCard)).replace(/\n/g, ' / ') || '(profile with this name not found)';
     console.log(`[verifyProfileName] expected name="${accountName}" actual My Page profile="${actual}" result=${pass ? 'PASS' : 'FAIL'}`);
-    markFailed(
+    markFailedAndStop(
       [{ label: 'account name not shown on the My Page profile', pass, detail: `expected="${accountName}", actual="${actual}"` }],
       'verifyProfileName'
     );
@@ -483,7 +498,7 @@ export class MypagePage extends BasePage {
   async clickProfileOnMypage(accountName: string): Promise<void> {
     const profileCard = this.locator.profileCard(accountName);
     const shown = await waitForDisplayedOrFalse(profileCard, { timeout: 5000 });
-    markFailed([{ label: 'profile not found on My Page', pass: shown }], 'clickProfileOnMypage');
+    markFailedAndStop([{ label: 'profile not found on My Page', pass: shown }], 'clickProfileOnMypage');
 
     const siteCode = getRunConfig().siteCode;
     const { x, y } = await profileCard.getLocation();
@@ -511,9 +526,86 @@ export class MypagePage extends BasePage {
       )
       .then(() => true, () => false);
     console.log(`[verifyProfileRedirected] expected activity="${expected}" actual activity="${actual}" result=${pass ? 'PASS' : 'FAIL'}`);
-    markFailed(
+    markFailedAndStop(
       [{ label: 'Samsung account settings not opened from the profile', pass, detail: `expected="${expected}", actual="${actual}"` }],
       'verifyProfileRedirected'
     );
+  }
+
+  /** My Page > Settings, then the given rows in order; My Page and Settings are skipped when the Settings page is already open. */
+  private async selectSettingsMenus(menus: ChainablePromiseElement[], step: string): Promise<void> {
+    await switchToNative();
+    if (!(await isDisplayedOrFalse(menus[0]))) {
+      await this.prepareMypage();
+      menus = [this.locator.settingsMenu, ...menus];
+    }
+    for (const menu of menus) {
+      await scrollUntilVisible(menu, 5);
+      await markFailedAndStop(() => clickElement(menu, { timeout: 5000 }), `[${step}] menu not found under My Page > Settings`);
+    }
+  }
+
+  /** Katalon MyPage.isNotificationLoaded — My Page > Settings > Push Notification, then verifies the notification switch is shown. */
+  async prepareNotificationPage(): Promise<void> {
+    await this.selectSettingsMenus([this.locator.pushNotificationMenu], 'prepareNotificationPage');
+    const ready = await waitForDisplayedOrFalse(this.locator.pushNotificationSwitch, { timeout: 5000 });
+    markFailedAndStop([{ label: 'Push Notification page not shown (switch not found)', pass: ready }], 'prepareNotificationPage');
+  }
+
+  /** Katalon MyPage.isNotificationStatusChecked — the switch must match the option chosen at first launch ('yes' = on); then goes back to Settings. */
+  async verifyNotification(option: 'yes' | 'no'): Promise<void> {
+    await switchToNative();
+    const checked = (await this.locator.pushNotificationSwitch.getAttribute('checked').catch(() => '')) === 'true';
+    const expected = option === 'yes';
+    const pass = checked === expected;
+    console.log(`[verifyNotification] expected=${expected ? 'on' : 'off'} actual=${checked ? 'on' : 'off'} result=${pass ? 'PASS' : 'FAIL'}`);
+    markFailedAndStop(
+      [{ label: 'notification setting does not match the first-launch choice', pass, detail: `expected ${expected ? 'on' : 'off'}, actual ${checked ? 'on' : 'off'}` }],
+      'verifyNotification'
+    );
+    await this.pressBack();
+  }
+
+  /** Katalon MyPage.isTrustarcLoaded / isTrustArcCookieInInitialState — My Page > Settings > Personal Data Management > Cookie Preferences, then verifies the TrustArc choices are shown. */
+  async prepareCookiePreferencesPage(): Promise<void> {
+    // Only the sites marked in site data (initialSetup.trustArcCookie) have cookie preferences to check
+    if (!getSiteData().initialSetup?.trustArcCookie) {
+      console.log('[prepareCookiePreferencesPage] TrustArc cookie is not required for this site — skipped');
+      return;
+    }
+    await this.selectSettingsMenus([this.locator.personalDataManagementMenu, this.locator.cookiePreferencesMenu], 'prepareCookiePreferencesPage');
+    // The consent can open on its summary first — "More info" shows the per-category choices
+    if (!(await waitForDisplayedOrFalse(this.locator.trustArcSaveButton, { timeout: 15000 }))) {
+      await clickIfDisplayed(this.locator.trustArcMoreInfoButton, 3000);
+    }
+    const ready = await waitForDisplayedOrFalse(this.locator.trustArcSaveButton, { timeout: 10000 });
+    markFailedAndStop([{ label: 'Cookie Preferences not shown (TrustArc choices not found)', pass: ready }], 'prepareCookiePreferencesPage');
+  }
+
+  /** Katalon MyPage.verifyInitialCheckboxSelections — every cookie category must still hold the choice made at first launch ('decline' = NO, 'accept' = YES); then closes with Save. */
+  async verifyTrustArcCookie(choice: 'accept' | 'decline'): Promise<void> {
+    if (!getSiteData().initialSetup?.trustArcCookie) {
+      console.log('[verifyTrustArcCookie] TrustArc cookie is not required for this site — skipped');
+      return;
+    }
+    const webviewReady = await prepareWebViewPage('trustArc', this.locator.trustArcNoInputs[0]);
+    const noSelected: boolean[] = [];
+    if (webviewReady) {
+      for (const input of await this.locator.trustArcNoInputs) {
+        noSelected.push(await input.isSelected());
+      }
+    }
+    await switchToNative();
+
+    const expected = choice === 'decline';
+    const pass = noSelected.length > 0 && noSelected.every((selected) => selected === expected);
+    const actual = noSelected.map((selected) => (selected ? 'NO' : 'YES')).join(', ') || 'no choices found';
+    console.log(`[verifyTrustArcCookie] expected=every category ${expected ? 'NO' : 'YES'} actual=${actual} result=${pass ? 'PASS' : 'FAIL'}`);
+    markFailed(
+      [{ label: 'TrustArc cookie does not match the first-launch choice', pass, detail: `expected every category ${expected ? 'NO' : 'YES'}, actual ${actual}` }],
+      'verifyTrustArcCookie'
+    );
+    // Katalon closes the TrustArc choices with "Save" after the check
+    await clickElement(this.locator.trustArcSaveButton, { timeout: 5000 });
   }
 }

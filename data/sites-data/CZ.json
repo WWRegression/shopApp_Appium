@@ -2,6 +2,9 @@
   "siteCode": "CZ",
   "countryName": "Česká republika (Čeština)",
   "phoneCountryCode": "+420",
+  "initialSetup": {
+    "trustArcCookie": true
+  },
   "customer": {
     "firstName": "KK",
     "lastName": "Katalon",

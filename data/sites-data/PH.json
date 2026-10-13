@@ -1,6 +1,9 @@
 {
   "siteCode": "PH",
   "countryName": "Philippines (English)",
+  "initialSetup": {
+    "cookiePopup": true
+  },
   "customer": {
     "firstName": "KK",
     "lastName": "Katalon",

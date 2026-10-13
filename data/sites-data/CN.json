@@ -1,5 +1,8 @@
 {
   "siteCode": "CN",
+  "initialSetup": {
+    "cookiePopup": true
+  },
   "customer": {
     "firstName": "KK",
     "mobile": "18123456789",

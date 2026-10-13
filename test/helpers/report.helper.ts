@@ -5,26 +5,50 @@ import {
   type ReportStatus,
 } from './db.helper';
 
-/** Runs a select-step action; on failure, throws one clear Error (used as the DB fail reason). Pass a function to build the reason at failure time (e.g. with the failed step). */
-export async function markFailedAndStop(
-  action: () => Promise<void>,
-  reason: string | (() => string)
-): Promise<void> {
-  try {
-    await action();
-  } catch (cause) {
-    throw new Error(typeof reason === 'function' ? reason() : reason, { cause: cause as Error });
-  }
-}
-
 export interface FieldCheck {
   label: string;
   pass: boolean;
   detail?: string;
 }
 
-/** Checks every field, then throws once listing all that failed (e.g. "storage, color"). */
+/**
+ * Stops the TC here (Katalon KeywordUtil.markFailedAndStop) — for failures the next step cannot go on from.
+ * - (checks, context): throws once listing every failed check.
+ * - (action, reason): runs the action; on failure throws one clear Error with the reason (a function builds it at failure time).
+ */
+export function markFailedAndStop(checks: FieldCheck[], context: string): void;
+export function markFailedAndStop(action: () => Promise<void>, reason: string | (() => string)): Promise<void>;
+export function markFailedAndStop(
+  checksOrAction: FieldCheck[] | (() => Promise<void>),
+  reason: string | (() => string)
+): void | Promise<void> {
+  if (Array.isArray(checksOrAction)) {
+    throwIfFailed(checksOrAction, reason as string);
+    return;
+  }
+  return checksOrAction().catch((cause) => {
+    throw new Error(typeof reason === 'function' ? reason() : reason, { cause: cause as Error });
+  });
+}
+
+const recordedFailures: string[] = [];
+
+/** Records the failed checks and lets the TC go on (Katalon KeywordUtil.markFailed); runOrSkip fails the TC with them once its steps are done. */
 export function markFailed(checks: FieldCheck[], context: string): void {
+  try {
+    throwIfFailed(checks, context);
+  } catch (error) {
+    recordedFailures.push((error as Error).message);
+    console.log(`[markFailed] recorded, TC continues: ${(error as Error).message}`);
+  }
+}
+
+/** Returns and clears the failures recorded by markFailed. */
+export function takeRecordedFailures(): string[] {
+  return recordedFailures.splice(0);
+}
+
+function throwIfFailed(checks: FieldCheck[], context: string): void {
   const failed = checks.filter((check) => !check.pass);
   if (failed.length === 0) return;
 

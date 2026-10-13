@@ -26,7 +26,7 @@ import {
   withoutIdleWait,
 } from '../helpers/element.helper';
 import { scrollByBoundary } from '../helpers/gesture.helper';
-import { markFailed, markFailedAndStop } from '../helpers/report.helper';
+import { markFailedAndStop } from '../helpers/report.helper';
 
 export const SAMSUNG_ACCOUNT_PACKAGE = 'com.osp.app.signin';
 /** Samsung account settings screen — opened by this intent action, or from the My Page profile. */
@@ -79,7 +79,7 @@ export class LoginPage extends BasePage {
 
     await forceStopPackage(SAMSUNG_ACCOUNT_PACKAGE);
     await driver.activateApp(targetPackage());
-    markFailed(
+    markFailedAndStop(
       [{ label: 'Samsung account name not found on the device settings (not signed in on the device?)', pass: shown && Boolean(name) }],
       'getAccountNameOnDevice'
     );
@@ -140,7 +140,7 @@ export class LoginPage extends BasePage {
     return isDisplayedOrFalse(this.locator.continueAsGuestButton);
   }
 
-  /** Katalon LogIn.longinOnSelectProfile — selects the saved profile, then taps the login button (Continue if no login button). */
+  /** Katalon LogIn.longinOnSelectProfile — selects the saved profile, then taps the login button (IN) or Continue and the login button on the next page (US). */
   async loginOnSelectProfileForIn(): Promise<void> {
     console.log('[loginOnSelectProfileForIn] logging in from Select profile screen');
     await markFailedAndStop(
@@ -154,6 +154,18 @@ export class LoginPage extends BasePage {
       () => clickElement(this.locator.selectProfileContinueButton, { timeout: 5000 }),
       '[loginOnSelectProfileForIn] Continue button not found on Select profile screen'
     );
+    // US opens the login page after Continue — "Sign in" there completes the login
+    if (await clickIfDisplayed(this.locator.loginPageLoginButton, 3000)) {
+      console.log('[loginOnSelectProfileForIn] login button tapped on the login page after Continue');
+    }
+  }
+
+  /** Katalon Init.setupEnvironment (registered user) — after the setup is applied the app can reopen logged out on "Select profile to continue"; logs in with the saved profile. */
+  async loginOnSelectProfileIfShown(): Promise<void> {
+    if (!(await this.isSelectProfileShownForIn())) {
+      return;
+    }
+    await this.loginOnSelectProfileForIn();
   }
 
   /** Katalon LogIn.SSOsignInOnDevice — adds the Samsung account (this.emailAccount()) in device Settings if missing, then force-stops the app. */
@@ -185,7 +197,7 @@ export class LoginPage extends BasePage {
       (await waitForDisplayedOrFalse(this.locator.loginPageLoginButton, { timeout: timeoutMs })) &&
       (await isDisplayedOrFalse(this.locator.continueAsGuestButton));
     console.log(`[verifyLoginPage] ${shown}`);
-    markFailed([{ label: 'login page not shown (Sign in / Continue as guest not found)', pass: shown }], 'verifyLoginPage');
+    markFailedAndStop([{ label: 'login page not shown (Sign in / Continue as guest not found)', pass: shown }], 'verifyLoginPage');
   }
 
   /** Katalon LogIn/loginPageTnC — CN login buttons stay disabled until the privacy agreement is checked. */
@@ -234,10 +246,19 @@ export class LoginPage extends BasePage {
     });
   }
 
+  /** Katalon HOME_02 (CN, IN) — CN and IN do not log in automatically on first launch, so they log in from the login page. */
+  async clickLoginBtnOnLoginPageForCnIn(): Promise<void> {
+    // Other sites must log in automatically with the device account — logging in here would hide a broken auto-login
+    if (!['CN', 'IN'].includes(getRunConfig().siteCode)) {
+      return;
+    }
+    await this.clickLoginBtnOnLoginPage();
+  }
+
   /** Katalon LogIn.SSOloginViaEmail — Samsung account login with this.emailAccount(). */
   async loginWithEmailOnSso(): Promise<void> {
     const { email, password } = this.emailAccount();
-    markFailed([{ label: 'account email not found on device', pass: Boolean(email) }], 'loginWithEmailOnSso');
+    markFailedAndStop([{ label: 'account email not found on device', pass: Boolean(email) }], 'loginWithEmailOnSso');
     console.log(`[loginWithEmailOnSso] email=${email}`);
     await switchToNative();
 
@@ -291,7 +312,7 @@ export class LoginPage extends BasePage {
     console.log(`[${tag}] SSO screens still shown after ${timeoutMs}ms`);
   }
 
-  /** Katalon Init.purposeSkip — skips the post-login purpose screen if shown (preference "Review Later" left out until seen). */
+  /** Katalon Init.purposeSkip — skips the post-login purpose screen if shown, or taps "Review Later" on the preference review sheet. */
   async skipPurpose(timeoutMs = 60000): Promise<void> {
     await switchToNative();
 
@@ -300,7 +321,11 @@ export class LoginPage extends BasePage {
       .waitUntil(
         async () =>
           (await isDisplayedOrFalse(this.locator.purposeNextButton)) ||
+          (await isDisplayedOrFalse(this.locator.preferenceReviewLaterButton)) ||
           (await isDisplayedOrFalse(this.bnbLocator.homeButton)) ||
+          (await isDisplayedOrFalse(this.popupLocator.cookieAcceptButton)) ||
+          (await isDisplayedOrFalse(this.popupLocator.promoCloseButton)) ||
+          (await this.isPermissionPopupShown()) ||
           (await isDisplayedOrFalse(this.headerLocator.backButton)),
         { timeout: timeoutMs, interval: 500 }
       )
@@ -312,6 +337,8 @@ export class LoginPage extends BasePage {
         await clickIfDisplayed(this.locator.purposeSkipButton, 5000);
         await driver.pause(1000);
       }
+    } else if (await clickIfDisplayed(this.locator.preferenceReviewLaterButton)) {
+      console.log('[skipPurpose] preference review sheet shown, tapped "Review Later"');
     }
   }
 
@@ -339,7 +366,7 @@ export class LoginPage extends BasePage {
   /** Katalon LogIn.SSOloginViaGmail — picks the device Gmail account (this.gmailAccount()) in the Google picker. */
   async loginWithGmailOnSso(): Promise<void> {
     const { email } = this.gmailAccount();
-    markFailed([{ label: 'Gmail account not found on device', pass: Boolean(email) }], 'loginWithGmailOnSso');
+    markFailedAndStop([{ label: 'Gmail account not found on device', pass: Boolean(email) }], 'loginWithGmailOnSso');
     console.log(`[loginWithGmailOnSso] email=${email}`);
     await switchToNative();
 
@@ -436,15 +463,35 @@ export class LoginPage extends BasePage {
         '[continueAsGuest] Continue as guest button not found on the login page'
       );
       console.log('[continueAsGuest] guest button tapped');
-      if (!(await waitForDisplayedOrFalse(this.bnbLocator.homeButton, { timeout: 5000 }))) {
+      if (!(await this.closePopupsUntilHomeShown(5000))) {
         await clickIfDisplayed(this.popupLocator.adCloseButton);
         if (await clickIfDisplayed(this.locator.continueAsGuestButton, 1000)) {
           console.log('[continueAsGuest] guest button tapped again');
         }
       }
-      return waitForDisplayedOrFalse(this.bnbLocator.homeButton, { timeout: 10000 });
+      // A wiped app (first launch) loads Home slower — CN took over 15s
+      return this.closePopupsUntilHomeShown(30000);
     });
-    markFailed([{ label: 'Home not shown after Continue as guest', pass: homeShown }], 'continueAsGuest');
+    markFailedAndStop([{ label: 'Home not shown after Continue as guest', pass: homeShown }], 'continueAsGuest');
+  }
+
+  /** Closes what covers Home (CN ad splash, permission, promotion) until BNB shows; the cookie popup is left for verifyCookiePopup and counts as Home. */
+  private async closePopupsUntilHomeShown(timeoutMs: number): Promise<boolean> {
+    return driver
+      .waitUntil(
+        async () => {
+          if (
+            (await isDisplayedOrFalse(this.bnbLocator.homeButton)) ||
+            (await isDisplayedOrFalse(this.popupLocator.cookieAcceptButton))
+          ) {
+            return true;
+          }
+          await this.closeTopPopup({ keepCookie: true });
+          return false;
+        },
+        { timeout: timeoutMs, interval: 500 }
+      )
+      .then(() => true, () => false);
   }
 
   /**
@@ -465,7 +512,7 @@ export class LoginPage extends BasePage {
     }
 
     if (!WDS_CREDENTIALS.userId || !WDS_CREDENTIALS.password) {
-      markFailed(
+      markFailedAndStop(
         [{ label: 'WDS_CREDENTIALS set (userId/password in test/pages/login.page.ts)', pass: false }],
         'wdsLoginIfNeeded'
       );
