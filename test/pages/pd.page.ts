@@ -8,6 +8,7 @@ import { normalizeText, resolveDisplayColor } from '../helpers/data.helper';
 import { markFailedAndStop, FieldCheck } from '../helpers/report.helper';
 import { getElementLabel, scrollAndJsClick, clickIfDisplayed, scrollUntilVisible, isDisplayedOrFalse, waitForDisplayedOrFalse } from '../helpers/element.helper';
 import { prepareWebViewPage, switchToNative, switchToWebView } from '../helpers/context.helper';
+import { forceStopPackage } from '../helpers/device.helper';
 import { ProductOptionFields } from './bc.page';
 import { BasePage } from './base.page';
 import { PdLocator } from '../locators/pd.locator';
@@ -116,9 +117,9 @@ export class PdPage extends BasePage {
         console.warn('[PD] AR package launched');
         await driver.pause(2000);
         try {
-          await driver.terminateApp('com.google.android.googlequicksearchbox');
+          await forceStopPackage('com.google.android.googlequicksearchbox');
         } catch {
-          await driver.back();
+          await driver.pressKeyCode(4);
         }
         return;
       }
@@ -209,7 +210,7 @@ export class PdPage extends BasePage {
   async verifySkuForNativePdPage(skuOrName: string): Promise<void> {
     await switchToNative();
     if (await waitForDisplayedOrFalse(this.locator.webViewContainer,{timeout:10000})) {
-      throw new Error('PD is in native context');
+      throw new Error('PD is not in native context');
     }
     console.warn('[PD.verifySkuForNativePdPage] Native PD Page');
     const skuElement = this.locator.nativePdProductName(skuOrName);
