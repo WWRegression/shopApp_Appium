@@ -282,10 +282,10 @@ export class PdLocator {
     ).parentElement();
   }
 
-  get tradeUpTerms() {
+  get tradeUpTermsCheckboxes() {
     return $$(
       [
-        '.vd-trade-in-popup__agree-checkbox-wrap.is-required'
+        '.vd-trade-in-popup__agree-checkbox-wrap.is-required input'
       ].join(', ')
     );
   }

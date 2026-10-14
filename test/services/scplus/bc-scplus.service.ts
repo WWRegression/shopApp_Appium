@@ -83,8 +83,7 @@ export class BcScPlusService implements AddedService {
   private async checkAllTermsAndConditions(): Promise<void> {
     const checkboxes = await this.locator.scPlusTermsCheckboxes;
     for (const checkbox of checkboxes) {
-      const checked = await checkbox.isSelected().catch(() => false);
-      if (checked) {
+      if (await checkbox.isSelected().catch(() => false)) {
         continue;
       }
       await scrollAndJsClick(checkbox);

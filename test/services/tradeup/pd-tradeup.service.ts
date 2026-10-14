@@ -1,5 +1,5 @@
 import { PdLocator } from '../../locators/pd.locator';
-import { isDisplayedOrFalse, clickIfDisplayed, scrollAndWdioClick, waitForDisplayedOrFalse } from '../../helpers/element.helper';
+import { isDisplayedOrFalse, clickIfDisplayed, waitForDisplayedOrFalse, scrollAndJsClick } from '../../helpers/element.helper';
 import { assertElementDisplayed } from '../../helpers/validation.helper';
 
 type TradeUpSteps = 'selectDevice' | 'checkCondition' | 'applyDiscount';
@@ -33,14 +33,16 @@ export class PdTradeUpService {
     
     for (let attempt = 0; attempt < 5; attempt++) {
       const active = await this.currentActiveStep();
-      if (!active) {
+      console.warn('[PD.TRADEUP.popupProcess] active step=', active);
+      if (active) {
+        await this.runStep(active, postalCode);
+      }else{
+        console.warn('[PD.TRADEUP.popupProcess] active step not found');
         if (!(await this.waitForOpen(1000))) {
           return;
         }
-        await driver.pause(1000);
-        continue;
       }
-      await this.runStep(active, postalCode);      
+      await driver.pause(3000);
     }
     await this.waitForClose();
   }
@@ -165,14 +167,12 @@ export class PdTradeUpService {
   }
 
   private async checkAllTermsAndConditions(): Promise<void> {
-    const termsCheckboxes = await this.locator.tradeUpTerms;
-    for (const checkbox of termsCheckboxes) {
-      const input = checkbox.$('input');
-      const checked = await input.isSelected().catch(() => false);
-      if (checked) {
+    const checkboxes = await this.locator.tradeUpTermsCheckboxes;
+    for (const checkbox of checkboxes) {
+      if (await checkbox.isSelected().catch(() => false)) {
         continue;
       }
-      await scrollAndWdioClick(checkbox);
+      await scrollAndJsClick(checkbox);
     }
   }
 
