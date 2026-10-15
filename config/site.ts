@@ -50,7 +50,6 @@ export interface Site {
   siteCode: string;
   countryName?: string;
   phoneCountryCode?: string;
-  /** First-launch checks: sites that must show the TrustArc cookie / the cookie popup */
   initialSetup?: {
     trustArcCookie?: boolean;
     cookiePopup?: boolean;
@@ -71,7 +70,6 @@ export interface Site {
     address2?: string;
     apartment?: string;
     district?: string;
-    /** IN delivery address "Floor" select, e.g. "Ground Floor". */
     floor?: string;
     landmark?: string;
     postalCode?: string;

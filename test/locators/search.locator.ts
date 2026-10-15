@@ -26,6 +26,22 @@ export class SearchLocator {
     return $('//android.widget.ScrollView | //androidx.recyclerview.widget.RecyclerView');
   }
 
+  get recentKeywords() {
+    return $$(
+      `//android.view.View[@content-desc != '' and @clickable='true'][
+        following-sibling::*[1][self::android.widget.ImageView][@clickable='true'][not(@content-desc) or @content-desc='']
+      ]`
+    );
+  }
+
+  get recentKeywordDeleteButtons() {
+    return $$(
+      `//android.widget.ImageView[@clickable='true'][not(@content-desc) or @content-desc=''][
+        preceding-sibling::*[1][self::android.view.View][@content-desc != '' and @clickable='true']
+      ]`
+    );
+  }
+
   /** PF/search result card that mentions SKU or product name */
   productCardContaining(text: string) {
     return $(`//*[contains(@content-desc,"${text}") or contains(@text,"${text}")]`);

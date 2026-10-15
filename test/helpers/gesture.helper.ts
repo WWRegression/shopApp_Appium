@@ -57,11 +57,13 @@ export async function gestureByBoundary(
   percent: number,
   boundary: Partial<GestureBoundary> = {},
   attempts = 1
-): Promise<void> {
+): Promise<boolean> {
   const args = { ...DEFAULT_BOUNDARY, ...boundary, direction, percent };
+  let canScrollMore = false;
   for (let i = 0; i < attempts; i++) {
-    await driver.execute(gestureCommand(kind), args);
+    canScrollMore = Boolean(await driver.execute(gestureCommand(kind), args));
   }
+  return canScrollMore;
 }
 
 /**
@@ -79,9 +81,9 @@ export async function gestureByElement(
 
 // ── Native convenience ───────────────────────────────────────────────────
 
-/** One-page Native list scroll down (mobile: scrollGesture). */
-export async function scrollDown(): Promise<void> {
-  await gestureByBoundary('scroll', 'down', 1, { left: 250, top: 400 });
+/** One-page Native list scroll down (mobile: scrollGesture); false once the list cannot scroll further. */
+export async function scrollDown(): Promise<boolean> {
+  return gestureByBoundary('scroll', 'down', 1, { left: 250, top: 400 });
 }
 
 /**

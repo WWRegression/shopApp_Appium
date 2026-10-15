@@ -1,6 +1,8 @@
 import { BasePage } from './base.page';
 import { SearchLocator } from '../locators/search.locator';
 import { switchToNative, switchToWebView, switchToWindowByPage } from '../helpers/context.helper';
+import { clickElement, waitForDisplayedOrFalse } from '../helpers/element.helper';
+import { markFailed, markFailedAndStop } from '../helpers/report.helper';
 
 export class SearchPage extends BasePage {
   private readonly locator = new SearchLocator();
@@ -39,8 +41,85 @@ export class SearchPage extends BasePage {
     }
   }
 
-  async clearSearchHistory(): Promise<void> {
-    // site별 UI 차이 — 필요 시 구현
+  /** Reads the recent search keywords on the search screen, most recent first. */
+  private async getSearchHistory(): Promise<string[]> {
+    await switchToNative();
+    const keywords: string[] = [];
+    for (const keyword of await this.locator.recentKeywords) {
+      keywords.push(((await keyword.getAttribute('content-desc').catch(() => '')) ?? '').trim());
+    }
+    return keywords;
+  }
+
+  private isSameKeyword(actual: string, expected: string): boolean {
+    return actual.trim().toLowerCase() === expected.trim().toLowerCase();
+  }
+
+  /** Deletes every recent search keyword left by earlier searches. */
+  async clearSearchHistoryIfShown(): Promise<void> {
+    await switchToNative();
+    // The search screen opens a moment after the header icon; the previous page is still up until then
+    await waitForDisplayedOrFalse(this.locator.searchInput, { timeout: 500 });
+    for (let deleted = 0; deleted < 10; deleted += 1) {
+      // Counting the list returns at once when it is empty; indexing it ([0]) would wait for a missing element
+      if ((await this.locator.recentKeywordDeleteButtons.length) === 0) {
+        return;
+      }
+      await clickElement(this.locator.recentKeywordDeleteButtons[0]);
+      await driver.pause(500);
+    }
+  }
+
+  /** Verifies the most recent search keyword is the searched keyword. */
+  async verifySearchHistoryExists(keyword: string): Promise<void> {
+    await switchToNative();
+    await waitForDisplayedOrFalse(this.locator.searchInput, { timeout: 10000 });
+    let history: string[] = [];
+    await driver
+      .waitUntil(async () => (history = await this.getSearchHistory()).length > 0, { timeout: 8000, interval: 500 })
+      .catch(() => undefined);
+
+    const recent = history[0] ?? '';
+    const pass = this.isSameKeyword(recent, keyword);
+    console.log(`[verifySearchHistoryExists] expected="${keyword}" actual="${recent}" result=${pass ? 'PASS' : 'FAIL'}`);
+    markFailedAndStop(
+      [{ label: 'Recent search keyword mismatch', pass, detail: `expected "${keyword}", found "${recent}"` }],
+      'verifySearchHistoryExists'
+    );
+  }
+
+  /** Clicks the X (delete) button next to the recent search keyword. */
+  async clickSearchHistoryDelete(keyword: string): Promise<void> {
+    // The X buttons are listed in the same order as the keywords
+    const index = (await this.getSearchHistory()).findIndex((recent) => this.isSameKeyword(recent, keyword));
+    if (index < 0) {
+      markFailed([{ label: 'No search history delete button found', pass: false, detail: keyword }], 'clickSearchHistoryDelete');
+      return;
+    }
+    await clickElement(this.locator.recentKeywordDeleteButtons[index]);
+    console.log(`[clickSearchHistoryDelete] deleted "${keyword}"`);
+  }
+
+  /** Verifies the keyword is no longer in the recent searches. */
+  async verifySearchHistoryDeleted(keyword: string): Promise<void> {
+    let history: string[] = [];
+    const deleted = await driver
+      .waitUntil(
+        async () => {
+          history = await this.getSearchHistory();
+          return !history.some((recent) => this.isSameKeyword(recent, keyword));
+        },
+        { timeout: 3000, interval: 500 }
+      )
+      .then(() => true, () => false);
+
+    console.log(
+      `[verifySearchHistoryDeleted] expected="${keyword}" not in history actual=[${history.join(', ')}] result=${deleted ? 'PASS' : 'FAIL'}`
+    );
+    markFailedAndStop(
+      [{ label: 'Search history delete failed', pass: deleted, detail: `still found "${keyword}"` }],
+      'verifySearchHistoryDeleted'
+    );
   }
 
   async verifySearchResultsDisplayed(): Promise<void> {

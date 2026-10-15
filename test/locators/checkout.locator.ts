@@ -52,7 +52,12 @@ const SUBMIT_ORDER_BUTTON_LOADER_SELECTOR = 'button[appsubmitorderbuttonloader],
 
 export class CheckoutLocator {
   get activeStep() {
-    return $("mat-expansion-panel[data-activestepname][class*='active']");
+    return $(
+      [
+        "mat-expansion-panel[data-activestepname][class*='active']",
+        'mat-expansion-panel[data-activestepname]:has(> mat-expansion-panel-header[aria-expanded="true"])',
+      ].join(', ')
+    );
   }
 
   get checkoutLayout() {

@@ -5,7 +5,7 @@ import { scrollByBoundary, scrollDown } from '../helpers/gesture.helper';
 import { currentSiteCode } from '../helpers/tc-filter.helper';
 import { normalizeText, isExactTokenMatch, stripMarkerText, normalizeProductName } from '../helpers/data.helper';
 import { clickElement, scrollUntilVisible, waitForDisplayedOrFalse } from '../helpers/element.helper';
-import { markFailedAndStop } from '../helpers/report.helper';
+import { markFailed, markFailedAndStop } from '../helpers/report.helper';
 import { ShopPage, type CategoryMismatch } from './shop.page';
 import { BcPage } from './bc.page';
 import { PdPage } from './pd.page';
@@ -227,13 +227,85 @@ export class PfPage extends BasePage {
     return [];
   }
 
-  async getPfCardMatchCount(_keywords: string[]): Promise<number> {
-    // TODO: Implement PF card match count
-    return 0;
+  /** Scrolls the PF list to the end and counts the unique cards; stops the TC if a card lacks every keyword. */
+  async getPfCardMatchCount(keywords: string[], maxScrolls = 15): Promise<number> {
+    await switchToNative();
+    const normalizedKeywords = keywords.map((keyword) => normalizeText(keyword));
+    // Card content-desc → whether it contains a keyword; the key keeps a card seen on several scrolls counted once
+    const matchedByCard = new Map<string, boolean>();
+    let previousLastCardPosition: string | undefined;
+    let canScrollMore = true;
+    let scrolls = 0;
+
+    for (; scrolls < maxScrolls; scrolls += 1) {
+      const cards = [...(await this.pflocator.productGrid)];
+      await this.collectPfCardMatches(cards, normalizedKeywords, matchedByCard);
+
+      // The last scroll hit the bottom, or the screen did not move (fallback when the scroll result is wrong)
+      if (!canScrollMore) break;
+      const lastCardPosition = await this.getLastPfCardPosition(cards);
+      if (lastCardPosition === previousLastCardPosition) break;
+
+      previousLastCardPosition = lastCardPosition;
+      canScrollMore = await scrollDown();
+    }
+
+    const unmatchedCards = [...matchedByCard].filter(([, matched]) => !matched).map(([desc]) => desc.replace(/\s+/g, ' '));
+    markFailedAndStop(
+      unmatchedCards.map((desc) => ({ label: `Keyword not found in PF card: ${desc}`, pass: false })),
+      'getPfCardMatchCount'
+    );
+    console.log(`[getPfCardMatchCount] keywords=${JSON.stringify(keywords)} unique PF cards=${matchedByCard.size} scrolls=${scrolls}`);
+    return matchedByCard.size;
   }
 
-  async getResultCount(): Promise<number> {
-    // TODO: Implement PF result count readback
+  /** Records whether each visible card's label or title contains a keyword; a card matched on an earlier scroll stays matched. */
+  private async collectPfCardMatches(
+    cards: WebdriverIO.Element[],
+    normalizedKeywords: string[],
+    matchedByCard: Map<string, boolean>
+  ): Promise<void> {
+    const containsKeyword = (text: string) => normalizedKeywords.some((keyword) => normalizeText(text).includes(keyword));
+
+    for (const card of cards) {
+      const desc = ((await card.getAttribute('content-desc').catch(() => '')) ?? '').trim();
+      if (!desc) continue;
+      let matched = matchedByCard.get(desc) || containsKeyword(desc);
+      // UK cards keep the product name in a child view; isExisting returns at once instead of waiting for a missing element
+      const title = this.pflocator.pfCardTitle(card);
+      if (!matched && (await title.isExisting().catch(() => false))) {
+        matched = containsKeyword((await title.getAttribute('content-desc').catch(() => '')) ?? '');
+      }
+      matchedByCard.set(desc, matched);
+    }
+  }
+
+  /** Label and position of the last card on screen ("desc@{x,y}"), compared across scrolls to see if the list moved. */
+  private async getLastPfCardPosition(cards: WebdriverIO.Element[]): Promise<string> {
+    const lastCard = cards.at(-1);
+    if (!lastCard) {
+      return '';
+    }
+    const desc = await lastCard.getAttribute('content-desc').catch(() => '');
+    const location = await lastCard.getLocation().catch(() => null);
+    return `${desc}@${JSON.stringify(location)}`;
+  }
+
+  /** Reads the product count from the "Products (10)" tab shown on search results; 0 when not shown. */
+  async getSearchProductCount(): Promise<number> {
+    await switchToNative();
+    const productCount = this.pflocator.productCount;
+    if (!(await waitForDisplayedOrFalse(productCount, { timeout: 15000 }))) {
+      console.log('[getSearchProductCount] Products tab count not shown');
+      return 0;
+    }
+    const digits = ((await productCount.getAttribute('content-desc')) ?? '').replace(/\D/g, '');
+    return digits ? Number(digits) : 0;
+  }
+
+  /** Reads the product count next to Apply in the filter popup; used on PF opened from a category, which has no Products tab. */
+  async getFilterProductCount(): Promise<number> {
+    // TODO: Implement after the filter popup locators are added
     return 0;
   }
 
@@ -252,8 +324,18 @@ export class PfPage extends BasePage {
     return 'remove';
   }
 
-  async verifySearchResultCount(_keywords: string[]): Promise<void> {
-    // TODO: Implement search result count verification
+  /** Verifies the Products tab count equals the number of PF cards containing the keyword. */
+  async verifySearchResultCount(keywords: string[]): Promise<void> {
+    const productCount = await this.getSearchProductCount();
+    const matchingCount = await this.getPfCardMatchCount(keywords);
+    const pass = matchingCount === productCount;
+    console.log(
+      `[verifySearchResultCount] expected=${productCount} (Products tab count) actual=${matchingCount} (matching PF cards) result=${pass ? 'PASS' : 'FAIL'}`
+    );
+    markFailed(
+      [{ label: 'Mismatch between Products tab count and number of matching PF cards', pass, detail: `Products tab ${productCount}, PF cards ${matchingCount}` }],
+      'verifySearchResultCount'
+    );
   }
 
   async verifyNoSearchResultsFound(): Promise<void> {
