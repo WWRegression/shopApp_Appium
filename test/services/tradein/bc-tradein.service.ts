@@ -2,11 +2,9 @@ import { AddedService } from '../added-service.interface';
 import { BcLocator } from '../../locators/bc.locator';
 import { AemTradeInPopupService } from './aem-tradein-popup.service';
 import { parsePriceToNumber } from '../../helpers/data.helper';
-import { assertElementDisplayed } from '../../helpers/validation.helper';
-import { switchToWebView } from '../../helpers/context.helper';
-import { scrollElementToCenter } from '../../helpers/gesture.helper';
 import { TradeInInput } from './tradein.types';
-import { scrollAndJsClick,scrollAndWdioClick, isExistingInWebView } from '../../helpers/element.helper';
+import { clickIfDisplayed } from '../../helpers/element.helper';
+import { assertElementDisplayed } from '../../helpers/validation.helper';
 
 export class BcTradeInService implements AddedService {
   private readonly locator = new BcLocator();
@@ -14,33 +12,30 @@ export class BcTradeInService implements AddedService {
   private pendingInput: TradeInInput = {};
 
   async addService(input?: TradeInInput): Promise<void> {
+    if (!(await clickIfDisplayed(this.locator.tradeInAddButton, 15000))) {
+      console.warn('[BC.TRADEIN.addService] Trade-In add button not found or clicked');
+      return;
+    }
+
     if (input) {
       this.pendingInput = input;
     }
-    await switchToWebView();
-    const yes = this.locator.tradeInYesOption();
-    await scrollElementToCenter(yes);
-    await yes.waitForClickable({ timeout: 15000 });
-    await yes.click();
+    
     await this.popup.completeTradeInFlow(this.pendingInput);
   }
 
   async selectNoForService(): Promise<void> {
-    const no = this.locator.tradeInNoOption();
-    if (!(await isExistingInWebView(no))) {
-      console.warn('[BC.TRADEIN.selectNoForService] Trade-In section not exists');
+    if (!(await clickIfDisplayed(this.locator.tradeInNoButton, 3000))) {
+      console.warn('[BC.TRADEIN.selectNoForService] Trade-In no button not found or clicked');
       return;
     }
-    await scrollAndWdioClick(no);
   }
 
   async removeService(): Promise<void> {
-    const removeButton = this.locator.tradeInRemoveButton;
-    if (!(await isExistingInWebView(removeButton))) {
-      console.warn('[BC.TRADEIN.removeService] Trade-In remove button not exists');
+    if (!(await clickIfDisplayed(this.locator.tradeInRemoveButton, 3000))) {
+      console.warn('[BC.TRADEIN.removeService] Trade-In remove button not found or clicked');
       return;
     }
-    await scrollAndJsClick(removeButton);
   }
 
   async verifyServiceApplied(): Promise<void> {
@@ -49,8 +44,8 @@ export class BcTradeInService implements AddedService {
   }
 
   async getServicePrice(): Promise<number> {
-    await switchToWebView();
     const priceText = await this.locator.tradeInPriceLabel.getText();
+    console.warn('[BC.TRADEIN.getServicePrice] priceText=', priceText);
     return parsePriceToNumber(priceText);
   }
 }

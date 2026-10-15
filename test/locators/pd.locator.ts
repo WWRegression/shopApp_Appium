@@ -16,7 +16,7 @@ export class PdLocator {
   }
 
   get tradeInAddButton() {
-    return $('~YOUR_PD_TRADEIN_ADD_SELECTOR');
+    return $('div:has(> input[an-la*="trade-in:yes"])');
   }
 
   get tradeInNoButton() {

@@ -28,63 +28,9 @@ export class BcLocator {
     return $('.hubble-price-bar__detail-title, .sg-product-display-name, .watch-bc-price-bar__headline, div[class*="ProductTitle_product"] h1');
   }
 
-  // ---- Trade-in ----
-  tradeInYesOption() {
-    return $(
-      [
-        '.s-option-trade a[an-la="trade-in:yes" i]',
-        '.js-tradein-popup a[an-la="trade-in:yes" i]',
-        '.wearable-option.trade-in button[an-la="trade-in:yes" i]',
-        '.watch-bc-buyflow.trade-in-option button[an-la="trade-in:yes" i]',
-        'input[an-la="trade-in:yes" i] + label',
-        '[class*="TradeInOptIn_tradein__select__card"] [role="button"][aria-label*="yes" i]',
-      ].join(', ')
-    );
-  }
+  
 
-  tradeInNoOption() {
-    return $(
-      [
-        '.s-option-trade a[an-la="trade-in:no" i]',
-        '.js-tradein-popup a[an-la="trade-in:no" i]',
-        'input[an-la="trade-in:no" i] + label',
-        '[class*="TradeInOptIn_tradein__select__card"] [role="button"][aria-label*="no" i]',
-        '.watch-bc-buyflow.trade-in-option .buyflow-option.no-option'
-      ].join(', ')
-    );
-  }
-
-  get tradeInRemoveButton() {
-    return $(
-      [
-        'button[an-la="trade-in:delete" i]',
-        'button[an-la="trade-in:remove" i]',
-        'a.s-btn-text[an-la="trade-in:delete" i]',
-        '.result-trade-in [an-la="trade-in:delete" i]',
-        '.s-cta-delete button[an-la="trade-in:delete"]',
-      ].join(', ')
-    );
-  }
-
-  get tradeInEditButton() {
-    return $('button[an-la*="trade-in:edit" i], [an-la*="edit trade-in" i]');
-  }
-
-  get tradeInPriceLabel() {
-    return $(
-      '.s-trade-price, .s-apply-discount, #card-price[class*="TradeInCard_tradein__card__price"] span'
-    );
-  }
-
-   get tradeInAddButton() {
-    return this.tradeInYesOption();
-  }
-
-  get tradeInNoButton() {
-    return this.tradeInNoOption();
-  }
-
-  // ---- Option ----
+  // ---- Product Option ----
   deviceOption(label: string) {
     return $(
       [
@@ -347,6 +293,29 @@ export class BcLocator {
         'div[an-la="samsung galaxy club:no, thanks" i]',
         '#gc-no-btn div[an-ca="option click"]',
       ].join(', ')
+    );
+  }
+
+// ---- Trade-in ----
+  get tradeInAddButton() {
+    return $('[an-la*="trade-in:yes" i]');
+  }
+
+  get tradeInNoButton() {
+    return $('[an-la*="trade-in:no" i]');
+  }
+
+  get tradeInRemoveButton() {
+    return $('[an-la="trade-in:delete" i], [an-la="trade-in:remove" i]');
+  }
+
+  get tradeInEditButton() {
+    return $('button[an-la*="trade-in:edit" i], [an-la*="edit trade-in" i]');
+  }
+
+  get tradeInPriceLabel() {
+    return $(
+      '.s-trade-price, .s-apply-discount, #card-price[class*="TradeInCard_tradein__card__price"] span'
     );
   }
 
