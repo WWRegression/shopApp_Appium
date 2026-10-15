@@ -135,7 +135,8 @@ export class MypageLocator {
 
   /** "Join Samsung Rewards" tooltip (English, CN) */
   get joinRewardsTooltip() {
-    return $(`//android.view.View[
+    return $(
+      `//android.view.View[
         @content-desc='Join Samsung Rewards' or
         @content-desc='انضم إلى Samsung Rewards' or
         @content-desc='Doe mee met Samsung Rewards' or
@@ -156,8 +157,8 @@ export class MypageLocator {
         @content-desc='Gå med i Samsung Rewards' or
         @content-desc='ใช้ Samsung Rewards' or
         @content-desc='Samsung Rewards’a Katılın' or
-        @content-desc='Tham gia Samsung Rewards'    
-     ]`)
+        @content-desc='Tham gia Samsung Rewards']`
+      );
   }
 
   /** Points on the Samsung Rewards web page, e.g. "0 P" (global), "10" (CN) */
@@ -354,6 +355,10 @@ export class MypageLocator {
     return $(`//android.view.View[@content-desc = "My Products"]`);
   }
 
+  get myProductsPage() {
+    return $(`.myd17-my-product-list-full-ux25:not(.skeleton)`);
+  }
+
   get myOrders() {
     return $(
       `//android.view.View[
@@ -383,6 +388,10 @@ export class MypageLocator {
         or @content-desc = "Order"
       ]`
     );
+  }
+
+  get myOrdersPage() {
+    return $(`app-orders-search`);
   }
 
   /** CN shows "服务支持" */
@@ -419,6 +428,10 @@ export class MypageLocator {
     );
   }
 
+  get myRepairsPage() {
+    return $(`.myd18-my-repair-history__summary, cx-page-layout.ProfileMyRepairPageTemplate`);
+  }
+
   get myReferrals() {
     return $(
       `//android.view.View[
@@ -434,8 +447,16 @@ export class MypageLocator {
     );
   }
 
+  get myReferralsPage() {
+    return $(`.myd07-my-referrals__top, cx-paragraph.ng-star-inserted, .my-referrals__refer-via-email`);
+  }
+
   get myQRCode() {
     return $(`//android.view.View[contains(@content-desc, 'QR') and .//android.widget.ImageView]`);
+  }
+
+  get myQRCodePage() {
+    return $(`//android.view.View[contains(@content-desc, 'qr code')]`);
   }
 
   get inbox() {
@@ -470,8 +491,16 @@ export class MypageLocator {
     );
   }
 
+  get inboxPage() {
+    return $(`//android.view.View[contains(@content-desc, 'There are no new notifications')]`);
+  }
+
   get mySmartThings() {
     return $(`//android.view.View[contains(@content-desc, "SmartThings")]`);
+  }
+
+  get mySmartThingsPage() {
+    return $(`h2.myd26-my-story-st__wrapper-headline`);
   }
 
   /** IN only */
@@ -480,8 +509,18 @@ export class MypageLocator {
   }
 
   /** IN only */
+  get orderSupportPage() {
+    return $(`.su21-shop-search-kv__contents`);
+  }
+
+  /** IN only */
   get myAddresses() {
     return $(`//android.view.View[contains(@content-desc, 'Addresses')]`);
+  }
+
+  /** IN only */
+  get myAddressesPage() {
+    return $(`app-address-profile`);
   }
 
   productMenu(menu: ProductMenu) {
