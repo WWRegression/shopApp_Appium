@@ -129,13 +129,35 @@ export class MypageLocator {
         or contains(@content-desc, "ポイント")
         or contains(@content-desc, "Pontos")
         or contains(@content-desc, "積分")
-      ]`
+      ][not(.//android.widget.ImageView)]`
     );
   }
 
   /** "Join Samsung Rewards" tooltip (English, CN) */
   get joinRewardsTooltip() {
-    return $(`//android.view.View[@content-desc = 'Join Samsung Rewards' or @content-desc = '加入 Samsung Rewards']`);
+    return $(`//android.view.View[
+        @content-desc='Join Samsung Rewards' or
+        @content-desc='انضم إلى Samsung Rewards' or
+        @content-desc='Doe mee met Samsung Rewards' or
+        @content-desc='Rejoignez Samsung Rewards' or
+        @content-desc='Inscrivez-vous à Samsung Rewards' or
+        @content-desc='Gana Samsung Rewards' or
+        @content-desc='Zapojte se do programu Samsung Rewards' or
+        @content-desc='Tritt Samsung Rewards bei' or
+        @content-desc='Unirse a Samsung Rewards' or
+        @content-desc='加入 Samsung Rewards' or
+        @content-desc='Csatlakozz a Samsung Rewards programhoz' or
+        @content-desc='Bergabung dengan Samsung Rewards' or
+        @content-desc='Samsungリワードに参加' or
+        @content-desc='Acumula Samsung Rewards' or
+        @content-desc='Dołącz do programu Samsung Rewards' or
+        @content-desc='Aderir ao Samsung Rewards' or
+        @content-desc='Intră în programul Samsung Rewards' or
+        @content-desc='Gå med i Samsung Rewards' or
+        @content-desc='ใช้ Samsung Rewards' or
+        @content-desc='Samsung Rewards’a Katılın' or
+        @content-desc='Tham gia Samsung Rewards'    
+     ]`)
   }
 
   /** Points on the Samsung Rewards web page, e.g. "0 P" (global), "10" (CN) */

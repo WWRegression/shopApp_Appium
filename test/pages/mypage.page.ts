@@ -342,7 +342,6 @@ export class MypagePage extends BasePage {
 
   /** The "Join Samsung Rewards" tooltip must not show on My Page. */
   async verifyNoJoinRewardsTooltip(): Promise<void> {
-    await this.prepareMypage();
     const shown = await isDisplayedOrFalse(this.locator.joinRewardsTooltip);
     markFailed([{ label: '"Join Samsung Rewards" tooltip is shown on My Page', pass: !shown }], 'verifyNoJoinRewardsTooltip');
   }
