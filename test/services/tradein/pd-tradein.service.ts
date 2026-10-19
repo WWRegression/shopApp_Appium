@@ -11,7 +11,7 @@ export class PdTradeInService implements AddedService {
   async addService(): Promise<void> {
     // TODO: Implement PD-specific Trade-In entry
     await this.locator.tradeInAddButton.click();
-    await this.popup.completeTradeInFlow();
+    await this.popup.popupProcess();
   }
 
   async selectNoForService(): Promise<void> {

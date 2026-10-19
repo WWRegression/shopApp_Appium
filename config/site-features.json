@@ -81,7 +81,6 @@
   },
   "IL": {
     "features": {
-      "tradeIn": false,
       "tradeUp": false,
       "scPlus": false,
       "rewards": false

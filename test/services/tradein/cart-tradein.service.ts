@@ -29,10 +29,14 @@ export class CartTradeInService implements AddedService {
   async verifyServiceApplied(): Promise<void> {
     await switchToWebView();
     await switchToWindowByPage('cart');
-    await assertElementDisplayed(
-      this.locator.tradeInAppliedLabel,
-      'Trade-In not found in cart'
-    );
+    try {
+      await assertElementDisplayed(this.locator.tradeInAppliedLabel, 'Trade-In not found in cart');
+    } catch (err) {
+      console.warn('[Cart.TRADEIN.verifyServiceApplied] FAIL: Trade-In not found in cart');
+      throw err;
+    }
+    const price = (await this.locator.tradeInPriceLabel.getText().catch(() => '')).trim();
+    console.warn(`[Cart.TRADEIN.verifyServiceApplied] PASS: Trade-In found in cart, price="${price || '-'}"`);
   }
 
   async getServicePrice(): Promise<number> {

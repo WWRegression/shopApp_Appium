@@ -26,6 +26,33 @@ export async function waitForDisplayedOrFalse(element: ChainablePromiseElement, 
   return await element.waitForDisplayed(options).then(() => true).catch(() => false);
 }
 
+/**
+ * True if any element is checked/selected.
+ * Native radio/checkbox/option only: isSelected() ignores aria-checked and classes, so other elements are always false.
+ */
+export async function isAnySelected(elements: WebdriverIO.Element[]): Promise<boolean> {
+  for (const el of elements) {
+    if (await el.isSelected().catch(() => false)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Keeps only enabled elements.
+ * Form controls only: isEnabled() reads the disabled attribute, so div/a/label and class-based disabling always pass.
+ */
+export async function getEnabledElements(elements: WebdriverIO.Element[]): Promise<WebdriverIO.Element[]> {
+  const enabled: WebdriverIO.Element[] = [];
+  for (const el of elements) {
+    if (await el.isEnabled().catch(() => false)) {
+      enabled.push(el);
+    }
+  }
+  return enabled;
+}
+
 /** Clicks the element if it is displayed. (default 0 = check now). */
 export async function clickIfDisplayed(element: ChainablePromiseElement, timeout = 0): Promise<boolean> {
   const displayed = timeout > 0 ? await waitForDisplayedOrFalse(element, {timeout:timeout}) : await isDisplayedOrFalse(element);
@@ -145,6 +172,46 @@ export async function setElementValue(
   await element.setValue(value);
 }
 
+/**
+ * Current value of an input (the DOM property).
+ * getValue() reads the value *attribute* in mobile sessions, which stays empty after typing.
+ */
+export async function getInputValue(element: ChainablePromiseElement): Promise<string> {
+  return driver
+    .execute((node) => (node as unknown as HTMLInputElement).value ?? '', await element)
+    .catch(() => '');
+}
+
+/**
+ * Sets an input's value and returns what it ends up holding (getInputValue counterpart).
+ * Unlike setElementValue, falls back to a JS set + input/keyup/change when typed keys don't land
+ * (focus kept elsewhere in a WebView), so the page's handlers still run.
+ */
+export async function setInputValue(element: ChainablePromiseElement, value: string): Promise<string> {
+  await element.setValue(value).catch(() => undefined);
+  const typed = await getInputValue(element);
+  if (typed === value) {
+    return typed;
+  }
+  await driver.execute(
+    (node, text) => {
+      const input = node as unknown as HTMLInputElement;
+      const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
+      if (setter) {
+        setter.call(input, text);
+      } else {
+        input.value = text;
+      }
+      for (const type of ['input', 'keyup', 'change']) {
+        input.dispatchEvent(new Event(type, { bubbles: true }));
+      }
+    },
+    await element,
+    value
+  );
+  return getInputValue(element);
+}
+
 /** DOM HTMLElement.click() — overlay / position:fixed / hidden input. */
 export async function jsClick(el: ChainablePromiseElement | WebdriverIO.Element): Promise<void> {
   const script = "arguments[0].click();";
@@ -185,7 +252,6 @@ export async function scrollAndWdioClick(
   await scrollElementToCenter(el).catch(() => undefined);
   try {
     await el.click();
-    console.warn('[scrollAndWdioClick] WDIO click done');
   } catch {
     console.warn('[scrollAndWdioClick] WDIO click threw, fallback to jsClick');
     await jsClick(el).catch((err) => {

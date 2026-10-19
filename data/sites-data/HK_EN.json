@@ -30,9 +30,8 @@
     "brand": "APPLE",
     "device": "Apple iPhone 14 Pro Max",
     "storage": "512GB",
-    "color": "Hong Kong/Macau",
-    "imei": "354495640217760",
-    "purchaseFrom": "0"
+    "purchaseFrom": "Hong Kong/Macau",
+    "imei": "354495640217760"
   },
   "mypageMenuList": {
     "myProducts": false,

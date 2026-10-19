@@ -135,7 +135,7 @@ export class CartLocator {
   }
 
   get tradeInPriceLabel() {
-    return $('[data-modelcode="TRADE-IN"] .price, .tradein-service .price');
+    return $('[data-modelcode="TRADE-IN"] .price, [data-modelcode="TRADE-IN"] .action-text--mobile, .tradein-service .price, .trade-in-total-price');
   }
 
   get tradeInAddButton() {

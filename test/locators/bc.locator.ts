@@ -298,11 +298,11 @@ export class BcLocator {
 
 // ---- Trade-in ----
   get tradeInAddButton() {
-    return $('[an-la*="trade-in:yes" i]');
+    return $(':not(input)[an-la*="trade-in:yes"], input[an-la*="trade-in:yes"]+label');
   }
 
   get tradeInNoButton() {
-    return $('[an-la*="trade-in:no" i]');
+    return $(':not(input)[an-la*="trade-in:no"], input[an-la*="trade-in:no"]+label');
   }
 
   get tradeInRemoveButton() {
@@ -310,7 +310,7 @@ export class BcLocator {
   }
 
   get tradeInEditButton() {
-    return $('button[an-la*="trade-in:edit" i], [an-la*="edit trade-in" i]');
+    return $('[an-la*="trade-in:edit" i], [an-la*="trade-in:change" i], [an-la*="edit trade-in" i]');
   }
 
   get tradeInPriceLabel() {

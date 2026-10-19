@@ -1,140 +1,137 @@
 /**
- * AEM / Hybris Trade-In popup (WebView).
- * 고정 6-step 클릭이 아니라, 현재 step을 감지해 처리한다.
+ * Trade-In popup (WebView).
+ * Step popups (v3 / legacy / CN / IN) share one naming rule: the shown step gets `<prefix>__step--show`
+ * and carries `<prefix>__<name>-wrap` (or `#...Popup-stepN`), so one step table covers every site.
+ * US is a single-screen React modal whose fields grow as you pick.
  */
+export type TradeInStep =
+  | 'intro'
+  | 'customer'
+  | 'choose'
+  | 'discount'
+  | 'select-device'
+  | 'enter-imei'
+  | 'check-condition'
+  | 'apply-discount';
+
+const STEP_POPUP_ROOTS = [
+  '.trade-in-popup-v3[role="dialog"]',
+  '.trade-in-popup[role="dialog"]',
+  '.bc-trade-in-popup',
+  '.bc-exchange-popup[role="dialog"]',
+].join(', ');
+
+const US_ROOT = '[class*="Modal_overlay__"]:has(#tradein-header)';
+
+/** Matched against the shown step element itself (el.matches). Add a row when a site adds a new step. */
+export const TRADE_IN_STEPS: [TradeInStep, string][] = [
+  ['intro', '[class*="__intro-wrap"]'],
+  ['customer', '[class*="__customer-wrap"]'],
+  ['choose', '[class*="__choose-wrap"]'],
+  ['discount', '[class*="__discount-wrap"]'],
+  ['select-device', '[class*="__tradeIn-wrap"], [class*="__category-wrap"], [id$="Popup-step1"]'],
+  ['enter-imei', '[class*="__imei-wrap"]'],
+  ['check-condition', '[class*="__condition-wrap"], [id$="Popup-step2"]'],
+  ['apply-discount', '[class*="__apply-wrap"], [id$="Popup-step3"]'],
+];
+
+/** Pincode/zip box shown before the device list: IN `.js-pin-wrap`, ID `#tradeInZipCode`. */
+const PINCODE_WRAP = ':is(.js-pin-wrap, [class*="__imei-form-wrap"]:has(#tradeInZipCode))';
+
+const ENABLED_BUTTON = ':not([disabled]):not(.cta--disabled):not([an-la$="close"]):not([class*="btn-back"])';
+
 export class AemTradeInPopupLocator {
-  get modal() {
-    return $(
-      [
-        '.bc-trade-in-popup',
-        '.trade-in-popup-v3',
-        '.trade-in-modal',
-        '.hubble-tradein-popup[style]',
-        '.bc-exchange-popup',
-        '#tradein [class*="Modal_content"]',
-        '[class*="TradeIn_tradein__instance"]',
-      ].join(', ')
-    );
+  get tradeInModal() {
+    return $(`${STEP_POPUP_ROOTS}, ${US_ROOT}`);
   }
 
-  get closeButton() {
-    return $(
-      [
-        'button.trade-in-popup__close[an-la^="trade-in:"][an-la$="close"]',
-        'button.trade-in-popup-v3__close[an-la^="trade-in:"][an-la$="close"]',
-        'button.bc-trade-in-popup__close[an-la^="trade-in:"][an-la$="close"]',
-        'button.bc-exchange-popup__close[an-la^="trade-in:"][an-la$="close"]',
-        '[class*="Modal_right"] button[an-la^="trade-in:"][an-la$="close"]',
-      ].join(', ')
-    );
+  get activeStep() {
+    return $(`:is(${STEP_POPUP_ROOTS}) [class*="__step--show"]`);
   }
 
-  get continueButton() {
-    return $(
-      [
-        'div[class*="step--show"] button[an-la*="next"]:not(.cta--disabled):not([an-la$="close"]):not([class*="btn-back"])',
-        'button[class*="bc-trade-in-popup__btn-continue"]:not(.cta--disabled)',
-        'button[class*="trade-in-popup-v3__btn-continue"]:not(.cta--disabled)',
-      ].join(', ')
-    );
+  /** Apply in the popup footer; buttons inside any step (shown or hidden) are excluded. */
+  get footerApplyButton() {
+    return $(`:is(${STEP_POPUP_ROOTS}) ${this.applyButton}:not([class*="__step"] *)`);
   }
 
-  get applyButton() {
-    return $(
-      [
-        'button[an-la*="apply trade in"]:not(.cta--disabled)',
-        'button[class*="bc-trade-in-popup__btn-apply"]:not([disabled])',
-        'button[an-la*="apply trade-in"]:not(.cta--disabled)',
-        '[an-la="trade-in:yes, i agree"]',
-        'button[class*="trade-in-popup__btn-apply"]:not(.cta--disabled)',
-        '#agreement-section #card-option[role="button"]',
-      ].join(', ')
-    );
+  // ---- Used inside the shown step: stepElement.$(...) ----
+  readonly nextButton =
+    `button:is([an-la*="next" i], [an-la*="continue" i], [class*="btn-continue"], [class*="btn-next"])${ENABLED_BUTTON}`;
+
+  readonly applyButton = `button:is([an-la*="apply" i], [class*="btn-apply"])${ENABLED_BUTTON}`;
+
+  /**
+   * Answer inputs, grouped into questions by name. Some condition lists (e.g. HK_EN) use checkboxes as answers;
+   * they are scoped to the condition list so terms checkboxes elsewhere are not taken as questions.
+   */
+  readonly answerOptions = 'input[type="radio"], [class*="__condition-list"] input[type="checkbox"]';
+
+  /** Required agreement boxes only; optional checkbox answers (e.g. extra condition details) are left alone. */
+  readonly termsCheckboxes = [
+    'input[type="checkbox"]:is([required], [aria-required="true"], [an-la*="term" i], [name*="term" i], [id*="term" i], [id*="agree" i])',
+    ':is(.is-required, [class*="tnc"], [class*="terms"], [class*="agree"]) input[type="checkbox"]',
+  ].join(', ');
+
+  readonly textInput = 'input:is([type="text"], [type="tel"], [type="number"], :not([type]))';
+
+  /**
+   * IMEI field in a step that also has other inputs (e.g. apply step, IN select-device).
+   * IN's field has no imei attribute, only the `__imei-type3` section around it; its pincode box also carries
+   * an `__imei-form-wrap` class, so a broader class match would catch the pincode.
+   */
+  readonly imeiInput = [
+    'input:is([name*="imei" i], [id*="imei" i], [class*="imei" i], [placeholder*="imei" i], [an-la*="imei" i])',
+    '[class*="__imei-type3"] input',
+  ].join(', ');
+
+  readonly imeiCheckButton =
+    `button:is(.js-validate-device-imei, [an-la*="imei" i], [class*="__imei-form"] .search, [class*="__imei-type3"] [class*="__imei-form-enter"])${ENABLED_BUTTON}:not([an-la$="next"])`;
+
+  /** Shown only while the field is in the error state (the wrapper gets .error); the pincode box is excluded. */
+  readonly imeiError = `.text-field-v2.error:not(${PINCODE_WRAP} *) .text-field-v2__text.error`;
+
+  /** Pincode/zip gate before the device list (e.g. IN, ID). */
+  readonly pincodeInput = `${PINCODE_WRAP} input`;
+
+  /** Shown under the field once the pincode is accepted (IN, ID). */
+  readonly pincodeSuccess = `${PINCODE_WRAP} .text-field-v2__text.success`;
+
+  readonly imeiLoading = '[class*="__imei-form--load-wrap"], .circular-progress';
+
+  deviceOption(value: string): string {
+    const v = value.replace(/"/g, '\\"');
+    return [
+      `input[value="${v}" i]`,
+      `input[value^="${v}" i]`,
+      `a[value="${v}" i]`,
+      `[data-name="${v}" i]`,
+      `[data-testid="${v}" i]`,
+      `[data-filter-info*="${v}" i]`,
+      `[an-la$="${v}" i]`,
+    ].join(', ');
   }
 
-  get termsCheckbox() {
-    return $(
-      'input[type="checkbox"][an-la*="term" i], .trade-in-popup__apply-wrap input[type="checkbox"], [class*="tnc"] input[type="checkbox"]'
-    );
+  // ---- US ----
+  get usModal() {
+    return $(US_ROOT);
   }
 
-  get conditionInputs() {
-    return $$(
-      [
-        '.trade-in-popup-v3__condition-list-item label.radio-v2__label',
-        '.trade-in-popup-v3__condition label.radio-v2__label',
-        '.trade-in-popup__condition-list label.radio-v2__label',
-        '.bc-trade-in-popup__condition-list label.radio-v2__label',
-        '.bc-exchange-popup__condition-list label.radio-v2__label',
-        'li.radio-v2.cn-trade-in-popup__condition-option-item label.radio-v2__label',
-        '.trade-in-popup-v3__condition-list-item input',
-        '.trade-in-popup-v3__condition input',
-        '.trade-in-popup__condition-list input',
-        '.bc-trade-in-popup__condition-list input',
-      ].join(', ')
-    );
+  get usGoodConditionOption() {
+    return $(`${US_ROOT} [data-testid="nonCracked"]`);
   }
 
-  get goodConditionOption() {
-    return $(
-      [
-        '.trade-in-popup-v3 input[accept_data="yes"]',
-        '.trade-in-popup-v3 [an-la*="good condition" i]',
-        '.trade-in-popup__summary-accept input[accept_data="yes"]',
-        '#addconditionCheck0-1[name="jp-tradein-Q5"]',
-      ].join(', ')
-    );
+  /**
+   * Dropdown buttons in field order: "Dropdown Brand Selected: Samsung", "Device Dropdown Selected: undefined".
+   * The selected part may hold a previous trade-in's value, so fields are matched by position.
+   */
+  readonly usDropdowns = `${US_ROOT} [role="button"][aria-label*="Selected:"]`;
+
+  /** Item in an opened dropdown list: "Dropdown Brand Option: Samsung", "Device Dropdown Option: Galaxy Z Flip6". */
+  usDropdownOption(value: string) {
+    return $(`${US_ROOT} [role="button"][aria-label$="Option: ${value.replace(/"/g, '\\"')}" i]`);
   }
 
-  get preAcceptYesButton() {
-    return $('.trade-in-popup__summary-accept input[accept_data="yes"]');
-  }
-
-  get imeiInput() {
-    return $(
-      [
-        'input.text-field-v2__input.js-validate-device-imei-input',
-        'input#common-trade-imei',
-        "[name='tradeIn.IMEI_FORM'] input",
-        '.trade-in-summary__imei-input input',
-        '.trade-in-popup__imei-form input#trade-imei',
-      ].join(', ')
-    );
-  }
-
-  get checkImeiButton() {
-    // Do NOT use bare [an-la*="imei"] — Back is an-la="trade-in:enter imei:close".
-    return $(
-      [
-        'button.js-validate-device-imei:not(.cta--disabled)',
-        'button[an-la*="check imei" i]:not([an-la$="close"]):not([class*="btn-back"])',
-        'button[an-la*="validate imei" i]:not([an-la$="close"]):not([class*="btn-back"])',
-        '.trade-in-popup__imei-form button[type="button"]:not([an-la$="close"]):not([class*="btn-back"]):not(.cta--disabled)',
-        '.trade-in-popup-v3__imei button[type="button"]:not([an-la$="close"]):not([class*="btn-back"]):not(.cta--disabled)',
-      ].join(', ')
-    );
-  }
-
-  optionByValue(optionValue: string) {
-    const v = optionValue.replace(/"/g, '\\"');
-    // Keep selectors inside the Trade-In popup only.
-    // A bare [an-la*="512GB"] matches BC memory radios behind the overlay.
-    return $(
-      [
-        `.trade-in-popup-v3__tradeIn-category-list input[value^="${v}" i] + label`,
-        `.trade-in-popup-v3__tradeIn-category-list input[value^="${v}" i]`,
-        `.trade-in-popup__category-device-list input[value="${v}" i] + label`,
-        `.bc-exchange-popup__tradeIn-category-list input[an-la$="${v}" i] + label`,
-        `.bc-trade-in-popup__tradeIn-category-list input[value^="${v}" i] + label`,
-        `.trade-in-select a[value="${v}" i]`,
-        `.trade-in-select a[data-name="${v}" i]`,
-        `.trade-in-popup-v3 [data-testid="${v}" i]`,
-        `.trade-in-popup-v3 .js-dropbox-item[data-filter-info*="${v}" i]`,
-        `.trade-in-popup-v3 [an-la*="${v}" i]`,
-        `.bc-trade-in-popup [an-la*="${v}" i]`,
-        `.bc-exchange-popup [an-la*="${v}" i]`,
-        `[class*="TradeIn_tradein__instance"] [an-la*="${v}" i]`,
-      ].join(', ')
-    );
+  get usAgreeButton() {
+    return $(`${US_ROOT} [class*="Modal_footer__"] button[an-la="trade-in:yes, i agree" i]:not([disabled])`);
   }
 }

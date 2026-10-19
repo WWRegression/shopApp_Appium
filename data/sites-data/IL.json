@@ -26,6 +26,12 @@
     "haSku": "RF65DB970E22EU",
     "vdSku": "QE77S90HATXIL"
   },
+  "tradeIn": {
+    "brand": "Samsung",
+    "category": "סמארטפון",
+    "device": "GALAXY FLIP 7 ",
+    "storage": "512"
+  },
   "mypageMenuList": {
     "myProducts": false,
     "myOrders": true,
