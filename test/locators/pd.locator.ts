@@ -222,9 +222,9 @@ export class PdLocator {
     return $(
       [
         '#ce-trade-up-popup-section .layer-popup__inner.layer-popup__looping',
-        '.siel-trade-in-popup__contents',
         '.trade-in-popup-v3__step--show',
-        '.layer-popup__looping--first.hidden + .cn-trade-in-layer-popup__inner',
+        '.siel-trade-in-popup__contents',        
+        '.cn-trade-in-layer-popup[role="dialog"]',
       ].join(', ')
     );
   }
@@ -235,6 +235,7 @@ export class PdLocator {
       [
         '.vd-trade-in-popup__step.sdf-comp-step-panel:not([style*="none"])',
         'section.siel-trade-in-popup',
+        '.cn-trade-in-popup__step:not([style*="none"])',
       ].join(', ')
     );
   }
@@ -245,6 +246,7 @@ export class PdLocator {
         '.vd-trade-in-popup__step:not([style*="none"]) button[an-la*="trade-up:"][an-la*=":next"]',
         '.vd-trade-in-popup__step:not([style*="none"]) button[an-la*="trade-up:"][an-la*=":apply"]',
         'section.siel-trade-in-popup button.siel-trade-in-popup__btn-order:not(.cta--disabled)',
+        '.cn-trade-in-popup__step:not([style*="none"]) .cn-trade-in-popup__footer button.cta--contained:not(.cta--disabled):not([disabled])',
       ].join(', ')
     );
   }
@@ -282,13 +284,24 @@ export class PdLocator {
     return $('.siel-trade-in-popup__pincode-wrap .text-field-v2.error .text-field-v2__text.error');
   }
 
+  /** VD lists are all present. CN adds the next dropdown only after the previous pick. */
   get tradeUpDeviceOptions() {
-    return $$('ul.vd-trade-in-popup__product-select li select.menu__select');
+    return $$(
+      [
+        'ul.vd-trade-in-popup__product-select li select.menu__select',
+        '.cn-trade-in-popup__step:not([style*="none"]) ul.cn-trade-in-popup__select select.menu__select',
+      ].join(', ')
+    );
   }
 
-  /** Radio groups on the single-screen popup (product, model, size, brand, condition). */
+  /** IN device radios, and CN condition radios. "--check" lists are optional defect boxes and are left alone. */
   get tradeUpRadioGroups() {
-    return $$('section.siel-trade-in-popup .siel-trade-in-popup-option.show:has(input[type="radio"])');
+    return $$(
+      [
+        'section.siel-trade-in-popup .siel-trade-in-popup-option.show:has(input[type="radio"])',
+        '.cn-trade-in-popup__step:not([style*="none"]) ul.cn-trade-in-popup__condition-option:not(.cn-trade-in-popup__condition-option--check)',
+      ].join(', ')
+    );
   }
 
   get tradeUpConditionYes() {
@@ -302,7 +315,8 @@ export class PdLocator {
   get tradeUpTermsCheckboxes() {
     return $$(
       [
-        '.vd-trade-in-popup__agree-checkbox-wrap.is-required input'
+        '.vd-trade-in-popup__agree-checkbox-wrap.is-required input',
+        '.cn-trade-in-popup__step:not([style*="none"]) .cn-trade-in-popup__agree input[type="checkbox"]',
       ].join(', ')
     );
   }

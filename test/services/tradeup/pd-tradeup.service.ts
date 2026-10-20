@@ -23,9 +23,9 @@ export class PdTradeUpService {
   private readonly locator = new PdLocator();
 
   private readonly candidates: [TradeUpSteps, string[]][] = [
-    ['selectDevice', ['sdf-comp-step-panel-product', 'siel-trade-in-popup']],
-    ['checkCondition', ['sdf-comp-step-panel-condition']],
-    ['applyDiscount', ['sdf-comp-step-panel-discount']],
+    ['selectDevice', ['sdf-comp-step-panel-product', 'siel-trade-in-popup', 'cn-trade-in-popup__step1']],
+    ['checkCondition', ['sdf-comp-step-panel-condition', 'cn-trade-in-popup__step2']],
+    ['applyDiscount', ['sdf-comp-step-panel-discount', 'cn-trade-in-popup__step3']],
   ];
 
   async addService(postalCode?: string ): Promise<void> {
@@ -87,7 +87,6 @@ export class PdTradeUpService {
   }
 
   private async runStep(step: TradeUpSteps, postalCode?: string): Promise<void> {
-    console.warn(`[PD.TRADEUP.runStep] step ============================ ${step}`);
     switch (step) {
       case 'selectDevice':
         await this.stepSelectDevice(postalCode);
@@ -132,6 +131,7 @@ export class PdTradeUpService {
   private async stepCheckCondition(): Promise<void> {
     console.warn('[PD.TRADEUP.stepCheckCondition] step check condition found');
     await this.selectConditionYes();
+    await this.selectFirstRadios();
     await this.selectContinueButton();
   }
 
@@ -195,26 +195,95 @@ export class PdTradeUpService {
   }
 
   private async selectDeviceOptions(): Promise<void> {
-    const optionSelects = await this.locator.tradeUpDeviceOptions;
-    console.warn('[PD.TRADEUP.selectDeviceOptions] option selects found=', optionSelects.length);
-    for (const select of optionSelects) {
-      await driver.execute((el) => {
-        const sel = el as HTMLSelectElement;
-        if (sel.options.length > 0) {
-          sel.selectedIndex = 0;
-          sel.dispatchEvent(new Event('change', { bubbles: true }));
-        }
-      }, select).catch(() => undefined);
-    }
-
-    // A pick can reveal the next radio group, so repeat until every shown group has an answer.
-    for (let pass = 1; pass <= 5; pass++) {
-      let picked = false;
-      const groups = await this.locator.tradeUpRadioGroups.getElements();
-      if (groups.length === 0 && pass === 1) {
+    for (let pass = 1; pass <= 8; pass++) {
+      const select = await this.nextUnselectedDropdown(pass === 1 ? 0 : WAIT_MS);
+      console.warn('[PD.TRADEUP.selectDeviceOptions]   dropdown found=', select);
+      if (!select) {
         break;
       }
-      console.warn(`[PD.TRADEUP.selectDeviceOptions] radio pass ${pass}: ${groups.length} group(s) shown`);
+      const value = await driver.execute((el) => {
+        const sel = el as HTMLSelectElement;
+        const index = [...sel.options].findIndex((option) => option.value);
+        if (index < 0) {
+          return '';
+        }
+        sel.selectedIndex = index;
+        sel.dispatchEvent(new Event('change', { bubbles: true }));
+        return sel.value;
+      }, select).catch(() => '');
+      console.warn(`[PD.TRADEUP.selectDeviceOptions]   dropdown ${pass}: "${value || '-'}"`);
+    }
+
+    await this.selectFirstRadios();
+    console.warn('[PD.TRADEUP.selectDeviceOptions] option selects selected done');
+  }
+
+  /**
+   * First dropdown with no answer yet and a real option.
+   * timeout 0 checks once, then waits only when a dropdown is on screen but its options are not ready.
+   * A later pass waits for a dropdown that appears after the previous pick.
+   */
+  private async nextUnselectedDropdown(timeout: number): Promise<WebdriverIO.Element | undefined> {
+    const find = async (): Promise<WebdriverIO.Element | undefined> => {
+      for (const select of await this.locator.tradeUpDeviceOptions.getElements()) {
+        const ready = await driver.execute((el) => {
+          const node = el as HTMLSelectElement;
+          if (node.closest('.menu')?.classList.contains('selected')) {
+            return false;
+          }
+          if (node.options[node.selectedIndex]?.value) {
+            return false;
+          }
+          return [...node.options].some((option) => Boolean(option.value));
+        }, select).catch(() => false);
+        if (ready) {
+          return select;
+        }
+      }
+      return undefined;
+    };
+
+    const immediate = await find();
+    if (immediate) {
+      return immediate;
+    }
+    const waitMs = timeout > 0 || (await this.hasPendingDropdown()) ? timeout || WAIT_MS : 0;
+    if (waitMs === 0) {
+      return undefined;
+    }
+    let found: WebdriverIO.Element | undefined;
+    await driver
+      .waitUntil(async () => Boolean((found = await find())), { timeout: waitMs, interval: 300 })
+      .catch(() => undefined);
+    return found;
+  }
+
+  /** A dropdown is shown but still has no value, even when its options are not loaded yet. */
+  private async hasPendingDropdown(): Promise<boolean> {
+    for (const select of await this.locator.tradeUpDeviceOptions.getElements()) {
+      const pending = await driver.execute((el) => {
+        const node = el as HTMLSelectElement;
+        if (node.closest('.menu')?.classList.contains('selected')) {
+          return false;
+        }
+        return !node.options[node.selectedIndex]?.value;
+      }, select).catch(() => false);
+      if (pending) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /** First enabled radio of each shown group that has no answer yet. A pick can reveal the next group. */
+  private async selectFirstRadios(): Promise<void> {
+    for (let pass = 1; pass <= 5; pass++) {
+      const groups = await this.locator.tradeUpRadioGroups.getElements();
+      if (groups.length === 0) {
+        return;
+      }
+      let picked = false;
+      console.warn(`[PD.TRADEUP.selectFirstRadios] pass ${pass}: ${groups.length} group(s)`);
       for (const group of groups) {
         const radios = [...(await group.$$('input[type="radio"]'))];
         if (radios.length === 0 || (await isAnySelected(radios))) {
@@ -222,20 +291,19 @@ export class PdTradeUpService {
         }
         const [option] = await getEnabledElements(radios);
         if (!option) {
-          console.warn('[PD.TRADEUP.selectDeviceOptions]   every option disabled, skipped');
+          console.warn('[PD.TRADEUP.selectFirstRadios]   every option disabled, skipped');
           continue;
         }
-        const value = (await option.getAttribute('value').catch(() => '')) || '-';
+        const value = (await option.getAttribute('value').catch(() => '')) || (await option.getAttribute('id').catch(() => '')) || '-';
         await jsClick(option);
-        console.warn(`[PD.TRADEUP.selectDeviceOptions]   option "${value}" clicked`);
+        console.warn(`[PD.TRADEUP.selectFirstRadios]   option "${value}" clicked`);
         picked = true;
         await driver.pause(500);
       }
       if (!picked) {
-        break;
+        return;
       }
     }
-    console.warn('[PD.TRADEUP.selectDeviceOptions] option selects selected done');
   }
 
   private async selectConditionYes(): Promise<void> {
