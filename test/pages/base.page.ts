@@ -69,7 +69,7 @@ export class BasePage {
 			'分类',
 			'購物',
 			'Vásárlás',
-			'חנות',
+			' חנות',
 			'ショップ',
 			'Comprar',
 			'Sklep',

@@ -12,6 +12,7 @@
  */
 
 import { scrollElementToCenter, scrollWebViewDown, scrollDown } from './gesture.helper';
+import { currentSiteCode } from './tc-filter.helper';
 import type { WaitForOptions } from 'webdriverio';
 
 const DEFAULT_TIMEOUT_MS = 3000;
@@ -100,6 +101,49 @@ export async function scrollUntilVisibleInWebView(
     await scrollWebViewDown();
   }
   return isExistingInWebView(target);
+}
+
+/**
+ * Read visible text from a WebView locator. If nothing is displayed, scroll and re-query.
+ * Pass a factory (`() => locator`) so each attempt gets a fresh $ / $$ — a resolved empty
+ * list is reused and never sees nodes that appear after scroll.
+ */
+export async function readDisplayedText(
+  locate: () => ReturnType<typeof $$> | ReturnType<typeof $>,
+  joinAll = false
+): Promise<string> {
+  for (let attempt = 0; attempt < 6; attempt++) {
+    const resolved = await locate();
+    const list = Array.isArray(resolved) ? resolved : [resolved];
+    const parts: string[] = [];
+
+    for (const node of list) {
+      if (!(await node.isExisting().catch(() => false))) {
+        continue;
+      }
+      if (!(await node.isDisplayed().catch(() => false))) {
+        continue;
+      }
+      const raw = currentSiteCode().toUpperCase() === 'US'
+        ? String((await node.getProperty('textContent').catch(() => '')) ?? '')
+        : ((await node.getText().catch(() => '')) ?? '');
+      const text = raw.replace(/\s+/g, ' ').trim();
+      if (!text) {
+        continue;
+      }
+      if (!joinAll) {
+        return text;
+      }
+      parts.push(text);
+    }
+
+    if (parts.length > 0) {
+      return parts.join(' ');
+    }
+    console.warn(`[readDisplayedText] no text, scroll down attempt=${attempt + 1}`);
+    await scrollWebViewDown();
+  }
+  return '';
 }
 
 /** Runs fn without the UI idle wait — only for screens that never go idle (CN login slider), where every action would wait it out. */

@@ -166,11 +166,10 @@ export class ShopLocator {
 
   get L0Categories() {
     if (this.site === 'JP') {
-      return $$(`//android.widget.FrameLayout[@resource-id='android:id/content']
-        /android.widget.FrameLayout/android.widget.FrameLayout
-        /android.view.View/android.view.View/android.view.View/android.view.View[2]
+      return $$(`//android.widget.FrameLayout[@resource-id='android:id/content']/android.widget.FrameLayout/android.widget.FrameLayout
+        /android.view.View/android.view.View/android.view.View/android.view.View/android.view.View/android.view.View[2]
         /android.view.View/android.view.View/android.view.View/android.view.View/android.view.View[1]
-        //android.view.View[@content-desc]`);
+        /android.view.View/android.view.View[@content-desc]`);
     }
     
     return $$(`//android.widget.ScrollView/android.view.View/android.view.View[1]
@@ -196,9 +195,6 @@ export class ShopLocator {
   }
 
   pageTitle() {
-    if (this.site === 'CN') {
-      return $(`(//android.view.View[@content-desc and not(@clickable='true')])[1]`);
-    }
     return $(`(//android.view.View[@index='0']//android.view.View[@index='1']//android.widget.Button)[1]`);
   }
 

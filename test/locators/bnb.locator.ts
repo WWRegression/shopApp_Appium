@@ -46,6 +46,7 @@ export class BnbLocator {
       (contains(@content-desc, "Shop") and contains(@content-desc, "Tab 2"))
       or (contains(@content-desc, "تسوق") and contains(@content-desc, "2 علامة التبويب"))
       or (contains(@content-desc, "Magasiner") and contains(@content-desc, "Onglet 2"))
+      or (contains(@content-desc, "Magasiner") and contains(@content-desc, "Onglet\u00A02"))
       or (contains(@content-desc, "Tienda") and contains(@content-desc, "Pestaña 2"))
       or (contains(@content-desc, "Shop") and contains(@content-desc, "Onglet 2"))
       or (contains(@content-desc, "Shop") and contains(@content-desc, "Scheda 2"))
@@ -64,6 +65,8 @@ export class BnbLocator {
       or (contains(@content-desc, "ショップ") and contains(@content-desc, "タブ"))
       or (contains(@content-desc, "חנות") and contains(@content-desc, "כרטיסייה 2"))
       or (contains(@content-desc, "Boutique") and contains(@content-desc, "Onglet 2"))
+      or (contains(@content-desc, "Loja") and contains(@content-desc, "Separador 2"))
+      or (contains(@content-desc, "商店") and contains(@content-desc, "第 2"))
      ]`
     );
   }

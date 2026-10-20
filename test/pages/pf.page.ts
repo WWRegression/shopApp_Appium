@@ -1,10 +1,12 @@
 import { BasePage } from './base.page';
 import { PfLocator } from '../locators/pf.locator';
+import { BcLocator } from '../locators/bc.locator';
+import { PdLocator } from '../locators/pd.locator';
 import { switchToNative, getCurrentWebViewPage } from '../helpers/context.helper';
 import { scrollByBoundary, scrollDown } from '../helpers/gesture.helper';
 import { currentSiteCode } from '../helpers/tc-filter.helper';
 import { normalizeText, isExactTokenMatch, stripMarkerText, normalizeProductName } from '../helpers/data.helper';
-import { clickElement, scrollUntilVisible, waitForDisplayedOrFalse } from '../helpers/element.helper';
+import { clickElement, scrollUntilVisible, waitForDisplayedOrFalse, readDisplayedText } from '../helpers/element.helper';
 import { markFailed, markFailedAndStop } from '../helpers/report.helper';
 import { ShopPage, type CategoryMismatch } from './shop.page';
 import { BcPage } from './bc.page';
@@ -54,6 +56,8 @@ const ONLINE_EXCLUSIVE_TEXT_BY_SITE: Record<string, string> = {
 
 export class PfPage extends BasePage {
   private readonly pflocator = new PfLocator();
+  private readonly bcLocator = new BcLocator();
+  private readonly pdLocator = new PdLocator();
 
   shopPage = new ShopPage();
   bcPage = new BcPage();
@@ -133,6 +137,21 @@ export class PfPage extends BasePage {
     for (const card of cards) {
       const desc = (await card.getAttribute('content-desc').catch(() => '')) ?? '';
       if (this.matchPfCard(desc, query)) {
+        const title = (await this.pflocator.pfCardTitle(card).getAttribute('content-desc').catch(() => '')) ?? '';
+        return title.trim() || desc;
+      }
+    }
+    return null;
+  }
+
+  /** Product name from the productGrid card content-desc (no pfCardTitle). */
+  async getPfGridProductName(query: PfCardQuery): Promise<string | null> {
+    await switchToNative();
+
+    const cards = await this.pflocator.productGrid;
+    for (const card of cards) {
+      const desc = ((await card.getAttribute('content-desc').catch(() => '')) ?? '').trim();
+      if (desc && this.matchPfCard(desc, query)) {
         return desc;
       }
     }
@@ -144,19 +163,28 @@ export class PfPage extends BasePage {
     if (!(await this.isPfCardDisplayed())) {
       return null;
     }
-    const pfProductName = normalizeProductName(await this.getPfProductName({ mode: 'first' }));
+    const useGridName = ['IN', 'CN', 'US'].includes(currentSiteCode().toUpperCase());
+    const rawName = useGridName
+      ? await this.getPfGridProductName({ mode: 'first' })
+      : await this.getPfProductName({ mode: 'first' });
+    const pfProductName = normalizeProductName(rawName);
+    if (!pfProductName) {
+      return '';
+    }
     await this.selectPfCard({ mode: 'first' });
     return pfProductName;
   }
 
-  async getBcPdProductName(productName?: string | null): Promise<string | null> {
-    const { page } = await getCurrentWebViewPage({ waitMs: 5000 });
+  async getBcPdProductName(): Promise<string | null> {
+    const { page } = await getCurrentWebViewPage({ waitMs: 10000 });
 
     if (page === 'pd') {
-      return normalizeProductName(await this.pdPage.getPdProductName(productName));
+      await this.pdPage.preparePdPage().catch(() => undefined);
+      return normalizeProductName(await readDisplayedText(() => this.pdLocator.summaryProductName));
     }
     if (page === 'bc') {
-      return normalizeProductName(await this.bcPage.getBcProductName());
+      await this.bcPage.prepareBcPage().catch(() => undefined);
+      return normalizeProductName(await readDisplayedText(() => this.bcLocator.summaryDeviceName));
     }
 
     return null;
@@ -169,16 +197,32 @@ export class PfPage extends BasePage {
     L0Title?: string,
     L1Title?: string,
   ): void {
+    const where = `${L0Title ?? ''}${L1Title ? ` > ${L1Title}` : ''}`;
+    if (pfName === null) {
+      console.log(`[verifyProductNameMatch] ${where} PF card not shown result=FAIL`);
+      mismatches.push(`PF card not shown: ${where}`);
+      return;
+    }
+    if (!pfName) {
+      console.log(`[verifyProductNameMatch] ${where} PF card name not read result=FAIL`);
+      mismatches.push(`PF card name not read: ${where}`);
+      return;
+    }
+    if (!bcPdName) {
+      console.log(`[verifyProductNameMatch] ${where} BC/PD name not found result=FAIL`);
+      mismatches.push(`BC/PD product name not found: ${where}`);
+      return;
+    }
     const pass = this.productNameIncludes(pfName, bcPdName);
     console.log(
-      `[verifyProductNameMatch] ${L0Title}${L1Title ? ` > ${L1Title}` : ''} expected="${pfName}" actual="${bcPdName}" result=${pass ? 'PASS' : 'FAIL'}`
+      `[verifyProductNameMatch] ${where} expected="${pfName}" actual="${bcPdName}" result=${pass ? 'PASS' : 'FAIL'}`
     );
     if (pass) {
       return;
     }
 
     mismatches.push(
-      `PF/PD product name mismatch: ${L0Title} > ${L1Title} (PF: "${pfName}", BC/PD: "${bcPdName}")`
+      `PF/PD product name mismatch: ${where} (PF: "${pfName}", BC/PD: "${bcPdName}")`
     );
   }
 

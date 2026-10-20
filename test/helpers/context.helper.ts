@@ -310,7 +310,7 @@ export async function switchToWindowByPage(
  * Prepare a Hybris WebView page before actions:
   * Returns false when context/window/layout is not ready within `timeout` (default 10s).
  */
-export const WEBVIEW_PAGE_READY_MS = 10000;
+export const WEBVIEW_PAGE_READY_MS = 60000;
 
 export async function prepareWebViewPage(
   page: PageUrlKey,
@@ -491,10 +491,7 @@ function isPdUrl(href: string, siteCode: string): boolean {
   if (segs[3] === 'buy') {
     return true;
   }
-  if (siteCode === 'US') {
-    return !segs.includes('buy') && segs.length >= 2;
-  }
-  return !segs.includes('buy') && segs.length >= 3;
+  return !segs.includes('buy') && segs.length >= 2;
 }
 
 /** True when href matches the given page. Pure sync — no I/O, so callers must not await. */

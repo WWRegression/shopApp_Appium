@@ -105,7 +105,7 @@ export class PdLocator {
   }
 
   get summaryProductName() {
-    return $('.summary__product-name');
+    return $('.summary__product-name, #product-title[class*="Summary_rowTitle"]');
   }
 
   get summaryChoices() {

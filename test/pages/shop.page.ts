@@ -155,6 +155,11 @@ const STORE_PACKAGES = [
   'com.sec.android.app.samsungappsmini',
 ];
 
+/** Last non-empty line: "Staubsauger Zubehör\\n" and "Samsung\\nStaubsauger Zubehör\\n" → same title. */
+function normalizeCategoryTitle(text: string): string {
+  return text.split('\n').map((line) => line.trim()).filter(Boolean).at(-1) ?? '';
+}
+
 export class ShopPage extends BasePage {
   private readonly shoplocator = new ShopLocator();
 
@@ -224,7 +229,7 @@ export class ShopPage extends BasePage {
     if (depth === 'L0') {
       markFailedAndStop([{ label: 'No L0 category banners were found on the Shop page', pass: categoryTitleList.size > 0 }], 'getCategories');
     }
-    await gestureByBoundary('scroll', 'up', 1.0, { height: 1000 }, 3);
+    await gestureByBoundary('scroll', 'up', 1.0, { height: 1000 }, 4);
     console.log(`[getCategories] ${depth}=[ ${[...categoryTitleList].join(', ')} ]`);
     return Array.from(categoryTitleList);
   }
@@ -278,15 +283,12 @@ export class ShopPage extends BasePage {
     if (!targetPage || targetPage === 'L1' || targetPage === 'pf') {
       const pageTitle = this.shoplocator.pageTitle();
       if (await waitForDisplayedOrFalse(pageTitle, { timeout })) {
-        const pageTitleContentDesc = (await pageTitle.getAttribute('content-desc'))
-          ?.split('\n')
-          .pop()
-          ?.trim() ?? '';
+        const pageTitleContentDesc = normalizeCategoryTitle(await pageTitle.getAttribute('content-desc') ?? '');
         if (pageTitleContentDesc) {
-          if ((!targetPage || targetPage === 'pf') && L1CategoryList?.includes(pageTitleContentDesc)) {
+          if ((!targetPage || targetPage === 'pf') && L1CategoryList?.some((title) => normalizeCategoryTitle(title) === pageTitleContentDesc)) {
             return 'pf';
           }
-          if ((!targetPage || targetPage === 'L1') && L0CategoryList?.includes(pageTitleContentDesc)) {
+          if ((!targetPage || targetPage === 'L1') && L0CategoryList?.some((title) => normalizeCategoryTitle(title) === pageTitleContentDesc)) {
             return 'L1';
           }
         }

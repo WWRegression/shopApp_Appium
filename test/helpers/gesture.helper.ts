@@ -182,7 +182,7 @@ export async function scrollByElement(
 export async function scrollWebViewDown(): Promise<void> {
   await driver.execute(
     `const root = document.scrollingElement || document.documentElement;
-     root.scrollBy(0, Math.floor(window.innerHeight * 0.55));`
+     root.scrollBy(0, Math.floor(window.innerHeight * 0.8));`
   );
   await driver.pause(400);
 }

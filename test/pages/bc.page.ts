@@ -7,9 +7,8 @@ import { BcSimService } from '../services/sim/bc-sim.service';
 import { BcGalaxyClubService } from '../services/galaxyclub/bc-galaxyclub.service';
 import { prepareWebViewPage, isCurrentWebViewPage } from '../helpers/context.helper';
 import { getRunConfig } from '../../config/run.config';
-import { scrollWebViewDown } from '../helpers/gesture.helper';
 import { storageCapacityMatches, pickStorageLabel } from '../helpers/data.helper';
-import { clickIfDisplayed, scrollAndJsClick, scrollAndWdioClick, scrollUntilVisibleInWebView } from '../helpers/element.helper';
+import { clickIfDisplayed, scrollAndJsClick, scrollAndWdioClick, scrollUntilVisibleInWebView, readDisplayedText } from '../helpers/element.helper';
 
 
 /** Fields BC accepts from site JSON / Flagship phone / watch. kind, ram, isPFDefaultSKU are catalog-only. */
@@ -137,7 +136,7 @@ export class BcPage extends BasePage {
 
   /** Verify only the SKU displayed in the Summary, and return the confirmed SKU string. */
   async verifySku(expectedSku: string): Promise<void> {
-    const actual = await this.readDisplayedText(this.locator.summarySku);
+    const actual = await readDisplayedText(() => this.locator.summarySku);
     if (!this.summaryMatches('sku', actual, expectedSku)) {
       throw new Error(
         `BC summary SKU mismatch: expected=${expectedSku} || actual=${actual}`
@@ -185,50 +184,11 @@ export class BcPage extends BasePage {
 
   private async readSummaryDetails(): Promise<SummaryDetails> {
     return {
-      deviceName: await this.readDisplayedText(this.locator.summaryDeviceName),
-      sku: await this.readDisplayedText(this.locator.summarySku),
-      options: await this.readDisplayedText(this.locator.summaryOptions, true),
-      servicePrice: await this.readDisplayedText(this.locator.summaryServicePrice, true),
+      deviceName: await readDisplayedText(() => this.locator.summaryDeviceName),
+      sku: await readDisplayedText(() => this.locator.summarySku),
+      options: await readDisplayedText(() => this.locator.summaryOptions, true),
+      servicePrice: await readDisplayedText(() => this.locator.summaryServicePrice, true),
     };
-  }
-
-  /**
-   * Do not resolve $$/$ first — missing nodes yield empty arrays and skip scroll chances.
-   * If text cannot be read, scroll and re-query the locator.
-   */
-  private async readDisplayedText(
-    nodes: ReturnType<typeof $$> | ReturnType<typeof $>,
-    joinAll = false
-  ): Promise<string> {
-    for (let attempt = 0; attempt < 6; attempt++) {
-      const resolved = await nodes;
-      const list = Array.isArray(resolved) ? resolved : [resolved];
-      const parts: string[] = [];
-
-      for (const node of list) {
-        if (!(await node.isExisting().catch(() => false))) {
-          continue;
-        }
-        if (!(await node.isDisplayed().catch(() => false))) {
-          continue;
-        }
-        const text = ((await node.getText().catch(() => '')) ?? '').trim();
-        if (!text) {
-          continue;
-        }
-        if (!joinAll) {
-          return text;
-        }
-        parts.push(text);
-      }
-
-      if (parts.length > 0) {
-        return parts.join(' ');
-      }
-      console.warn(`[BC.readDisplayedText] no text, scroll down attempt=${attempt + 1}`);
-      await scrollWebViewDown();
-    }
-    return '';
   }
 
   private summaryActual(field: VerifyField, summary: SummaryDetails): string {
@@ -268,11 +228,6 @@ export class BcPage extends BasePage {
     const button = this.locator.addToCartButton;
     await button.waitForDisplayed({ timeout: 15000 });
     await scrollAndJsClick(button);
-  }
-
-  async getBcProductName(): Promise<string> {
-    await this.prepareBcPage();
-    return this.locator.summaryDeviceName[0].getText();
   }
 
 }

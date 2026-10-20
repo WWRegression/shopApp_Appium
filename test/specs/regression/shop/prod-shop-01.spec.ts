@@ -24,7 +24,7 @@ describe('PROD_SHOP_01', () => {
         const L1Categories = await shopPage.getCategories('L1');
         if (L1Categories.length === 0) {
           const pfProductName = await pfPage.selectFirstPfCard();
-          const bcPdProductName = await pfPage.getBcPdProductName(pfProductName);
+          const bcPdProductName = await pfPage.getBcPdProductName();
           pfPage.verifyProductNameMatch(mismatches, pfProductName, bcPdProductName, L0category);
           await shopPage.goToPreviousPage(mismatches, 'L0', L0category, L0Categories);
           continue;
@@ -38,7 +38,7 @@ describe('PROD_SHOP_01', () => {
           }
           if (i === 0) {
             const pfProductName = await pfPage.selectFirstPfCard();
-            const bcPdProductName = await pfPage.getBcPdProductName(pfProductName);
+            const bcPdProductName = await pfPage.getBcPdProductName();
             pfPage.verifyProductNameMatch(mismatches, pfProductName, bcPdProductName, L0category, L1category);
           }
           await shopPage.goToPreviousPage(mismatches, 'L1', L0category, L0Categories, L1Categories);

@@ -328,7 +328,11 @@ export function normalizeProductName(rawProductData: string | null | undefined):
     productName = filteredLines[0].toLowerCase().trim();
   }
 
-  let normalizedName = productName;
+  let normalizedName = productName
+    .replace(/&#39;|&apos;|&#x27;/gi, "'")
+    .replace(/&#34;|&quot;/gi, '"')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&');
 
   // Remove if "and" exists, truncate at "and"
   const andIdx = normalizedName.indexOf(' and ');
@@ -348,13 +352,13 @@ export function normalizeProductName(rawProductData: string | null | undefined):
   normalizedName = normalizedName.replace(/(…|\.{3}).*$/, '');
 
   // Truncate at first special delimiter
-  const cutIndex = findFirstSpecialCharIndex(normalizedName, ['(', ',', '-', ':']);
+  const cutIndex = findFirstSpecialCharIndex(normalizedName, ['(', ',', ':']);
   if (cutIndex > -1) {
     normalizedName = normalizedName.substring(0, cutIndex);
   }
 
-  // Remove all whitespace and trim
-  normalizedName = normalizedName.replace(/[\s\u00A0]+/g, '').trim();
+  // Remove whitespace, pipes, and quotes
+  normalizedName = normalizedName.replace(/[\s\u00A0|'"]+/g, '').trim();
 
   console.log('[normalizeProductName] Normalized productName:', normalizedName);
 
