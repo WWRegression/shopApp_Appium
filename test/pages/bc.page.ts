@@ -9,7 +9,7 @@ import { prepareWebViewPage, isCurrentWebViewPage, getCurrentWebViewPage, switch
 import { getRunConfig } from '../../config/run.config';
 import { storageCapacityMatches, pickStorageLabel, normalizeProductName, productNameMatches } from '../helpers/data.helper';
 import { clickIfDisplayed, scrollAndJsClick, scrollAndWdioClick, scrollUntilVisibleInWebView, readDisplayedText } from '../helpers/element.helper';
-import { markFailedAndStop, type FieldCheck } from '../helpers/report.helper';
+import { markFailedAndStop } from '../helpers/report.helper';
 import type { CartItemOptions } from './cart.page';
 
 
@@ -67,7 +67,7 @@ export class BcPage extends BasePage {
     }
   }
 
-  /** Clicks the option chip of each value in the product data; stops the TC when a chip is not on BC (BC always shows its options). */
+  /** Clicks the option chip of each value in the product data; skips a chip not shown on BC. */
   async selectOptions(product: ProductOptionFields): Promise<void> {
     for (const field of [...OPTION_FIELDS, 'isBespokeSKU'] as const) {
       const value = product[field];
@@ -95,42 +95,43 @@ export class BcPage extends BasePage {
           target = this.locator.watchNonDefaultBandOption;
           break;
       }
-      const found = await scrollUntilVisibleInWebView(target);
-      console.log(`[BC.selectOptions] ${field}=${value} : chip ${found ? 'clicked' : 'not found'}`);
-      markFailedAndStop([{ label: `option chip not found on BC: ${field}=${value}`, pass: found }], 'BC.selectOptions');
+      // Some sites show no chip for an option (e.g. no device chip), so a missing chip is skipped
+      if (!(await scrollUntilVisibleInWebView(target))) {
+        console.log(`[BC.selectOptions] ${field}=${value} : chip not found, skip`);
+        continue;
+      }
+      console.log(`[BC.selectOptions] ${field}=${value} : chip clicked`);
       // Option boxes are divs wrapping the radio input — HTMLElement.click() on the div doesn't select it, a real tap does
       await scrollAndWdioClick(target);
     }
   }
 
-  /** Reads the selected chip of each option in the product data, checks it is in the summary, and returns the summary with the confirmed values. */
+  /** Checks the selected chip (or product data) of each option is in the summary, and returns the summary with the checked values. */
   async verifyOptions(product: ProductOptionFields): Promise<BcSummary> {
     const summary = await this.readSummary();
     console.log(`[BC.verifyOptions] summary=${JSON.stringify(summary)}`);
 
-    const checks: FieldCheck[] = [];
-    const record = (field: string, expected: string, actual: string, pass: boolean) => {
+    // Stops the TC at the first field not in the summary
+    const check = (field: string, expected: string, actual: string, pass: boolean) => {
       console.log(`[BC.verifyOptions] ${field} : expected=${expected} || actual=${actual} || result=${pass ? 'PASS' : 'FAIL'}`);
-      checks.push({ label: `${field} not in the BC summary`, pass, detail: `expected "${expected}", actual "${actual}"` });
+      markFailedAndStop([{ label: `${field} not in the BC summary`, pass, detail: `expected "${expected}", actual "${actual}"` }], 'BC.verifyOptions');
     };
 
-    record('sku', product.sku, summary.sku, this.matchesSummary('sku', summary.sku, product.sku));
+    check('sku', product.sku, summary.sku, this.matchesSummary('sku', summary.sku, product.sku));
 
     const options: CartItemOptions = {};
     for (const field of OPTION_FIELDS) {
-      if (!product[field]) {
+      const inputData = product[field];
+      if (!inputData) {
         continue;
       }
-      const selected = await this.readSelectedOption(field);
+      // The selected chip label, or the product data when the site shows no chip for this option
+      const expected = (await this.readSelectedOption(field)) || inputData;
       const actual = field === 'deviceName' ? summary.deviceName : summary.optionsText;
-      const pass = Boolean(selected) && this.matchesSummary(field, actual, selected);
-      record(field, selected || '(no selected chip)', actual, pass);
-      if (pass) {
-        options[field] = selected;
-      }
+      check(field, expected, actual, this.matchesSummary(field, actual, expected));
+      options[field] = expected;
     }
 
-    markFailedAndStop(checks, 'BC.verifyOptions');
     return { sku: summary.sku, optionsText: summary.optionsText, servicePrice: summary.servicePrice, options };
   }
 
