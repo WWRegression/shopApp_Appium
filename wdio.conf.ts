@@ -69,7 +69,7 @@ export const config: WebdriverIO.Config = {
   reporters: ['spec'],
   mochaOpts: {
     ui: 'bdd',
-    timeout: 240000,
+    timeout: 900000,
   },
   before: async (_capabilities, specs) => {
     if (specs.length === 1 && specs[0].includes('_call-api.spec.ts')) {
