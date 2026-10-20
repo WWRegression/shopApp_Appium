@@ -173,6 +173,24 @@ export class ShopPage extends BasePage {
     await clickIfDisplayed($(path.L1), 5000);
   }
 
+  /** Verifies the L1 list of `category` is shown (the L1 item openCategory taps). */
+  async verifyCategoryL1Page(category: ShopCategory): Promise<void> {
+    await switchToNative();
+    const path = this.shoplocator.categoryPath(currentSiteCode(), category);
+    const shown = await waitForDisplayedOrFalse($(path.L1), { timeout: 5000 });
+    console.log(`[verifyCategoryL1Page] expected=${category} L1 list actual=${shown ? 'shown' : 'not shown'} result=${shown ? 'PASS' : 'FAIL'}`);
+    markFailedAndStop([{ label: `${category} L1 list not shown`, pass: shown }], 'verifyCategoryL1Page');
+  }
+
+  /** Verifies the Shop (L0) page is shown by its header title. */
+  async verifyShopPage(timeoutMs = 5000): Promise<void> {
+    const shown = await driver
+      .waitUntil(() => this.isOnShop(), { timeout: timeoutMs, interval: 500 })
+      .then(() => true, () => false);
+    console.log(`[verifyShopPage] expected=Shop actual=${shown ? 'Shop' : 'not Shop'} result=${shown ? 'PASS' : 'FAIL'}`);
+    markFailedAndStop([{ label: 'Shop page not shown', pass: shown }], 'verifyShopPage');
+  }
+
   /** Shop -> first L0 category. */
   async openFirstCategory(): Promise<void> {
     await clickElement(this.shoplocator.L0Categories[0], { timeout: 15000 });

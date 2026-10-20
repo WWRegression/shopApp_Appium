@@ -1,13 +1,15 @@
 /// <reference lib="dom" />
 
 import { BasePage } from './base.page';
-import { CheckoutLocator, CHECKOUT_FORMS } from '../locators/checkout.locator';
+import { CheckoutLocator, CHECKOUT_FORMS, INVALID_FIELD_SELECTOR, AUTO_CHECK_CHECKBOX_SELECTOR } from '../locators/checkout.locator';
 import { prepareWebViewPage } from '../helpers/context.helper';
 import { getSiteData as getSite } from '../../config/site';
-import { scrollAndJsClick, getElementLabel, isDisplayedOrFalse, jsClick, clickElement, waitForDisplayedOrFalse } from '../helpers/element.helper';
+import { scrollAndJsClick, getElementLabel, isDisplayedOrFalse, jsClick, clickElement, waitForDisplayedOrFalse, clickIfDisplayed } from '../helpers/element.helper';
 import { scrollDown, scrollElementToCenter } from '../helpers/gesture.helper';
 import { markFailed, markFailedAndStop } from '../helpers/report.helper';
+import { normalizeProductName, productNameMatches } from '../helpers/data.helper';
 import type { LoadedSite } from '../../config/site';
+import { currentSiteCode } from '../helpers/tc-filter.helper';
 
 /** Which Edit button(s) to verify on the payment step, per site. */
 const EDIT_SEQUENCE_BY_SITE: Record<string, Array<'customer' | 'delivery'>> = {
@@ -23,6 +25,8 @@ const ADDRESS_MATCH_SITES_CUSTOMER = ['SE', 'DE', 'ES', 'AT', 'AU', 'HU', 'ID', 
 const ADDRESS_MATCH_SITES_DELIVERY = ['SE', 'DE', 'ES', 'BE', 'BE_FR', 'AT', 'AU', 'HU', 'ID', 'SG', 'TH', 'UK', 'VN'];
 
 export type CheckoutFormId = (typeof CHECKOUT_FORMS)[number];
+
+const ADDRESS_FORMS: CheckoutFormId[] = ['app-customer-address-v2', 'app-customer-address-cn'];
 
 interface FieldDescriptor {
   index: number;
@@ -49,7 +53,7 @@ export class CheckoutPage extends BasePage {
 
   /** Switches to the checkout WebView and stops the TC when the checkout page is not reached. */
   async prepareCheckoutPage(): Promise<void> {
-    const ready = await prepareWebViewPage('checkout', this.locator.checkoutLayout, 20000);
+    const ready = await prepareWebViewPage('checkout', () => this.locator.checkoutLayout, 20000);
     markFailedAndStop([{ label: 'checkout page reached', pass: ready }], 'prepareCheckoutPage');
   }
 
@@ -76,6 +80,65 @@ export class CheckoutPage extends BasePage {
     return '';
   }
 
+  /** Opens the View Order summary when it is collapsed. */
+  private async ensureViewOrderExpanded(): Promise<void> {
+    // CN shows the order summary inline, with no View Order toggle
+    if (currentSiteCode() === 'CN') {
+      return;
+    }
+    if (await this.locator.viewOrderExpanded.isExisting().catch(() => false)) {
+      return;
+    }
+    // DOM click: the fixed summary overlay (US) intercepts pointer clicks on the toggles
+    if (!(await this.locator.viewOrderSummaryToggle.waitForExist({ timeout: 10000 }).then(() => true, () => false))) {
+      console.log('[ensureViewOrderExpanded] View Order toggle not found');
+      return;
+    }
+    await jsClick(this.locator.viewOrderSummaryToggle);
+    await this.locator.viewOrderExpanded.waitForExist({ timeout: 5000 }).catch(() => undefined);
+    // US nests the items in a collapsed "You have N item(s) in your cart" panel
+    if (await this.locator.viewOrderItemListCollapsed.isExisting().catch(() => false)) {
+      await jsClick(this.locator.viewOrderItemListCollapsed);
+      await this.locator.viewOrderItemListCollapsed.waitForExist({ timeout: 3000, reverse: true }).catch(() => undefined);
+    }
+  }
+
+  /** Closes the View Order summary when it is open; the open summary covers the step's Next button. */
+  private async ensureViewOrderCollapsed(): Promise<void> {
+    if (!(await this.locator.viewOrderExpanded.isExisting().catch(() => false))) {
+      return;
+    }
+    await jsClick(this.locator.viewOrderSummaryToggle);
+    await this.locator.viewOrderExpanded.waitForExist({ timeout: 5000, reverse: true }).catch(() => undefined);
+  }
+
+  /** Opens View Order, verifies an item name matches the expected (PF) product name, then closes it again. */
+  async verifyProductName(expected: string | null): Promise<void> {
+    await this.ensureViewOrderExpanded();
+    let itemNames: string[] = [];
+    // Right after the window switch the list can show only the service items, so re-read until the product shows
+    const pass = await driver
+      .waitUntil(
+        async () => {
+          itemNames = [];
+          for (const el of await this.locator.viewOrderItemNames) {
+            // A hidden copy of the summary is also in the DOM; getElementLabel returns '' for it
+            const name = await getElementLabel(el as unknown as ChainablePromiseElement);
+            if (name) itemNames.push(name);
+          }
+          return itemNames.some((name) => productNameMatches(expected, normalizeProductName(name)));
+        },
+        { timeout: 5000, interval: 500 }
+      )
+      .then(() => true, () => false);
+    console.log(`[Checkout.verifyProductName] expected="${expected}" actual=${JSON.stringify(itemNames)} result=${pass ? 'PASS' : 'FAIL'}`);
+    await this.ensureViewOrderCollapsed();
+    markFailedAndStop(
+      [{ label: 'product name not found in View Order', pass, detail: `expected "${expected}", items ${JSON.stringify(itemNames)}` }],
+      'Checkout.verifyProductName'
+    );
+  }
+
   /** Clicks Login on the guest checkout; the login page that opens is handled by LoginPage. */
   async clickLoginOnCheckout(): Promise<void> {
     const loginButton = this.locator.checkoutLoginButton;
@@ -88,16 +151,18 @@ export class CheckoutPage extends BasePage {
 
   /** Returns the known checkout forms currently displayed (usually one, can be more). */
   private async getVisibleForms(): Promise<CheckoutFormId[]> {
-    const elements = await this.locator.formElements;
-    const visible: CheckoutFormId[] = [];
-
-    for (const el of elements) {
-      const tag = await el.getTagName().catch(() => '');
-      if ((CHECKOUT_FORMS as readonly string[]).includes(tag) && (await el.isDisplayed().catch(() => false))) {
-        visible.push(tag as CheckoutFormId);
-      }
-    }
-    return visible;
+    // Read in one browser call: right after Next the step re-renders, and stale element handles wait seconds each
+    const tags = await driver
+      .execute<string[], [string]>((selector) => {
+        return Array.from(document.querySelectorAll<HTMLElement>(selector))
+          .filter((el) => {
+            const style = window.getComputedStyle(el);
+            return el.getClientRects().length > 0 && style.display !== 'none' && style.visibility !== 'hidden';
+          })
+          .map((el) => el.tagName.toLowerCase());
+      }, CHECKOUT_FORMS.join(', '))
+      .catch(() => [] as string[]);
+    return [...new Set(tags)].filter((tag): tag is CheckoutFormId => (CHECKOUT_FORMS as readonly string[]).includes(tag));
   }
 
   /** True while a loading spinner or overlay is displayed. */
@@ -127,27 +192,37 @@ export class CheckoutPage extends BasePage {
       .catch(() => undefined);
   }
 
+  /** Waits until the active step moves on from `previous`; the old step's forms stay in the DOM for a moment after Next. */
+  private async waitForStepChange(previous: string, timeoutMs = 8000): Promise<void> {
+    await driver
+      .waitUntil(async () => (await this.getCurrentCheckoutStep()) !== previous, { timeout: timeoutMs, interval: 300 })
+      .catch(() => undefined);
+  }
+
   /** Clicks Next on the current step and logs the fields still invalid when the step does not advance. */
   private async clickMoveToNext(): Promise<void> {
     await this.locator.moveToNextButton.waitForClickable({ timeout: 10000 });
+    // CN has a sticky Next and a page-bottom Next, so log which one was clicked
+    const buttonId = (await this.locator.moveToNextButton.getAttribute('id').catch(() => '')) || 'no id';
     await this.locator.moveToNextButton.click();
+    console.log(`[clickMoveToNext] Next clicked (id=${buttonId})`);
     await driver.pause(1000);
 
-    const invalidLabels: string[] = [];
-    for (const field of await this.locator.invalidFields) {
-      if (!(await field.isDisplayed().catch(() => false))) {
-        continue;
-      }
-
-      const label =
-        (await field.getText().catch(() => '')).trim() ||
-        ((await field.getAttribute('aria-label').catch(() => '')) ?? '') ||
-        ((await field.getAttribute('name').catch(() => '')) ?? '') ||
-        ((await field.getAttribute('formcontrolname').catch(() => '')) ?? '') ||
-        (await field.getTagName().catch(() => ''));
-
-      invalidLabels.push(label);
-    }
+    // Read in one browser call: the step can re-render right after Next, and stale element handles wait 10s each
+    const invalidLabels = await driver
+      .execute<string[], [string]>((selector) => {
+        return Array.from(document.querySelectorAll<HTMLElement>(selector))
+          .filter((el) => el.getClientRects().length > 0)
+          .map(
+            (el) =>
+              el.innerText?.trim() ||
+              el.getAttribute('aria-label') ||
+              el.getAttribute('name') ||
+              el.getAttribute('formcontrolname') ||
+              el.tagName.toLowerCase()
+          );
+      }, INVALID_FIELD_SELECTOR)
+      .catch(() => [] as string[]);
 
     if (invalidLabels.length > 0) {
       console.log(`clickMoveToNext: form still invalid: ${JSON.stringify(invalidLabels)}`);
@@ -287,9 +362,10 @@ export class CheckoutPage extends BasePage {
 
   /** Fills the delivery address fields with the site shipping data. */
   async fillAddressInfo(formId: CheckoutFormId, overrides?: Partial<LoadedSite['shipping']>): Promise<void> {
-    // Switch to "New address" when a saved address is preselected
-    if (await this.locator.newAddressRadio.isExisting().catch(() => false)) {
-      await scrollAndJsClick(this.locator.newAddressRadio).catch(() => undefined);
+    // A saved address is preselected and used as it is
+    if (await this.hasSavedAddress()) {
+      console.log(`[fillAddressInfo] saved address shown, form fill skipped`);
+      return;
     }
 
     // Without a saved address the form shows a search box, so switch to manual entry
@@ -299,21 +375,52 @@ export class CheckoutPage extends BasePage {
     }
 
     const data = { ...getSite().shipping, ...overrides };
+    // IN: the pincode lookup fills City / State and resets fields typed before it returns, so the pincode goes first
+    const pincodeFirst = getSite().siteCode === 'IN' && (await this.fillPincodeAndWaitForCity(formId, data.postalCode));
     await this.fillFormFields(formId, {
       line1: data.address1,
       line2: data.address2,
-      postalcode: data.postalCode,
-      // "Suburb" (AU) uses the field name "town"
+      postalcode: pincodeFirst ? undefined : data.postalCode,
       town: data.town,
-      // TODO: confirm the field name of "State"
       state: data.district,
       district: data.district,
-      // IN has a required "Floor" select
       floor: data.floor,
       regioniso: data.searchText,
       searchaddress: data.searchText,
       phone: getSite().customer.mobile,
     });
+  }
+
+  /** True when a saved address is shown on the current checkout step. */
+  private async hasSavedAddress(): Promise<boolean> {
+    return isDisplayedOrFalse(this.locator.savedAddressInfo);
+  }
+
+  /** Stops the TC when a saved address is still shown on the address step; the TC deletes all addresses beforehand. */
+  private async verifyNoSavedAddress(): Promise<void> {
+    const saved = await this.hasSavedAddress();
+    console.log(`[verifyNoSavedAddress] expected saved address="none" actual="${saved ? 'shown' : 'none'}" result=${saved ? 'FAIL' : 'PASS'}`);
+    markFailedAndStop(
+      [{ label: 'Failed to delete the address. A saved address is still present.', pass: !saved }],
+      'verifyNoSavedAddress'
+    );
+  }
+
+  /** Types the pincode and waits up to 5s for the City field it fills; returns false when the form has no pincode field. */
+  private async fillPincodeAndWaitForCity(formId: CheckoutFormId, postalCode: string | undefined): Promise<boolean> {
+    const pincode = (await this.getFieldDescriptors(formId)).find((d) => d.key === 'postalcode' && d.visible);
+    if (!pincode || !postalCode) {
+      return false;
+    }
+    await this.setInputValue(this.locator.fieldsIn(formId)[pincode.index], postalCode, false);
+    const cityFilled = await driver
+      .waitUntil(
+        () => driver.execute((tag) => Boolean(document.querySelector<HTMLInputElement>(`${tag} input[name='town']`)?.value), formId),
+        { timeout: 5000, interval: 300 }
+      )
+      .then(() => true, () => false);
+    console.log(`[fillPincodeAndWaitForCity] pincode=${postalCode} city auto-filled=${cityFilled}`);
+    return true;
   }
 
   /** Selects the delivery method and option when the step offers them. */
@@ -329,9 +436,25 @@ export class CheckoutPage extends BasePage {
   /** Checks the required checkboxes (terms, save address) of the current step. */
   private async checkRequiredCheckboxes(): Promise<void> {
     // Re-queried on each loop: the unchecked set shrinks as boxes get checked
-    for (let i = 0; i < 5 && (await this.locator.autoCheckCheckbox.isExisting().catch(() => false)); i++) {
-      await scrollAndJsClick(this.locator.autoCheckCheckbox).catch(() => undefined);
+    for (let i = 0; i < 5; i++) {
+      const index = await this.getFirstVisibleAutoCheckIndex();
+      if (index < 0) {
+        return;
+      }
+      await scrollAndJsClick(this.locator.autoCheckCheckboxes[index]).catch(() => undefined);
     }
+  }
+
+  /** Index of the first unchecked auto-check box on screen; boxes in hidden forms (CN keeps the new-address form under d-none) are skipped. */
+  private async getFirstVisibleAutoCheckIndex(): Promise<number> {
+    return driver
+      .execute<number, [string]>((selector) => {
+        return Array.from(document.querySelectorAll<HTMLElement>(selector)).findIndex((el) => {
+          const box = (el.closest('mat-checkbox, mat-radio-button, label') as HTMLElement | null) ?? el;
+          return !el.closest('.d-none') && box.getClientRects().length > 0;
+        });
+      }, AUTO_CHECK_CHECKBOX_SELECTOR)
+      .catch(() => -1);
   }
 
   /** Fills a form that has no dedicated handler: required selects only. */
@@ -402,6 +525,17 @@ export class CheckoutPage extends BasePage {
     }
 
     markFailedAndStop([{ label: 'submit-order loader matched title', pass: matched, detail: title }], 'checkPaymentMethod');
+  }
+
+  /** Verifies the active checkout step is `expected`, waiting up to 5s for it to settle after a Back. */
+  async verifyCheckoutStep(expected: string): Promise<void> {
+    await this.prepareCheckoutPage();
+    let actual = '';
+    const pass = await driver
+      .waitUntil(async () => (actual = await this.getCurrentCheckoutStep()) === expected, { timeout: 5000, interval: 500 })
+      .then(() => true, () => false);
+    console.log(`[verifyCheckoutStep] expected=${expected} actual=${actual || 'none'} result=${pass ? 'PASS' : 'FAIL'}`);
+    markFailed([{ label: 'checkout step after Back', pass, detail: `expected ${expected}, actual ${actual || 'none'}` }], 'verifyCheckoutStep');
   }
 
   /** Returns the active step name, e.g. CHECKOUT_STEP_CONTACT_INFO / _DELIVERY / _PAYMENT. */
@@ -495,22 +629,46 @@ export class CheckoutPage extends BasePage {
     }
   }
 
-  /** Fills each checkout step and clicks Next until the payment step is reached; stops the TC when it never gets there. */
-  async proceedToPayment(options: { verifyRewardOptIn?: boolean } = {}, maxIterations = 15): Promise<void> {
+  /** Clicks Back on the "Are you sure you want to go?" popup that Back from checkout opens; the popup shows on IN only. */
+  async clickLeaveCheckoutConfirmIfShown(): Promise<void> {
+    if (getSite().siteCode !== 'IN') {
+      return;
+    }
+    if (await clickIfDisplayed(this.locator.leaveCheckoutConfirmButton, 3000)) {
+      console.log('[clickLeaveCheckoutConfirmIfShown] leave-checkout popup Back clicked');
+    }
+  }
+
+  /** Fills each checkout step and clicks Next until the payment step; returns the active steps passed in order, stops the TC when payment is never reached. */
+  async proceedToPayment(
+    options: { verifyRewardOptIn?: boolean; verifyNoSavedAddress?: boolean } = {},
+    maxIterations = 15
+  ): Promise<string[]> {
     await this.waitForAnyFormToExist();
     let lastVisible: CheckoutFormId[] = [];
+    const steps: string[] = [];
 
     for (let i = 0; i < maxIterations; i++) {
       const visible = await this.getVisibleForms();
+      const step = await this.getCurrentCheckoutStep();
+      if (step && steps.at(-1) !== step) {
+        steps.push(step);
+        console.log(`[proceedToPayment] step #${steps.length}: ${step}`);
+      }
       // The reward opt-in can show on any step, so it is checked on every pass
       if (options.verifyRewardOptIn) {
         await this.verifyNoRewardOptIn();
       }
       // Also stop by step name: CN has no app-checkout-step-payment, and Next on its payment step submits the order
-      if (visible.includes('app-checkout-step-payment') || (await this.getCurrentCheckoutStep()) === 'CHECKOUT_STEP_PAYMENT') {
-        return;
+      if (visible.includes('app-checkout-step-payment') || step === 'CHECKOUT_STEP_PAYMENT') {
+        return steps;
       }
       lastVisible = visible;
+      // Checked on the step that has the address form: contact on IN, delivery on most sites
+      const hasAddressForm = visible.some((formId) => ADDRESS_FORMS.includes(formId));
+      if (options.verifyNoSavedAddress && hasAddressForm) {
+        await this.verifyNoSavedAddress();
+      }
 
       for (const formId of visible) {
         const handler = this.formHandlers[formId] ?? (() => this.fillGenericStep(formId));
@@ -521,6 +679,7 @@ export class CheckoutPage extends BasePage {
       await this.waitForPageStable();
       await this.clickMoveToNext();
       await this.clickUseAddressOnPopupIfShown();
+      await this.waitForStepChange(step);
       await this.waitForAnyFormToExist();
       await this.waitForPageStable();
     }
@@ -529,6 +688,7 @@ export class CheckoutPage extends BasePage {
       [{ label: 'reached payment step', pass: false, detail: `stuck at: ${lastVisible.join(', ') || 'unknown'}` }],
       `proceedToPayment (${maxIterations} iterations)`
     );
+    return steps;
   }
 
   async editOrderSummary(): Promise<void> {

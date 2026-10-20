@@ -48,20 +48,24 @@ const PAYMENT_METHOD_TITLE_SELECTOR = [
   'app-payment-modes-flat app-payment-mode-flat-item',
 ].join(', ');
 
+export const AUTO_CHECK_CHECKBOX_SELECTOR = [
+  "input[name*='CHECKOUT_OPTIONS']:not(:checked)",
+  "input[type='checkbox'][required]:not(:checked)",
+  "input[type='checkbox'][name*='save' i]:not([disabled]):not(:checked)",
+  "input[type='radio'][value*='GENERAL_INVOICE' i]:not([disabled]):not(:checked)"
+].join(', ');
+
+export const INVALID_FIELD_SELECTOR = '.ng-invalid, ul.error, ul.error li, mat-error, .mat-mdc-form-field-error';
+
 const SUBMIT_ORDER_BUTTON_LOADER_SELECTOR = 'button[appsubmitorderbuttonloader], div[appsubmitorderbuttonloader], button[data-an-tr="checkout-payment-detail"], .express-payment-mode-wrapper > div, #samsungPayContainer > button, button.fe0yvp1';
 
 export class CheckoutLocator {
   get activeStep() {
-    return $(
-      [
-        "mat-expansion-panel[data-activestepname][class*='active']",
-        'mat-expansion-panel[data-activestepname]:has(> mat-expansion-panel-header[aria-expanded="true"])',
-      ].join(', ')
-    );
+    return $('mat-expansion-panel[data-activestepname]:has(> mat-expansion-panel-header[aria-expanded="true"])');
   }
 
   get checkoutLayout() {
-    return $('cx-page-layout.CheckoutPageTemplateV2');
+    return $('cx-storefront.stop-navigating.CheckoutPageTemplateV2');
   }
 
   get checkoutLoginButton() {
@@ -76,16 +80,12 @@ export class CheckoutLocator {
     return $$(FIELD_SELECTOR_PARTS.map((s) => `${formTag} ${s}`).join(', '));
   }
 
-  get invalidFields() {
-    return $$('.ng-invalid, ul.error, ul.error li, mat-error, .mat-mdc-form-field-error');
-  }
-
   get moveToNextButton() {
     return $(
       [
-        "button[id='checkout-page-order-btn']",
-        "button[data-an-tr='checkout-order-detail']",
         "button[class*='continue-btn']:not(.enter-address-method)",
+        "app-sticky-cart-totals-cn .sticky-cart-button__row:not(.hide-cta) button.cx-summary-orderBtn",
+        "button[id='checkout-page-order-btn']"
       ].join(', ')
     );
   }
@@ -108,19 +108,8 @@ export class CheckoutLocator {
     return $('ul[class*="delivery_list"] input[type="radio"]:not(:checked)');
   }
 
-  get autoCheckCheckbox() {
-    return $(
-      [
-        "input[name*='CHECKOUT_OPTIONS']:not(:checked)",
-        "input[type='checkbox'][required]:not(:checked)",
-        "input[type='checkbox'][name*='save' i]:not([disabled]):not(:checked)",
-        "input[type='radio'][value*='GENERAL_INVOICE' i]:not([disabled]):not(:checked)"
-      ].join(', ')
-    );
-  }
-
-  get newAddressRadio() {
-    return $("input[name='addressOptionShipping'][value='NEW_ADDRESS']:not(:checked)");
+  get autoCheckCheckboxes() {
+    return $$(AUTO_CHECK_CHECKBOX_SELECTOR);
   }
 
   get enterAddressManuallyLink() {
@@ -183,11 +172,27 @@ export class CheckoutLocator {
     return $('mat-icon[data-an-la="view more"]');
   }
 
+  get viewOrderSummaryToggle() {
+    return $('.RightContentCheckoutSlot mat-icon[data-an-la="view more"], .RightContentCheckoutSlot .view-order-container mat-icon[data-an-tr="indication"]');
+  }
+
+  get viewOrderExpanded() {
+    return $('.RightContentCheckoutSlot .view-order-container.isExpanded');
+  }
+
+  get viewOrderItemListCollapsed() {
+    return $('.RightContentCheckoutSlot app-cart-item-list-us mat-expansion-panel-header[aria-expanded="false"] mat-icon[data-an-la="order summary:view more"]');
+  }
+
+  get viewOrderItemNames() {
+    return $$('.RightContentCheckoutSlot .cart-item__name-checkout');
+  }
+
   get editOrderSummaryButton() {
     return $('[data-an-la="order summary:edit"], [data-an-la="order summary:edit cart"]');
   }
 
   get leaveCheckoutConfirmButton() {
-    return $('[data-an-la="leave the checkout page:yes"]');
+    return $('[data-an-la="leave the checkout page:yes"], .savings-modal button.resend-otp-btn');
   }
 }

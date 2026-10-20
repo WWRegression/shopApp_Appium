@@ -1,7 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { ShopCategory } from '../locators/shop.locator';
-import { PfCardQuery } from '../pages/pf.page';
 import { SelectedDisplayValues } from '../pages/bc.page';
 import { CartItemOptions } from '../pages/cart.page';
 
@@ -64,23 +63,6 @@ export function loadFlagshipProducts(siteCode: string): FlagshipProduct[] {
 
 export function toShopCategory(product: FlagshipProduct): ShopCategory {
   return product.kind === 'watch' ? 'watch' : 'mobile';
-}
-
-/** Watch Ultra PF cards only show the product name, no separate connectivity/caseSize cards. */
-function isWatchUltra(deviceName: string): boolean {
-  return deviceName.toLowerCase().includes('ultra');
-}
-
-export function toPfCardQuery(product: FlagshipProduct): PfCardQuery {
-  if (product.kind === 'watch' && !isWatchUltra(product.deviceName)) {
-    return {
-      mode: 'watch',
-      device: product.deviceName,
-      connectivity: product.connectivity,
-      caseSize: product.caseSize,
-    };
-  }
-  return { mode: 'exact', product: product.deviceName };
 }
 
 /** Cart line fields aligned with BC verifyOptionFields (sku checked separately via verifySku). */

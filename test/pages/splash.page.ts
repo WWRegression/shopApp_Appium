@@ -1,67 +1,30 @@
 import { BasePage } from './base.page';
 import { SplashLocator } from '../locators/splash.locator';
-import { isDisplayedOrFalse, scrollAndWdioClick, waitForDisplayedOrFalse } from '../helpers/element.helper';
+import { clickIfDisplayed } from '../helpers/element.helper';
+import { getSiteData as getSite } from '../../config/site';
 
-/**
- * Post-ATC splash (addon / gift / popup) → cart.
- * If already on cart (url or header title) → done.
- * Otherwise click Continue and re-check.
- */
+/** Post-ATC splash (addon / gift / popup) → cart. */
 export class SplashPage extends BasePage {
   private readonly locator = new SplashLocator();
 
+  /** Clicks Continue until a click opens the cart in a new window or no Continue is shown. */
   async clickSplashContinue(): Promise<void> {
-    console.warn('[SplashPage] start');
+    // IN: the add-on splash can take over 7s to show after Add to Cart
+    const footerWaitMs = getSite().siteCode === 'IN' ? 15000 : 7000;
+    for (let i = 0; i < 8; i++) {
+      const windowCount = (await driver.getWindowHandles()).length;
 
-    const maxAttempts = 8;
+      const clicked =
+        (await clickIfDisplayed(this.locator.continueButtonOnPopup)) ||
+        (await clickIfDisplayed(this.locator.continueButton, footerWaitMs)) ||
+        (await clickIfDisplayed(this.locator.continueButtonOnPopup));
+      if (!clicked) return;
 
-    for (let i = 0; i < maxAttempts; i++) {
-      console.warn('[SplashPage] attempt:', i);
-
-      if (await this.clickContinueOnPopup()) {
-        continue;
-      }
-
-      if (await this.clickContinueButton()) {
-        continue;
-      }
-
-      // Nothing to click yet: the CN "added to cart" popup can take over 4s to show, so give either button a last chance
-      const moreToClick = await driver
-        .waitUntil(
-          async () =>
-            (await isDisplayedOrFalse(this.locator.continueButtonOnPopup)) ||
-            (await isDisplayedOrFalse(this.locator.continueButton)),
-          { timeout: 4000, interval: 500 }
-        )
+      // The old splash window keeps its Continue, so a second click would load cart there as well
+      const newWindow = await driver
+        .waitUntil(async () => (await driver.getWindowHandles()).length > windowCount, { timeout: 10000, interval: 500 })
         .then(() => true, () => false);
-      if (!moreToClick) {
-        console.warn('[SplashPage] continue button not found');
-        return;
-      }
+      if (newWindow) return;
     }
-    console.warn('[SplashPage] done without cart confirmation; prepareCartPage will verify');
-  }
-
-  private async clickContinueButton(): Promise<boolean> {
-    const continueBtn = this.locator.continueButton;
-    if (await waitForDisplayedOrFalse(continueBtn, {timeout:3000})) {
-      console.warn('[clickContinueButton] clicking continue on footer');
-      await scrollAndWdioClick(continueBtn);
-      await driver.pause(1000);
-      return true;
-    }
-    return false;
-  }
-
-  private async clickContinueOnPopup(): Promise<boolean> {
-    const continueToCartBtn = this.locator.continueButtonOnPopup;
-    if (await isDisplayedOrFalse(continueToCartBtn)) {
-      console.warn('[clickContinueOnPopup] clicking continue on popup');
-      await scrollAndWdioClick(continueToCartBtn);
-      await driver.pause(1000);
-      return true;
-    }
-    return false;
   }
 }

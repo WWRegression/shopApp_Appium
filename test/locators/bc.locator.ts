@@ -6,20 +6,14 @@ import { storageLabelVariants } from '../helpers/data.helper';
  */
 export class BcLocator {
   get bcLayout() {
-    // Early-appearing BC anchors.
     return $(
       [
-        '.bc-page',
-        '.st-page-pd',
+        'body.bc-page',
+        'div#pdp-page',
         '.wbc-page',
         '.wbc-page-v2',
-        '#pdp-page',
-        '.bc-cross-navigation-wrap',
         'section.watch-bc',
-        '.hubble-price-bar',
         '.watch-bc-price-bar',
-        'cx-storefront',
-        'main[cxskiplink*="main"]',
       ].join(', ')
     );
   }

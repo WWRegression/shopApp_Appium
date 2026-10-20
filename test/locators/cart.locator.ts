@@ -1,6 +1,6 @@
 export class CartLocator {
   get cartLayout() {
-    return $('cx-page-layout.CartPageTemplateV2, div.cart-details-wrapper');
+    return $('cx-storefront.stop-navigating.CartPageTemplateV2');
   }
 
   get emptyCartSection() {
@@ -12,7 +12,7 @@ export class CartLocator {
       [
         'cx-cart-totals-v2 button[data-an-tr="cart-to-checkout" i]:not(div.hideContinueCta *):not([disabled])',
         'cx-cart-totals-v2 button.sticky-cart-totals__checkout-btn:not([disabled])',
-        'app-sticky-cart-totals-cn [data-an-tr="cart-to-checkout" i]',        
+        'app-sticky-cart-totals-cn [data-an-tr="cart-to-checkout" i]',
       ].join(', ')
     );
   }
@@ -21,9 +21,8 @@ export class CartLocator {
     return $('app-sticky-checkout-cta-modal.show button[data-an-tr="cart-to-checkout"]');
   }
 
-  /** Guest Sign in on the cart (with items or empty); all matches since a hidden one can come first */
   get cartLoginButton() {
-    return $$('button.guest-signin-btn, button.sign-in-banner__btn, button[data-an-la="empty cart:sign in"]');
+    return $('section.cart-details__empty button[data-an-la="empty cart:sign in"]');
   }
 
   /** Cart/emptyCartLoginBtn — Sign in button on the empty cart (guest) */

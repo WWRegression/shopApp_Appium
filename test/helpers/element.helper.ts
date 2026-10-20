@@ -183,28 +183,6 @@ export async function clickElement(
   await element.click();
 }
 
-/** Clicks the first displayed match — for selectors that also match hidden copies (e.g. CN cart's 0x0 checkout button). */
-export async function clickFirstDisplayed(
-  elements: ReturnType<typeof $$>,
-  options?: { timeout?: number }
-): Promise<void> {
-  const timeout = options?.timeout ?? 10000;
-  let target: WebdriverIO.Element | undefined;
-  await driver.waitUntil(
-    async () => {
-      for (const el of await elements) {
-        if (await el.isDisplayed().catch(() => false)) {
-          target = el;
-          return true;
-        }
-      }
-      return false;
-    },
-    { timeout, interval: 300, timeoutMsg: `no displayed element within ${timeout}ms` }
-  );
-  await target!.click();
-}
-
 /** Waits for the element to be displayed, then types the value (clickElement counterpart for inputs). */
 export async function setElementValue(
   element: ChainablePromiseElement,

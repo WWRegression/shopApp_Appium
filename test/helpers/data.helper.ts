@@ -364,3 +364,10 @@ export function normalizeProductName(rawProductData: string | null | undefined):
 
   return normalizedName;
 }
+
+/** Two normalized product names match when either contains the other (both must be non-empty). */
+export function productNameMatches(expected: string | null | undefined, actual: string | null | undefined): boolean {
+  const a = (expected ?? '').replace(/\s+/g, '').toLowerCase();
+  const b = (actual ?? '').replace(/\s+/g, '').toLowerCase();
+  return Boolean(a) && Boolean(b) && (a.includes(b) || b.includes(a));
+}

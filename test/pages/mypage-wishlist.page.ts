@@ -15,7 +15,7 @@ export class MypageWishlistPage extends BasePage {
     await this.mypagePage.prepareMypage();
     await this.mypagePage.selectDashboardMenu('wishlist');
 
-    const ready = await prepareWebViewPage('mypageWishlist', this.locator.pageContainer);
+    const ready = await prepareWebViewPage('mypageWishlist', () => this.locator.pageContainer);
     markFailedAndStop([{ label: 'wishlist page reached', pass: ready }], 'prepareWishlistPage');
   }
 

@@ -24,7 +24,7 @@ export class PdPage extends BasePage {
 
   /** skuAnchor renders early and carries data-shop-sku, so it doubles as the "PD is ready" marker. */
   async preparePdPage(): Promise<void> {
-    const ready = await prepareWebViewPage('pd', this.locator.skuAnchor, 30000);
+    const ready = await prepareWebViewPage('pd', () => this.locator.skuAnchor, 30000);
     console.warn(`[PD] preparePdPage ready=${ready}`);
     if (!ready) {
       // throw new Error('preparePdPage: PD not ready within 10s');

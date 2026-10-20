@@ -373,6 +373,10 @@ export class BasePage {
     return getElementLabel(this.headerLocator.title);
   }
 
+  /** Presses the Android Back key in any context; driver.back() in a WebView would only go back in that page's history. */
+  async pressDeviceBack(): Promise<void> {
+    await driver.pressKeyCode(4);
+  }
   // BNB
   /** Reads the item count from the BNB cart tab's content-desc (leading number). */
   async getBNBCartCount(): Promise<number> {

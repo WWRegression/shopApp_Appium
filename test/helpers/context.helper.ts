@@ -229,16 +229,32 @@ export async function getDetailedWebViewWindows(): Promise<MatchedWebViewPage[]>
   }
 }
 
+// Pages whose visible window carries a URL mark: checkout opens in a new window tagged adobe_mc while the old window also navigates to checkout
+const VISIBLE_WINDOW_MARK: Partial<Record<PageUrlKey, string>> = { checkout: 'adobe_mc=' };
+
+/** Switches to the `page` window carrying its visible-window mark, waiting up to `waitMs`; stays on the current window when none shows. */
+async function switchToMarkedWindowIfAny(page: PageUrlKey, siteCode: string, href: string, waitMs = 3000): Promise<void> {
+  const mark = VISIBLE_WINDOW_MARK[page];
+  if (!mark || href.includes(mark)) return;
+  const deadline = Date.now() + waitMs;
+  do {
+    const match = (await getDetailedWebViewWindows()).find((w) => w.url.includes(mark) && matchPageByUrl(w.url, page, siteCode));
+    if (match) {
+      await driver.switchToWindow(match.webviewPageId).catch(() => undefined);
+      console.warn(`[${page}] switched to the window marked ${mark}`);
+      return;
+    }
+    await driver.pause(500);
+  } while (Date.now() < deadline);
+}
+
 async function findWindowByPage(
   page: PageUrlKey,
   siteCode: string
 ): Promise<MatchedWebViewPage | undefined> {
-  for (const window of await getDetailedWebViewWindows()) {
-    if (matchPageByUrl(window.url, page, siteCode)) {
-      return window;
-    }
-  }
-  return undefined;
+  const matches = (await getDetailedWebViewWindows()).filter((w) => matchPageByUrl(w.url, page, siteCode));
+  const mark = VISIBLE_WINDOW_MARK[page];
+  return (mark && matches.find((w) => w.url.includes(mark))) || matches[0];
 }
 
 /**
@@ -270,6 +286,7 @@ export async function switchToWindowByPage(
     try {
       const href = await getCurrentWindowUrl();
       if (href && matchPageByUrl(href, page, siteCode)) {
+        await switchToMarkedWindowIfAny(page, siteCode, href);
         await console.warn('[switchToWindowByPage] already on the page, href matches page');
         return;
       }
@@ -314,7 +331,7 @@ export const WEBVIEW_PAGE_READY_MS = 60000;
 
 export async function prepareWebViewPage(
   page: PageUrlKey,
-  layout: ChainablePromiseElement,
+  layout: () => ChainablePromiseElement,
   timeout = WEBVIEW_PAGE_READY_MS
 ): Promise<boolean> {
   const deadline = Date.now() + timeout;
@@ -326,7 +343,10 @@ export async function prepareWebViewPage(
     console.warn('[prepareWebViewPage] href:', href);
     if (href && matchPageByUrl(href, page, siteCode)) {
       console.warn('[prepareWebViewPage] href matches page');
-      return true;
+      await switchToMarkedWindowIfAny(page, siteCode, href);
+      if (await waitForLayout(page, layout, deadline)) {
+        return true;
+      }
     }
   }
 
@@ -347,7 +367,9 @@ export async function prepareWebViewPage(
       try {
         await switchToWindowByPage(page, winBudget);
         await console.warn(`[${page} prepareWebViewPage] window ${page} switched`);
-        return true;
+        if (await waitForLayout(page, layout, deadline)) {
+          return true;
+        }
       } catch {
         // Window/context can flip again mid-check ("no such window") — fall through to retry below.
       }
@@ -358,6 +380,15 @@ export async function prepareWebViewPage(
     }
     await driver.pause(300);
   }
+}
+
+/** Waits until the page layout is displayed in the current window, up to the prepare deadline. */
+async function waitForLayout(page: PageUrlKey, layout: () => ChainablePromiseElement, deadline: number): Promise<boolean> {
+  const timeout = Math.max(0, deadline - Date.now());
+  // A fresh element each try: one first used while the old window was closing keeps failing (Cart after Add to Cart)
+  const error = await layout().waitForDisplayed({ timeout }).then(() => '', (e: unknown) => String(e).split('\n')[0].slice(0, 150));
+  console.warn(`[${page} prepareWebViewPage] layout displayed=${!error}${error ? ` (${error})` : ''}`);
+  return !error;
 }
 
 // ===========================================================================

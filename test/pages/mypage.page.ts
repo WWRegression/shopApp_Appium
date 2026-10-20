@@ -359,7 +359,7 @@ export class MypagePage extends BasePage {
   /** Opens the Samsung Rewards web page from My Page and reads its points. */
   async getRewardsPointsOnRewardsPage(): Promise<number> {
     await clickElement(this.locator.rewardsPoints, { timeout: 3000 });
-    const ready = await prepareWebViewPage('mypageRewards', this.locator.rewardsPagePoints, 15000);
+    const ready = await prepareWebViewPage('mypageRewards', () => this.locator.rewardsPagePoints, 15000);
     // Must be displayed: a hidden dashboard still holds a default "0 P" in the DOM, which would pass by accident
     const shown = ready && (await waitForDisplayedOrFalse(this.locator.rewardsPagePoints, { timeout: 8000 }));
     markFailedAndStop([{ label: 'Rewards points not shown on the Samsung Rewards page', pass: shown }], 'getRewardsPointsOnRewardsPage');
@@ -587,7 +587,7 @@ export class MypagePage extends BasePage {
       console.log('[verifyTrustArcCookie] TrustArc cookie is not required for this site — skipped');
       return;
     }
-    const webviewReady = await prepareWebViewPage('trustArc', this.locator.trustArcNoInputs[0]);
+    const webviewReady = await prepareWebViewPage('trustArc', () => this.locator.trustArcNoInputs[0]);
     const noSelected: boolean[] = [];
     if (webviewReady) {
       for (const input of await this.locator.trustArcNoInputs) {

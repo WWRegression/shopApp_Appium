@@ -5,10 +5,12 @@ import { BcScPlusService } from '../services/scplus/bc-scplus.service';
 import { BcEupService } from '../services/eup/bc-eup.service';
 import { BcSimService } from '../services/sim/bc-sim.service';
 import { BcGalaxyClubService } from '../services/galaxyclub/bc-galaxyclub.service';
-import { prepareWebViewPage, isCurrentWebViewPage } from '../helpers/context.helper';
+import { prepareWebViewPage, isCurrentWebViewPage, getCurrentWebViewPage, switchToNative } from '../helpers/context.helper';
 import { getRunConfig } from '../../config/run.config';
-import { storageCapacityMatches, pickStorageLabel } from '../helpers/data.helper';
+import { storageCapacityMatches, pickStorageLabel, normalizeProductName, productNameMatches } from '../helpers/data.helper';
 import { clickIfDisplayed, scrollAndJsClick, scrollAndWdioClick, scrollUntilVisibleInWebView, readDisplayedText } from '../helpers/element.helper';
+import { markFailedAndStop, type FieldCheck } from '../helpers/report.helper';
+import type { CartItemOptions } from './cart.page';
 
 
 /** Fields BC accepts from site JSON / Flagship phone / watch. kind, ram, isPFDefaultSKU are catalog-only. */
@@ -22,13 +24,9 @@ export type ProductOptionFields = {
   isBespokeSKU?: boolean;
 };
 
-/** Clickable option chips. isBespokeSKU triggers band click only; its value is not compared. */
-export const Options = ['deviceName', 'storage', 'caseSize', 'connectivity', 'color', 'isBespokeSKU'] as const;
-export type OptionChip = (typeof Options)[number];
-
-/** sku from input; others from selected option labels. connectivity is watch(caseSize); price TBD. */
-export const verifyOptionFields = ['sku', 'deviceName', 'storage', 'caseSize', 'connectivity', 'color'] as const;
-export type VerifyField = (typeof verifyOptionFields)[number];
+/** Option chips selected on BC and checked in the summary; isBespokeSKU only clicks a band and is not compared. */
+const OPTION_FIELDS = ['deviceName', 'storage', 'caseSize', 'connectivity', 'color'] as const;
+type OptionField = (typeof OPTION_FIELDS)[number];
 
 export interface SelectedDisplayValues {
   device: string;
@@ -38,8 +36,13 @@ export interface SelectedDisplayValues {
   color: string;
 }
 
-export type SummaryPart = 'deviceName' | 'sku' | 'options' | 'servicePrice';
-export type SummaryDetails = Record<SummaryPart, string>;
+/** What verifyOptions returns: the summary SKU / option text / service price and the per-option values confirmed in the summary. */
+export type BcSummary = {
+  sku: string;
+  optionsText: string;
+  servicePrice: string;
+  options: CartItemOptions;
+};
 
 export class BcPage extends BasePage {
   private readonly locator = new BcLocator();
@@ -58,86 +61,83 @@ export class BcPage extends BasePage {
     if (getRunConfig().siteCode === 'IN') {
       await clickIfDisplayed(this.popupLocator.locationAllowButton, 5000);
     }
-    const ready = await prepareWebViewPage('bc', this.locator.bcLayout, 20000);
+    const ready = await prepareWebViewPage('bc', () => this.locator.bcLayout, 20000);
     if (!ready) {
       throw new Error('prepareBcPage: BC not ready within 20s');
     }
   }
 
-  private buildOptionList(options: ProductOptionFields) {
-    return Options.flatMap((field) => {
-      const value = options[field];
-      return value ? [{ field, value: String(value) }] : [];
-    });
-  }
-  
-  async selectOptions(options: ProductOptionFields): Promise<void> {
-    const chips = this.buildOptionList(options);
-    console.warn(
-      `[BC.selectOptions] Start: ${chips
-        .map((chip) => `${chip.field}=${chip.value}`)
-        .join(' || ')}`
-    );
-
-    for (const chip of chips) {
-      let target;
-      switch (chip.field) {
+  /** Clicks the option chip of each value in the product data; stops the TC when a chip is not on BC (BC always shows its options). */
+  async selectOptions(product: ProductOptionFields): Promise<void> {
+    for (const field of [...OPTION_FIELDS, 'isBespokeSKU'] as const) {
+      const value = product[field];
+      if (!value) {
+        continue;
+      }
+      let target: ChainablePromiseElement;
+      switch (field) {
         case 'deviceName':
-          target = this.locator.deviceOption(chip.value);
+          target = this.locator.deviceOption(String(value));
           break;
         case 'storage':
-          target = this.locator.storageOption(chip.value);
+          target = this.locator.storageOption(String(value));
           break;
         case 'caseSize':
-          target = this.locator.caseSizeOption(chip.value);
+          target = this.locator.caseSizeOption(String(value));
           break;
         case 'connectivity':
-          target = this.locator.connectivityOption(chip.value);
+          target = this.locator.connectivityOption(String(value));
           break;
         case 'color':
-          target = this.locator.colorOption(chip.value);
+          target = this.locator.colorOption(String(value));
           break;
         case 'isBespokeSKU':
           target = this.locator.watchNonDefaultBandOption;
           break;
       }
-      console.warn(`[BC.selectOptions] target=` + chip.field);
-      if (!(await scrollUntilVisibleInWebView(target))) {
-        console.warn(`[BC.selectOptions] Skip: ${chip.field} not in DOM after scroll`);
-        continue;
-      }
+      const found = await scrollUntilVisibleInWebView(target);
+      console.log(`[BC.selectOptions] ${field}=${value} : chip ${found ? 'clicked' : 'not found'}`);
+      markFailedAndStop([{ label: `option chip not found on BC: ${field}=${value}`, pass: found }], 'BC.selectOptions');
       // Option boxes are divs wrapping the radio input — HTMLElement.click() on the div doesn't select it, a real tap does
       await scrollAndWdioClick(target);
-      console.warn(`[BC.selectOptions] Click: ${chip.field}`);
     }
-    
-    console.warn('[BC.selectOptions] Done');
   }
 
-  async verifyOptions(options: ProductOptionFields): Promise<SummaryDetails> {
-    console.warn('[BC.verifyOptions] Start');
-    const summary = await this.readSummaryDetails();
-    console.warn(`[BC.verifyOptions] summary=${JSON.stringify(summary)}`);
+  /** Reads the selected chip of each option in the product data, checks it is in the summary, and returns the summary with the confirmed values. */
+  async verifyOptions(product: ProductOptionFields): Promise<BcSummary> {
+    const summary = await this.readSummary();
+    console.log(`[BC.verifyOptions] summary=${JSON.stringify(summary)}`);
 
-    for (const field of verifyOptionFields) {
-      if (!options[field]) {
+    const checks: FieldCheck[] = [];
+    const record = (field: string, expected: string, actual: string, pass: boolean) => {
+      console.log(`[BC.verifyOptions] ${field} : expected=${expected} || actual=${actual} || result=${pass ? 'PASS' : 'FAIL'}`);
+      checks.push({ label: `${field} not in the BC summary`, pass, detail: `expected "${expected}", actual "${actual}"` });
+    };
+
+    record('sku', product.sku, summary.sku, this.matchesSummary('sku', summary.sku, product.sku));
+
+    const options: CartItemOptions = {};
+    for (const field of OPTION_FIELDS) {
+      if (!product[field]) {
         continue;
       }
-      const expected = await this.expectedSelectedValue(field, String(options[field]));
-      const actual = this.summaryActual(field, summary);
-      console.warn(`[BC.verifyOptions] ${field} : expected=${expected} || actual=${actual}`);
-      if (!this.summaryMatches(field, actual, expected)) {
-        throw new Error(`BC/PD summary mismatch : field=${field} || expected=${expected} || actual=${actual}`);
+      const selected = await this.readSelectedOption(field);
+      const actual = field === 'deviceName' ? summary.deviceName : summary.optionsText;
+      const pass = Boolean(selected) && this.matchesSummary(field, actual, selected);
+      record(field, selected || '(no selected chip)', actual, pass);
+      if (pass) {
+        options[field] = selected;
       }
     }
-    console.warn('[BC.verifyOptions] Done');
-    return summary;
+
+    markFailedAndStop(checks, 'BC.verifyOptions');
+    return { sku: summary.sku, optionsText: summary.optionsText, servicePrice: summary.servicePrice, options };
   }
 
   /** Verify only the SKU displayed in the Summary, and return the confirmed SKU string. */
   async verifySku(expectedSku: string): Promise<void> {
     const actual = await readDisplayedText(() => this.locator.summarySku);
-    if (!this.summaryMatches('sku', actual, expectedSku)) {
+    if (!this.matchesSummary('sku', actual, expectedSku)) {
       throw new Error(
         `BC summary SKU mismatch: expected=${expectedSku} || actual=${actual}`
       );
@@ -145,16 +145,8 @@ export class BcPage extends BasePage {
     console.warn(`[BC.verifySku] Done: expected=${expectedSku} || actual=${actual}`);
   }
 
-  /** sku: input. The rest: label visible in the selected option, otherwise input. */
-  private async expectedSelectedValue(field: string, inputData: string): Promise<string> {
-    if (field === 'sku') {
-      return inputData;
-    }
-    const shown = await this.readOptionSelectedResult(field);
-    return shown || inputData || '';
-  }
-
-  private async readOptionSelectedResult(field: string): Promise<string> {
+  /** Display text of the selected chip of an option; '' when no chip is selected. */
+  private async readSelectedOption(field: OptionField): Promise<string> {
     // Watch BC (e.g. /uk/watches/.../buy/): case colour / size / connectivity are radios.
     // Prefer data-modeldisplay on the checked input — section .is-checked text often includes disclaimers.
     const watchInputClass: Partial<Record<string, string>> = {
@@ -179,38 +171,48 @@ export class BcPage extends BasePage {
       return '';
     }
     const text = ((await el?.getText().catch(() => '')) ?? '').trim();
-    return field === 'storage' ? pickStorageLabel(text) : text;
+    if (field === 'storage') {
+      return pickStorageLabel(text);
+    }
+    // The device box also shows the price lines under the name (UK)
+    return field === 'deviceName' ? text.split('\n')[0].trim() : text;
   }
 
-  private async readSummaryDetails(): Promise<SummaryDetails> {
+  /** Summary area text as shown; the option text holds every option in one string (e.g. "256GB｜12GBPistachio"). */
+  private async readSummary(): Promise<{ sku: string; deviceName: string; optionsText: string; servicePrice: string }> {
     return {
-      deviceName: await readDisplayedText(() => this.locator.summaryDeviceName),
       sku: await readDisplayedText(() => this.locator.summarySku),
-      options: await readDisplayedText(() => this.locator.summaryOptions, true),
+      deviceName: await readDisplayedText(() => this.locator.summaryDeviceName),
+      optionsText: await readDisplayedText(() => this.locator.summaryOptions, true),
       servicePrice: await readDisplayedText(() => this.locator.summaryServicePrice, true),
     };
   }
 
-  private summaryActual(field: VerifyField, summary: SummaryDetails): string {
-    if (field === 'sku') return summary.sku;
-    if (field === 'deviceName') return summary.deviceName;
-    // if (field === 'price') return summary.price;
-    return summary.options;
-  }
-
-  private summaryMatches(field: VerifyField, actual: string, expected: string): boolean {
-    return field === 'storage' ? storageCapacityMatches(actual, expected) : this.optionTextMatches(actual, expected);
-  }
-
-  private optionTextMatches(actual: string, expected: string): boolean {
-    const a = actual.replace(/\s+/g, '').toLowerCase();
-    const b = expected.replace(/\s+/g, '').toLowerCase();
+  /** True when value appears in the summary text, ignoring spaces and case; storage also treats GB/Go and TB/To as equal. */
+  private matchesSummary(field: OptionField | 'sku', summaryText: string, value: string): boolean {
+    if (field === 'storage') {
+      return storageCapacityMatches(summaryText, value);
+    }
+    const a = summaryText.replace(/\s+/g, '').toLowerCase();
+    const b = value.replace(/\s+/g, '').toLowerCase();
     return Boolean(a) && Boolean(b) && (a.includes(b) || b.includes(a));
   }
 
   async isBcPage(): Promise<boolean> {
     return isCurrentWebViewPage('bc');
   }
+
+  /** Verifies the BC page is shown (checked from native context so a closed window cannot hold the check). */
+  async verifyBcPage(): Promise<void> {
+    await switchToNative();
+    const onBc = await driver
+      .waitUntil(() => this.isBcPage(), { timeout: 8000, interval: 1000 })
+      .then(() => true, () => false);
+    const actual = onBc ? 'bc' : (await getCurrentWebViewPage()).page;
+    console.log(`[verifyBcPage] expected=bc actual=${actual} result=${onBc ? 'PASS' : 'FAIL'}`);
+    markFailedAndStop([{ label: 'BC page not shown', pass: onBc, detail: `actual ${actual}` }], 'verifyBcPage');
+  }
+
 
   async getSummaryPrice(_kind: string): Promise<string> {
     return this.getTotalPrice();
@@ -230,5 +232,15 @@ export class BcPage extends BasePage {
     await scrollAndJsClick(button);
   }
 
+  /** Verifies the sticky bar product name matches the expected (PF) product name. */
+  async verifyProductName(expected: string | null): Promise<void> {
+    await this.prepareBcPage();
+    // getText only: the extra displayed check costs seconds per call while BC keeps loading
+    const stickyBarName = ((await this.locator.bcProductName.getText().catch(() => '')) ?? '').trim();
+    const actual = normalizeProductName(stickyBarName);
+    const pass = productNameMatches(expected, actual);
+    console.log(`[BC.verifyProductName] expected="${expected}" actual="${actual}" (raw="${stickyBarName}") result=${pass ? 'PASS' : 'FAIL'}`);
+    markFailedAndStop([{ label: 'BC sticky bar product name mismatch', pass, detail: `expected "${expected}", actual "${stickyBarName}"` }], 'BC.verifyProductName');
+  }
 }
 

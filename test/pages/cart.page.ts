@@ -5,11 +5,11 @@ import { CartScPlusService } from '../services/scplus/cart-scplus.service';
 import { CartEupService } from '../services/eup/cart-eup.service';
 import { CartSimService } from '../services/sim/cart-sim.service';
 import { CartTradeUpService } from '../services/tradeup/cart-tradeup.service';
-import { switchToNative, prepareWebViewPage } from '../helpers/context.helper';
-import { getElementLabel, clickIfDisplayed, clickFirstDisplayed, isDisplayedOrFalse, jsTouchStart, jsClick } from '../helpers/element.helper';
+import { switchToNative, prepareWebViewPage, isCurrentWebViewPage, getCurrentWebViewPage } from '../helpers/context.helper';
+import { getElementLabel, clickIfDisplayed, clickElement, isDisplayedOrFalse, jsTouchStart, jsClick } from '../helpers/element.helper';
 import { assertEqual } from '../helpers/validation.helper';
 import { markFailedAndStop, FieldCheck } from '../helpers/report.helper';
-import { parseNumber, removeNonWordChars } from '../helpers/data.helper';
+import { parseNumber, removeNonWordChars, normalizeProductName, productNameMatches } from '../helpers/data.helper';
 
 export interface CartItemOptions {
   deviceName?: string;
@@ -29,14 +29,29 @@ export class CartPage extends BasePage {
   readonly tradeUp = new CartTradeUpService();
 
   /**
-   * Wait up to WEBVIEW_PAGE_READY_MS (10s) for cart. Throws on timeout so the TC fails fast.
+   * Wait up to 20s for the cart layout. Throws on timeout so the TC fails fast.
    */
-  async prepareCartPage(timeoutMs?: number): Promise<void> {
+  async prepareCartPage(timeoutMs = 20000): Promise<void> {
     console.warn('prepareCartPage: start');
-    const ready = await prepareWebViewPage('cart', this.locator.cartLayout, timeoutMs);
+    const ready = await prepareWebViewPage('cart', () => this.locator.cartLayout, timeoutMs);
     if (!ready) {
-      throw new Error(`prepareCartPage: cart not ready within ${(timeoutMs ?? 10000) / 1000}s`);
+      throw new Error(`prepareCartPage: cart not ready within ${timeoutMs / 1000}s`);
     }
+  }
+
+  async isCartPage(): Promise<boolean> {
+    return isCurrentWebViewPage('cart');
+  }
+
+  /** Verifies the Cart page is shown (checked from native context so a closed window cannot hold the check). */
+  async verifyCartPage(): Promise<void> {
+    await switchToNative();
+    const onCart = await driver
+      .waitUntil(() => this.isCartPage(), { timeout: 8000, interval: 1000 })
+      .then(() => true, () => false);
+    const actual = onCart ? 'cart' : (await getCurrentWebViewPage()).page;
+    console.log(`[verifyCartPage] expected=cart actual=${actual} result=${onCart ? 'PASS' : 'FAIL'}`);
+    markFailedAndStop([{ label: 'Cart page not shown', pass: onCart, detail: `actual ${actual}` }], 'verifyCartPage');
   }
 
   /** Clicks checkout and waits for the checkout page to load. */
@@ -80,7 +95,7 @@ export class CartPage extends BasePage {
   async clickLoginOnCart(): Promise<void> {
     await this.prepareCartPage();
     await markFailedAndStop(
-      () => clickFirstDisplayed(this.locator.cartLoginButton, { timeout: 5000 }),
+      () => clickElement(this.locator.cartLoginButton, { timeout: 5000 }),
       'Login failed on the Cart page: Sign in button not found'
     );
   }
@@ -144,6 +159,22 @@ export class CartPage extends BasePage {
     await markFailedAndStop(
       async () => assertEqual(skus.some((code) => code.toLowerCase() === target), true),
       `verifySku: expected "${sku}" not found in cart (found: ${skus.join(', ') || 'none'})`
+    );
+  }
+
+  /** Verifies a cart item name matches the expected (PF) product name. */
+  async verifyProductName(expected: string | null): Promise<void> {
+    const skus = await this.getCartItemSkus();
+    const itemNames: string[] = [];
+    for (const sku of skus) {
+      itemNames.push(await getElementLabel(this.locator.cartItemName(sku)));
+    }
+    const matched = itemNames.find((name) => productNameMatches(expected, normalizeProductName(name)));
+    const pass = Boolean(matched);
+    console.log(`[Cart.verifyProductName] expected="${expected}" actual=${JSON.stringify(itemNames)} result=${pass ? 'PASS' : 'FAIL'}`);
+    markFailedAndStop(
+      [{ label: 'product name not found in cart items', pass, detail: `expected "${expected}", cart items ${JSON.stringify(itemNames)}` }],
+      'Cart.verifyProductName'
     );
   }
 
@@ -221,20 +252,22 @@ export class CartPage extends BasePage {
     const name = await getElementLabel(this.locator.cartItemName(sku));
     const skuText = await getElementLabel(this.locator.cartItemSku(sku));
     const optionEls = [...(await this.locator.cartItemOptions(sku))];
-    const optionTexts = await Promise.all(optionEls.map((el) => el.getText()));
-    const combined = removeNonWordChars(`${name} ${skuText} ${optionTexts.join(' ')}`);
+    const optionText = (await Promise.all(optionEls.map((el) => el.getText()))).join('');
+    const combined = removeNonWordChars(`${name} ${skuText} ${optionText}`);
+    const actualByField: Record<string, string> = { deviceName: name, sku: skuText };
 
-    console.log(`[Cart] item raw: name="${name}" sku="${skuText}" options=${JSON.stringify(optionTexts)}`);
+    console.log(`[Cart.verifyOptions] item=${JSON.stringify({ deviceName: name, sku: skuText, options: optionText })}`);
 
     const checks: FieldCheck[] = [];
     for (const [label, value] of Object.entries(options)) {
       if (!value) {
-        console.log(`[Cart] check ${label}: skipped (no value)`);
+        console.log(`[Cart.verifyOptions] ${label} : skipped (no value)`);
         continue;
       }
       const found = combined.includes(removeNonWordChars(value));
-      console.log(`[Cart] check ${label}: expected="${value}" -> found=${found}`);
-      checks.push({ label, pass: found, detail: `expected "${value}"` });
+      const actual = actualByField[label] ?? optionText;
+      console.log(`[Cart.verifyOptions] ${label} : expected=${value} || actual=${actual} || result=${found ? 'PASS' : 'FAIL'}`);
+      checks.push({ label, pass: found, detail: `expected "${value}", actual "${actual}"` });
     }
     markFailedAndStop(checks, 'verifyOptions');
   }

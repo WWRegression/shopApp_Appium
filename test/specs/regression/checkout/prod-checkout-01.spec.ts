@@ -7,7 +7,10 @@ import { CartPage } from '../../../pages/cart.page';
 import { CheckoutPage } from '../../../pages/checkout.page';
 import { MypageProfilePage } from '../../../pages/mypage-profile.page';
 
-describe('PROD_CHECKOUT_01', () => {
+describe('PROD_CHECKOUT_01', function () {
+  // Address cleanup plus search to payment runs close to the default 240s on slow sites (UK)
+  this.timeout(480000);
+
   const searchPage = new SearchPage();
   const pfPage = new PfPage();
   const bcPage = new BcPage();
@@ -39,12 +42,13 @@ describe('PROD_CHECKOUT_01', () => {
 
       await cartPage.prepareCartPage();
       await cartPage.verifySku(bcSummary.sku);
-      await cartPage.verifyOptions(bcSummary.sku, bcSummary);
+      
+      await cartPage.verifyOptions(bcSummary.sku, bcSummary.options);
 
       await cartPage.clickContinueToCheckout();
       await checkoutPage.prepareCheckoutPage();
 
-      await checkoutPage.proceedToPayment({ verifyRewardOptIn: true });
+      await checkoutPage.proceedToPayment({ verifyRewardOptIn: true, verifyNoSavedAddress: true });
 
       await checkoutPage.verifyRewardArea();
 

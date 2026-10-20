@@ -3,6 +3,8 @@ import { MypageProfileLocator, AddressTab } from '../locators/mypage-profile.loc
 import { prepareWebViewPage, switchToNative } from '../helpers/context.helper';
 import { isDisplayedOrFalse, jsClick, scrollUntilVisible } from '../helpers/element.helper';
 import { markFailedAndStop } from '../helpers/report.helper';
+import { currentSiteCode } from '../helpers/tc-filter.helper';
+import { clearSavedAddresses } from '../helpers/api.helper';
 
 /** My Account > Settings > Personal Data Management > Addresses. */
 export class MypageProfilePage extends BasePage {
@@ -30,8 +32,12 @@ export class MypageProfilePage extends BasePage {
 
   /** Address book renders at the same URL as 'mypageProfile' — reuses that page key. */
   async prepareAddressPage(): Promise<void> {
+    // AU app has no address book screen; clearAllAddresses deletes through the API there
+    if (currentSiteCode() === 'AU') {
+      return;
+    }
     await this.navigateToAddressManagement();
-    const ready = await prepareWebViewPage('mypageProfile', this.locator.pageContainer);
+    const ready = await prepareWebViewPage('mypageProfile', () => this.locator.pageContainer);
     markFailedAndStop([{ label: 'address page reached', pass: ready }], 'prepareAddressPage');
   }
 
@@ -67,6 +73,11 @@ export class MypageProfilePage extends BasePage {
 
   /** Deletes all Shipping and Billing addresses. Call prepareAddressPage() first. */
   async clearAllAddresses(): Promise<void> {
+    // AU app has no address book screen, so the saved addresses are deleted through the API
+    if (currentSiteCode() === 'AU') {
+      await clearSavedAddresses();
+      return;
+    }
     await this.activateTab('shipping');
     await this.deleteAllInActiveTab();
     markFailedAndStop(

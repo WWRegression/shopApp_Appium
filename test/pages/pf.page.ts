@@ -6,25 +6,38 @@ import { switchToNative, getCurrentWebViewPage } from '../helpers/context.helper
 import { scrollByBoundary, scrollDown } from '../helpers/gesture.helper';
 import { currentSiteCode } from '../helpers/tc-filter.helper';
 import { normalizeText, isExactTokenMatch, stripMarkerText, normalizeProductName } from '../helpers/data.helper';
-import { clickElement, scrollUntilVisible, waitForDisplayedOrFalse, readDisplayedText } from '../helpers/element.helper';
+import { clickElement, isDisplayedOrFalse, scrollUntilVisible, waitForDisplayedOrFalse, readDisplayedText } from '../helpers/element.helper';
 import { markFailed, markFailedAndStop } from '../helpers/report.helper';
 import { ShopPage, type CategoryMismatch } from './shop.page';
 import { BcPage } from './bc.page';
 import { PdPage } from './pd.page';
-import { isDisplayedOrFalse } from '../helpers/element.helper';
 
 export type PfTabTarget = { tab: string } | { product: string };
 export type WishState = 'add' | 'remove';
 
-/**
- * Matching intent for a PF card, not a product type — the caller (spec) picks the mode,
- * PfPage only knows how to scroll+tap, and matchPfCard only knows how to compare text.
- */
+/** How the spec picks a PF card; matchPfCard only compares text. */
 export type PfCardQuery =
-  | { mode: 'first' }
+  | { mode: 'first'; exclude?: boolean }
   | { mode: 'contains'; text: string }
   | { mode: 'exact'; product: string; exclusiveOnly?: boolean }
   | { mode: 'watch'; device: string; connectivity?: string; caseSize?: string };
+
+/** Cards `first` skips with exclude: bundles / out of stock / multi-device cards, US Re-Newed (opens a PD), and the US Zip Code bar that can match while PF loads. */
+const PF_FIRST_EXCLUDE_KEYWORDS = [
+  'set',
+  'bundle',
+  'e-voucher',
+  'duo',
+  'sin inventario',
+  'out of stock',
+  'nicht auf lager',
+  'esaurito',
+  'agotado',
+  '缺货',
+  '+',
+  're-newed',
+  'change zip code',
+];
 
 /** Site → the "Online Exclusive" phrase shown on PF cards. */
 const ONLINE_EXCLUSIVE_TEXT_BY_SITE: Record<string, string> = {
@@ -63,24 +76,27 @@ export class PfPage extends BasePage {
   bcPage = new BcPage();
   pdPage = new PdPage();
 
-  /** Scrolls the PF list and taps the first card matching query. */
-  async selectPfCard(query: PfCardQuery, maxScrolls = 30): Promise<void> {
+  /** Scrolls the PF list, taps the first card matching query and returns its product name. */
+  async selectPfCard(query: PfCardQuery, maxScrolls = 30): Promise<string> {
     await switchToNative();
 
     for (let attempt = 0; attempt < maxScrolls; attempt += 1) {
-      const cards = await this.pflocator.productGrid;
-      for (const card of cards) {
-        const desc = (await card.getAttribute('content-desc').catch(() => '')) ?? '';
-        if (this.matchPfCard(desc, query)) {
-          const image = this.pflocator.pfCardImage(card);
-          if(await isDisplayedOrFalse(image)) {
-            await image.click();
-          } else {
-            const xPos = Math.round((await card.getSize()).width/6);
-            await card.click({ x: xPos});
-          }
-          return;
+      for (const card of await this.pflocator.productGrid) {
+        const { desc, name } = await this.readPfCard(card);
+        // Exclude keywords are checked on the product name: the UK desc holds SKU / rating / price instead
+        const text = query.mode === 'first' && query.exclude ? name : desc;
+        if (!this.matchPfCard(text, query)) {
+          continue;
         }
+        console.log(`[selectPfCard] name="${name}"`);
+        const image = this.pflocator.pfCardImage(card);
+        if (await isDisplayedOrFalse(image)) {
+          await image.click();
+        } else {
+          // Left side of the card, away from Compare / wishlist
+          await card.click({ x: Math.round((await card.getSize()).width / 6) });
+        }
+        return name;
       }
       await scrollDown();
     }
@@ -88,39 +104,61 @@ export class PfPage extends BasePage {
     throw new Error(`PF card not matched: ${JSON.stringify(query)}`);
   }
 
+  /** Taps the first PF card (with exclude, skipping the PF_FIRST_EXCLUDE_KEYWORDS cards) and returns its normalized product name. */
+  async selectFirstPfCard(exclude = false): Promise<string | null> {
+    if (!(await this.isPfCardDisplayed())) {
+      return null;
+    }
+    return normalizeProductName(await this.selectPfCard({ mode: 'first', exclude }));
+  }
 
-  /** Pure text match — no Appium. desc is a PF card's raw content-desc. */
-  private matchPfCard(rawDesc: string, query: PfCardQuery): boolean {
-    const desc = normalizeText(rawDesc);
-    if (!desc) return false;
+  /** desc and product name of a PF card; the name is the title view when the card has one (UK), else the desc. */
+  private async readPfCard(card: WebdriverIO.Element): Promise<{ desc: string; name: string }> {
+    const raw = ((await card.getAttribute('content-desc').catch(() => '')) ?? '').trim();
+    // Appium returns "null" for a card the list has just re-rendered
+    const desc = raw === 'null' ? '' : raw;
+    // US / CN / IN: the desc is the name and the child view is the Compare / wishlist button
+    if (['US', 'CN', 'IN'].includes(currentSiteCode())) {
+      return { desc, name: desc };
+    }
+    const title = this.pflocator.pfCardTitle(card);
+    const titleText = (await title.isExisting().catch(() => false))
+      ? ((await title.getAttribute('content-desc').catch(() => '')) ?? '').trim()
+      : '';
+    return { desc, name: titleText || desc };
+  }
+
+  private matchPfCard(rawText: string, query: PfCardQuery): boolean {
+    const text = normalizeText(rawText);
+    if (!text) return false;
 
     switch (query.mode) {
       case 'first':
-        return true;
+        return !query.exclude || !PF_FIRST_EXCLUDE_KEYWORDS.some((keyword) => text.includes(keyword));
 
       case 'contains':
-        return desc.includes(normalizeText(query.text));
+        return text.includes(normalizeText(query.text));
 
       case 'watch': {
-        const descNoSpace = desc.replace(/\s+/g, '');
+        const textNoSpace = text.replace(/\s+/g, '');
         const device = normalizeText(query.device).replace(/\s+/g, '');
         const connectivity = query.connectivity ? normalizeText(query.connectivity).replace(/\s+/g, '') : '';
         const caseSize = query.caseSize ? normalizeText(query.caseSize).replace(/\s+/g, '') : '';
 
-        let ok = Boolean(device) && descNoSpace.includes(device);
-        if (connectivity) ok = ok && descNoSpace.includes(connectivity);
-        if (caseSize) ok = ok && descNoSpace.includes(caseSize);
+        let ok = Boolean(device) && textNoSpace.includes(device);
+        if (connectivity) ok = ok && textNoSpace.includes(connectivity);
+        if (caseSize) ok = ok && textNoSpace.includes(caseSize);
         return ok;
       }
 
       case 'exact': {
         const product = normalizeText(query.product);
         if (!query.exclusiveOnly) {
-          return isExactTokenMatch(desc, product);
+          return isExactTokenMatch(text, product);
         }
         const exclusiveText = normalizeText(this.getOnlineExclusiveText(currentSiteCode()));
-        if (!exclusiveText || !desc.includes(exclusiveText)) return false;
-        return isExactTokenMatch(stripMarkerText(desc, exclusiveText), product);
+        if (!exclusiveText || !text.includes(exclusiveText)) return false;
+        return isExactTokenMatch(stripMarkerText(text, exclusiveText), product);
       }
     }
   }
@@ -128,51 +166,6 @@ export class PfPage extends BasePage {
   /** Falls back to the English phrase for sites not in the table. */
   private getOnlineExclusiveText(siteCode: string): string {
     return ONLINE_EXCLUSIVE_TEXT_BY_SITE[siteCode.toUpperCase()] ?? 'Samsung.com only';
-  }
-
-  async getPfProductName(query: PfCardQuery): Promise<string | null> {
-    await switchToNative();
-
-    const cards = await this.pflocator.productGrid;
-    for (const card of cards) {
-      const desc = (await card.getAttribute('content-desc').catch(() => '')) ?? '';
-      if (this.matchPfCard(desc, query)) {
-        const title = (await this.pflocator.pfCardTitle(card).getAttribute('content-desc').catch(() => '')) ?? '';
-        return title.trim() || desc;
-      }
-    }
-    return null;
-  }
-
-  /** Product name from the productGrid card content-desc (no pfCardTitle). */
-  async getPfGridProductName(query: PfCardQuery): Promise<string | null> {
-    await switchToNative();
-
-    const cards = await this.pflocator.productGrid;
-    for (const card of cards) {
-      const desc = ((await card.getAttribute('content-desc').catch(() => '')) ?? '').trim();
-      if (desc && this.matchPfCard(desc, query)) {
-        return desc;
-      }
-    }
-    return null;
-  }
-
-  /** Taps the first PF card and returns its normalized product name. */
-  async selectFirstPfCard(): Promise<string | null> {
-    if (!(await this.isPfCardDisplayed())) {
-      return null;
-    }
-    const useGridName = ['IN', 'CN', 'US'].includes(currentSiteCode().toUpperCase());
-    const rawName = useGridName
-      ? await this.getPfGridProductName({ mode: 'first' })
-      : await this.getPfProductName({ mode: 'first' });
-    const pfProductName = normalizeProductName(rawName);
-    if (!pfProductName) {
-      return '';
-    }
-    await this.selectPfCard({ mode: 'first' });
-    return pfProductName;
   }
 
   async getBcPdProductName(): Promise<string | null> {
@@ -232,12 +225,16 @@ export class PfPage extends BasePage {
     return Boolean(pf) && Boolean(bcPd) && (pf.includes(bcPd) || bcPd.includes(pf));
   }
 
-  async isPfCardDisplayed(): Promise<boolean> {
-    return waitForDisplayedOrFalse(this.pflocator.productGrid[0], { timeout: 5000 });
+  /** Verifies the PF page is shown (product cards displayed). */
+  async verifyPfPage(): Promise<void> {
+    await switchToNative();
+    const shown = await this.isPfCardDisplayed();
+    console.log(`[verifyPfPage] expected=PF cards actual=${shown ? 'shown' : 'not shown'} result=${shown ? 'PASS' : 'FAIL'}`);
+    markFailedAndStop([{ label: 'PF cards not shown', pass: shown }], 'verifyPfPage');
   }
 
-  async selectPfCardExcluding(_keywords: string[]): Promise<void> {
-    // TODO: Implement PF card selection excluding keywords
+  async isPfCardDisplayed(): Promise<boolean> {
+    return waitForDisplayedOrFalse(this.pflocator.productGrid[0], { timeout: 5000 });
   }
 
   async selectFilterOption(_option: string): Promise<void> {
@@ -275,7 +272,7 @@ export class PfPage extends BasePage {
   async getPfCardMatchCount(keywords: string[], maxScrolls = 15): Promise<number> {
     await switchToNative();
     const normalizedKeywords = keywords.map((keyword) => normalizeText(keyword));
-    // Card content-desc → whether it contains a keyword; the key keeps a card seen on several scrolls counted once
+    // Keyed by card desc so a card seen on several scrolls is counted once
     const matchedByCard = new Map<string, boolean>();
     let previousLastCardPosition: string | undefined;
     let canScrollMore = true;
@@ -285,7 +282,7 @@ export class PfPage extends BasePage {
       const cards = [...(await this.pflocator.productGrid)];
       await this.collectPfCardMatches(cards, normalizedKeywords, matchedByCard);
 
-      // The last scroll hit the bottom, or the screen did not move (fallback when the scroll result is wrong)
+      // Stop at the bottom, or when the list did not move (the scroll result can be wrong)
       if (!canScrollMore) break;
       const lastCardPosition = await this.getLastPfCardPosition(cards);
       if (lastCardPosition === previousLastCardPosition) break;
@@ -315,7 +312,7 @@ export class PfPage extends BasePage {
       const desc = ((await card.getAttribute('content-desc').catch(() => '')) ?? '').trim();
       if (!desc) continue;
       let matched = matchedByCard.get(desc) || containsKeyword(desc);
-      // UK cards keep the product name in a child view; isExisting returns at once instead of waiting for a missing element
+      // UK keeps the product name in a child view
       const title = this.pflocator.pfCardTitle(card);
       if (!matched && (await title.isExisting().catch(() => false))) {
         matched = containsKeyword((await title.getAttribute('content-desc').catch(() => '')) ?? '');
@@ -446,7 +443,7 @@ export class PfPage extends BasePage {
     markFailedAndStop([{ label: 'Login popup failed to appear on guest wishlist action', pass: shown }], 'verifyLoginPopup');
   }
 
-  /** Continue on the wishlist login popup — starts the login (auto login with a device account, else the login / SSO screens). */
+  /** Continue on the wishlist login popup; starts the login (auto login with a device account, else the login / SSO screens). */
   async clickContinueOnLoginPopup(): Promise<void> {
     await switchToNative();
     await clickElement(this.pflocator.loginPopupContinueButton, { timeout: 5000 });
