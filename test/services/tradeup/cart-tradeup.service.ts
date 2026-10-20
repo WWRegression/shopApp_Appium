@@ -17,7 +17,7 @@ export class CartTradeUpService implements AddedService {
   async verifyServiceApplied(): Promise<void> {
     await assertElementDisplayed(
       this.locator.tradeUpRemoveButton,
-      'Trade-Up not applied on PD'
+      'Trade-Up not applied in cart'
     );
   }
   async getServicePrice(): Promise<number> {

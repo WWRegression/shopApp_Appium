@@ -41,24 +41,23 @@ const PINCODE_WRAP = ':is(.js-pin-wrap, [class*="__imei-form-wrap"]:has(#tradeIn
 const ENABLED_BUTTON = ':not([disabled]):not(.cta--disabled):not([an-la$="close"]):not([class*="btn-back"])';
 
 export class AemTradeInPopupLocator {
-  get tradeInModal() {
-    return $(`${STEP_POPUP_ROOTS}, ${US_ROOT}`);
-  }
+  /**
+   * Every popup root. A page can hold several (e.g. VN PD: a hidden #hubble-tradein-layer before the shown
+   * #hubble-commontradein-layer), so the service picks the shown one and searches inside it.
+   */
+  readonly popupRoots = `${STEP_POPUP_ROOTS}, ${US_ROOT}`;
 
-  get activeStep() {
-    return $(`:is(${STEP_POPUP_ROOTS}) [class*="__step--show"]`);
-  }
-
-  /** Apply in the popup footer; buttons inside any step (shown or hidden) are excluded. */
-  get footerApplyButton() {
-    return $(`:is(${STEP_POPUP_ROOTS}) ${this.applyButton}:not([class*="__step"] *)`);
-  }
+  // ---- Used inside the shown popup root: rootElement.$(...) ----
+  readonly activeStep = '[class*="__step--show"]';
 
   // ---- Used inside the shown step: stepElement.$(...) ----
   readonly nextButton =
     `button:is([an-la*="next" i], [an-la*="continue" i], [class*="btn-continue"], [class*="btn-next"])${ENABLED_BUTTON}`;
 
   readonly applyButton = `button:is([an-la*="apply" i], [class*="btn-apply"])${ENABLED_BUTTON}`;
+
+  /** Apply in the popup footer (used inside the root); buttons inside any step (shown or hidden) are excluded. */
+  readonly footerApplyButton = `${this.applyButton}:not([class*="__step"] *)`;
 
   /**
    * Answer inputs, grouped into questions by name. Some condition lists (e.g. HK_EN) use checkboxes as answers;
@@ -112,9 +111,8 @@ export class AemTradeInPopupLocator {
   }
 
   // ---- US ----
-  get usModal() {
-    return $(US_ROOT);
-  }
+  /** Inside the root: only the US modal has it. */
+  readonly usHeader = '#tradein-header';
 
   get usGoodConditionOption() {
     return $(`${US_ROOT} [data-testid="nonCracked"]`);

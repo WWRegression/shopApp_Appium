@@ -54,17 +54,44 @@ const log = (message: string): void => console.warn(`[TradeIn] ${message}`);
 /** Trade-In popup shared by BC/PD: runs whichever step is shown until the popup closes. */
 export class AemTradeInPopupService {
   private readonly locator = new AemTradeInPopupLocator();
+  /** The shown popup root, set on open; other matching roots on the page may be hidden. */
+  private root: WebdriverIO.Element | undefined;
 
   async isPopupOpen(): Promise<boolean> {
-    return isDisplayedOrFalse(this.locator.tradeInModal);
+    return this.root ? this.root.isDisplayed().catch(() => false) : false;
+  }
+
+  private get popupRoot(): WebdriverIO.Element {
+    if (!this.root) {
+      throw new Error('[TradeIn] popup root not set; call popupProcess first');
+    }
+    return this.root;
   }
 
   private async waitForOpen(): Promise<boolean> {
-    return await waitForDisplayedOrFalse(this.locator.tradeInModal, { timeout: OPEN_TIMEOUT_MS });
+    this.root = undefined;
+    await driver
+      .waitUntil(
+        async () => {
+          for (const el of await $$(this.locator.popupRoots).getElements()) {
+            if (await el.isDisplayed().catch(() => false)) {
+              this.root = el;
+              return true;
+            }
+          }
+          return false;
+        },
+        { timeout: OPEN_TIMEOUT_MS, interval: 300 }
+      )
+      .catch(() => undefined);
+    return Boolean(this.root);
   }
 
   private async waitForClose(): Promise<void> {
-    if (!(await waitForDisplayedOrFalse(this.locator.tradeInModal, { reverse: true, timeout: CLOSE_TIMEOUT_MS }))) {
+    const closed = await driver
+      .waitUntil(async () => !(await this.isPopupOpen()), { timeout: CLOSE_TIMEOUT_MS, interval: 300 })
+      .catch(() => false);
+    if (!closed) {
       throw new Error(`[TradeIn] popup still open ${CLOSE_TIMEOUT_MS}ms after the last action`);
     }
     log('popup closed');
@@ -74,7 +101,7 @@ export class AemTradeInPopupService {
     if (!(await this.waitForOpen())) {
       throw new Error('[TradeIn] popup did not open');
     }
-    const isUs = await isDisplayedOrFalse(this.locator.usModal);
+    const isUs = await this.popupRoot.$(this.locator.usHeader).isExisting().catch(() => false);
     log(`popup opened (${isUs ? 'US single screen' : 'step popup'}), devices: ${this.deviceValues(input).join(' > ') || '-'}`);
     if (isUs) {
       await this.processUsFlow(input);
@@ -154,13 +181,13 @@ export class AemTradeInPopupService {
         if (await isDisplayedOrFalse(stepEl.$(this.locator.imeiInput))) {
           await this.enterImei(stepEl, input.imei, this.locator.imeiInput, [
             stepEl.$(this.locator.applyButton),
-            this.locator.footerApplyButton,
+            this.popupRoot.$(this.locator.footerApplyButton),
           ]);
         }
         if (await clickIfDisplayed(stepEl.$(this.locator.applyButton), WAIT_MS)) {
           log('apply-discount: click apply');
         } else {
-          await this.clickRequired(this.locator.footerApplyButton, 'apply-discount: footer apply');
+          await this.clickRequired(this.popupRoot.$(this.locator.footerApplyButton), 'apply-discount: footer apply');
         }
         return;
     }
@@ -168,7 +195,7 @@ export class AemTradeInPopupService {
   }
 
   private async readActiveStep(): Promise<ActiveStep | null> {
-    const element = await this.locator.activeStep.getElement();
+    const element = await this.popupRoot.$(this.locator.activeStep).getElement();
     if (!(await element.isDisplayed().catch(() => false))) {
       return null;
     }

@@ -1,17 +1,19 @@
 import { AddedService } from '../added-service.interface';
 import { PdLocator } from '../../locators/pd.locator';
-import { AemTradeInPopupService } from './aem-tradein-popup.service';
+import { AemTradeInPopupService, TradeInInput } from './aem-tradein-popup.service';
 import { parsePriceToNumber } from '../../helpers/data.helper';
 import { assertElementDisplayed } from '../../helpers/validation.helper';
+import { clickIfDisplayed } from '../../helpers/element.helper';
 
 export class PdTradeInService implements AddedService {
   private readonly locator = new PdLocator();
   private readonly popup = new AemTradeInPopupService();
 
-  async addService(): Promise<void> {
-    // TODO: Implement PD-specific Trade-In entry
-    await this.locator.tradeInAddButton.click();
-    await this.popup.popupProcess();
+  async addService(input?: TradeInInput): Promise<void> {
+    if (!(await clickIfDisplayed(this.locator.tradeInAddButton, 15000))) {
+      throw new Error('[PD.TRADEIN.addService] Trade-In add button not found or clicked');
+    }
+    await this.popup.popupProcess(input);
   }
 
   async selectNoForService(): Promise<void> {

@@ -18,13 +18,13 @@ import type { WaitForOptions } from 'webdriverio';
 const DEFAULT_TIMEOUT_MS = 3000;
 
 /** isDisplayed() that never throws. */
-export async function isDisplayedOrFalse(element: ChainablePromiseElement): Promise<boolean> {
-  return await element.isDisplayed().catch(() => false);
+export async function isDisplayedOrFalse(element: ChainablePromiseElement | WebdriverIO.Element): Promise<boolean> {
+  return await (element as WebdriverIO.Element).isDisplayed().catch(() => false);
 }
 
 /** waitForDisplayed() that never throws. */
-export async function waitForDisplayedOrFalse(element: ChainablePromiseElement, options?: WaitForOptions): Promise<boolean> {
-  return await element.waitForDisplayed(options).then(() => true).catch(() => false);
+export async function waitForDisplayedOrFalse(element: ChainablePromiseElement | WebdriverIO.Element, options?: WaitForOptions): Promise<boolean> {
+  return await (element as WebdriverIO.Element).waitForDisplayed(options).then(() => true).catch(() => false);
 }
 
 /**

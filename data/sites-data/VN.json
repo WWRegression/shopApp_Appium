@@ -30,8 +30,9 @@
   "tradeIn": {
     "brand": "SAMSUNG",
     "category": "Điện thoại",
-    "device": "Galaxy Z Fold4 12GB/256GB",
-    "imei": "351787742847020"
+    "device": "Galaxy Z Fold6 5G 12GB/512GB",
+    "storage": "12GB/512GB",
+    "imei": "351451340943794"
   },
   "mypageMenuList": {
     "myProducts": false,

@@ -22,16 +22,19 @@ describe('PROD_BUY_05', () => {
 
       await pdPage.preparePdPage();
       await pdPage.verifySku(site.search.vdSku ?? '');
-      
-      await pdPage.tradeUp.addService(site.tradeUp?.postalCode ?? '');
+      if(['AE', 'AE_AR', 'VN'].includes(site.siteCode)) {
+        await pdPage.tradeIn.addService(site.tradeIn);
+      }else{
+        await pdPage.tradeUp.addService(site.tradeUp?.postalCode ?? '');
+      }
       await pdPage.tradeUp.verifyServiceApplied();
 
       await pdPage.clickAddToCart();
       await splashPage.clickSplashContinue();
 
       await cartPage.prepareCartPage();
-      await cartPage.verifySku(site.search.vdSku ?? '');
       await cartPage.tradeUp.verifyServiceApplied();
+      await cartPage.verifySku(site.search.vdSku ?? '');      
     });
   });
 });

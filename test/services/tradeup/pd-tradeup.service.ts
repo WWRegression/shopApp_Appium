@@ -1,73 +1,89 @@
 import { PdLocator } from '../../locators/pd.locator';
-import { isDisplayedOrFalse, clickIfDisplayed, waitForDisplayedOrFalse, scrollAndJsClick } from '../../helpers/element.helper';
+import {
+  clickIfDisplayed,
+  getEnabledElements,
+  isAnySelected,
+  isDisplayedOrFalse,
+  jsClick,
+  scrollAndJsClick,
+  setInputValue,
+  waitForDisplayedOrFalse,
+} from '../../helpers/element.helper';
 import { assertElementDisplayed } from '../../helpers/validation.helper';
 
+const WAIT_MS = 10000;
+const STEP_LEAVE_MS = 8000;
+const MAX_STEPS = 5;
+/** Pincode check is a server round-trip with no fixed duration. */
+const VALIDATE_MS = 30000;
+
 type TradeUpSteps = 'selectDevice' | 'checkCondition' | 'applyDiscount';
-/**
- * PD Trade-Up (VD/HA), simplified WebView path.
- * AE/AE_AR/VN also use Trade-Up yes here.
- */
+/** PD Trade-Up popup. VD uses step panels; IN is one screen treated as selectDevice. */
 export class PdTradeUpService {
   private readonly locator = new PdLocator();
 
   private readonly candidates: [TradeUpSteps, string[]][] = [
-    ['selectDevice', ['sdf-comp-step-panel-product']],
+    ['selectDevice', ['sdf-comp-step-panel-product', 'siel-trade-in-popup']],
     ['checkCondition', ['sdf-comp-step-panel-condition']],
     ['applyDiscount', ['sdf-comp-step-panel-discount']],
   ];
 
   async addService(postalCode?: string ): Promise<void> {
-    if (!await clickIfDisplayed(this.locator.tradeUpYesOption)) {
-      console.warn('[PD.TRADEUP.addService] tradeUpYesOption not found');
-      return;
+    if (!(await clickIfDisplayed(this.locator.tradeUpYesOption, WAIT_MS))) {
+      throw new Error('[PD.TRADEUP.addService] trade-up yes option not found');
     }
-    console.warn('[PD.TRADEUP.addService] tradeUpYesOption found and clicked');    
+    console.warn('[PD.TRADEUP.addService] trade-up yes option clicked');
     await this.popupProcess(postalCode);
   }
 
   private async popupProcess(postalCode?: string): Promise<void> {
     if (!(await this.waitForOpen())) {
-      console.warn('[PD.TRADEUP.popupProcess] popup not opened');
-      return;
+      throw new Error('[PD.TRADEUP] popup did not open');
     }
-    
-    for (let attempt = 0; attempt < 5; attempt++) {
+
+    let previousStep: TradeUpSteps | null = null;
+    let retried = false;
+    for (let attempt = 1; attempt <= MAX_STEPS; attempt++) {
       const active = await this.currentActiveStep();
-      console.warn('[PD.TRADEUP.popupProcess] active step=', active);
-      if (active) {
-        await this.runStep(active, postalCode);
-      }else{
-        console.warn('[PD.TRADEUP.popupProcess] active step not found');
-        if (!(await this.waitForOpen(1000))) {
+      if (!active) {
+        if (!(await this.isPopupOpen())) {
+          console.warn('[PD.TRADEUP] popup closed');
           return;
         }
+        throw new Error('[PD.TRADEUP] popup open but no step shown');
       }
-      await driver.pause(3000);
+      const sameStep = active === previousStep;
+      if (sameStep && retried) {
+        throw new Error(`[PD.TRADEUP] stuck on step "${active}"`);
+      }
+      retried = sameStep;
+      previousStep = active;
+      console.warn(`[PD.TRADEUP.popupProcess] step ${attempt}: ${active}${sameStep ? ' (retry)' : ''}`);
+      await this.runStep(active, postalCode);
+      if (!(await this.waitForStepLeave(active))) {
+        console.warn(`[PD.TRADEUP] step "${active}" still shown after ${STEP_LEAVE_MS}ms`);
+      }
     }
-    await this.waitForClose();
+    throw new Error(`[PD.TRADEUP] popup still open after ${MAX_STEPS} steps`);
   }
 
-  
   private async currentActiveStep(): Promise<TradeUpSteps | null> {
-   
-    const currentStep = this.locator.tradeUpCurrentStep;
-    if (!(await isDisplayedOrFalse(currentStep))) {
-      console.warn('[PD.TRADEUP.currentActiveStep] current step not found');
+    const steps = await this.locator.tradeUpCurrentSteps;
+    for (const step of steps) {
+      if (!(await isDisplayedOrFalse(step))) {
+        continue;
+      }
+      const stepClassName = (await step.getAttribute('class').catch(() => '')) ?? '';
+      const matched = this.candidates.find(([, classNames]) =>
+        classNames.some((classNamePart) => stepClassName.includes(classNamePart))
+      );
+      if (matched) {
+        return matched[0];
+      }
+      console.warn(`[PD.TRADEUP.currentActiveStep] shown step not mapped, class="${stepClassName}"`);
       return null;
     }
-    const stepClassName= await currentStep.getAttribute('class');
-    console.warn('[PD.TRADEUP.currentActiveStep] step class name=', stepClassName);
-    if (!stepClassName) {
-      console.warn('[PD.TRADEUP.currentActiveStep] step class name not found');
-      return null;
-    }
-    const matched = this.candidates.find(
-      ([, classNames]) => classNames.some(classNamePart =>
-        stepClassName.includes(classNamePart)
-      )
-    );
-    
-    return matched?.[0] ?? null;
+    return null;
   }
 
   private async runStep(step: TradeUpSteps, postalCode?: string): Promise<void> {
@@ -85,16 +101,25 @@ export class PdTradeUpService {
     }
   }
 
-  private async waitForOpen(timeout = 5000): Promise<boolean> {
-    const displayed = await waitForDisplayedOrFalse(this.locator.tradeUpModal, {timeout:timeout});
+  private async isPopupOpen(): Promise<boolean> {
+    return isDisplayedOrFalse(this.locator.tradeUpModal);
+  }
+
+  private async waitForOpen(timeout = WAIT_MS): Promise<boolean> {
+    const displayed = await waitForDisplayedOrFalse(this.locator.tradeUpModal, { timeout });
     console.warn('[PD.TRADEUP.waitForOpen] popup opened=', displayed);
     return displayed;
   }
 
-  private async waitForClose(timeout = 5000): Promise<boolean> {
-    const displayed = await waitForDisplayedOrFalse(this.locator.tradeUpModal, {reverse: true, timeout:timeout});
-    console.warn('[PD.TRADEUP.waitForClose] popup closed=', displayed);
-    return displayed;
+  /** False when the same step is still shown after the timeout. */
+  private async waitForStepLeave(step: TradeUpSteps): Promise<boolean> {
+    return driver
+      .waitUntil(async () => !(await this.isPopupOpen()) || (await this.currentActiveStep()) !== step, {
+        timeout: STEP_LEAVE_MS,
+        interval: 300,
+      })
+      .then(() => true)
+      .catch(() => false);
   }
 
   private async stepSelectDevice(postalCode?: string): Promise<void> {
@@ -117,32 +142,56 @@ export class PdTradeUpService {
   }
 
   private async selectContinueButton(): Promise<void> {
-    if(await clickIfDisplayed(this.locator.tradeUpConfirmButton)){
-      console.warn('[PD.TRADEUP.selectContinueButton] continue/apply button found and clicked');
+    if (!(await clickIfDisplayed(this.locator.tradeUpConfirmButton, WAIT_MS))) {
+      throw new Error('[PD.TRADEUP] continue/apply button not clickable');
     }
+    console.warn('[PD.TRADEUP.selectContinueButton] continue/apply button clicked');
   }
 
   private async setPostalCode(postalCode?: string): Promise<void> {
-    if(!postalCode) {
-      console.warn('[PD.TRADEUP.setPostalCode] postal code is not provided');
-      return;
-    }
-
     const input = this.locator.tradeUpPostalInput;
-    if (!(await clickIfDisplayed(input))) {
-      console.warn('[PD.TRADEUP.setPostalCode] postal code input not found');
+    if (!(await isDisplayedOrFalse(input))) {
+      console.warn('[PD.TRADEUP.setPostalCode] postal code input not shown');
       return;
-    }    
-    await input.clearValue().catch(() => undefined);
-    await input.setValue(postalCode);
-    console.warn('[PD.TRADEUP.setPostalCode] input postal code');
-    await driver.pause(500);
-
-    if(await clickIfDisplayed(this.locator.tradeUpPostalCheckButton)){
-      console.warn('[PD.TRADEUP.setPostalCode] checked postal code');
-      await waitForDisplayedOrFalse(this.locator.tradeUpPostalSuccessMessage, {timeout: 2000});
-      console.warn('[PD.TRADEUP.setPostalCode] postal code checked successfully');
     }
+    if (await isDisplayedOrFalse(this.locator.tradeUpPostalSuccessMessage)) {
+      console.warn('[PD.TRADEUP.setPostalCode] postal code already accepted');
+      return;
+    }
+    if (!postalCode) {
+      throw new Error('[PD.TRADEUP] postal code shown but site data has no tradeUp.postalCode');
+    }
+    await setInputValue(input, postalCode);
+    console.warn(`[PD.TRADEUP.setPostalCode] entered: ${postalCode}`);
+    if (!(await clickIfDisplayed(this.locator.tradeUpPostalCheckButton, WAIT_MS))) {
+      throw new Error('[PD.TRADEUP] postal code check button not clickable');
+    }
+
+    const started = Date.now();
+    let error = '';
+    const accepted = await driver
+      .waitUntil(
+        async () => {
+          if (await isDisplayedOrFalse(this.locator.tradeUpPostalSuccessMessage)) {
+            return true;
+          }
+          const errorEl = this.locator.tradeUpPostalErrorMessage;
+          if (await isDisplayedOrFalse(errorEl)) {
+            error = ((await errorEl.getText().catch(() => '')) ?? '').trim() || 'error shown';
+            return true;
+          }
+          return false;
+        },
+        { timeout: VALIDATE_MS, interval: 500 }
+      )
+      .catch(() => false);
+    if (error) {
+      throw new Error(`[PD.TRADEUP] postal code rejected: "${error}"`);
+    }
+    if (!accepted) {
+      throw new Error(`[PD.TRADEUP] postal code not accepted within ${VALIDATE_MS}ms`);
+    }
+    console.warn(`[PD.TRADEUP.setPostalCode] accepted in ${((Date.now() - started) / 1000).toFixed(1)}s`);
   }
 
   private async selectDeviceOptions(): Promise<void> {
@@ -150,12 +199,41 @@ export class PdTradeUpService {
     console.warn('[PD.TRADEUP.selectDeviceOptions] option selects found=', optionSelects.length);
     for (const select of optionSelects) {
       await driver.execute((el) => {
-        const sel = el as HTMLSelectElement;        
+        const sel = el as HTMLSelectElement;
         if (sel.options.length > 0) {
           sel.selectedIndex = 0;
           sel.dispatchEvent(new Event('change', { bubbles: true }));
         }
-      }, select).catch(() => undefined);      
+      }, select).catch(() => undefined);
+    }
+
+    // A pick can reveal the next radio group, so repeat until every shown group has an answer.
+    for (let pass = 1; pass <= 5; pass++) {
+      let picked = false;
+      const groups = await this.locator.tradeUpRadioGroups.getElements();
+      if (groups.length === 0 && pass === 1) {
+        break;
+      }
+      console.warn(`[PD.TRADEUP.selectDeviceOptions] radio pass ${pass}: ${groups.length} group(s) shown`);
+      for (const group of groups) {
+        const radios = [...(await group.$$('input[type="radio"]'))];
+        if (radios.length === 0 || (await isAnySelected(radios))) {
+          continue;
+        }
+        const [option] = await getEnabledElements(radios);
+        if (!option) {
+          console.warn('[PD.TRADEUP.selectDeviceOptions]   every option disabled, skipped');
+          continue;
+        }
+        const value = (await option.getAttribute('value').catch(() => '')) || '-';
+        await jsClick(option);
+        console.warn(`[PD.TRADEUP.selectDeviceOptions]   option "${value}" clicked`);
+        picked = true;
+        await driver.pause(500);
+      }
+      if (!picked) {
+        break;
+      }
     }
     console.warn('[PD.TRADEUP.selectDeviceOptions] option selects selected done');
   }

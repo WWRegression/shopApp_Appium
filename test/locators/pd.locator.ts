@@ -229,8 +229,14 @@ export class PdLocator {
     );
   }
 
-  get tradeUpCurrentStep() {
-    return $('.vd-trade-in-popup__step.sdf-comp-step-panel:not([style*="none"])');
+  /** Shown step panel. IN has no panels: the whole section.siel-trade-in-popup is the select-device step. */
+  get tradeUpCurrentSteps() {
+    return $$(
+      [
+        '.vd-trade-in-popup__step.sdf-comp-step-panel:not([style*="none"])',
+        'section.siel-trade-in-popup',
+      ].join(', ')
+    );
   }
 
   get tradeUpConfirmButton() {
@@ -238,6 +244,7 @@ export class PdLocator {
       [
         '.vd-trade-in-popup__step:not([style*="none"]) button[an-la*="trade-up:"][an-la*=":next"]',
         '.vd-trade-in-popup__step:not([style*="none"]) button[an-la*="trade-up:"][an-la*=":apply"]',
+        'section.siel-trade-in-popup button.siel-trade-in-popup__btn-order:not(.cta--disabled)',
       ].join(', ')
     );
   }
@@ -247,7 +254,7 @@ export class PdLocator {
       [
         '.vd-trade-in-popup__postal-code input#postal-code',
         '.siel-trade-in-popup__pincode-wrap input#pincode',
-        "input[name='pincode']",
+        ':is(.vd-trade-in-popup, section.siel-trade-in-popup) input[name="pincode"]',
       ].join(', ')
     );
   }
@@ -266,12 +273,22 @@ export class PdLocator {
     return $(
       [
         '.sdf-comp-postal-code-input-panel.success',
+        '.siel-trade-in-popup__pincode-wrap .text-field-v2.success',
       ].join(', ')
     );
   }
 
+  get tradeUpPostalErrorMessage() {
+    return $('.siel-trade-in-popup__pincode-wrap .text-field-v2.error .text-field-v2__text.error');
+  }
+
   get tradeUpDeviceOptions() {
     return $$('ul.vd-trade-in-popup__product-select li select.menu__select');
+  }
+
+  /** Radio groups on the single-screen popup (product, model, size, brand, condition). */
+  get tradeUpRadioGroups() {
+    return $$('section.siel-trade-in-popup .siel-trade-in-popup-option.show:has(input[type="radio"])');
   }
 
   get tradeUpConditionYes() {
@@ -291,7 +308,7 @@ export class PdLocator {
   }
 
   get tradeUpRemoveButton() {
-    return $('a[an-la="trade-up:delete"], a[an-la="trade-in:delete"]');
+    return $('a[an-la="trade-up:delete"], a[an-la="trade-in:delete"], button[an-la="trade-in:delete"]');
   }
 
   // ---- End of Trade-Up ----
