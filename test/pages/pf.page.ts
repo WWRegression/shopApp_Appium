@@ -89,6 +89,7 @@ export class PfPage extends BasePage {
           continue;
         }
         console.log(`[selectPfCard] name="${name}"`);
+        await driver.pause(1000);
         const image = this.pflocator.pfCardImage(card);
         if (await isDisplayedOrFalse(image)) {
           await image.click();
