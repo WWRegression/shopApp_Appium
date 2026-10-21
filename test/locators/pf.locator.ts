@@ -46,7 +46,7 @@ export class PfLocator {
         or (contains(@content-desc, 'Lägg till') and contains(@content-desc, 'önskelista'))
         or (contains(@content-desc, 'เพิ่ม') and contains(@content-desc, 'รายการที่อยากได้'))
         or (contains(@content-desc, 'Thêm') and contains(@content-desc, 'yêu thích'))
-        or (contains(@content-desc, 'Přidat') and contains(@content-desc, 'přání'))
+        or (contains(@content-desc, 'Přidat') and contains(@content-desc, 'oblíbených'))
         or (contains(@content-desc, '新增') and contains(@content-desc, '願望清單'))
         or (contains(@content-desc, 'adása') and contains(@content-desc, 'kívánságlist'))
         or (contains(@content-desc, 'Adaugă') and contains(@content-desc, 'dorințe'))
