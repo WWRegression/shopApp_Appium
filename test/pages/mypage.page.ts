@@ -587,7 +587,8 @@ export class MypagePage extends BasePage {
       console.log('[verifyTrustArcCookie] TrustArc cookie is not required for this site — skipped');
       return;
     }
-    const webviewReady = await prepareWebViewPage('trustArc', () => this.locator.trustArcNoInputs[0]);
+    // The NO/YES radio inputs are hidden by CSS, so wait on the visible preferences container instead
+    const webviewReady = await prepareWebViewPage('trustArc', () => this.locator.trustArcPreferencesContent);
     const noSelected: boolean[] = [];
     if (webviewReady) {
       for (const input of await this.locator.trustArcNoInputs) {

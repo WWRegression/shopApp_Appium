@@ -36,13 +36,11 @@ export interface SelectedDisplayValues {
   color: string;
 }
 
-/** What verifyOptions returns: the summary SKU / option text / service price and the per-option values confirmed in the summary. */
-export type BcSummary = {
-  sku: string;
-  optionsText: string;
-  servicePrice: string;
-  options: CartItemOptions;
-};
+/** Summary area text as read; the option text is one string, not split by option. */
+export type BcSummary = { sku: string; deviceName: string; optionsText: string; servicePrice: string };
+
+/** What verifyOptions returns: the summary as read, and the selected value of each option (chip label, or product data). */
+export type BcProductInfo = { summary: BcSummary; selected: CartItemOptions };
 
 export class BcPage extends BasePage {
   private readonly locator = new BcLocator();
@@ -106,8 +104,8 @@ export class BcPage extends BasePage {
     }
   }
 
-  /** Checks the selected chip (or product data) of each option is in the summary, and returns the summary with the checked values. */
-  async verifyOptions(product: ProductOptionFields): Promise<BcSummary> {
+  /** Checks the selected chip (or product data) of each option is in the summary, and returns the summary with the selected values. */
+  async verifyOptions(product: ProductOptionFields): Promise<BcProductInfo> {
     const summary = await this.readSummary();
     console.log(`[BC.verifyOptions] summary=${JSON.stringify(summary)}`);
 
@@ -119,7 +117,7 @@ export class BcPage extends BasePage {
 
     check('sku', product.sku, summary.sku, this.matchesSummary('sku', summary.sku, product.sku));
 
-    const options: CartItemOptions = {};
+    const selected: CartItemOptions = {};
     for (const field of OPTION_FIELDS) {
       const inputData = product[field];
       if (!inputData) {
@@ -129,10 +127,10 @@ export class BcPage extends BasePage {
       const expected = (await this.readSelectedOption(field)) || inputData;
       const actual = field === 'deviceName' ? summary.deviceName : summary.optionsText;
       check(field, expected, actual, this.matchesSummary(field, actual, expected));
-      options[field] = expected;
+      selected[field] = expected;
     }
 
-    return { sku: summary.sku, optionsText: summary.optionsText, servicePrice: summary.servicePrice, options };
+    return { summary, selected };
   }
 
   /** Verify only the SKU displayed in the Summary, and return the confirmed SKU string. */
@@ -180,7 +178,7 @@ export class BcPage extends BasePage {
   }
 
   /** Summary area text as shown; the option text holds every option in one string (e.g. "256GB｜12GBPistachio"). */
-  private async readSummary(): Promise<{ sku: string; deviceName: string; optionsText: string; servicePrice: string }> {
+  private async readSummary(): Promise<BcSummary> {
     return {
       sku: await readDisplayedText(() => this.locator.summarySku),
       deviceName: await readDisplayedText(() => this.locator.summaryDeviceName),

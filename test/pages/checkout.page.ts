@@ -192,6 +192,13 @@ export class CheckoutPage extends BasePage {
       .catch(() => undefined);
   }
 
+  /** Waits until the form's fields render; the form host mounts before its dynamic fields (CA_FR contact). */
+  private async waitForFormFields(formId: CheckoutFormId, timeoutMs = 5000): Promise<void> {
+    await driver
+      .waitUntil(async () => (await this.getFieldDescriptors(formId)).length > 0, { timeout: timeoutMs, interval: 300 })
+      .catch(() => console.log(`[waitForFormFields] ${formId}: no fields within ${timeoutMs / 1000}s`));
+  }
+
   /** Waits until the active step moves on from `previous`; the old step's forms stay in the DOM for a moment after Next. */
   private async waitForStepChange(previous: string, timeoutMs = 8000): Promise<void> {
     await driver
@@ -201,7 +208,11 @@ export class CheckoutPage extends BasePage {
 
   /** Clicks Next on the current step and logs the fields still invalid when the step does not advance. */
   private async clickMoveToNext(): Promise<void> {
-    await this.locator.moveToNextButton.waitForClickable({ timeout: 10000 });
+    // A form can mount after the step is filled (CA_FR delivery address), so a disabled Next returns for proceedToPayment to fill again
+    if (!(await this.locator.moveToNextButton.waitForClickable({ timeout: 10000 }).then(() => true, () => false))) {
+      console.log('[clickMoveToNext] Next not clickable yet, the step is filled again on the next pass');
+      return;
+    }
     // CN has a sticky Next and a page-bottom Next, so log which one was clicked
     const buttonId = (await this.locator.moveToNextButton.getAttribute('id').catch(() => '')) || 'no id';
     await this.locator.moveToNextButton.click();
@@ -313,9 +324,16 @@ export class CheckoutPage extends BasePage {
 
   /** Selects the option matching `value`, or the first enabled option when there is no match. */
   private async fillSelectField(field: ChainablePromiseElement, value: string | undefined): Promise<void> {
-    await scrollAndJsClick(field).catch(() => undefined);
-    // Dependent selects (CN province > city > district) load options after the previous one is picked
-    await $('(//mat-option)[1]').waitForExist({ timeout: 3000 }).catch(() => undefined);
+    // Dependent selects (CN province > city > district, AU suburb after the postcode) load options late,
+    // and a panel opened before they arrive stays empty, so it is closed and opened again
+    for (let attempt = 0; attempt < 3; attempt++) {
+      await scrollAndJsClick(field).catch(() => undefined);
+      if (await $('(//mat-option)[1]').waitForExist({ timeout: 3000 }).then(() => true, () => false)) {
+        break;
+      }
+      console.log(`[fillSelectField] no options yet, reopen (attempt ${attempt + 1})`);
+      await driver.keys('Escape').catch(() => undefined);
+    }
     const match = value ? $(`//mat-option[contains(., "${value}")]`) : undefined;
     // Skips a disabled placeholder option (IN "Select a Floor")
     const target =
@@ -347,8 +365,9 @@ export class CheckoutPage extends BasePage {
     }
   }
 
-  /** Fills the contact fields (name, email, phone) with the site customer data. */
+  /** Fills the contact fields (name, email, phone, tax ID) with the site customer data. */
   async fillContactInfo(formId: CheckoutFormId, overrides?: Partial<LoadedSite['customer']>): Promise<void> {
+    await this.waitForFormFields(formId);
     const data = { ...getSite().customer, ...overrides };
     await this.fillFormFields(formId, {
       firstname: data.firstName,
@@ -357,6 +376,8 @@ export class CheckoutPage extends BasePage {
       lastname: data.lastName,
       email: data.email,
       phone: data.mobile,
+      // Required tax ID on the contact step (CL "RUT")
+      vatnumber: data.documentNumber,
     });
   }
 
@@ -368,6 +389,7 @@ export class CheckoutPage extends BasePage {
       return;
     }
 
+    await this.waitForFormFields(formId);
     // Without a saved address the form shows a search box, so switch to manual entry
     const hasManualFields = (await this.getFieldDescriptors(formId)).some((d) => d.key === 'line1');
     if (!hasManualFields && (await this.locator.enterAddressManuallyLink.isExisting().catch(() => false))) {
@@ -425,12 +447,12 @@ export class CheckoutPage extends BasePage {
 
   /** Selects the delivery method and option when the step offers them. */
   private async selectDeliveryOptionIfPresent(): Promise<void> {
-    // isExisting, not isDisplayed: these radios report as not displayed
-    for (const el of [this.locator.deliveryMethodButton, this.locator.deliveryOptionButton]) {
-      if (await el.isExisting().catch(() => false)) {
-        await scrollAndJsClick(el).catch(() => undefined);
-      }
+    // isExisting, not isDisplayed: the method icon reports as not displayed
+    if (await this.locator.deliveryMethodButton.isExisting().catch(() => false)) {
+      await scrollAndJsClick(this.locator.deliveryMethodButton).catch(() => undefined);
     }
+    // The option card is clicked, not its radio input: the input is 0x0 and never becomes interactable
+    await clickIfDisplayed(this.locator.deliveryOptionButton);
   }
 
   /** Checks the required checkboxes (terms, save address) of the current step. */
@@ -473,9 +495,17 @@ export class CheckoutPage extends BasePage {
     markFailed([{ label: 'reward opt-in hidden', pass: !exposed, detail: `exposed on ${step}` }], 'verifyNoRewardOptIn');
   }
 
-  /** Stops the TC when the estimated reward points area is not shown on checkout. */
+  /** Opens View Order and stops the TC when the estimated reward points area is not shown; IL has no rewards. */
   async verifyRewardArea(): Promise<void> {
-    const shown = await this.locator.rewardArea.isDisplayed().catch(() => false);
+    if (currentSiteCode() === 'IL') {
+      console.log('[verifyRewardArea] skipped for IL');
+      return;
+    }
+    // Some sites (NL) show the reward area only inside the expanded View Order summary
+    await this.ensureViewOrderExpanded();
+    const shown = await waitForDisplayedOrFalse(this.locator.rewardArea, { timeout: 3000 });
+    console.log(`[verifyRewardArea] expected reward area="shown" actual="${shown ? 'shown' : 'hidden'}" result=${shown ? 'PASS' : 'FAIL'}`);
+    await this.ensureViewOrderCollapsed();
     markFailedAndStop([{ label: 'reward area shown', pass: shown }], 'verifyRewardArea');
   }
 
@@ -507,10 +537,12 @@ export class CheckoutPage extends BasePage {
     await this.locator.paymentMethodExpanded.waitForExist({ timeout: 10000 });
     await this.waitForPageStable();
 
-    // A combined title like "Credit Card/ Debit Card" matches a loader named after one half
+    // A combined title like "Credit Card/ Debit Card" matches a loader named after one half;
+    // the name before "(" is also tried, since the bracketed method list can differ from the loader (CL Mercado Pago)
     const titleParts = title
       .toLowerCase()
       .split('/')
+      .flatMap((part) => [part, part.split('(')[0]])
       .map((part) => part.trim())
       .filter(Boolean);
     const loaders = await this.locator.submitOrderButtonLoaders;
@@ -655,10 +687,6 @@ export class CheckoutPage extends BasePage {
         steps.push(step);
         console.log(`[proceedToPayment] step #${steps.length}: ${step}`);
       }
-      // The reward opt-in can show on any step, so it is checked on every pass
-      if (options.verifyRewardOptIn) {
-        await this.verifyNoRewardOptIn();
-      }
       // Also stop by step name: CN has no app-checkout-step-payment, and Next on its payment step submits the order
       if (visible.includes('app-checkout-step-payment') || step === 'CHECKOUT_STEP_PAYMENT') {
         return steps;
@@ -677,6 +705,10 @@ export class CheckoutPage extends BasePage {
 
       await this.checkRequiredCheckboxes();
       await this.waitForPageStable();
+      // The reward opt-in can show on any step; checked once the step is filled, when its late forms have mounted (CA_FR delivery)
+      if (options.verifyRewardOptIn) {
+        await this.verifyNoRewardOptIn();
+      }
       await this.clickMoveToNext();
       await this.clickUseAddressOnPopupIfShown();
       await this.waitForStepChange(step);

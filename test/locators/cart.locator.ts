@@ -25,6 +25,10 @@ export class CartLocator {
     return $('section.cart-details__empty button[data-an-la="empty cart:sign in"]');
   }
 
+  get cartBannerLoginButton() {
+    return $('button.sign-in-banner__btn, button.guest-signin-btn');
+  }
+
   /** Cart/emptyCartLoginBtn — Sign in button on the empty cart (guest) */
   get emptyCartLoginButton() {
     return $('button[data-an-la="empty cart:sign in"]');
@@ -78,7 +82,7 @@ export class CartLocator {
   }
 
   cartItemName(sku: string) {
-    return $(`.cart-item[data-modelcode="${sku}" i] .cart-item__name`);
+    return $(`.cart-item[data-modelcode="${sku}" i] [class*="cart-item__name"]`);
   }
 
   cartItemSku(sku: string) {

@@ -1,5 +1,6 @@
 import { BasePage } from './base.page';
 import { MypageProfileLocator, AddressTab } from '../locators/mypage-profile.locator';
+import { MypageLocator } from '../locators/mypage.locator';
 import { prepareWebViewPage, switchToNative } from '../helpers/context.helper';
 import { isDisplayedOrFalse, jsClick, scrollUntilVisible } from '../helpers/element.helper';
 import { markFailedAndStop } from '../helpers/report.helper';
@@ -9,6 +10,7 @@ import { clearSavedAddresses } from '../helpers/api.helper';
 /** My Account > Settings > Personal Data Management > Addresses. */
 export class MypageProfilePage extends BasePage {
   private readonly locator = new MypageProfileLocator();
+  private readonly mypageLocator = new MypageLocator();
 
   /** BNB mypage tab, then direct Addresses entry, or Settings > Personal Data Management > Addresses. */
   private async navigateToAddressManagement(): Promise<void> {
@@ -19,11 +21,11 @@ export class MypageProfilePage extends BasePage {
       return;
     }
 
-    if (await scrollUntilVisible(this.locator.settingsIcon)) {
-      await this.locator.settingsIcon.click();
+    if (await scrollUntilVisible(this.mypageLocator.settingsMenu)) {
+      await this.mypageLocator.settingsMenu.click();
     }
-    if (await scrollUntilVisible(this.locator.personalDataManagementMenuItem)) {
-      await this.locator.personalDataManagementMenuItem.click();
+    if (await scrollUntilVisible(this.mypageLocator.personalDataManagementMenu)) {
+      await this.mypageLocator.personalDataManagementMenu.click();
     }
     if (await scrollUntilVisible(this.locator.addressManagementMenuItem)) {
       await this.locator.addressManagementMenuItem.click();
@@ -76,6 +78,12 @@ export class MypageProfilePage extends BasePage {
     // AU app has no address book screen, so the saved addresses are deleted through the API
     if (currentSiteCode() === 'AU') {
       await clearSavedAddresses();
+      return;
+    }
+    // An empty address book shows only app-empty-address, with no tabs to clear
+    if (await this.locator.emptyAddressBook.isExisting().catch(() => false)) {
+      console.log('[clearAllAddresses] address book already empty');
+      await switchToNative();
       return;
     }
     await this.activateTab('shipping');

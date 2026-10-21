@@ -208,6 +208,8 @@ export class BasePage {
         this.popupLocator.locationAllowButton,
         this.popupLocator.adSkipButton,
         this.popupLocator.adCloseButton,
+        this.popupLocator.assuranceCancelButton,
+        this.popupLocator.insiderBannerCloseButton,
         this.appEntryLocator.purposeSkipButton,
         this.popupLocator.cookieAcceptButton,
         this.popupLocator.promoCloseButton,
@@ -218,7 +220,7 @@ export class BasePage {
     return isDisplayedOrFalse($(BasePage.anyPopupXpath));
   }
 
-  /** Closes the popup on top (permission, CN ad splash, "SHOP NOW" ad, purpose pages, cookie, welcome / promotion) — one per call; false when nothing was closed. */
+  /** Closes the popup on top (permission, Adobe Assurance, CN ad splash, "SHOP NOW" ad, Insider banner, purpose pages, cookie, welcome / promotion) — one per call; false when nothing was closed. */
   async closeTopPopup(options: { keepCookie?: boolean } = {}): Promise<boolean> {
     if (!(await this.isAnyPopupShown())) {
       return false;
@@ -227,7 +229,15 @@ export class BasePage {
       await this.dismissPermissionPopups(1000);
       return true;
     }
+    // Adobe Assurance is a separate screen over the app and can open on any restart
+    if (await this.clickAssuranceCancelIfShown(0)) {
+      return true;
+    }
     if ((await clickIfDisplayed(this.popupLocator.adSkipButton)) || (await clickIfDisplayed(this.popupLocator.adCloseButton))) {
+      return true;
+    }
+    // The Insider web banner sits over the welcome promo — close it first so the promo X does not tap the banner
+    if (await clickIfDisplayed(this.popupLocator.insiderBannerCloseButton)) {
       return true;
     }
     // The interest / purpose pages can open again after login completes (IN, UK) — "Skip" closes one page
@@ -278,6 +288,18 @@ export class BasePage {
     if (await clickIfDisplayed(this.popupLocator.locationAllowButton, notificationShown ? locationTimeoutMs : 500)) {
       console.log('[dismissPermissionPopups] location permission allowed');
     }
+  }
+
+  /** Clicks Cancel on the Adobe Assurance PIN screen when it is shown; true when it was closed. */
+  async clickAssuranceCancelIfShown(timeoutMs = 3000): Promise<boolean> {
+    await switchToNative();
+    let closed = 0;
+    // The app opens the Assurance screen twice in a row, so a second one can be left after the first Cancel
+    while (closed < 2 && (await clickIfDisplayed(this.popupLocator.assuranceCancelButton, closed === 0 ? timeoutMs : 1000))) {
+      closed += 1;
+      console.log('[clickAssuranceCancelIfShown] clicked Cancel');
+    }
+    return closed > 0;
   }
 
   async dismissOverlays(): Promise<void> {
@@ -432,6 +454,9 @@ export class BasePage {
   }
 
   private async ensureBnbVisible(menu: BnbMenu): Promise<void> {
+    // The Insider banner sits over the BNB while the BNB still reads as displayed, so a tap would hit the banner (CL)
+    await clickIfDisplayed(this.popupLocator.insiderBannerCloseButton);
+
     // prepareHeaderBnb() already performs one scrollUp(). If BNB is still hidden,
     // try to recover it by tapping a visible header icon.
     if (await isDisplayedOrFalse(this.bnbLocator.menu(menu))) {

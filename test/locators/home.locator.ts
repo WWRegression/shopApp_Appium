@@ -122,6 +122,12 @@ export class HomeLocator {
     );
   }
 
+  get setupMobileBackendP1Option() {
+    return $(
+      `//android.view.View[@content-desc = 'Mobile Backend']/following-sibling::android.view.View[@content-desc = 'P1'][1]`
+    );
+  }
+
   /** "Apply" at the bottom of the setup screen */
   get setupApplyButton() {
     return $(`//android.widget.Button[@content-desc = 'Apply']`);

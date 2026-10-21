@@ -2,7 +2,6 @@ import { BasePage } from './base.page';
 import { HomeLocator } from '../locators/home.locator';
 import { switchToNative } from '../helpers/context.helper';
 import { parsePoints } from '../helpers/data.helper';
-import { getRunConfig } from '../../config/run.config';
 import { getSiteData } from '../../config/site';
 import {
   clickElement,
@@ -147,28 +146,31 @@ export class HomePage extends BasePage {
     console.log(`[allowNotificationPermissionIfShown] ${allowed ? 'notification permission allowed' : 'no notification permission popup'}`);
   }
 
-  /** Long-presses the Home header title to open the setup screen, sets "Enable Webview Debugging" to Yes and applies. */
-  async enableWebviewDebugging(): Promise<void> {
-    // TODO: remove once the CN build has the setup screen
-    if (getRunConfig().siteCode === 'CN') {
-      console.log('[enableWebviewDebugging] no setup screen on this build — skipped');
-      return;
-    }
+  /** Long-presses the Home header title to open the setup screen, sets the fixed build options (Mobile Backend = P1, Webview Debugging = Yes) and applies. */
+  async applyBuildSetup(): Promise<void> {
     await this.prepareHomePage();
     await this.dismissOverlays();
     await longPressElement(this.headerLocator.title);
 
-    const yesOption = this.locator.setupWebviewYesOption;
-    const opened = await scrollUntilVisible(yesOption, 10);
-    markFailedAndStop([{ label: 'setup screen not opened (Enable Webview Debugging not found)', pass: opened }], 'enableWebviewDebugging');
-    await clickElement(yesOption, { timeout: 5000 });
+    const opened = await waitForDisplayedOrFalse(this.locator.setupMobileBackendP1Option, { timeout: 10000 });
+    markFailedAndStop([{ label: 'setup screen not opened (Universal Build Config not found)', pass: opened }], 'applyBuildSetup');
+
+    // The options are fixed for every run, so all of them are set here and applied once (Apply restarts the app)
+    await this.selectSetupOption(this.locator.setupMobileBackendP1Option, 'Mobile Backend = P1');
+    await this.selectSetupOption(this.locator.setupWebviewYesOption, 'Webview Debugging = Yes');
 
     const applyButton = this.locator.setupApplyButton;
     await scrollUntilVisible(applyButton, 15);
-    await markFailedAndStop(() => clickElement(applyButton, { timeout: 5000 }), '[enableWebviewDebugging] Apply button not found');
-    console.log('[enableWebviewDebugging] Webview Debugging set to Yes and applied');
-    // Apply restarts the app
+    await markFailedAndStop(() => clickElement(applyButton, { timeout: 5000 }), '[applyBuildSetup] Apply button not found');
+    console.log('[applyBuildSetup] build setup applied');
     await this.waitForAppLoaded(30000);
+  }
+
+  /** Scrolls to one option on the setup screen and selects it. */
+  private async selectSetupOption(option: ChainablePromiseElement, label: string): Promise<void> {
+    await scrollUntilVisible(option, 10);
+    await markFailedAndStop(() => clickElement(option, { timeout: 5000 }), `[applyBuildSetup] ${label} option not found`);
+    console.log(`[applyBuildSetup] selected ${label}`);
   }
 
   async verifyBottomNavigation(): Promise<void> {

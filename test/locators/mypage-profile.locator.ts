@@ -9,19 +9,13 @@ export class MypageProfileLocator {
     return $(`//*[contains(@content-desc, 'Addresses')]`);
   }
 
-  get settingsIcon() {
-    return $(`//android.widget.ImageView[contains(@content-desc, 'Settings')]`);
-  }
-
-  get personalDataManagementMenuItem() {
-    return $(`//*[contains(@content-desc, 'Personal Data Management')]`);
-  }
-
   /** Label varies by locale: Marketing Preferences / Manage Preferences / Edit Preferences / Address Management. */
   get addressManagementMenuItem() {
     return $(
       `//*[
         contains(@content-desc, 'Marketing')
+        or contains(@content-desc, 'Préférences marketing')
+        or contains(@content-desc, 'Preferencias de marketing')
         or contains(@content-desc, 'Address Management')
         or contains(@content-desc, 'Manage Preferences')
         or contains(@content-desc, 'Edit Preferences')
@@ -32,7 +26,11 @@ export class MypageProfileLocator {
   // ── WebView: address book page ────────────────────────────────────────────
 
   get pageContainer() {
-    return $('div.address');
+    return $('div.address, app-empty-address');
+  }
+
+  get emptyAddressBook() {
+    return $('app-empty-address');
   }
 
   tab(tab: AddressTab) {

@@ -15,6 +15,16 @@ export class PopupLocator {
     return $(`//android.widget.Button[@content-desc = '跳过']`);
   }
 
+  get assuranceCancelButton() {
+    return $(
+      `//android.view.View[@clickable = 'true'][android.widget.TextView[@text = 'Cancel']][//android.widget.TextView[@text = 'Assurance']]`
+    );
+  }
+
+  get insiderBannerCloseButton() {
+    return $(`//*[@resource-id = 'ins-responsive-banner']//android.widget.Button[contains(@resource-id, 'close-button')]`);
+  }
+
   /** Promotion / welcome popup X — also matches the cookie popup's X, so use it only when the cookie popup is not shown */
   get promoCloseButton() {
     return $(SCRIM_POPUP_CLOSE);

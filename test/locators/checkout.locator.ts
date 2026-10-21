@@ -105,7 +105,7 @@ export class CheckoutLocator {
   }
 
   get deliveryOptionButton() {
-    return $('ul[class*="delivery_list"] input[type="radio"]:not(:checked)');
+    return $('ul[class*="delivery_list"] .delivery-mode-tab:not(.selected-mode)');
   }
 
   get autoCheckCheckboxes() {

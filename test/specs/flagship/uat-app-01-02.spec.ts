@@ -4,7 +4,7 @@ import { loadFlagshipProducts, toShopCategory } from '../../helpers/flagship-sku
 import { getCurrentWebViewPage } from '../../helpers/context.helper';
 import { ShopPage } from '../../pages/shop.page';
 import { PfPage } from '../../pages/pf.page';
-import { BcPage, type BcSummary } from '../../pages/bc.page';
+import { BcPage, type BcProductInfo } from '../../pages/bc.page';
 import { PdPage } from '../../pages/pd.page';
 import { CartPage } from '../../pages/cart.page';
 import { SplashPage } from '../../pages/splash.page';
@@ -22,7 +22,7 @@ describe('UAT_APP_01 / UAT_APP_02', () => {
   for (const product of products) {
     let app01Passed = false;
     // APP_02 checks the cart against the values APP_01 confirmed in the BC summary
-    let bcSummary: BcSummary | undefined;
+    let productInfo: BcProductInfo | undefined;
 
     it(`UAT_APP_01 [${product.sku}]`, async function () {
       app01Passed = false;
@@ -41,7 +41,7 @@ describe('UAT_APP_01 / UAT_APP_02', () => {
           const bcPage = new BcPage();
           await bcPage.prepareBcPage();
           await bcPage.selectOptions(product);
-          bcSummary = await bcPage.verifyOptions(product);
+          productInfo = await bcPage.verifyOptions(product);
         } else if (page === 'pd') {
           const pdPage = new PdPage();
           await pdPage.preparePdPage();
@@ -80,8 +80,8 @@ describe('UAT_APP_01 / UAT_APP_02', () => {
 
         await splashPage.clickSplashContinue();
         await cartPage.prepareCartPage();
-        await cartPage.verifySku(bcSummary!.sku);
-        await cartPage.verifyOptions(bcSummary!.sku, bcSummary!.options);
+        await cartPage.verifySku(productInfo!.summary.sku);
+        await cartPage.verifyOptions(productInfo!.summary.sku, productInfo!.selected);
       });
     });
   }

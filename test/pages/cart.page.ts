@@ -94,8 +94,12 @@ export class CartPage extends BasePage {
   /** Taps the cart's Sign in; the login page is handled by LoginPage.clickLoginBtnOnLoginPage(). */
   async clickLoginOnCart(): Promise<void> {
     await this.prepareCartPage();
+    // An empty cart has its own Sign in; a cart with items only has the sign-in banner at the top
+    const button = (await isDisplayedOrFalse(this.locator.cartLoginButton))
+      ? this.locator.cartLoginButton
+      : this.locator.cartBannerLoginButton;
     await markFailedAndStop(
-      () => clickElement(this.locator.cartLoginButton, { timeout: 5000 }),
+      () => clickElement(button, { timeout: 5000 }),
       'Login failed on the Cart page: Sign in button not found'
     );
   }

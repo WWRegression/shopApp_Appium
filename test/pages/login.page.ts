@@ -161,8 +161,10 @@ export class LoginPage extends BasePage {
   }
 
   /** After the setup is applied the app can reopen logged out on "Select profile to continue"; logs in with the saved profile. */
-  async loginOnSelectProfileIfShown(): Promise<void> {
-    if (!(await this.isSelectProfileShownForIn())) {
+  async loginOnSelectProfileIfShown(timeoutMs = 8000): Promise<void> {
+    await switchToNative();
+    // The app restarts twice after Apply, so Select profile can show a few seconds after Home first appears (IN)
+    if (!(await waitForDisplayedOrFalse(this.locator.selectProfileTitle, { timeout: timeoutMs }))) {
       return;
     }
     await this.loginOnSelectProfileForIn();
@@ -225,11 +227,16 @@ export class LoginPage extends BasePage {
       // US has no login page and opens the SSO login options directly, so stop waiting as soon as either shows
       await driver
         .waitUntil(
-          async () =>
-            (await isDisplayedOrFalse(this.locator.loginPageLoginButton)) ||
-            (await isDisplayedOrFalse(this.locator.samsungAccountLogoButton)) ||
-            (await isDisplayedOrFalse(this.locator.emailSsoButton)) ||
-            (await isDisplayedOrFalse(this.locator.gmailSsoButton)),
+          async () => {
+            // Adobe Assurance can open over the login page a few seconds after a fresh launch (IN)
+            await this.clickAssuranceCancelIfShown(0);
+            return (
+              (await isDisplayedOrFalse(this.locator.loginPageLoginButton)) ||
+              (await isDisplayedOrFalse(this.locator.samsungAccountLogoButton)) ||
+              (await isDisplayedOrFalse(this.locator.emailSsoButton)) ||
+              (await isDisplayedOrFalse(this.locator.gmailSsoButton))
+            );
+          },
           { timeout: 10000, interval: 500 }
         )
         .catch(() => undefined);

@@ -40,7 +40,7 @@ export class MypageLocator {
       or contains(@content-desc, 'تسجيل الدخول')
       or contains(@content-desc, 'Inloggen')
       or contains(@content-desc, 'Se connecter')
-      or @content-desc='Connexion'
+      or starts-with(@content-desc, 'Connexion')
       or contains(@content-desc, 'Iniciar sesión')
       or contains(@content-desc, 'Přihlásit se')
       or contains(@content-desc, '登入')
@@ -682,6 +682,10 @@ export class MypageLocator {
         contains(@text, 'Spara')
       ]`
     );
+  }
+
+  get trustArcPreferencesContent() {
+    return $('#cm-preferences-content');
   }
 
   /** "NO" inputs of the cookie categories (WebView) */

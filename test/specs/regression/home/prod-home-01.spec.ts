@@ -20,12 +20,15 @@ describe('PROD_HOME_01', () => {
       await loginPage.signOutOnDevice();
       await restartApp();
       await homePage.allowLocationPermissionIfShown();
-
       await homePage.selectCountry(site.countryName);
+
+      await homePage.clickAssuranceCancelIfShown();
+
       await homePage.clickTrustArcCookie('decline');
       await homePage.clickTncCheckbox();
       await homePage.selectNotification('yes');
       await homePage.clickGetStarted();
+      
       await homePage.allowNotificationPermissionIfShown();
 
       await loginPage.continueAsGuestIfShown();
@@ -33,7 +36,7 @@ describe('PROD_HOME_01', () => {
       await mypagePage.verifyLoggedOut();
 
       await shopPage.verifyCountry(site.countryName);
-      await homePage.enableWebviewDebugging();
+      await homePage.applyBuildSetup();
       await loginPage.continueAsGuestIfShown();
 
       await mypagePage.prepareNotificationPage();
