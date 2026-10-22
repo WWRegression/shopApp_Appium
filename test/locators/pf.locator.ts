@@ -77,6 +77,8 @@ export class PfLocator {
       normalize-space(@content-desc)='Přihlásit se' or
       normalize-space(@content-desc)='Bejelentkezés' or
       normalize-space(@content-desc)='Autentificare' or
+      normalize-space(@content-desc)='התחברות' or
+      normalize-space(@content-desc)='ログイン' or
       normalize-space(@content-desc)='Giriş yap'
     )]`);
   }
@@ -101,6 +103,8 @@ export class PfLocator {
       normalize-space(@content-desc)='Přihlásit se' or
       normalize-space(@content-desc)='Bejelentkezés' or
       normalize-space(@content-desc)='Autentificare' or
+      normalize-space(@content-desc)='התחברות' or
+      normalize-space(@content-desc)='ログイン' or
       normalize-space(@content-desc)='Giriş yap'
     )]/following-sibling::android.widget.Button)[1]`);
   }
