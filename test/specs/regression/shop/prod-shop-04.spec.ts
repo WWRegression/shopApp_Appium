@@ -15,7 +15,7 @@ describe('PROD_SHOP_04', () => {
 
       await shopPage.changeCountry(target);
       
-      await loginPage.skipPurpose(20000);
+      await loginPage.skipPurpose(30000);
       await shopPage.dismissOverlays();
       
       await mypagePage.verifyLoggedIn();

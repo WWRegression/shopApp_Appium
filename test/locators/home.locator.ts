@@ -18,6 +18,12 @@ export class HomeLocator {
         @content-desc = 'Siguiente' or
         @content-desc = 'Next' or
         @content-desc = 'Következő' or
+        @content-desc = 'موافق' or
+        @content-desc = '繼續' or
+        @content-desc = ' אישור' or
+        @content-desc = 'はい' or
+        @content-desc = 'ตกลง' or
+        @content-desc = '確認' or
         @content-desc = 'Onayla'
       ]`
     );

@@ -616,6 +616,11 @@ export class ShopLocator {
         contains(@content-desc, 'negara/') or
         contains(@content-desc, 'البلد') or
         contains(@content-desc, 'الدولة') or
+        contains(@content-desc, 'země/') or
+        contains(@content-desc, 'ország/') or
+        contains(@content-desc, '国/') or
+        contains(@content-desc, 'țară/') or
+        contains(@content-desc, 'quốc gia/') or
         contains(@content-desc, '國家')
       ]`
     );
