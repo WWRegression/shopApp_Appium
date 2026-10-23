@@ -128,7 +128,7 @@ export class PopupLocator {
       @content-desc="同意" or
       @content-desc="接受" or
       @content-desc="承諾" or
-      @content-desc="אישור" or
+      @content-desc=" אישור"or
       contains(@content-desc, "قبول") or
       contains(@content-desc, "موافق")
       ]`

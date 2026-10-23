@@ -185,7 +185,7 @@ export class MypagePage extends BasePage {
   }
 
   /** Selects My Page on BNB (skipped when already there), then verifies the My Page header title. */
-  async prepareMypage(timeoutMs = 5000): Promise<void> {
+  async prepareMypage(timeoutMs = 10000): Promise<void> {
     // logout → verifyLoggedOut → clickLogin each prepare My Page; skip the BNB tap when it is already shown
     if (await this.isOnMypage()) {
       console.log('[prepareMypage] already on My Page');

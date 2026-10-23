@@ -78,7 +78,8 @@ export class BasePage {
 			'Handla',
 			'หมวดสินค้า',
 			'Mağaza',
-			'商店'
+			'商店',
+      'Shoppa'
 		],
 		'OFFERS': [
 			'Offers',

@@ -18,7 +18,7 @@ import {
   isDisplayedOrFalse,
   waitForDisplayedOrFalse,
 } from '../helpers/element.helper';
-import { markFailed, markFailedAndStop } from '../helpers/report.helper';
+import { markFailedAndStop } from '../helpers/report.helper';
 export type CategoryMismatch = string;
 export type { ShopMenu };
 
@@ -633,7 +633,7 @@ export class ShopPage extends BasePage {
     const actual = shown ? await getElementLabel(menu) : '';
     const pass = shown && actual.toLowerCase().includes(expected.toLowerCase());
     console.log(`[verifyCountry] expected="${expected}" actual="${actual}" result=${pass ? 'PASS' : 'FAIL'}`);
-    markFailed(
+    markFailedAndStop(
       [{ label: 'shop country did not change', pass, detail: `expected "${expected}", actual "${actual}"` }],
       'verifyCountry'
     );

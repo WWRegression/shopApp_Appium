@@ -67,6 +67,7 @@ export class BnbLocator {
       or (contains(@content-desc, "Boutique") and contains(@content-desc, "Onglet 2"))
       or (contains(@content-desc, "Loja") and contains(@content-desc, "Separador 2"))
       or (contains(@content-desc, "商店") and contains(@content-desc, "第 2"))
+      or (contains(@content-desc, "Shoppa") and contains(@content-desc, "Flik 2"))
      ]`
     );
   }
@@ -137,6 +138,7 @@ export class BnbLocator {
       or (contains(@content-desc, "My Page") and contains(@content-desc, "Flik 5"))
 			or (contains(@content-desc, "Mein Account") and contains(@content-desc, "Tab 5"))
 			or (contains(@content-desc, "Mon compte") and contains(@content-desc, "Onglet 5"))
+      or (contains(@content-desc, "Mon Compte") and contains(@content-desc, "Onglet 5"))
 			or (contains(@content-desc, "La mia pagina") and contains(@content-desc, "Scheda 5"))
 			or (contains(@content-desc, "Mi cuenta") and contains(@content-desc, "Pestaña 5"))
 			or (contains(@content-desc, "Mi Cuenta") and contains(@content-desc, "Pestaña 5"))
@@ -145,6 +147,7 @@ export class BnbLocator {
 			or (contains(@content-desc, "Halaman saya") and contains(@content-desc, "Tab 5"))
 			or (contains(@content-desc, "หน้าของฉัน") and contains(@content-desc, "แท็บที่ 5"))
 			or (contains(@content-desc, "Ma page") and contains(@content-desc, "Onglet\u00A05"))
+      or (contains(@content-desc, "Ma Page") and contains(@content-desc, "Onglet 5"))
       or (contains(@content-desc, "Ma page") and contains(@content-desc, "Onglet 5"))
 			or (contains(@content-desc, "صفحتي") and contains(@content-desc, "علامة التبويب 5"))
 			or (contains(@content-desc, "Mijn pagina") and contains(@content-desc, "Tabblad 5"))

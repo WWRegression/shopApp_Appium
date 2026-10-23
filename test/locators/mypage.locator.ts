@@ -589,6 +589,8 @@ export class MypageLocator {
         @content-desc = 'Nastavení' or
         @content-desc = 'Beállítások' or
         @content-desc = 'Setări' or
+        @content-desc = 'הגדרות' or
+        @content-desc = 'Definições' or
         @content-desc = 'Ayarlar'
       ]`
     );
@@ -616,6 +618,7 @@ export class MypageLocator {
         @content-desc = 'Personenbezogene Daten verwalten' or
         @content-desc = 'Személyes adatok kezelése' or
         @content-desc = 'Gestionare date cu caracter personal' or
+        @content-desc = 'Gestão de dados pessoais' or
         @content-desc = 'Kişisel Verilerin Yönetimi'
       ]`
     );
@@ -637,6 +640,7 @@ export class MypageLocator {
         @content-desc = 'Předvolby souborů cookies' or
         @content-desc = 'Süti beállítások' or
         @content-desc = 'Preferințe de marketing' or
+        @content-desc = 'Política de Cookies' or
         @content-desc = 'Çerez tercihleri'
       ]`
     );
@@ -679,6 +683,8 @@ export class MypageLocator {
         contains(@text, 'Salvare') or
         contains(@text, 'Kaydet') or
         contains(@text, 'Save') or
+        contains(@text, 'Opslaan') or
+        contains(@text, 'Sauvegarder') or
         contains(@text, 'Spara')
       ]`
     );
@@ -724,6 +730,7 @@ export class MypageLocator {
         @content-desc = 'Notificaciones Push' or
         @content-desc = 'Notificare push' or
         @content-desc = 'Bildirimler' or
+        @content-desc = 'התראות  ' or
         @content-desc = '通知をオンにする'
       ]`
     );
