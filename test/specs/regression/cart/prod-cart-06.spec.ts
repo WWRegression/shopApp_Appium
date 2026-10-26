@@ -1,12 +1,22 @@
 import { runOrSkip } from '../../../helpers/tc-filter.helper';
-import { PdPage } from '../../../pages/pd.page';
+import { BcPage } from '../../../pages/bc.page';
+import { CartPage } from '../../../pages/cart.page';
+import { addToCart } from '../../../helpers/api.helper';
+
 
 describe('PROD_CART_06', () => {
-  const pdPage = new PdPage();
+  const bcPage = new BcPage();
+  const cartPage = new CartPage();
 
-  it('open PD/BC from product name on cart', async function () {
-    await runOrSkip.call(this, 'PROD_CART_06', async () => {
-      await pdPage.getProductName();
+  it('Click the product name in the Cart to open the BC page and verify the SKU', async function () {
+    await runOrSkip.call(this, 'PROD_CART_06', async (site) => {
+      await cartPage.clearCart();
+      await addToCart(site.product.sku);
+      await cartPage.verifySku(site.product.sku);
+      await cartPage.clickProductName(site.product.sku);
+
+      await bcPage.prepareBcPage();
+      await bcPage.verifySku(site.product.sku);
     });
   });
 });

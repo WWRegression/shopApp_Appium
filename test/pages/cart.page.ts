@@ -81,7 +81,6 @@ export class CartPage extends BasePage {
 
       if (await this.isCartEmpty(3000)) {
         console.warn('[clearCart] empty cart');
-        await switchToNative();
         return;
       }
     }
@@ -157,13 +156,24 @@ export class CartPage extends BasePage {
   /** Verifies a sku is present in the cart. */
   async verifySku(sku: string): Promise<void> {
     await this.prepareCartPage();
-    await console.warn('verifySku: start');
     const skus = await this.getCartItemSkus();
-    const target = sku.toLowerCase();
+    const pass = skus.some((code) => code.toLowerCase() === sku.toLowerCase());
+    console.warn(`[Cart.verifySku] expected="${sku}" actual=${skus.join(", ") || "none"} result=${pass ? "PASS" : "FAIL"}`);
     await markFailedAndStop(
-      async () => assertEqual(skus.some((code) => code.toLowerCase() === target), true),
+      async () => assertEqual(pass, true),
       `verifySku: expected "${sku}" not found in cart (found: ${skus.join(', ') || 'none'})`
     );
+  }
+
+  /** Clicks the cart item name. The name itself may be the link, or an anchor inside it. */
+  async clickProductName(sku: string): Promise<void> {
+    await this.prepareCartPage();
+    const nameEl = this.locator.cartItemName(sku);
+    const name = (await getElementLabel(nameEl).catch(() => '')).trim();
+    if (!(await clickIfDisplayed(nameEl, 10000))) {
+      throw new Error(`[Cart.clickProductName] product name not clickable for sku "${sku}"`);
+    }
+    console.warn(`[Cart.clickProductName] clicked "${name || sku}"`);
   }
 
   /** Verifies a cart item name matches the expected (PF) product name. */

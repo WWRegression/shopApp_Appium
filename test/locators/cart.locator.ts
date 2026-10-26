@@ -123,6 +123,7 @@ export class CartLocator {
     );
   }
 
+  /** TRADE-IN -------------------------------------------------------------- */
   get tradeInRemoveButton() {
     return $(
       [
@@ -150,8 +151,9 @@ export class CartLocator {
   get tradeInNoButton() {
     return $('[an-la*="trade-in" i][an-la*="no" i]');
   }
+  /** TRADE-IN END -------------------------------------------------------------- */
 
-
+  /** SC+ -------------------------------------------------------------- */
   get scPlusAddButton() {
     return $(
       [
@@ -207,6 +209,7 @@ export class CartLocator {
       ].join(', ')
     );
   }
+  /** SC+ END -------------------------------------------------------------- */
 
   /** EUP -------------------------------------------------------------- */
   get eupAddButton() {
@@ -224,18 +227,90 @@ export class CartLocator {
   }
   /** EUP END -------------------------------------------------------------- */
 
+  /** TRADE-UP -------------------------------------------------------------- */
+  get tradeUpAddButton() {
+    return $('[data-an-la*="trade-up" i][data-an-la*="add" i], button[data-an-la="add service:trade-in" i]');
+  }
+
+  /** Shown trade-up/trade-in popup. The dialog class contains `trade-up-steps` or `trade-in-steps`. */
+  readonly tradeUpPopup = ".modal.show:has([class*='trade-up-steps'], [class*='trade-in-steps'])";
+
+  get tradeUpModal() {
+    return $(this.tradeUpPopup);
+  }
+
+  /** One mat-expansion-panel per question. The next list stays empty until the previous pick. */
+  get tradeUpDropdowns() {
+    return $$(`${this.tradeUpPopup} mat-expansion-panel`);
+  }
+
+  /** IN product tiles. The next list is inserted after the previous pick. */
+  get tradeUpProductGroups() {
+    return $$(`${this.tradeUpPopup} .sc-e-p-m-p-c-s-b`);
+  }
+
+  /** UK mat-select. The next one stays disabled until the previous pick. Options open in the page overlay. */
+  get tradeUpMatSelects() {
+    return $$(`${this.tradeUpPopup} mat-select.modal__select`);
+  }
+
+  get tradeUpMatOptions() {
+    return $$("div.cdk-overlay-container :is(mat-option, [role='option']):not([aria-disabled='true'])");
+  }
+
+  /** Footer action. Global uses a blue button, IN uses a black "Add to cart" button. */
+  readonly tradeUpFooterAction = ".modal__footer button:is(.pill-btn--blue, .pill-btn--black)";
+
+  get tradeUpContinueButton() {
+    return $(`${this.tradeUpPopup} ${this.tradeUpFooterAction}:not([disabled])`);
+  }
+
+  /** Visible Sí button. No is the first radio in the DOM, so the yes label is targeted directly. */
+  get tradeUpConditionYes() {
+    return $(`${this.tradeUpPopup} label.condition-radio__yes`);
+  }
+
+  /** CN condition questions. The next group stays disabled until the previous answer. */
+  get tradeUpConditionGroups() {
+    return $$(`${this.tradeUpPopup} .condition-radio`);
+  }
+
+  /** Required agreement on the discount step. The native input sits inside mat-checkbox. */
+  get tradeUpTermsCheckboxes() {
+    return $$(`${this.tradeUpPopup} mat-checkbox input[type="checkbox"]`);
+  }
+
+  get tradeUpPostalInput() {
+    return $(`${this.tradeUpPopup} :is(input[formcontrolname="postCodeControl"], input#trade-up-pincode)`);
+  }
+
+  /** Check control beside the postcode field. */
+  get tradeUpPostalCheckButton() {
+    return $(`${this.tradeUpPopup} :is(button.post-code-form__btn, .trade-in-pincode-enter)`);
+  }
+
+  get tradeUpPostalSuccess() {
+    return $(`${this.tradeUpPopup} :is(mat-hint.post-code-success, mat-hint.text-primary)`);
+  }
+
+  get tradeUpPostalError() {
+    return $(`${this.tradeUpPopup} :is(mat-hint.post-code-error, mat-hint.text-danger)`);
+  }
+
   get tradeUpRemoveButton() {
     return $(
       [
-        ':is(div[data-modelcode="TRADE-UP"], [data-modelcode="TRADE-IN"]) button[data-an-la="remove item"], .trade-in-action-button[data-an-la="remove-item"]',        
+        ':is(div[data-modelcode="TRADE-UP"], [data-modelcode="TRADE-IN"]) button[data-an-la*="remove"][data-an-la*="item"]',        
       ].join(', ')
     );
   }
 
   get tradeUpPriceLabel() {
-    return $('div[data-modelcode="TRADE-UP"] .service-item__actions div.action-text');
+    return $(':is(div[data-modelcode="TRADE-UP"], [data-modelcode="TRADE-IN"]) :is(.service-item__actions div.action-text, .trade-in-total-price)');
   }
+  /**TRADE-UP END -------------------------------------------------------------- */
 
+  /** SIM -------------------------------------------------------------- */
   get simAddButton() {
     return $(
       [
@@ -257,5 +332,5 @@ export class CartLocator {
       ].join(', ')
     );
   }
-
+  /** SIM END -------------------------------------------------------------- */
 }
