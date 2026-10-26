@@ -1,24 +1,9 @@
-/**
- * Result DB helper.
- *
- * Sanity/Phase3:
- *   EXEC procInsertShopAppResult agentIp, testType, releaseName, site, tcId, apkVersion, status, reason
- *
- * 업로드 on/off · releaseName: config/run.config.ts (또는 --report-db / --release)
- */
 import os from 'node:os';
-import { getRunConfig } from '../../config/run.config';
+import sql from 'mssql';
+import { getReportDbConnection } from '../../config/db.config';
+import { getRunConfig, type TestType } from '../../config/run.config';
 import { getAppPackage } from '../../config/site';
 import { getPackageVersion } from './device.helper';
-
-/** Report DB 접속 (고정). password만 팀 계정에 맞게 수정. */
-const REPORT_DB = {
-  server: 'katalondb.ecom-qa.samsung.com',
-  port: 11433,
-  database: 'TestInfo',
-  user: 'katalon_admin',
-  password: '',
-} as const;
 
 export type ReportStatus = 'Pass' | 'Fail' | 'N/A' | 'Exception' | 'Planned' | 'OOS';
 
@@ -26,20 +11,19 @@ export interface ShopAppResultPayload {
   tcId: string;
   status: ReportStatus;
   reason?: string;
-  site?: string;
-  testType?: string;
-  releaseName?: string;
-  apkVersion?: string;
-  agentIp?: string;
 }
 
-function isReportDbEnabled(): boolean {
-  return getRunConfig().reportDb;
-}
+/** TestType values as registered in ShopApp_releasemgt. */
+const DB_TEST_TYPE: Record<TestType, string> = {
+  sanity: 'Sanity',
+  phase3: 'Phase3',
+  flagship: 'ShopAppFS',
+};
+
+let poolPromise: Promise<sql.ConnectionPool> | undefined;
 
 function resolveAgentIp(): string {
-  const nets = os.networkInterfaces();
-  for (const entries of Object.values(nets)) {
+  for (const entries of Object.values(os.networkInterfaces())) {
     for (const entry of entries ?? []) {
       if (entry.family === 'IPv4' && !entry.internal) {
         return entry.address;
@@ -49,134 +33,73 @@ function resolveAgentIp(): string {
   return '127.0.0.1';
 }
 
-function buildDbConfig() {
-  if (!REPORT_DB.password) {
-    throw new Error(
-      '[db.helper] REPORT_DB.password is empty — set it in test/helpers/db.helper.ts'
-    );
+/** Opens the report DB pool once per worker and reuses it for every TC. */
+async function getPool(): Promise<sql.ConnectionPool> {
+  if (!poolPromise) {
+    poolPromise = new sql.ConnectionPool({
+      ...sql.ConnectionPool.parseConnectionString(getReportDbConnection()),
+      pool: { max: 2, min: 0, idleTimeoutMillis: 30000 },
+    })
+      .connect()
+      .catch((error: unknown) => {
+        // Drop the failed pool so the next TC tries to connect again
+        poolPromise = undefined;
+        throw error;
+      });
   }
-
-  return {
-    server: REPORT_DB.server,
-    port: REPORT_DB.port,
-    database: REPORT_DB.database,
-    user: REPORT_DB.user,
-    password: REPORT_DB.password,
-    options: {
-      encrypt: true,
-      trustServerCertificate: true,
-    },
-    pool: { max: 2, min: 0, idleTimeoutMillis: 10000 },
-  };
+  return poolPromise;
 }
 
-/**
- * Upload one TC result via procInsertShopAppResult (Smoke/Sanity/Phase3 path).
- * No-op when reportDb is false. Failures are logged, never thrown.
- */
-export async function insertShopAppResult(
-  payload: ShopAppResultPayload
-): Promise<boolean> {
-  if (!isReportDbEnabled()) {
-    return false;
+/** Closes the report DB pool; called once when the worker ends. */
+export async function closeReportDb(): Promise<void> {
+  const pending = poolPromise;
+  poolPromise = undefined;
+  if (pending) {
+    await pending.then((pool) => pool.close()).catch(() => undefined);
   }
+}
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let sql: any;
+/** Uploads one Sanity/Phase3 TC result via procInsertShopAppResult. Errors are logged, never thrown. */
+export async function insertShopAppResult(payload: ShopAppResultPayload): Promise<boolean> {
+  const run = getRunConfig();
+  const site = run.siteCode.toUpperCase();
   try {
-    sql = await import('mssql');
-  } catch {
-    console.warn('[db.helper] mssql package not installed. Run: npm i mssql');
-    return false;
-  }
+    const apkVersion = await getPackageVersion(getAppPackage(run.siteCode), run.udid);
+    console.log(`[db] [${site}] ${payload.tcId} uploading: ${payload.status} - ${payload.reason ?? ''}`);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let pool: any;
-
-  try {
-    const run = getRunConfig();
-    const site = (payload.site ?? run.siteCode).toUpperCase();
-    const testType = payload.testType ?? run.testType;
-    const releaseName = payload.releaseName ?? run.releaseName;
-    const agentIp = payload.agentIp ?? resolveAgentIp();
-    const appPackage =
-      getAppPackage(run.siteCode) ||
-      ((browser.capabilities as WebdriverIO.Capabilities)['appium:appPackage'] as
-        | string
-        | undefined) ||
-      '';
-    const apkVersion = payload.apkVersion ?? (await getPackageVersion(appPackage));
-
-    if (!releaseName) {
-      console.warn(
-        '[db.helper] releaseName is empty — set config/run.config.ts or pass --release Rxx'
-      );
-    }
-
-    pool = await new sql.ConnectionPool(buildDbConfig()).connect();
-    const request = pool.request();
-    request.input('agentIp', sql.NVarChar, agentIp);
-    request.input('testType', sql.NVarChar, testType);
-    request.input('releaseName', sql.NVarChar, releaseName);
-    request.input('site', sql.NVarChar, site);
-    request.input('tcId', sql.NVarChar, payload.tcId);
-    request.input('apkVersion', sql.NVarChar, apkVersion);
-    request.input('status', sql.NVarChar, payload.status);
-    request.input('reason', sql.NVarChar, payload.reason ?? '');
-
-    const result = await request.query(`
-      DECLARE @result VARCHAR(20);
-      EXEC procInsertShopAppResult
-        @agentIp, @testType, @releaseName, @site, @tcId, @apkVersion, @status, @reason,
-        @result OUTPUT;
-      SELECT @result AS result;
-    `);
+    const pool = await getPool();
+    const result = await pool
+      .request()
+      .input('agentIp', sql.NVarChar, resolveAgentIp())
+      .input('testType', sql.NVarChar, DB_TEST_TYPE[run.testType])
+      .input('releaseName', sql.NVarChar, run.releaseName)
+      .input('site', sql.NVarChar, site)
+      .input('tcId', sql.NVarChar, payload.tcId)
+      .input('apkVersion', sql.NVarChar, apkVersion)
+      .input('status', sql.NVarChar, payload.status)
+      .input('reason', sql.NVarChar, payload.reason ?? '')
+      .query(`
+        DECLARE @result VARCHAR(20);
+        EXEC procInsertShopAppResult
+          @agentIp, @testType, @releaseName, @site, @tcId, @apkVersion, @status, @reason,
+          @result OUTPUT;
+        SELECT @result AS result;
+      `);
 
     const value = String(result.recordset?.[0]?.result ?? '');
     if (value.toLowerCase() === 'success') {
-      console.log(`[db.helper] ${site} - ${payload.tcId} uploaded: ${payload.status}`);
+      console.log(`[db] ${site} - ${payload.tcId} uploaded`);
       return true;
     }
-
-    console.warn(
-      `[db.helper] Failed to export ${payload.tcId} (reason: ${value || 'empty'})`
-    );
+    // fail1 = release/testType, TC or site is not registered (enabled) in the *_mgt tables
+    const hint =
+      value === 'fail1'
+        ? ` — check ShopApp_releasemgt has ${run.releaseName}/${DB_TEST_TYPE[run.testType]}, and ShopApp_tcmgt/sitemgt have ${payload.tcId}/${site}`
+        : '';
+    console.warn(`[db] failed to export ${payload.tcId} (reason: ${value || 'no result'})${hint}`);
     return false;
   } catch (error) {
-    console.warn(
-      `[db.helper] insertShopAppResult: ${error instanceof Error ? error.message : error}`
-    );
+    console.warn(`[db] insertShopAppResult: ${error instanceof Error ? error.message : error}`);
     return false;
-  } finally {
-    if (pool) {
-      await pool.close().catch(() => undefined);
-    }
   }
-}
-
-/** Map WDIO/Mocha result → ReportHandler status labels. */
-export function mapTestStatus(
-  passed: boolean,
-  skipped: boolean,
-  error?: Error
-): { status: ReportStatus; reason: string } {
-  if (skipped) {
-    return { status: 'N/A', reason: error?.message ?? '' };
-  }
-
-  if (passed) {
-    return { status: 'Pass', reason: '' };
-  }
-
-  const reason = error?.message ?? 'Unknown failure';
-  if (reason.toUpperCase().includes('[SKIPPED]')) {
-    return { status: 'N/A', reason };
-  }
-  if (/\[OOS\]/i.test(reason)) {
-    return { status: 'OOS', reason };
-  }
-  if (reason.includes('[SETUP_ERROR]') || /\[Planned\]/i.test(reason)) {
-    return { status: 'Planned', reason };
-  }
-  return { status: 'Fail', reason };
 }

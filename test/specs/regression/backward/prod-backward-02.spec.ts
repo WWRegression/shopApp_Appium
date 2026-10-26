@@ -9,7 +9,7 @@ describe('PROD_BACKWARD_02', () => {
   it('Wishlist to payment then back to cart and Wishlist', async function () {
     await runOrSkip.call(this, 'PROD_BACKWARD_02', async () => {
       await cartPage.clickContinueToCheckout();
-      await checkoutPage.prepareCheckoutPage();
+      await checkoutPage.verifyCheckoutPage();
     });
   });
 });

@@ -52,7 +52,8 @@ export const AUTO_CHECK_CHECKBOX_SELECTOR = [
   "input[name*='CHECKOUT_OPTIONS']:not(:checked)",
   "input[type='checkbox'][required]:not(:checked)",
   "input[type='checkbox'][name*='save' i]:not([disabled]):not(:checked)",
-  "input[type='radio'][value*='GENERAL_INVOICE' i]:not([disabled]):not(:checked)"
+  "input[type='radio'][value*='GENERAL_INVOICE' i]:not([disabled]):not(:checked)",
+  "input[type='checkbox'][name='nonNIFField']:not(:checked)"
 ].join(', ');
 
 export const INVALID_FIELD_SELECTOR = '.ng-invalid, ul.error, ul.error li, mat-error, .mat-mdc-form-field-error';
@@ -105,7 +106,11 @@ export class CheckoutLocator {
   }
 
   get deliveryOptionButton() {
-    return $('ul[class*="delivery_list"] .delivery-mode-tab:not(.selected-mode)');
+    return $('ul[class*="delivery_list"]:not(:has(.selected-mode)) .delivery-mode-tab');
+  }
+
+  get deliveryDateButton() {
+    return $('ul[class*="slot_list"]:not(:has(.selected-date)) .delivery-dates');
   }
 
   get autoCheckCheckboxes() {

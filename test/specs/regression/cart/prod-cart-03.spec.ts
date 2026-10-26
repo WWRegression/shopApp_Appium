@@ -11,12 +11,13 @@ describe('PROD_CART_03', () => {
     await runOrSkip.call(this, 'PROD_CART_03', async (site) => {
       await cartPage.clearCart();
       await addToCart(site.product.sku);
-      await cartPage.verifySku(site.product.sku);
 
-      await cartPage.scPlus.addService();     
+      await cartPage.prepareCartPage();
+      await cartPage.verifySku(site.product.sku);
+      await cartPage.scPlus.addService();
       await cartPage.clickContinueToCheckout();
 
-      await checkoutPage.prepareCheckoutPage();
+      await checkoutPage.verifyCheckoutPage();
     });
   });
 });

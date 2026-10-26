@@ -38,6 +38,7 @@ describe('PROD_BUY_01', () => {
 
       await cartPage.prepareCartPage();
       await cartPage.tradeIn.verifyServiceApplied();
+      await cartPage.prepareCartPage();
       await cartPage.verifySku(site.product.sku);
     });
   });

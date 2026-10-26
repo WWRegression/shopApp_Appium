@@ -26,6 +26,7 @@ describe('PROD_BACKWARD_01', function () {
       const pfProductName = await pfPage.selectFirstPfCard(true);
 
       await bcPage.verifyProductName(pfProductName);
+      await bcPage.verifyBnbDisplayed('BC');
       await bcPage.galaxyClub.selectNoForService();
       await bcPage.tradeIn.selectNoForService();
       await bcPage.scPlus.selectNoForService();
@@ -34,9 +35,11 @@ describe('PROD_BACKWARD_01', function () {
 
       await cartPage.prepareCartPage();
       await cartPage.verifyProductName(pfProductName);
+      await cartPage.verifyBnbDisplayed('Cart');
 
       await cartPage.clickContinueToCheckout();
       await checkoutPage.prepareCheckoutPage();
+      await checkoutPage.verifyBnbNotDisplayed('Checkout');
       await checkoutPage.verifyProductName(pfProductName);
       const checkoutSteps = await checkoutPage.proceedToPayment();
       console.log(`[PROD_BACKWARD_01] checkout steps: ${checkoutSteps.join(' > ')}`);
@@ -49,6 +52,7 @@ describe('PROD_BACKWARD_01', function () {
       await checkoutPage.clickLeaveCheckoutConfirmIfShown();
 
       await cartPage.verifyCartPage();
+      await cartPage.prepareCartPage();
       await cartPage.verifyProductName(pfProductName);
       await cartPage.pressDeviceBack();
 

@@ -12,10 +12,10 @@
     "email": "wwautoguest@gmail.com"
   },
   "shipping": {
-    "address1": "Slużewiec, Mokotów Postępu 14",
-    "address2": "Del Biobio Communa",
-    "postalCode": "00-009",
-    "town": "Warsaw"
+    "address1": "Postępu 14",
+    "address2": "Mokotów",
+    "postalCode": "02-676",
+    "town": "Warszawa"
   },
   "product": {
     "sku": "SM-F976BZKBEUE",
@@ -23,6 +23,7 @@
     "color": "graphite",
     "storage": "256GB"
   },
+  
   "search": {
     "keyword": "inteligentny zegarek",
     "haSku": "RB34C603CS9/EF",

@@ -104,6 +104,16 @@ export class CartLocator {
     );
   }
 
+  quantityInput(sku: string) {
+    return $(
+      [
+        `.cart-item[data-modelcode="${sku}" i] input.input-qty`,
+        `[data-modelcode="${sku}" i] cart-item-counter input`,
+        `[data-modelcode="${sku}" i] input[data-automation-id="txt-qty"]`,
+      ].join(', ')
+    );
+  }
+
   /** Quantity-decrease button */
   quantityDecreaseButton(sku: string) {
     return $(
@@ -144,7 +154,7 @@ export class CartLocator {
 
   get tradeInAddButton() {
     return $(
-      '[an-la*="trade-in" i][an-la*="add" i], button[an-la*="add trade-in" i], .tradein-service [an-la*="add" i]'
+      '[data-an-la="add service:trade-in" i], [an-la="trade-in:yes" i], [an-la*="trade-in" i][an-la*="add" i], button[an-la*="add trade-in" i], .tradein-service [an-la*="add" i]'
     );
   }
 

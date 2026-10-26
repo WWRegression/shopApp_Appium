@@ -12,6 +12,7 @@ describe('PROD_CART_06', () => {
     await runOrSkip.call(this, 'PROD_CART_06', async (site) => {
       await cartPage.clearCart();
       await addToCart(site.product.sku);
+      await cartPage.prepareCartPage();
       await cartPage.verifySku(site.product.sku);
       await cartPage.clickProductName(site.product.sku);
 

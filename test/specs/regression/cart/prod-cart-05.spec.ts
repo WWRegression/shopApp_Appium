@@ -9,23 +9,20 @@ describe('PROD_CART_05', () => {
 
   it('add Trade-Up on cart and go to payment', async function () {
     await runOrSkip.call(this, 'PROD_CART_05', async (site) => {
-      const sku = site.search.vdSku ?? site.search.haSku ?? '';
-      if (!sku) {
-        throw new Error('[PROD_CART_05] site.search.vdSku or site.search.haSku is required');
-      }
+      const sku = cartPage.tradeUp.getProductSku(site);
       await cartPage.clearCart();
       await addToCart(sku);
-      await cartPage.verifySku(sku);
 
+      await cartPage.prepareCartPage();
+      await cartPage.verifySku(sku);
       if (['AE', 'AE_AR', 'VN'].includes(site.siteCode)) {
-        await cartPage.tradeIn.addService(site.tradeIn);
+        await cartPage.tradeIn.addService();
       } else {
         await cartPage.tradeUp.addService(site.tradeUp?.postalCode ?? '');
       }
       await cartPage.tradeUp.verifyServiceApplied();
       await cartPage.clickContinueToCheckout();
-
-      await checkoutPage.prepareCheckoutPage();
+      await checkoutPage.verifyCheckoutPage();
     });
   });
 });

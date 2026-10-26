@@ -129,7 +129,7 @@ export class LoginLocator {
     return $('//android.widget.Button');
   }
 
-  get passwordInput() {
+  get pwInput() {
     return $(
       `//android.widget.EditText[@resource-id = '${SAMSUNG_ACCOUNT_ID}/etSignInPassword']
       | //android.widget.EditText[@resource-id = 'iptLgnPlnPD']`
@@ -212,7 +212,7 @@ export class LoginLocator {
     return $(`//android.widget.Button[@text = 'Confirm']`);
   }
 
-  get confirmPasswordInput() {
+  get confirmPwInput() {
     return $(`//android.widget.EditText[@resource-id = '${SAMSUNG_ACCOUNT_ID}/confirm_password']`);
   }
 

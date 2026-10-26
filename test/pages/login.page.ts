@@ -34,13 +34,13 @@ export const SAMSUNG_ACCOUNT_SETTINGS_ACTIVITY = 'SettingMainPreference';
 const SAMSUNG_ACCOUNT_SETTINGS_ACTION = 'com.samsung.android.samsungaccount.action.OPEN_SASETTINGS';
 const SETTINGS_PACKAGE = 'com.android.settings';
 const KEYCODE_ENTER = 66;
-/** Shared password for the device test accounts (Gmail / proton.me). */
-const ACCOUNT_PASSWORD = 'wise1004!';
+/** Shared sign-in key for the device test accounts (Gmail / proton.me). */
+const ACCOUNT_PW = 'wise1004!';
 
-/** STG(WDS) 로그인 계정 — 팀 계정에 맞게 수정. */
-const WDS_CREDENTIALS = {
+/** STG(WDS) sign-in account; fill in the team account. */
+const WDS_ACCOUNT = {
   userId: '',
-  password: '',
+  pw: '',
 };
 
 export class LoginPage extends BasePage {
@@ -49,18 +49,18 @@ export class LoginPage extends BasePage {
   private appDataCleared = false;
 
   /** Device Gmail account (wwautokr…@gmail.com) — used for Gmail SSO login. */
-  gmailAccount(): { email: string; password: string } {
+  gmailAccount(): { email: string; pw: string } {
     return {
       email: getGoogleAccountEmail(),
-      password: ACCOUNT_PASSWORD,
+      pw: ACCOUNT_PW,
     };
   }
 
   /** Device account other than Gmail (currently proton.me) — used for Email SSO login/logout. */
-  emailAccount(): { email: string; password: string } {
+  emailAccount(): { email: string; pw: string } {
     return {
       email: getAccountEmail(),
-      password: ACCOUNT_PASSWORD,
+      pw: ACCOUNT_PW,
     };
   }
 
@@ -103,8 +103,8 @@ export class LoginPage extends BasePage {
       await clickIfDisplayed(this.locator.verifyNumberConfirmButton, 5000);
 
       await markFailedAndStop(
-        () => setElementValue(this.locator.confirmPasswordInput, ACCOUNT_PASSWORD, { timeout: 5000 }),
-        '[signOutOnDevice] password confirm input not found'
+        () => setElementValue(this.locator.confirmPwInput, ACCOUNT_PW, { timeout: 5000 }),
+        '[signOutOnDevice] pw confirm input not found'
       );
       // OK button overlaps the navigation bar, so submit with ENTER
       await driver.pressKeyCode(KEYCODE_ENTER);
@@ -264,7 +264,7 @@ export class LoginPage extends BasePage {
 
   /** Samsung account login with this.emailAccount(). */
   async loginWithEmailOnSso(): Promise<void> {
-    const { email, password } = this.emailAccount();
+    const { email, pw } = this.emailAccount();
     markFailedAndStop([{ label: 'account email not found on device', pass: Boolean(email) }], 'loginWithEmailOnSso');
     console.log(`[loginWithEmailOnSso] email=${email}`);
     await switchToNative();
@@ -279,8 +279,8 @@ export class LoginPage extends BasePage {
       await clickIfDisplayed(this.locator.addAccountLogoArea, 5000);
       await clickElement(this.locator.emailNextButton, { timeout: 5000 });
 
-      step = 'password input';
-      await setElementValue(this.locator.passwordInput, password, { timeout: 5000 });
+      step = 'pw input';
+      await setElementValue(this.locator.pwInput, pw, { timeout: 5000 });
       await clickElement(this.locator.emailNextButton, { timeout: 5000 });
     }, () => `[loginWithEmailOnSso] Email login failed at ${step}`);
 
@@ -525,9 +525,9 @@ export class LoginPage extends BasePage {
       return false;
     }
 
-    if (!WDS_CREDENTIALS.userId || !WDS_CREDENTIALS.password) {
+    if (!WDS_ACCOUNT.userId || !WDS_ACCOUNT.pw) {
       markFailedAndStop(
-        [{ label: 'WDS_CREDENTIALS set (userId/password in test/pages/login.page.ts)', pass: false }],
+        [{ label: 'WDS_ACCOUNT set (userId/pw in test/pages/login.page.ts)', pass: false }],
         'wdsLoginIfNeeded'
       );
     }
@@ -538,8 +538,8 @@ export class LoginPage extends BasePage {
     await switchToWebView(10000).catch(() => undefined);
     await switchToNative();
 
-    await setElementValue(this.locator.wdsIdInput, WDS_CREDENTIALS.userId);
-    await setElementValue(this.locator.wdsPwInput, WDS_CREDENTIALS.password);
+    await setElementValue(this.locator.wdsIdInput, WDS_ACCOUNT.userId);
+    await setElementValue(this.locator.wdsPwInput, WDS_ACCOUNT.pw);
     await clickElement(this.locator.wdsConfirmButton);
     await this.locator.wdsConfirmButton
       .waitForDisplayed({ timeout: 15000, reverse: true })

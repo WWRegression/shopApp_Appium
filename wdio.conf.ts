@@ -1,5 +1,6 @@
 import { getRunConfig, getSpecsForTestType } from './config/run.config';
 import { loadSite } from './config/site';
+import { closeReportDb } from './test/helpers/db.helper';
 import { reportTestResult } from './test/helpers/report.helper';
 import { BasePage } from './test/pages/base.page';
 
@@ -82,21 +83,10 @@ export const config: WebdriverIO.Config = {
       await new BasePage().waitForAppLoaded(60000);
     }
   },
-  afterTest: async function (test, _context, result) {
-    const parentTitle =
-      typeof test.parent === 'string'
-        ? test.parent
-        : (test.parent as { title?: string } | undefined)?.title;
-
-    await reportTestResult({
-      title: test.title,
-      parent: parentTitle,
-      passed: result.passed,
-      skipped: Boolean(
-        result.error?.message?.toLowerCase().includes('skipped') ||
-          (test as { pending?: boolean }).pending
-      ),
-      error: result.error,
-    });
+  afterTest: async (_test, _context, result) => {
+    await reportTestResult(result);
+  },
+  after: async () => {
+    await closeReportDb();
   },
 };

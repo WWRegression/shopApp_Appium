@@ -10,7 +10,7 @@ describe('PROD_BUY_09', () => {
     await runOrSkip.call(this, 'PROD_BUY_09', async () => {
       // TODO: reimplement using new PfPage/BcPage API
       await cartPage.clickContinueToCheckout();
-      await checkoutPage.prepareCheckoutPage();
+      await checkoutPage.verifyCheckoutPage();
     });
   });
 });

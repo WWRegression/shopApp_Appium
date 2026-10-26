@@ -23,6 +23,7 @@ describe('PROD_SHOP_02', () => {
       await wishlistPage.clickAddToCart(sku);
       // Some sites (e.g. IN) stay on the wishlist after adding — open the cart from BNB
       await cartPage.selectBnbMenu('cart');
+      await cartPage.prepareCartPage();
       await cartPage.verifySku(sku);
 
       await wishlistPage.clickRemoveFromWishlist(sku);

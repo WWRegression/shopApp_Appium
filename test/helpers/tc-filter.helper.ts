@@ -1,6 +1,6 @@
 import { getRunConfig } from '../../config/run.config';
 import { getSiteData, loadSite, LoadedSite } from '../../config/site';
-import { takeRecordedFailures } from './report.helper';
+import { setCurrentTc, takeRecordedFailures } from './report.helper';
 import {
   TestCaseMeta,
   TestSuite,
@@ -43,10 +43,14 @@ export async function runOrSkip(
 ): Promise<void> {
   const meta = getTestCaseMeta(tcId);
 
+  // Not in this suite: skipped without a DB row
   if (!meta.suites.includes(currentSuite())) {
+    setCurrentTc(tcId, false);
     this.skip();
   }
 
+  // From here every outcome is uploaded; a site exclusion is reported as N/A
+  setCurrentTc(tcId);
   const site = getSiteData();
   if (!shouldRunTestCase(site, meta)) {
     this.skip();

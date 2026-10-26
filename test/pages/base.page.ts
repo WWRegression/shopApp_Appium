@@ -3,10 +3,10 @@ import { HeaderLocator, type HeaderIcon } from '../locators/header.locator';
 import { BnbLocator, BNB_MENUS, type BnbMenu } from '../locators/bnb.locator';
 import { LoginLocator } from '../locators/login.locator';
 import { HomeLocator } from '../locators/home.locator';
-import { switchToNative } from '../helpers/context.helper';
+import { switchToNative, getCurrentContext } from '../helpers/context.helper';
 import { flingToStart, scrollUp } from '../helpers/gesture.helper';
 import { assertEqual } from '../helpers/validation.helper';
-import { markFailedAndStop } from '../helpers/report.helper';
+import { markFailed, markFailedAndStop } from '../helpers/report.helper';
 import {
   clickElement,
   clickIfDisplayed,
@@ -403,12 +403,41 @@ export class BasePage {
   // BNB
   /** Reads the item count from the BNB cart tab's content-desc (leading number). */
   async getBNBCartCount(): Promise<number> {
-    await this.prepareHeaderBnb();
+    await switchToNative();
+    // Swipe only when the cart tab is hidden; a swipe right after a quantity change can drop the update
+    if (!(await isDisplayedOrFalse(this.bnbLocator.menu('cart')))) {
+      await scrollUp();
+    }
     await this.ensureBnbVisible('cart');
     const desc = await getElementLabel(this.bnbLocator.menu('cart'));
     const firstLine = desc.split(/\r?\n/)[0] ?? '';
     const match = firstLine.match(/\d+/);
     return match ? parseInt(match[0], 10) : 0;
+  }
+
+  /** Records a failure when the BNB is not shown on `pageName`. */
+  async verifyBnbDisplayed(pageName: string): Promise<void> {
+    const shown = await this.isBnbHomeShown(5000);
+    console.log(`[verifyBnbDisplayed] page=${pageName} expected BNB="shown" actual="${shown ? 'shown' : 'hidden'}" result=${shown ? 'PASS' : 'FAIL'}`);
+    markFailed([{ label: `${pageName} BNB shown`, pass: shown }], 'verifyBnbDisplayed');
+  }
+
+  /** Records a failure when the BNB is shown on `pageName`, a page that must hide it (Checkout). */
+  async verifyBnbNotDisplayed(pageName: string): Promise<void> {
+    const shown = await this.isBnbHomeShown(3000);
+    console.log(`[verifyBnbNotDisplayed] page=${pageName} expected BNB="hidden" actual="${shown ? 'shown' : 'hidden'}" result=${shown ? 'FAIL' : 'PASS'}`);
+    markFailed([{ label: `${pageName} BNB hidden`, pass: !shown }], 'verifyBnbNotDisplayed');
+  }
+
+  /** True when the BNB Home tab exists within `timeoutMs`, checked in native context; returns to the starting context. */
+  private async isBnbHomeShown(timeoutMs: number): Promise<boolean> {
+    const startContext = await getCurrentContext();
+    await switchToNative();
+    const shown = await this.bnbLocator.homeButton.waitForExist({ timeout: timeoutMs }).then(() => true, () => false);
+    if (startContext !== 'NATIVE_APP') {
+      await driver.switchContext(startContext).catch(() => undefined);
+    }
+    return shown;
   }
 
   /** Verifies the BNB cart tab count. */

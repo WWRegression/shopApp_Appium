@@ -34,6 +34,7 @@ describe('PROD_BUY_05', () => {
 
       await cartPage.prepareCartPage();
       await cartPage.tradeUp.verifyServiceApplied();
+      await cartPage.prepareCartPage();
       await cartPage.verifySku(site.search.vdSku ?? '');      
     });
   });

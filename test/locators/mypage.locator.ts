@@ -589,9 +589,12 @@ export class MypageLocator {
         @content-desc = 'Nastavení' or
         @content-desc = 'Beállítások' or
         @content-desc = 'Setări' or
-        @content-desc = 'הגדרות' or
+        @content-desc = 'Ayarlar' or
+        @content-desc = 'Réglages' or
         @content-desc = 'Definições' or
-        @content-desc = 'Ayarlar'
+        @content-desc = 'Einstellung' or
+        @content-desc = 'הגדרות' or
+        @content-desc = '通知をオンにする'
       ]`
     );
   }
@@ -618,8 +621,11 @@ export class MypageLocator {
         @content-desc = 'Personenbezogene Daten verwalten' or
         @content-desc = 'Személyes adatok kezelése' or
         @content-desc = 'Gestionare date cu caracter personal' or
+        @content-desc = 'Kişisel Verilerin Yönetimi' or
+        @content-desc = 'Persönliche Daten verwalten' or
+        @content-desc = 'マーケティングに関する設定' or
         @content-desc = 'Gestão de dados pessoais' or
-        @content-desc = 'Kişisel Verilerin Yönetimi'
+        contains(@content-desc, 'ניהול מידע אישי')
       ]`
     );
   }

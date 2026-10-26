@@ -6,9 +6,10 @@ import { CartEupService } from '../services/eup/cart-eup.service';
 import { CartSimService } from '../services/sim/cart-sim.service';
 import { CartTradeUpService } from '../services/tradeup/cart-tradeup.service';
 import { switchToNative, prepareWebViewPage, isCurrentWebViewPage, getCurrentWebViewPage } from '../helpers/context.helper';
-import { getElementLabel, clickIfDisplayed, clickElement, isDisplayedOrFalse, jsTouchStart, jsClick } from '../helpers/element.helper';
+import { getElementLabel, clickIfDisplayed, clickElement, isDisplayedOrFalse, jsTouchStart, jsClick, waitForDisplayedOrFalse, getInputValue, setInputValue } from '../helpers/element.helper';
 import { assertEqual } from '../helpers/validation.helper';
-import { markFailedAndStop, FieldCheck } from '../helpers/report.helper';
+import { markFailed, markFailedAndStop, FieldCheck } from '../helpers/report.helper';
+import { currentSiteCode } from '../helpers/tc-filter.helper';
 import { parseNumber, removeNonWordChars, normalizeProductName, productNameMatches } from '../helpers/data.helper';
 
 export interface CartItemOptions {
@@ -129,8 +130,7 @@ export class CartPage extends BasePage {
 
   /** All sku (data-modelcode) values currently in the cart, original case preserved. */
   private async getCartItemSkus(): Promise<string[]> {
-    await this.prepareCartPage();
-    // Item rows can still be rendering right after the cart page itself becomes ready.
+    // Item rows can still be rendering right after the cart page itself becomes ready
     await driver
       .waitUntil(async () => (await this.locator.itemLines.length) > 0, { timeout: 8000, interval: 300 })
       .catch(() => undefined);
@@ -155,7 +155,6 @@ export class CartPage extends BasePage {
 
   /** Verifies a sku is present in the cart. */
   async verifySku(sku: string): Promise<void> {
-    await this.prepareCartPage();
     const skus = await this.getCartItemSkus();
     const pass = skus.some((code) => code.toLowerCase() === sku.toLowerCase());
     console.warn(`[Cart.verifySku] expected="${sku}" actual=${skus.join(", ") || "none"} result=${pass ? "PASS" : "FAIL"}`);
@@ -227,6 +226,101 @@ export class CartPage extends BasePage {
     assertEqual(after_bnbCount, before_bnbCount + 1);
   }
 
+  /** Types a quantity into the item's quantity input and commits it; 0 removes the item. */
+  async inputQuantity(sku: string, quantity: number): Promise<void> {
+    // IN has no quantity input
+    if (currentSiteCode() === 'IN') {
+      console.log('[inputQuantity] skipped for IN');
+      return;
+    }
+    await this.prepareCartPage();
+    const input = this.locator.quantityInput(sku);
+    const found = await waitForDisplayedOrFalse(input, { timeout: 5000 });
+    markFailed([{ label: 'quantity input', pass: found, detail: `not found for ${sku}` }], 'inputQuantity');
+    if (!found) {
+      return;
+    }
+
+    const typed = await this.typeIntoQuantityInput(input, String(quantity));
+    await this.commitQuantityInput(input);
+    // Some sites ask to confirm the removal at 0
+    if (quantity === 0) {
+      await clickIfDisplayed(this.locator.removeConfirmButton, 3000);
+    }
+    // Native gestures before the cart update lands can drop it (UK)
+    await driver.pause(['CL', 'PE', 'US'].includes(currentSiteCode()) ? 5000 : 3000);
+    console.log(`[inputQuantity] sku=${sku} typed=${quantity} input="${typed}"`);
+  }
+
+  /** Replaces the input's value by typing, falling back to a JS set; returns the value it ends up holding. */
+  private async typeIntoQuantityInput(input: ChainablePromiseElement, value: string): Promise<string> {
+    await input.click().catch(() => undefined);
+    // Select the current value first so typing replaces it without an empty value in between
+    await driver.execute((el) => {
+      (el as unknown as HTMLInputElement).focus();
+      (el as unknown as HTMLInputElement).select();
+    }, await input);
+    await driver.keys(value.split(''));
+    // Typed keys can miss the input when the WebView keeps focus elsewhere
+    if ((await getInputValue(input)) !== value) {
+      await setInputValue(input, value);
+    }
+    return getInputValue(input);
+  }
+
+  /** Commits the typed quantity: the cart updates on the input's change event. */
+  private async commitQuantityInput(input: ChainablePromiseElement): Promise<void> {
+    await driver.keys('Enter');
+    // The input is already gone when the item was removed
+    await driver
+      .execute((el) => {
+        el.dispatchEvent(new Event('change', { bubbles: true }));
+        (el as unknown as HTMLInputElement).blur();
+      }, await input)
+      .catch(() => undefined);
+  }
+
+  /** Records a failure when the item's quantity input does not show `expected`, waiting up to 8s for the cart to update. */
+  async verifyItemQuantity(sku: string, expected: number): Promise<void> {
+    // IN has no quantity input
+    if (currentSiteCode() === 'IN') {
+      return;
+    }
+    await this.prepareCartPage();
+    let actual = '';
+    const pass = await driver
+      .waitUntil(
+        async () => {
+          actual = await getInputValue(this.locator.quantityInput(sku));
+          return actual === String(expected);
+        },
+        { timeout: 8000, interval: 500 }
+      )
+      .then(() => true, () => false);
+    console.log(`[verifyItemQuantity] sku=${sku} expected=${expected} actual=${actual || 'none'} result=${pass ? 'PASS' : 'FAIL'}`);
+    markFailed([{ label: 'item quantity', pass, detail: `expected ${expected}, actual ${actual || 'none'}` }], 'verifyItemQuantity');
+  }
+
+  /** Records a failure when the BNB cart tab count differs from the cart's total item count, waiting up to 10s for the tab to update. */
+  async verifyCartIconMatchesCart(): Promise<void> {
+    await this.prepareCartPage();
+    const cartCount = (await this.isCartEmpty()) ? 0 : await this.getCartTotalCount();
+    let bnbCount = -1;
+    const pass = await driver
+      .waitUntil(async () => (bnbCount = await this.getBNBCartCount()) === cartCount, { timeout: 10000, interval: 1000 })
+      .then(() => true, () => false);
+    console.log(`[verifyCartIconMatchesCart] expected cart icon=${cartCount} actual=${bnbCount} result=${pass ? 'PASS' : 'FAIL'}`);
+    markFailed([{ label: 'cart icon count', pass, detail: `cart ${cartCount}, icon ${bnbCount}` }], 'verifyCartIconMatchesCart');
+  }
+
+  /** Records a failure when the cart still shows items after up to 10s. */
+  async verifyCartIsEmpty(): Promise<void> {
+    await this.prepareCartPage();
+    const empty = await this.isCartEmpty(10000);
+    console.log(`[verifyCartIsEmpty] expected cart="empty" actual="${empty ? 'empty' : 'has items'}" result=${empty ? 'PASS' : 'FAIL'}`);
+    markFailed([{ label: 'cart is empty', pass: empty }], 'verifyCartIsEmpty');
+  }
+
   /** Decrements quantity via the stepper - button. */
   async decreaseQuantity(sku: string): Promise<void> {
     const before_bnbCount = await this.getBNBCartCount();
@@ -259,8 +353,6 @@ export class CartPage extends BasePage {
    * text. Plain strings in, not tied to any product model — reusable outside flagship specs too.
    */
   async verifyOptions(sku: string, options: CartItemOptions): Promise<void> {
-    await console.warn('verifyOptions: start');
-    await this.prepareCartPage();
     await this.locator.cartItemSku(sku).waitForDisplayed({ timeout: 10000 }).catch(() => undefined);
 
     const name = await getElementLabel(this.locator.cartItemName(sku));
