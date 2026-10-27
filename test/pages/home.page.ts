@@ -1,7 +1,9 @@
 import { BasePage } from './base.page';
 import { HomeLocator } from '../locators/home.locator';
-import { switchToNative } from '../helpers/context.helper';
+import { SearchLocator } from '../locators/search.locator';
+import { getDetailedWebViewWindows, switchToNative } from '../helpers/context.helper';
 import { parsePoints } from '../helpers/data.helper';
+import { getRunConfig } from '../../config/run.config';
 import { getSiteData } from '../../config/site';
 import {
   clickElement,
@@ -11,11 +13,12 @@ import {
   scrollUntilVisible,
   waitForDisplayedOrFalse,
 } from '../helpers/element.helper';
-import { longPressElement } from '../helpers/gesture.helper';
-import { markFailed, markFailedAndStop } from '../helpers/report.helper';
+import { longPressElement, scrollDown, tapAtCoordinates } from '../helpers/gesture.helper';
+import { markFailed, markFailedAndStop, type FieldCheck } from '../helpers/report.helper';
 
 export class HomePage extends BasePage {
   private readonly locator = new HomeLocator();
+  private readonly searchLocator = new SearchLocator();
 
   /** True when the header title matches the Home title texts (BasePage.titleTexts.HOME). */
   async isOnHome(): Promise<boolean> {
@@ -173,13 +176,108 @@ export class HomePage extends BasePage {
     console.log(`[applyBuildSetup] selected ${label}`);
   }
 
-  async verifyBottomNavigation(): Promise<void> {
-    // TODO: Verify BNB Home/Shop/Offers/Cart/Account redirection
-    await this.selectBnbMenu('home');
+  /** Chat icon opens a page whose title is Chat, or whose title cannot be read. Any other page stops the TC. UK has no header chat icon. */
+  async verifyChat(): Promise<void> {
+    if (getRunConfig().siteCode === 'UK') {
+      console.log('[verifyChat] UK — skipped');
+      return;
+    }
+    await this.selectHeaderIcon('chat');
+    await driver.pause(5000);
+    const title = (await getElementLabel(this.headerLocator.title)).trim();
+    const chat = title.length === 0 || (await this.matchesHeaderTitle('CHAT'));
+    console.log(`[verifyChat] title="${title || 'unknown'}" result=${chat ? 'PASS' : 'FAIL'}`);
+    markFailedAndStop([{ label: 'Failed to navigate Chat page', pass: chat }], 'verifyChat');
   }
 
+  /** Search icon opens the search box. A missing box is recorded, then Back returns to the previous page. */
+  async verifySearch(): Promise<void> {
+    await this.selectHeaderIcon('search');
+    await driver.pause(5000);
+    const shown = await waitForDisplayedOrFalse(this.searchLocator.searchInput, { timeout: 5000 });
+    console.log(`[verifySearch] search box=${shown ? 'PASS' : 'FAIL'}`);
+    markFailed([{ label: 'Failed to navigate to Search page', pass: shown }], 'verifySearch');
+    await this.pressDeviceBack();
+  }
+
+  /** T&C on Home is folded. Expanding it, each link opens the URL in the label or a PDF. No link is a pass. */
   async verifyTermsAndConditions(): Promise<void> {
-    // TODO: Verify T&C folded by default and hyperlink redirections
+    await this.prepareHomePage();
+    await switchToNative();
+    const tnc = this.locator.tncButton;
+    let shown = false;
+    for (let attempt = 0; attempt < 8 && !shown; attempt += 1) {
+      shown = await isDisplayedOrFalse(tnc);
+      if (!shown) {
+        await scrollDown();
+      }
+    }
+    markFailedAndStop([{ label: 'T&C not found on Home', pass: shown }], 'verifyTermsAndConditions');
+
+    const failures: FieldCheck[] = [];
+    const expanded = await isDisplayedOrFalse(this.locator.tncExpandedChild);
+    if (expanded) {
+      console.log('[verifyTermsAndConditions] T&C is expanded by default');
+      failures.push({ label: 'T&C is not folded by default', pass: false });
+    } else {
+      await clickElement(tnc, { timeout: 5000 });
+      console.log('[verifyTermsAndConditions] T&C folded, expanded to check links');
+    }
+
+    const links = await this.locator.tncHyperlinks.getElements();
+    if (links.length === 0) {
+      console.log('[verifyTermsAndConditions] no hyperlink in T&C — passed');
+      markFailed(failures, 'verifyTermsAndConditions');
+      return;
+    }
+    console.log(`[verifyTermsAndConditions] ${links.length} hyperlink(s)`);
+
+    for (let index = 0; index < links.length; index += 1) {
+      const current = (await this.locator.tncHyperlinks.getElements())[index];
+      if (!current) {
+        failures.push({ label: `T&C link ${index + 1} not found after returning`, pass: false });
+        continue;
+      }
+      const label = ((await current.getAttribute('content-desc').catch(() => '')) ?? '').trim();
+      const opened = await this.openTncHyperlink(current, label);
+      console.log(`[verifyTermsAndConditions] link="${label}" result=${opened ? 'PASS' : 'FAIL'}`);
+      if (!opened) {
+        failures.push({ label: `T&C link opened the wrong page: ${label}`, pass: false });
+      }
+      await switchToNative();
+      await this.pressDeviceBack();
+      await driver.pause(1000);
+      if (links.length > 1) {
+        await scrollDown();
+      }
+    }
+    markFailed(failures, 'verifyTermsAndConditions');
+  }
+
+  /** Tap the lower part of the link, where the URL text sits, then match a WebView URL or a PDF title. */
+  private async openTncHyperlink(link: WebdriverIO.Element, label: string): Promise<boolean> {
+    const location = await link.getLocation();
+    const size = await link.getSize();
+    await tapAtCoordinates(location.x + 20, location.y + Math.round(size.height * 0.75));
+    await driver.pause(1000);
+
+    const expected = this.normalizeTncLink(label);
+    const windows = await getDetailedWebViewWindows().catch(() => []);
+    const urlMatched = windows.some((window) => {
+      const url = getRunConfig().siteCode === 'UK' ? window.url.toLowerCase() : window.url;
+      return url.includes(expected);
+    });
+    if (urlMatched) {
+      return true;
+    }
+    const pdf = await getElementLabel(this.locator.pdfTitle).catch(() => '');
+    return pdf.includes('.pdf');
+  }
+
+  /** Drop the query and a trailing slash. UK compares the link in lower case. */
+  private normalizeTncLink(label: string): string {
+    const base = label.replace(/[?#].*$/, '').replace(/\/$/, '');
+    return getRunConfig().siteCode === 'UK' ? base.toLowerCase() : base;
   }
 
   /** Rewards points shown on Home; fails when the account has not joined Rewards. */

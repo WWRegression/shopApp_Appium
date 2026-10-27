@@ -170,6 +170,87 @@ export class HomeLocator {
       ]`);
   }
 
+  /** Home footer Terms and Conditions row. Exact content-desc, clickable. */
+  get tncButton() {
+    const label = [
+      'Terms and Conditions',
+      'Terms & Conditions',
+      'Terms & Conditions:',
+      'T&C',
+      'Terms and Condition',
+      'Termes et conditions',
+      'Conditions générales',
+      'Mentions légales',
+      'Términos y Condiciones',
+      'Términos y condiciones',
+      'Terminos y condiciones',
+      'Termos e Condições',
+      'Pravidla a Podmínky',
+      'Podmínky & pravidla',
+      'Aktionsbedingungen',
+      'Algemene voorwaarden',
+      'Általános szerződési feltételek',
+      'Termeni și condiții',
+      'Villkor',
+      'Şartlar ve Koşullar',
+      '條款和條件',
+      '條款及細則',
+      '條款與條件',
+      '条款声明',
+      'Điều khoản và điều kiện',
+      'Warunki i ograniczenia',
+      'תנאים והגבלות',
+    ]
+      .map((text) => `normalize-space(@content-desc)='${text}'`)
+      .join(' or ');
+    return $(`//android.view.View[@clickable='true' and (${label})]`);
+  }
+
+  /** A child under the T&C row. Visible only when the section is expanded. */
+  get tncExpandedChild() {
+    const label = [
+      'Terms and Conditions',
+      'Terms and Condition',
+      'Terms & Conditions',
+      'Termes et conditions',
+      'Términos y Condiciones',
+      'Términos y condiciones',
+      'Pravidla a Podmínky',
+      'Aktionsbedingungen',
+      'Általános szerződési feltételek',
+      'Algemene voorwaarden',
+      'Termeni și condiții',
+      'Villkor',
+      '條款和條件',
+      '條款及細則',
+      '条款声明',
+      'Điều khoản và điều kiện',
+      'Warunki i ograniczenia',
+    ]
+      .map((text) => `contains(@content-desc,'${text}')`)
+      .join(' or ');
+    return $(
+      `//android.view.View[(${label})]//android.widget.ScrollView` +
+        ` | //android.view.View[(${label})]//android.view.View` +
+        ` | //android.view.View[@content-desc='תנאים והגבלות']/android.view.View/android.view.View`
+    );
+  }
+
+  /** Links inside the expanded T&C. A country with none is a pass. */
+  get tncHyperlinks() {
+    return $$(
+      `//android.widget.ScrollView//android.view.View[contains(@content-desc, 'https')]` +
+        ` | //android.widget.ScrollView//android.view.View[contains(@content-desc, 'Les conditions générales')]` +
+        ` | //android.widget.ScrollView//android.view.View[contains(@content-desc, 'actievoorwaarden')]` +
+        ` | (//android.widget.ScrollView//android.view.View[contains(@content-desc, 'Samsung.com') and @clickable='true'])[1]`
+    );
+  }
+
+  /** Native PDF viewer title after a T&C link opens a PDF. */
+  get pdfTitle() {
+    return $(`//android.view.View[contains(@content-desc, '.pdf')]`);
+  }
+
   /** Rewards points under the greeting, e.g. "0 pts" (English), "10 星钻" (CN) */
   get rewardsPoints() {
     return $(`//android.view.View[contains(@content-desc, ' pts') or contains(@content-desc, '星钻')]`);

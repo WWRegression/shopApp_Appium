@@ -4,6 +4,7 @@ import { BnbLocator, BNB_MENUS, type BnbMenu } from '../locators/bnb.locator';
 import { LoginLocator } from '../locators/login.locator';
 import { HomeLocator } from '../locators/home.locator';
 import { switchToNative, getCurrentContext } from '../helpers/context.helper';
+import { getRunConfig } from '../../config/run.config';
 import { flingToStart, scrollUp } from '../helpers/gesture.helper';
 import { assertEqual } from '../helpers/validation.helper';
 import { markFailed, markFailedAndStop } from '../helpers/report.helper';
@@ -454,6 +455,24 @@ export class BasePage {
   async matchesBnbMenu(menu: BnbMenu): Promise<boolean> {
     await this.prepareHeaderBnb();
     return this.isBnbMenuMarkedSelected(menu);
+  }
+
+  /** Header title matches the page, and that BNB tab is selected. US/IN Cart has no BNB. */
+  async verifyPageByTitleAndBnb(page: 'HOME' | 'SHOP' | 'OFFERS' | 'CART' | 'MY_PAGE'): Promise<void> {
+    const menu: BnbMenu = page === 'MY_PAGE' ? 'mypage' : (page.toLowerCase() as BnbMenu);
+    const titleOk = await driver
+      .waitUntil(() => this.matchesHeaderTitle(page), { timeout: 10000, interval: 500 })
+      .then(() => true, () => false);
+    const skipBnb = (getRunConfig().siteCode === 'US' || getRunConfig().siteCode === 'IN') && page === 'CART';
+    const bnbOk = skipBnb ? true : await this.matchesBnbMenu(menu);
+    console.log(`[verifyPageByTitleAndBnb] ${page} title=${titleOk ? 'PASS' : 'FAIL'} bnb=${bnbOk ? 'PASS' : 'FAIL'}`);
+    markFailed(
+      [
+        { label: `${page} header title does not match`, pass: titleOk },
+        { label: `${page} BNB tab is not selected`, pass: bnbOk },
+      ],
+      'verifyPageByTitleAndBnb'
+    );
   }
 
   async getSelectedBnbMenu(): Promise<BnbMenu | null> {
