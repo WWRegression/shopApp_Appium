@@ -5,9 +5,9 @@ describe('UAT_APP_08', () => {
   const cartPage = new CartPage();
 
   it('SIM added to cart verification', async function () {
-    await runOrSkip.call(this, 'UAT_APP_08', async () => {
+    await runOrSkip.call(this, 'UAT_APP_08', async (site) => {
       // TODO: reimplement using new BcPage API
-      await cartPage.sim.verifyServiceApplied();
+      await cartPage.sim.verifyServiceApplied(site.product.sku);
     });
   });
 });

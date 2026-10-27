@@ -6,6 +6,10 @@
  *   npm run test:flagship:uat -- --site DE --release 30RC1_SENH
  *   npm run test:sanity -- --udid R5CTxxxx --appium-port 4725 --system-port 8201 --chromedriver-port 9516
  */
+import fs from 'node:fs';
+import path from 'node:path';
+import { listTestCasesForSuite } from './test-case.catalog';
+
 export type TestType = 'sanity' | 'phase3' | 'flagship';
 
 /** Flagship UAT = stg, PostUnpack = prod. Sanity/Phase3는 보통 prod. */
@@ -31,7 +35,7 @@ const defaults: RunConfig = {
   siteCode: 'AU',
   testType: 'sanity',
   environment: 'prod',
-  releaseName: '30RC1_SENH',
+  releaseName: 'TESTDEV',
   reportDb: false,
   flagshipSetupDone: false,
   appiumPort: 4723,
@@ -124,9 +128,26 @@ export function getRunConfig(): RunConfig {
   return cached;
 }
 
+/**
+ * Spec files of only the TCs in the suite, in catalog order (CALL_API, HOME_01, HOME_02 first).
+ * A spec file is named after its TC ID: PROD_HOME_01 → prod-home-01.spec.ts, CALL_API → _call-api.spec.ts.
+ */
 export function getSpecsForTestType(testType: TestType): string[] {
   if (testType === 'flagship') {
     return ['./test/specs/flagship/**/*.ts'];
   }
-  return ['./test/specs/regression/**/*.ts'];
+  const specDir = path.join(__dirname, '..', 'test', 'specs', 'regression');
+  const specByName = new Map<string, string>();
+  for (const file of fs.readdirSync(specDir, { recursive: true }) as string[]) {
+    if (file.endsWith('.spec.ts')) {
+      specByName.set(path.basename(file, '.spec.ts').replace(/^_/, ''), path.join(specDir, file));
+    }
+  }
+  return listTestCasesForSuite(testType).flatMap((tc) => {
+    const spec = specByName.get(tc.tcId.toLowerCase().replace(/_/g, '-'));
+    if (!spec) {
+      console.warn(`[specs] no spec file for ${tc.tcId}`);
+    }
+    return spec ? [spec] : [];
+  });
 }

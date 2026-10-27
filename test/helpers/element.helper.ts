@@ -257,7 +257,7 @@ export async function scrollAndJsClick(
     console.warn('[scrollAndJsClick] jsClick done');
   } catch {
     console.warn('[scrollAndJsClick] jsClick threw, fallback to WDIO click');
-    await el.click().catch((err) => {
+    await (el as WebdriverIO.Element).click().catch((err) => {
       console.warn('[scrollAndJsClick] WDIO click also failed:', (err as Error)?.message ?? err);
     });
   }
@@ -273,7 +273,7 @@ export async function scrollAndWdioClick(
 ): Promise<void> {
   await scrollElementToCenter(el).catch(() => undefined);
   try {
-    await el.click();
+    await (el as WebdriverIO.Element).click();
   } catch {
     console.warn('[scrollAndWdioClick] WDIO click threw, fallback to jsClick');
     await jsClick(el).catch((err) => {

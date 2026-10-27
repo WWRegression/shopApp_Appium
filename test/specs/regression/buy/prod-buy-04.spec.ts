@@ -36,6 +36,10 @@ describe('PROD_BUY_04', () => {
       await cartPage.prepareCartPage();
       await cartPage.verifySku(site.product.sku);      
       await cartPage.eup.verifyServiceApplied();
+
+      // Increase quantity to 2 and verify the EUP error text is shown
+      await cartPage.increaseQuantity(site.product.sku);
+      await cartPage.verifyServiceErrorText('eup');
     });
   });
 });

@@ -35,7 +35,11 @@ describe('PROD_BUY_05', () => {
       await cartPage.prepareCartPage();
       await cartPage.tradeUp.verifyServiceApplied();
       await cartPage.prepareCartPage();
-      await cartPage.verifySku(site.search.vdSku ?? '');      
+      await cartPage.verifySku(site.search.vdSku ?? '');
+
+      // Increase quantity to 2 and verify the Trade-Up error text is shown
+      await cartPage.increaseQuantity(site.search.vdSku ?? '');
+      await cartPage.verifyServiceErrorText('tradeUp');
     });
   });
 });

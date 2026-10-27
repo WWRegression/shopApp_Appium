@@ -39,6 +39,10 @@ describe('PROD_BUY_02', () => {
       await cartPage.prepareCartPage();
       await cartPage.verifySku(site.product.sku);
       await cartPage.scPlus.verifyServiceApplied();
+
+      // Increase quantity to 2 and verify the SC+ error text is shown
+      await cartPage.increaseQuantity(site.product.sku);
+      await cartPage.verifyServiceErrorText('scPlus');
     });
   });
 });

@@ -5,9 +5,9 @@ describe('UAT_BS_07', () => {
   const bcPage = new BcPage();
 
   it('SIM validation on BC', async function () {
-    await runOrSkip.call(this, 'UAT_BS_07', async () => {
+    await runOrSkip.call(this, 'UAT_BS_07', async (site) => {
       // TODO: reimplement using new PfPage API
-      await bcPage.sim.addService();
+      await bcPage.sim.addService(site.product.sku);
       await bcPage.sim.verifyServiceApplied();
     });
   });

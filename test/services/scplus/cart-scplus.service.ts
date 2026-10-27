@@ -3,7 +3,7 @@ import { CartLocator } from '../../locators/cart.locator';
 import { parsePriceToNumber } from '../../helpers/data.helper';
 import { assertEqual } from '../../helpers/validation.helper';
 import { switchToWebView } from '../../helpers/context.helper';
-import { clickIfDisplayed, scrollAndWdioClick, isDisplayedOrFalse, waitForDisplayedOrFalse } from '../../helpers/element.helper';
+import { clickIfDisplayed, scrollAndWdioClick, waitForDisplayedOrFalse } from '../../helpers/element.helper';
 import { closeExternalBrowserIfOpen } from '../../helpers/device.helper';
 import { CartPage } from '../../pages/cart.page';
 import { getRunConfig } from '../../../config/run.config';
@@ -55,7 +55,7 @@ export class CartScPlusService implements AddedService {
   }
 
   async verifyServiceApplied(): Promise<void> {
-    if(await waitForDisplayedOrFalse(this.locator.scPlusAppliedLabel, 5000)) {
+    if(await waitForDisplayedOrFalse(this.locator.scPlusAppliedLabel, { timeout: 5000 })) {
       console.warn('[Cart.SCPLUS.verifyServiceApplied] SC+ found in cart');
     } else {
       console.warn('[Cart.SCPLUS.verifyServiceApplied] SC+ not found in cart');

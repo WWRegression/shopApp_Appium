@@ -216,10 +216,12 @@ function resolveSearch(
   cache: ReturnType<typeof getResolvedSkuCache>,
   staticSearch: Site['search']
 ): Site['search'] {
+  // JP has no search block (no HA/VD products)
+  const search = staticSearch ?? ({} as Site['search']);
   return {
-    ...staticSearch,
-    vdSku: cache.VD?.sku ?? staticSearch.vdSku,
-    haSku: cache.HA?.sku ?? staticSearch.haSku,
+    ...search,
+    vdSku: cache.VD?.sku ?? search.vdSku,
+    haSku: cache.HA?.sku ?? search.haSku,
   };
 }
 

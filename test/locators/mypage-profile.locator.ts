@@ -34,7 +34,7 @@ export class MypageProfileLocator {
         or contains(@content-desc, 'Editați preferințele')
         or contains(@content-desc, 'Pazarlama Tercihleri')
         or contains(@content-desc, '編輯偏好')
-        or contains(@content-desc, 'マーケティングに関する設定')
+        or contains(@content-desc, 'マーケティング通信')
         or contains(@content-desc, 'Os meus pedidos')
         or contains(@content-desc, 'העדפות שיווקיות')
         or contains(@content-desc, 'Address Management')

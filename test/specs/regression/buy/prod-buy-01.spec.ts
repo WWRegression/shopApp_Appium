@@ -40,6 +40,10 @@ describe('PROD_BUY_01', () => {
       await cartPage.tradeIn.verifyServiceApplied();
       await cartPage.prepareCartPage();
       await cartPage.verifySku(site.product.sku);
+
+      // Increase quantity to 2 and verify the Trade-In error text is shown
+      await cartPage.increaseQuantity(site.product.sku);
+      await cartPage.verifyServiceErrorText('tradeIn');
     });
   });
 });

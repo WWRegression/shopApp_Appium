@@ -6,7 +6,7 @@ import { CartEupService } from '../services/eup/cart-eup.service';
 import { CartSimService } from '../services/sim/cart-sim.service';
 import { CartTradeUpService } from '../services/tradeup/cart-tradeup.service';
 import { switchToNative, prepareWebViewPage, isCurrentWebViewPage, getCurrentWebViewPage } from '../helpers/context.helper';
-import { getElementLabel, clickIfDisplayed, clickElement, isDisplayedOrFalse, jsTouchStart, jsClick, waitForDisplayedOrFalse, getInputValue, setInputValue } from '../helpers/element.helper';
+import { getElementLabel, clickIfDisplayed, clickElement, isDisplayedOrFalse, jsTouchStart, jsClick, waitForDisplayedOrFalse, getInputValue, setInputValue, scrollAndJsClick } from '../helpers/element.helper';
 import { assertEqual } from '../helpers/validation.helper';
 import { markFailed, markFailedAndStop, FieldCheck } from '../helpers/report.helper';
 import { currentSiteCode } from '../helpers/tc-filter.helper';
@@ -57,10 +57,10 @@ export class CartPage extends BasePage {
 
   /** Clicks checkout and waits for the checkout page to load. */
   async clickContinueToCheckout(): Promise<void> {
-    if(await clickIfDisplayed(this.locator.checkoutButton, 3000)) {
-      console.warn('[clickContinueToCheckout] checkout button clicked');
-    }
-    if(await clickIfDisplayed(this.locator.modalCheckoutButton, 3000)) {
+    // Some sites (IT) show the checkout button only at the bottom of the page.
+    // DOM click: on IT it opens checkout in a new window and a WebDriver click then never returns
+    await scrollAndJsClick(this.locator.checkoutButton);
+    if(await clickIfDisplayed(this.locator.modalCheckoutButton, 1000)) {
       console.warn('[clickContinueToCheckout] modal checkout button clicked');
     }
   }
@@ -216,8 +216,13 @@ export class CartPage extends BasePage {
     await jsTouchStart(increaseButton);
     await jsClick(increaseButton);
     await driver.pause(3000);
+    // With some services (SIM, EUP) a confirm popup opens and the quantity only changes after Yes
+    if (await clickIfDisplayed(this.locator.quantityChangeConfirmYesButton, 1000)) {
+      console.log('[increaseQuantity] quantity change confirm popup: Yes clicked');
+      await driver.pause(3000);
+    }
     // await this.locator.checkoutButtons.waitForEnabled({ timeout: 3000 });
-    
+
     const after_cartCount = await this.getCartTotalCount();
     const after_bnbCount = await this.getBNBCartCount();
     console.warn(`[increaseQuantity] after_bnbCount: ${after_bnbCount} | after_cartCount: ${after_cartCount}`);
@@ -311,6 +316,25 @@ export class CartPage extends BasePage {
       .then(() => true, () => false);
     console.log(`[verifyCartIconMatchesCart] expected cart icon=${cartCount} actual=${bnbCount} result=${pass ? 'PASS' : 'FAIL'}`);
     markFailed([{ label: 'cart icon count', pass, detail: `cart ${cartCount}, icon ${bnbCount}` }], 'verifyCartIconMatchesCart');
+  }
+
+  /** Records a failure when the service area shows no error text within 10s (e.g. after raising the quantity to 2). */
+  async verifyServiceErrorText(service: 'tradeIn' | 'scPlus' | 'tradeUp' | 'eup'): Promise<void> {
+    await this.prepareCartPage();
+    const errorText = this.locator.serviceErrorText(service);
+    let text = '';
+    // The error span is always in the DOM, so it must also have text
+    const shown = await driver
+      .waitUntil(
+        async () => {
+          text = (await errorText.isDisplayed().catch(() => false)) ? ((await errorText.getText().catch(() => '')) ?? '').trim() : '';
+          return Boolean(text);
+        },
+        { timeout: 10000, interval: 1000 }
+      )
+      .then(() => true, () => false);
+    console.log(`[verifyServiceErrorText] service=${service} expected error text="shown" actual="${text || 'none'}" result=${shown ? 'PASS' : 'FAIL'}`);
+    markFailed([{ label: `${service} error text on cart`, pass: shown }], 'verifyServiceErrorText');
   }
 
   /** Records a failure when the cart still shows items after up to 10s. */

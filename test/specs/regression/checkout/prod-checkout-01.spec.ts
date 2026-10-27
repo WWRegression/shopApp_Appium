@@ -6,8 +6,6 @@ import { SplashPage } from '../../../pages/splash.page';
 import { CartPage } from '../../../pages/cart.page';
 import { CheckoutPage } from '../../../pages/checkout.page';
 import { MypageProfilePage } from '../../../pages/mypage-profile.page';
-import { LoginPage } from '../../../pages/login.page';
-import { MypagePage } from '../../../pages/mypage.page';
 
 describe('PROD_CHECKOUT_01', function () {
   // Address cleanup plus search to payment runs close to the default 240s on slow sites (UK)
@@ -20,15 +18,9 @@ describe('PROD_CHECKOUT_01', function () {
   const cartPage = new CartPage();
   const checkoutPage = new CheckoutPage();
   const mypageProfilePage = new MypageProfilePage();
-  const loginPage = new LoginPage();
-  const mypagePage = new MypagePage();
 
   it('BC product to cart then checkout order summary', async function () {
     await runOrSkip.call(this, 'PROD_CHECKOUT_01', async (site) => {
-      // Precondition: logged in with the device account (the address book and checkout need a registered user)
-      await loginPage.preconditionSignedInOnDevice();
-      await mypagePage.ensureLoggedIn();
-
       await cartPage.clearCart();
 
       await mypageProfilePage.prepareAddressPage();

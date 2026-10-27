@@ -40,7 +40,11 @@ describe('PROD_BUY_03', () => {
 
       await cartPage.prepareCartPage();
       await cartPage.verifySku(site.product.sku);
-      await cartPage.sim.verifyServiceApplied(site.product.sku);      
+      await cartPage.sim.verifyServiceApplied(site.product.sku);
+
+      // Increase quantity to 2 and verify the SIM is removed
+      await cartPage.increaseQuantity(site.product.sku);
+      await cartPage.sim.verifyServiceRemoved();
     });
   });
 });

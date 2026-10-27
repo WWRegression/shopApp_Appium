@@ -7,7 +7,7 @@ import { getSiteData as getSite } from '../../config/site';
 import { scrollAndJsClick, getElementLabel, isDisplayedOrFalse, jsClick, clickElement, waitForDisplayedOrFalse, clickIfDisplayed } from '../helpers/element.helper';
 import { scrollDown, scrollElementToCenter } from '../helpers/gesture.helper';
 import { markFailed, markFailedAndStop } from '../helpers/report.helper';
-import { normalizeProductName, productNameMatches } from '../helpers/data.helper';
+import { normalizeProductName, productNameMatches, removeNonWordChars } from '../helpers/data.helper';
 import type { LoadedSite } from '../../config/site';
 import { currentSiteCode } from '../helpers/tc-filter.helper';
 
@@ -31,6 +31,7 @@ const ADDRESS_FORMS: CheckoutFormId[] = ['app-customer-address-v2', 'app-custome
 interface FieldDescriptor {
   index: number;
   tag: string;
+  type: string;
   key: string;
   required: boolean;
   hasValue: boolean;
@@ -285,11 +286,16 @@ export class CheckoutPage extends BasePage {
             ? Boolean((el as HTMLInputElement).value)
             : tagName === 'select'
               ? Boolean((el as HTMLSelectElement).value)
-              : Boolean(el.querySelector('.mat-mdc-select-min-line')?.textContent?.trim());
-        // Autocomplete fields: the address search box, and the CN address line
-        const isAutocomplete = key === 'searchaddress' || (key === 'line1' && tag === 'app-customer-address-cn');
+              : // A custom trigger (IT phone prefix "+39") shows the value outside min-line
+                Boolean(el.querySelector('.mat-mdc-select-min-line, .mat-mdc-select-value-text')?.textContent?.trim());
+        // Autocomplete fields: the address search box, the CN address line, and fields with a search icon (FR street)
+        const isAutocomplete =
+          key === 'searchaddress' ||
+          (key === 'line1' && tag === 'app-customer-address-cn') ||
+          Boolean(el.closest('.mat-mdc-form-field-has-icon-prefix'));
 
-        return { index, tag: tagName, key, required, hasValue, isAutocomplete, visible: el.offsetParent !== null };
+        const type = tagName === 'input' ? (el as HTMLInputElement).type : '';
+        return { index, tag: tagName, type, key, required, hasValue, isAutocomplete, visible: el.offsetParent !== null };
       });
     }, formTag);
   }
@@ -314,14 +320,27 @@ export class CheckoutPage extends BasePage {
       return;
     }
 
-    const suggestion = $('(//mat-option)[1]');
-    const suggestionAppeared = await suggestion
-      .waitForExist({ timeout: 3000 })
-      .then(() => true)
-      .catch(() => false);
-    if (suggestionAppeared) {
-      await scrollAndJsClick(suggestion).catch(() => undefined);
-    }
+    // Waits for an option holding the typed value: a list left over from the previous field shows first (FR postal code → street)
+    const wanted = removeNonWordChars(value);
+    let clicked = '';
+    await driver
+      .waitUntil(
+        async () => {
+          for (const option of await $$('mat-option')) {
+            // getText() returns "" for options in the overlay panel
+            const text = String(await option.getProperty('textContent').catch(() => ''));
+            if (text && removeNonWordChars(text).includes(wanted)) {
+              await scrollAndJsClick(option);
+              clicked = text.trim();
+              return true;
+            }
+          }
+          return false;
+        },
+        { timeout: 5000, interval: 500 }
+      )
+      .catch(() => undefined);
+    console.log(`[setInputValue] suggestion for "${value}" clicked="${clicked || 'none'}"`);
   }
 
   /** Selects the option matching `value`, or the first enabled option when there is no match. */
@@ -342,26 +361,42 @@ export class CheckoutPage extends BasePage {
     await scrollAndJsClick(target).catch(() => undefined);
   }
 
-  /** Fills the required fields of a form from `valueMap`, keyed by field name (lowercase). */
-  private async fillFormFields(formId: CheckoutFormId, valueMap: Record<string, string | undefined>): Promise<void> {
-    const descriptors = await this.getFieldDescriptors(formId);
+  /** Fills the required fields of a form; each entry is a value and the field names (lowercase) that take it. onlyEmpty keeps inputs that already have a value. */
+  private async fillFormFields(
+    formId: CheckoutFormId,
+    entries: [string | undefined, string[]][],
+    options: { onlyEmpty?: boolean } = {}
+  ): Promise<void> {
+    const valueMap: Record<string, string | undefined> = {};
+    for (const [value, keys] of entries) {
+      keys.forEach((key) => (valueMap[key] = value));
+    }
     const fields = this.locator.fieldsIn(formId);
+    const done = new Set<string>();
 
-    for (const desc of descriptors) {
-      if (!desc.required) {
-        continue;
+    // Some fields are enabled only after another is filled (FR street after the postal code), so they get another pass
+    for (let pass = 0; pass < 3; pass++) {
+      const pending = (await this.getFieldDescriptors(formId)).filter(
+        (desc) => desc.required && !done.has(desc.key || String(desc.index))
+      );
+      if (pending.length === 0) {
+        break;
       }
 
-      const value = valueMap[desc.key];
-      const field = fields[desc.index];
+      for (const desc of pending) {
+        done.add(desc.key || String(desc.index));
+        // Phone field names differ by site (IT: telephone), but they are all type=tel
+        const value = valueMap[desc.key] ?? (desc.type === 'tel' ? valueMap.phone : undefined);
+        const field = fields[desc.index];
 
-      // Hidden selects are skipped: CN keeps a hidden billing form
-      if (desc.tag === 'input') {
-        if (value) {
-          await this.setInputValue(field, value, desc.isAutocomplete);
+        // Hidden selects are skipped: CN keeps a hidden billing form
+        if (desc.tag === 'input') {
+          if (value && !(options.onlyEmpty && desc.hasValue)) {
+            await this.setInputValue(field, value, desc.isAutocomplete);
+          }
+        } else if (!desc.hasValue && desc.visible) {
+          await this.fillSelectField(field, value);
         }
-      } else if (!desc.hasValue && desc.visible) {
-        await this.fillSelectField(field, value);
       }
     }
   }
@@ -370,16 +405,15 @@ export class CheckoutPage extends BasePage {
   async fillContactInfo(formId: CheckoutFormId, overrides?: Partial<LoadedSite['customer']>): Promise<void> {
     await this.waitForFormFields(formId);
     const data = { ...getSite().customer, ...overrides };
-    await this.fillFormFields(formId, {
-      firstname: data.firstName,
+    await this.fillFormFields(formId, [
       // CN has a single full-name field
-      fullname: data.firstName,
-      lastname: data.lastName,
-      email: data.email,
-      phone: data.mobile,
+      [data.firstName, ['firstname', 'fullname']],
+      [data.lastName, ['lastname']],
+      [data.email, ['email']],
+      [data.mobile, ['phone']],
       // CL requires the RUT tax ID here
-      vatnumber: data.documentNumber,
-    });
+      [data.documentNumber, ['vatnumber']],
+    ]);
   }
 
   /** Fills the delivery address fields with the site shipping data; a preselected saved address is used as it is. */
@@ -390,27 +424,51 @@ export class CheckoutPage extends BasePage {
     }
 
     await this.waitForFormFields(formId);
-    // Without a saved address the form shows a search box, so switch to manual entry
-    const hasManualFields = (await this.getFieldDescriptors(formId)).some((d) => d.key === 'line1');
-    if (!hasManualFields && (await this.locator.enterAddressManuallyLink.isExisting().catch(() => false))) {
-      await scrollAndJsClick(this.locator.enterAddressManuallyLink).catch(() => undefined);
+    const data = { ...getSite().shipping, ...overrides };
+
+    // A picked address suggestion fills the fields below it, so afterwards only the empty ones are typed
+    const picked = await this.pickSuggestedAddress(formId, data.searchText);
+    if (!picked) {
+      // Without a saved address the form shows a search box, so switch to manual entry
+      const hasManualFields = (await this.getFieldDescriptors(formId)).some((d) => d.key === 'line1');
+      if (!hasManualFields && (await this.locator.enterAddressManuallyLink.isExisting().catch(() => false))) {
+        await scrollAndJsClick(this.locator.enterAddressManuallyLink).catch(() => undefined);
+      }
     }
 
-    const data = { ...getSite().shipping, ...overrides };
     // IN: the pincode lookup resets fields typed before it returns, so the pincode goes first
     const pincodeFirst = getSite().siteCode === 'IN' && (await this.fillPincodeAndWaitForCity(formId, data.postalCode));
-    await this.fillFormFields(formId, {
-      line1: data.address1,
-      line2: data.address2,
-      postalcode: pincodeFirst ? undefined : data.postalCode,
-      town: data.town,
-      state: data.district,
-      district: data.district,
-      floor: data.floor,
-      regioniso: data.searchText,
-      searchaddress: data.searchText,
-      phone: getSite().customer.mobile,
-    });
+    await this.fillFormFields(
+      formId,
+      [
+        [data.address1, ['line1']],
+        [data.address2, ['line2', 'suburb', 'kecamatan', 'județ']],
+        [pincodeFirst ? undefined : data.postalCode, ['postalcode']],
+        [data.town, ['town']],
+        [data.district, ['state', 'district']],
+        [data.floor, ['floor']],
+        [data.searchText, ['regioniso', 'searchaddress']],
+        [getSite().customer.mobile, ['phone']],
+      ],
+      { onlyEmpty: picked }
+    );
+  }
+
+  /** Types the search text into the address search box and picks the first suggestion; true when it filled the address line. */
+  private async pickSuggestedAddress(formId: CheckoutFormId, searchText: string | undefined): Promise<boolean> {
+    const search = (await this.getFieldDescriptors(formId)).find((d) => d.key === 'searchaddress' && d.visible);
+    if (!searchText || !search) {
+      return false;
+    }
+    await this.setInputValue(this.locator.fieldsIn(formId)[search.index], searchText, true);
+    const filled = await driver
+      .waitUntil(async () => (await this.getFieldDescriptors(formId)).some((d) => d.key === 'line1' && d.hasValue), {
+        timeout: 5000,
+        interval: 500,
+      })
+      .then(() => true, () => false);
+    console.log(`[pickSuggestedAddress] searched "${searchText}", address fields filled=${filled}`);
+    return filled;
   }
 
   /** True when a saved address is shown on the current checkout step. */
@@ -483,7 +541,7 @@ export class CheckoutPage extends BasePage {
 
   /** Fills a form that has no dedicated handler: required selects only. */
   private async fillGenericStep(formId: CheckoutFormId): Promise<void> {
-    await this.fillFormFields(formId, {});
+    await this.fillFormFields(formId, []);
   }
 
   /** Records a failure when the rewards opt-in checkbox is shown on the current step; checked by visibility since US keeps a hidden one. */
@@ -529,7 +587,11 @@ export class CheckoutPage extends BasePage {
   /** Opens every payment method one by one and stops the TC when any fails to open; methods must start collapsed (not US). */
   async checkPaymentMethod(): Promise<void> {
     const site = currentSiteCode();
-    const total = await this.locator.paymentMethodTitles.length;
+    // Payment methods render after a skeleton loader; stops as soon as they show
+    let total = 0;
+    await driver
+      .waitUntil(async () => (total = await this.locator.paymentMethodTitles.length) > 0, { timeout: 5000, interval: 500 })
+      .catch(() => undefined);
     console.log(`[checkPaymentMethod] total payment methods=${total}`);
     markFailedAndStop([{ label: 'payment methods found', pass: total > 0 }], 'checkPaymentMethod');
 

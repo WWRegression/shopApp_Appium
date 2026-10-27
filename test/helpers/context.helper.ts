@@ -229,6 +229,14 @@ export async function getDetailedWebViewWindows(): Promise<MatchedWebViewPage[]>
   }
 }
 
+/** Ids of the WebView windows whose URL matches `page`, from the window list only (no command to the focused window). */
+export async function getWindowIdsForPage(page: PageUrlKey): Promise<string[]> {
+  const siteCode = getRunConfig().siteCode;
+  return (await getDetailedWebViewWindows())
+    .filter((w) => matchPageByUrl(w.url, page, siteCode))
+    .map((w) => w.webviewPageId);
+}
+
 // Pages whose visible window carries a URL mark: checkout opens in a new window tagged adobe_mc while the old window also navigates to checkout
 const VISIBLE_WINDOW_MARK: Partial<Record<PageUrlKey, string>> = { checkout: 'adobe_mc=' };
 
