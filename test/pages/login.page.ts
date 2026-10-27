@@ -26,7 +26,7 @@ import {
   withoutIdleWait,
 } from '../helpers/element.helper';
 import { scrollByBoundary } from '../helpers/gesture.helper';
-import { markFailedAndStop } from '../helpers/report.helper';
+import { markFailed, markFailedAndStop } from '../helpers/report.helper';
 
 export const SAMSUNG_ACCOUNT_PACKAGE = 'com.osp.app.signin';
 /** Samsung account settings screen — opened by this intent action, or from the My Page profile. */
@@ -428,6 +428,24 @@ export class LoginPage extends BasePage {
     await this.clearAppDataForIn();
     await restartApp();
     await this.continueAsGuestIfShown();
+  }
+
+  /** On the login boarding page, opens the country menu and selects `countryName`. */
+  async changeCountryOnLoginSplash(countryName: string): Promise<void> {
+    await switchToNative();
+    const splash = this.locator.splashCountryButton;
+    const shown = await waitForDisplayedOrFalse(splash, { timeout: 30000 });
+    markFailedAndStop([{ label: 'login splash country menu not found', pass: shown }], 'changeCountryOnLoginSplash');
+    await clickElement(splash, { timeout: 5000 });
+    await this.selectCountry(countryName);
+    const changed = await driver
+      .waitUntil(async () => (await getElementLabel(splash)).includes(countryName), { timeout: 10000, interval: 500 })
+      .then(() => true, () => false);
+    console.log(`[changeCountryOnLoginSplash] expected="${countryName}" result=${changed ? 'PASS' : 'FAIL'}`);
+    markFailed(
+      [{ label: 'country did not change on the login splash', pass: changed, detail: countryName }],
+      'changeCountryOnLoginSplash'
+    );
   }
 
   /** After a launch, continues as guest only when the login page is shown (Home / "Select profile" are left as is). */
