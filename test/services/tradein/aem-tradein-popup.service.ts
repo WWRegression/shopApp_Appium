@@ -150,6 +150,9 @@ export class AemTradeInPopupService {
       case 'discount':
         break;
       case 'customer':
+        await this.selectFirstOptionIfNoneChecked(stepEl);
+        await this.clickNextUnlessAdvanced(step, stepEl);
+        return;
       case 'choose':
         await this.selectFirstOptionIfNoneChecked(stepEl);
         break;
@@ -167,10 +170,10 @@ export class AemTradeInPopupService {
         return;
       }
       case 'enter-imei':
-        // Terms first: Next stays disabled until both terms and IMEI are done, and enterImei waits for it.
+        // Terms can sit on the step already, or appear only after the IMEI is accepted. Next stays disabled until both are done.
         await this.checkAllTerms(stepEl);
-        // The only text field in this step is the IMEI.
-        await this.enterImei(stepEl, input.imei, this.locator.textInput, [stepEl.$(this.locator.nextButton)]);
+        await this.enterImei(stepEl, input.imei, this.locator.textInput, [stepEl.$(this.locator.nextButton)], true);
+        await this.checkAllTerms(stepEl);
         break;
       case 'check-condition':
         await this.answerConditions(stepEl);
@@ -308,7 +311,8 @@ export class AemTradeInPopupService {
     stepEl: WebdriverIO.Element,
     imei: string | undefined,
     fieldSelector: string,
-    proceedButtons: ChainablePromiseElement[]
+    proceedButtons: ChainablePromiseElement[],
+    termsFollow = false
   ): Promise<void> {
     if (!imei) {
       throw new Error('[TradeIn] IMEI field shown but site data has no tradeIn.imei');
@@ -317,20 +321,27 @@ export class AemTradeInPopupService {
     await this.fillField(stepEl, fieldSelector, imei, 'IMEI');
     const checked = await clickIfDisplayed(stepEl.$(this.locator.imeiCheckButton), 2000);
     log(`  IMEI ${checked ? 'check clicked, ' : ''}validating...`);
-    await this.waitForImeiValidated(stepEl, proceedButtons);
+    await this.waitForImeiValidated(stepEl, proceedButtons, termsFollow);
   }
 
   /**
    * Validation is a server round-trip with no fixed duration, so wait for a result rather than a fixed time.
    * An error left over from a previous attempt is ignored until the spinner shows or IMEI_STALE_ERROR_MS passes.
    */
-  private async waitForImeiValidated(stepEl: WebdriverIO.Element, proceedButtons: ChainablePromiseElement[]): Promise<void> {
+  private async waitForImeiValidated(
+    stepEl: WebdriverIO.Element,
+    proceedButtons: ChainablePromiseElement[],
+    termsFollow = false
+  ): Promise<void> {
     const started = Date.now();
     let loadingSeen = false;
     let error = '';
     const done = await driver
       .waitUntil(
         async () => {
+          if (termsFollow && (await this.hasUncheckedTerms(stepEl))) {
+            await this.checkAllTerms(stepEl).catch(() => undefined);
+          }
           for (const button of proceedButtons) {
             if (await isDisplayedOrFalse(button)) {
               return true;
@@ -432,6 +443,15 @@ export class AemTradeInPopupService {
       }
     }
     return undefined;
+  }
+
+  private async hasUncheckedTerms(stepEl: WebdriverIO.Element): Promise<boolean> {
+    for (const checkbox of await stepEl.$$(this.locator.termsCheckboxes)) {
+      if (!(await checkbox.isSelected().catch(() => false))) {
+        return true;
+      }
+    }
+    return false;
   }
 
   private async checkAllTerms(stepEl: WebdriverIO.Element): Promise<void> {
@@ -580,5 +600,27 @@ export class AemTradeInPopupService {
       throw new Error(`[TradeIn] ${label} not clickable`);
     }
     log(`  click ${label}`);
+  }
+
+  /** Some sites leave the step as soon as the option is picked, so Next is already gone. */
+  private async clickNextUnlessAdvanced(step: TradeInStep, stepEl: WebdriverIO.Element): Promise<void> {
+    const next = stepEl.$(this.locator.nextButton);
+    let clicked = false;
+    const settled = await driver
+      .waitUntil(
+        async () => {
+          if ((await this.readActiveStep())?.step !== step) {
+            return true;
+          }
+          clicked = await clickIfDisplayed(next).catch(() => false);
+          return clicked || (await this.readActiveStep())?.step !== step;
+        },
+        { timeout: WAIT_MS, interval: 300 }
+      )
+      .catch(() => false);
+    if (!settled) {
+      throw new Error(`[TradeIn] ${step}: next not clickable`);
+    }
+    log(clicked ? `  click ${step}: next` : `  ${step}: moved on without next`);
   }
 }

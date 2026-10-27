@@ -159,7 +159,8 @@ export class CartTradeUpService implements AddedService {
           continue;
         }
         const id = (await enabled.getAttribute("id").catch(() => "")) ?? "";
-        return { answer: id ? group.$(`label[for="${id}"]`) : group.$("label.condition-radio__button:not(.disabled)"), pending: true };
+        const selector = id ? `label[for="${id}"]` : "label.condition-radio__button:not(.disabled)";
+        return { answer: await group.$(selector).getElement(), pending: true };
       }
       return { pending };
     };

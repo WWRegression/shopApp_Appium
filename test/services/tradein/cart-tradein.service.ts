@@ -1,19 +1,20 @@
 import { AddedService } from '../added-service.interface';
 import { CartLocator } from '../../locators/cart.locator';
-import { CartTradeInPopupService } from './cart-tradein-popup.service';
+import { CartTradeInInput, CartTradeInPopupService } from './cart-tradein-popup.service';
 import { parsePriceToNumber } from '../../helpers/data.helper';
 import { assertElementDisplayed } from '../../helpers/validation.helper';
-import { switchToWebView, switchToWindowByPage } from '../../helpers/context.helper';
+import { clickIfDisplayed } from '../../helpers/element.helper';
+import { switchToWebView } from '../../helpers/context.helper';
 
 export class CartTradeInService implements AddedService {
   private readonly locator = new CartLocator();
   private readonly popup = new CartTradeInPopupService();
 
-  async addService(): Promise<void> {
-    await switchToWebView();
-    await switchToWindowByPage('cart');
-    await this.locator.tradeInAddButton.click();
-    await this.popup.completeTradeInFlow();
+  async addService(input?: CartTradeInInput): Promise<void> {
+    if (!(await clickIfDisplayed(this.locator.tradeInAddButton, 15000))) {
+      throw new Error('[Cart.TRADEIN.addService] Trade-In add button not found or clicked');
+    }
+    await this.popup.popupProcess(input);
   }
 
   async selectNoForService(): Promise<void> {
@@ -27,8 +28,6 @@ export class CartTradeInService implements AddedService {
   }
 
   async verifyServiceApplied(): Promise<void> {
-    await switchToWebView();
-    await switchToWindowByPage('cart');
     try {
       await assertElementDisplayed(this.locator.tradeInAppliedLabel, 'Trade-In not found in cart');
     } catch (err) {

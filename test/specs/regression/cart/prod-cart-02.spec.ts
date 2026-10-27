@@ -9,13 +9,14 @@ describe('PROD_CART_02', () => {
 
   it('add Trade-In on cart and go to payment', async function () {
     await runOrSkip.call(this, 'PROD_CART_02', async (site) => {
-      void site.tradeIn;
       await cartPage.clearCart();
       await addToCart(site.product.sku);
 
       await cartPage.prepareCartPage();
       await cartPage.verifySku(site.product.sku);
-      await cartPage.tradeIn.addService();
+      
+      await cartPage.tradeIn.addService(site.tradeIn);
+      await cartPage.tradeIn.verifyServiceApplied();
       await cartPage.clickContinueToCheckout();
       await checkoutPage.verifyCheckoutPage();
     });

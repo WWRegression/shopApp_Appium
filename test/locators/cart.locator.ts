@@ -154,7 +154,7 @@ export class CartLocator {
 
   get tradeInAddButton() {
     return $(
-      '[data-an-la="add service:trade-in" i], [an-la="trade-in:yes" i], [an-la*="trade-in" i][an-la*="add" i], button[an-la*="add trade-in" i], .tradein-service [an-la*="add" i]'
+      '[data-an-la*="trade-in" i][data-an-la*="add" i], button[data-an-la*="add trade-in" i], .tradein-service [data-an-la*="add" i]'
     );
   }
 
@@ -239,11 +239,11 @@ export class CartLocator {
 
   /** TRADE-UP -------------------------------------------------------------- */
   get tradeUpAddButton() {
-    return $('[data-an-la*="trade-up" i][data-an-la*="add" i], button[data-an-la="add service:trade-in" i]');
+    return $('[data-an-la*="trade-up"][data-an-la*="add"], button[data-an-la="add service:trade-in"]');
   }
 
   /** Shown trade-up/trade-in popup. The dialog class contains `trade-up-steps` or `trade-in-steps`. */
-  readonly tradeUpPopup = ".modal.show:has([class*='trade-up-steps'], [class*='trade-in-steps'])";
+  readonly tradeUpPopup = ".modal.show [class*='trade-'][class*='steps']";
 
   get tradeUpModal() {
     return $(this.tradeUpPopup);
