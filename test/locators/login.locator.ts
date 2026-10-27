@@ -176,7 +176,27 @@ export class LoginLocator {
 
   get purposeSkipButton() {
     return $(
-      `//android.widget.Button[@content-desc = 'Skip' or @content-desc = 'Überspringen' or @content-desc = 'Omitir' or @content-desc = 'Saltar' or @content-desc = '跳过']`
+      `(//android.widget.Button[@content-desc = 'Skip' 
+      or @content-desc = 'Überspringen' 
+      or @content-desc = 'Omitir' 
+      or @content-desc = 'Saltar' 
+      or @content-desc = '跳过'
+      or @content-desc = 'Continuar'
+      or @content-desc = 'Přeskočit'
+      or @content-desc = 'Passer'
+      or @content-desc = '跳過'
+      or @content-desc = 'Átugrás'
+      or @content-desc = 'Lewati'
+      or @content-desc = ' דלג'
+      or @content-desc = 'スキップ'
+      or @content-desc = 'Pomiń'
+      or @content-desc = 'Omite'
+      or @content-desc = 'تخطي'
+      or @content-desc = 'Hoppa över'
+      or @content-desc = 'ข้าม'
+      or @content-desc = 'Atla'
+      or @content-desc = 'Bỏ qua'
+      ])[1]`
     );
   }
 

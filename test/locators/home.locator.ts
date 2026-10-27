@@ -38,18 +38,23 @@ export class HomeLocator {
   get trustArcAcceptButton() {
     return $(
       `//android.widget.Button[
-        contains(@text, 'Accept') or
-        contains(@text, 'Accepter') or
-        contains(@text, 'Aceptar') or
-        contains(@text, 'Accetta') or
-        contains(@text, 'Alle akzeptieren') or
-        contains(@text, 'aanvaarden') or
-        contains(@text, 'Zatwierdź') or
-        contains(@text, 'Přijmout') or
-        contains(@text, 'elfogadása') or
-        contains(@text, 'De acord cu') or
-        contains(@text, 'Aceitar') or
-        contains(@text, 'Çerezleri kabul et')
+        (
+          contains(@text, 'Accept') or
+          contains(@text, 'Accepter') or
+          contains(@text, 'Aceptar') or
+          contains(@text, 'Accetta') or
+          contains(@text, 'Alle akzeptieren') or
+          contains(@text, 'aanvaarden') or
+          contains(@text, 'Zatwierdź') or
+          contains(@text, 'Přijmout') or
+          contains(@text, 'elfogadása') or
+          contains(@text, 'De acord cu') or
+          contains(@text, 'Aceitar') or
+          contains(@text, 'accepter') or
+          contains(@text, 'Godkänn alla') or
+          contains(@text, 'Çerezleri kabul et')
+        )
+        and not(contains(@text, 'Fortsätt utan att acceptera'))
       ]`
     );
   }
@@ -161,6 +166,7 @@ export class HomeLocator {
       or @content-desc = 'Uygula'
       or @content-desc = '送出'
       or @content-desc = 'Áp dụng'
+      or @content-desc = 'Tillämpa'
       ]`);
   }
 
