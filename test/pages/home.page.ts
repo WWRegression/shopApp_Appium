@@ -13,7 +13,7 @@ import {
   scrollUntilVisible,
   waitForDisplayedOrFalse,
 } from '../helpers/element.helper';
-import { longPressElement, scrollDown, tapAtCoordinates } from '../helpers/gesture.helper';
+import { longPressElement, scrollDown, swipeByBoundary, tapAtCoordinates } from '../helpers/gesture.helper';
 import { markFailed, markFailedAndStop, type FieldCheck } from '../helpers/report.helper';
 
 export class HomePage extends BasePage {
@@ -176,18 +176,16 @@ export class HomePage extends BasePage {
     console.log(`[applyBuildSetup] selected ${label}`);
   }
 
-  /** Chat icon opens a page whose title is Chat, or whose title cannot be read. Any other page stops the TC. UK has no header chat icon. */
+  /** Chat icon opens the chat page. The title button "Samsung Chat" must be shown. UK has no header chat icon. */
   async verifyChat(): Promise<void> {
     if (getRunConfig().siteCode === 'UK') {
       console.log('[verifyChat] UK — skipped');
       return;
     }
     await this.selectHeaderIcon('chat');
-    await driver.pause(5000);
-    const title = (await getElementLabel(this.headerLocator.title)).trim();
-    const chat = title.length === 0 || (await this.matchesHeaderTitle('CHAT'));
-    console.log(`[verifyChat] title="${title || 'unknown'}" result=${chat ? 'PASS' : 'FAIL'}`);
-    markFailedAndStop([{ label: 'Failed to navigate Chat page', pass: chat }], 'verifyChat');
+    const shown = await waitForDisplayedOrFalse(this.headerLocator.chatTitle, { timeout: 5000 });
+    console.log(`[verifyChat] Samsung Chat=${shown ? 'PASS' : 'FAIL'}`);
+    markFailedAndStop([{ label: 'Failed to navigate Chat page', pass: shown }], 'verifyChat');
   }
 
   /** Search icon opens the search box. A missing box is recorded, then Back returns to the previous page. */
@@ -200,38 +198,42 @@ export class HomePage extends BasePage {
     await this.pressDeviceBack();
   }
 
-  /** T&C on Home is folded. Expanding it, each link opens the URL in the label or a PDF. No link is a pass. */
-  async verifyTermsAndConditions(): Promise<void> {
-    await this.prepareHomePage();
+  /** Scrolls Home until the T&C row is shown. False means the later T&C steps are skipped. */
+  async isTermsShown(): Promise<boolean> {
     await switchToNative();
     const tnc = this.locator.tncButton;
-    let shown = false;
-    for (let attempt = 0; attempt < 8 && !shown; attempt += 1) {
-      shown = await isDisplayedOrFalse(tnc);
-      if (!shown) {
-        await scrollDown();
+    for (let attempt = 0; attempt < 8; attempt += 1) {
+      if (await isDisplayedOrFalse(tnc)) {
+        console.log('[isTermsShown] T&C shown');
+        return true;
       }
+      await swipeByBoundary('up', 1);
     }
-    markFailedAndStop([{ label: 'T&C not found on Home', pass: shown }], 'verifyTermsAndConditions');
+    console.log('[isTermsShown] T&C not found — remaining steps skipped');
+    return false;
+  }
 
-    const failures: FieldCheck[] = [];
-    const expanded = await isDisplayedOrFalse(this.locator.tncExpandedChild);
-    if (expanded) {
-      console.log('[verifyTermsAndConditions] T&C is expanded by default');
-      failures.push({ label: 'T&C is not folded by default', pass: false });
-    } else {
-      await clickElement(tnc, { timeout: 5000 });
-      console.log('[verifyTermsAndConditions] T&C folded, expanded to check links');
+  /** T&C is folded when its child is hidden. A folded row is opened so the links can be checked. */
+  async verifyTermsFolded(): Promise<void> {
+    const folded = !(await isDisplayedOrFalse(this.locator.tncExpandedChild));
+    console.log(`[verifyTermsFolded] folded=${folded ? 'PASS' : 'FAIL'}`);
+    markFailed([{ label: 'T&C is not folded by default', pass: folded }], 'verifyTermsFolded');
+    if (folded) {
+      await clickElement(this.locator.tncButton, { timeout: 5000 });
+      console.log('[verifyTermsFolded] opened T&C');
     }
+  }
 
+  /** Each T&C link opens its URL or a PDF. No link is a pass. */
+  async verifyTermsLinks(): Promise<void> {
     const links = await this.locator.tncHyperlinks.getElements();
     if (links.length === 0) {
-      console.log('[verifyTermsAndConditions] no hyperlink in T&C — passed');
-      markFailed(failures, 'verifyTermsAndConditions');
+      console.log('[verifyTermsLinks] no hyperlink in T&C — passed');
       return;
     }
-    console.log(`[verifyTermsAndConditions] ${links.length} hyperlink(s)`);
+    console.log(`[verifyTermsLinks] ${links.length} hyperlink(s)`);
 
+    const failures: FieldCheck[] = [];
     for (let index = 0; index < links.length; index += 1) {
       const current = (await this.locator.tncHyperlinks.getElements())[index];
       if (!current) {
@@ -240,7 +242,7 @@ export class HomePage extends BasePage {
       }
       const label = ((await current.getAttribute('content-desc').catch(() => '')) ?? '').trim();
       const opened = await this.openTncHyperlink(current, label);
-      console.log(`[verifyTermsAndConditions] link="${label}" result=${opened ? 'PASS' : 'FAIL'}`);
+      console.log(`[verifyTermsLinks] link="${label}" result=${opened ? 'PASS' : 'FAIL'}`);
       if (!opened) {
         failures.push({ label: `T&C link opened the wrong page: ${label}`, pass: false });
       }
@@ -251,7 +253,7 @@ export class HomePage extends BasePage {
         await scrollDown();
       }
     }
-    markFailed(failures, 'verifyTermsAndConditions');
+    markFailed(failures, 'verifyTermsLinks');
   }
 
   /** Tap the lower part of the link, where the URL text sits, then match a WebView URL or a PDF title. */

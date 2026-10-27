@@ -31,6 +31,11 @@ export const BACK_BUTTON_XPATH = `//android.widget.Button[
  * Extend per-site if needed.
  */
 export class HeaderLocator {
+  /** Title button shown after the header chat icon opens the chat page. */
+  get chatTitle() {
+    return $('//android.widget.Button[contains(@content-desc, "Chat") and contains(@content-desc, "Samsung")]');
+  }
+
   get title() {
     return $(
         `//android.widget.Button[@content-desc = 'Back']

@@ -458,18 +458,18 @@ export class BasePage {
   }
 
   /** Header title matches the page, and that BNB tab is selected. US/IN Cart has no BNB. */
-  async verifyPageByTitleAndBnb(page: 'HOME' | 'SHOP' | 'OFFERS' | 'CART' | 'MY_PAGE'): Promise<void> {
-    const menu: BnbMenu = page === 'MY_PAGE' ? 'mypage' : (page.toLowerCase() as BnbMenu);
+  async verifyPageByTitleAndBnb(menu: BnbMenu): Promise<void> {
+    const title = { home: 'HOME', shop: 'SHOP', offers: 'OFFERS', cart: 'CART', mypage: 'MY_PAGE' } as const;
     const titleOk = await driver
-      .waitUntil(() => this.matchesHeaderTitle(page), { timeout: 10000, interval: 500 })
+      .waitUntil(() => this.matchesHeaderTitle(title[menu]), { timeout: 10000, interval: 500 })
       .then(() => true, () => false);
-    const skipBnb = (getRunConfig().siteCode === 'US' || getRunConfig().siteCode === 'IN') && page === 'CART';
+    const skipBnb = (getRunConfig().siteCode === 'US' || getRunConfig().siteCode === 'IN') && menu === 'cart';
     const bnbOk = skipBnb ? true : await this.matchesBnbMenu(menu);
-    console.log(`[verifyPageByTitleAndBnb] ${page} title=${titleOk ? 'PASS' : 'FAIL'} bnb=${bnbOk ? 'PASS' : 'FAIL'}`);
+    console.log(`[verifyPageByTitleAndBnb] ${menu} title=${titleOk ? 'PASS' : 'FAIL'} bnb=${bnbOk ? 'PASS' : 'FAIL'}`);
     markFailed(
       [
-        { label: `${page} header title does not match`, pass: titleOk },
-        { label: `${page} BNB tab is not selected`, pass: bnbOk },
+        { label: `${menu} header title does not match`, pass: titleOk },
+        { label: `${menu} BNB tab is not selected`, pass: bnbOk },
       ],
       'verifyPageByTitleAndBnb'
     );

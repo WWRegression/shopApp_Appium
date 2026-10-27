@@ -9,31 +9,31 @@ describe('PROD_HOME_03', () => {
     await runOrSkip.call(this, 'PROD_HOME_03', async () => {
       // Home
       await homePage.selectBnbMenu('home');
-      await homePage.verifyPageByTitleAndBnb('HOME');
+      await homePage.verifyPageByTitleAndBnb('home');
       await homePage.verifyChat();
       await homePage.verifySearch();
 
       // Shop
       await homePage.selectBnbMenu('shop');
-      await homePage.verifyPageByTitleAndBnb('SHOP');
+      await homePage.verifyPageByTitleAndBnb('shop');
       await homePage.verifyChat();
       await homePage.verifySearch();
 
       // Offers
       await homePage.selectBnbMenu('offers');
-      await homePage.verifyPageByTitleAndBnb('OFFERS');
+      await homePage.verifyPageByTitleAndBnb('offers');
       await homePage.verifyChat();
       await homePage.verifySearch();
 
       // Cart
       await homePage.selectBnbMenu('cart');
-      await homePage.verifyPageByTitleAndBnb('CART');
+      await homePage.verifyPageByTitleAndBnb('cart');
       await homePage.verifyChat();
       await homePage.verifySearch();
 
       // Account
       await homePage.selectBnbMenu('mypage');
-      await homePage.verifyPageByTitleAndBnb('MY_PAGE');
+      await homePage.verifyPageByTitleAndBnb('mypage');
       await homePage.verifyChat();
       await homePage.verifySearch();
     });
