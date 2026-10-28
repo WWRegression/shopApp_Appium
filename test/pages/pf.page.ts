@@ -5,12 +5,39 @@ import { PdLocator } from '../locators/pd.locator';
 import { switchToNative, getCurrentWebViewPage } from '../helpers/context.helper';
 import { scrollByBoundary, scrollDown } from '../helpers/gesture.helper';
 import { currentSiteCode } from '../helpers/tc-filter.helper';
-import { normalizeText, isExactTokenMatch, stripMarkerText, normalizeProductName } from '../helpers/data.helper';
-import { clickElement, isDisplayedOrFalse, scrollUntilVisible, waitForDisplayedOrFalse, readDisplayedText } from '../helpers/element.helper';
+import { normalizeText, isExactTokenMatch, stripMarkerText, normalizeProductName, parsePriceToNumber } from '../helpers/data.helper';
+import { clickElement, getElementLabel, isDisplayedOrFalse, scrollUntilVisible, waitForDisplayedOrFalse, readDisplayedText } from '../helpers/element.helper';
 import { markFailed, markFailedAndStop } from '../helpers/report.helper';
 import { ShopPage, type CategoryMismatch } from './shop.page';
 import { BcPage } from './bc.page';
 import { PdPage } from './pd.page';
+
+export type PfFilterKind = 'price' | 'product' | 'resolution';
+export type PfSortKind = 'price' | 'rating';
+
+/** One filter option. `count` is the product total shown on Apply. */
+export type PfFilterChoice = { kind: PfFilterKind; value: string; count: number };
+
+/** One sort option. Price sort is high to low. */
+export type PfSortChoice = { kind: PfSortKind; value: string };
+
+type PfProduct = { name: string; price: number; rating: number; outOfStock: boolean };
+
+const FILTER_EXCEPTION_KEYWORDS: Record<string, string[]> = {
+  'galaxy z': ['fold', 'flip', 'فولد', 'فليب'],
+  fhd: ['flip', 'فليب', 'a57'],
+  'fhd+': ['s25'],
+  qxga: ['fold', 'فولد'],
+};
+
+const PRICE_BELOW_WORDS = ['below', 'under', 'less', 'up to', 'น้อยกว่า', '以下', 'moins', "jusqu'à", '低於', 'legfeljebb', 'do', '<'];
+
+const OUT_OF_STOCK_WORDS = [
+  'agotado', 'ausverkauft', 'brak w magazynie', 'esaurito', 'en rupture de stock', 'hàng không bán',
+  'inventario', 'není na skladě', 'niet op voorraad', 'nicht auf lager', 'no disponible', 'nincs készleten',
+  'rupture de stock', 'slut i lager', 'stoc epuizat', 'stok habis', 'stokta yok', 'stock', 'غير متاح',
+  'نفذ من المخزون', '售罄', '缺货', 'สินค้าหมดชั่วคราว', 'אזל במלאי', 'out of stock',
+];
 
 export type PfTabTarget = { tab: string } | { product: string };
 export type WishState = 'add' | 'remove';
@@ -238,6 +265,65 @@ export class PfPage extends BasePage {
     return waitForDisplayedOrFalse(this.pflocator.productGrid[0], { timeout: 5000 });
   }
 
+  /** Opens the filter popup, selects one option, and applies. Returns the Apply product count after it updates. */
+  async applyFilter(): Promise<PfFilterChoice> {
+    await this.clickFilter();
+    await waitForDisplayedOrFalse(this.pflocator.filterApplyButton, { timeout: 5000 });
+    const before = await this.getFilterProductCount();
+    const filter = await this.selectFirstFilter();
+    const count = await this.waitForApplyCountUpdate(before);
+    await this.clickFilterApply();
+    return { ...filter, count };
+  }
+
+  /** Opens the sort list beside the filter button and selects price, high to low. */
+  async applySort(): Promise<PfSortChoice> {
+    await this.clickSort();
+    const sort = await this.selectPriceSort();
+    await this.clickSortApply();
+    return sort;
+  }
+
+  /** Apply count equals the PF cards. Cards match the filter, and each stock group is sorted by price descending. */
+  async verifyFilterAndSort(filter: PfFilterChoice, sort: PfSortChoice): Promise<void> {
+    console.log('[verifyFilterAndSort] filter=', filter, 'sort=', sort);
+    const products = await this.collectPfProducts();
+    const countMatches = products.length === filter.count;
+    console.log(
+      `[verifyFilterAndSort] Filter count=${filter.count} | PFcards=${products.length} | result=${countMatches ? 'PASS' : 'FAIL'} | filter=${filter.kind}:"${filter.value}" sort=${sort.kind}`
+    );
+    markFailed(
+      [{ label: 'PF card count does not match Filter count', pass: countMatches, detail: `FilterCount: ${filter.count} | PFcards: ${products.length}` }],
+      'verifyFilterAndSort'
+    );
+    const failures = [
+      ...this.checkFilter(products, filter),
+      ...this.checkSort(products.filter((product) => !product.outOfStock), sort, 'in stock'),
+      ...this.checkSort(products.filter((product) => product.outOfStock), sort, 'out of stock'),
+    ];
+    markFailed(failures, 'verifyFilterAndSort');
+  }
+
+  async clickFilter(): Promise<void> {
+    await switchToNative();
+    await markFailedAndStop(
+      () => clickElement(this.pflocator.filterIcon, { timeout: 10000 }),
+      '[clickFilter] filter icon not found'
+    );
+    console.log('[clickFilter] filter sheet opened');
+  }
+
+  async clickFilterApply(): Promise<void> {
+    const apply = this.pflocator.filterApplyButton;
+    await markFailedAndStop(() => clickElement(apply, { timeout: 5000 }), '[clickFilterApply] Apply button not found');
+    await driver.pause(1000);
+    if (await isDisplayedOrFalse(apply)) {
+      await clickElement(apply, { timeout: 5000 });
+      await driver.pause(1000);
+    }
+    console.log('[clickFilterApply] applied');
+  }
+
   async selectFilterOption(_option: string): Promise<void> {
     // TODO: Implement filter option selection
   }
@@ -345,10 +431,33 @@ export class PfPage extends BasePage {
     return digits ? Number(digits) : 0;
   }
 
-  /** Reads the product count next to Apply in the filter popup; used on PF opened from a category, which has no Products tab. */
+  /** Product total written on the filter Apply button. */
   async getFilterProductCount(): Promise<number> {
-    // TODO: Implement after the filter popup locators are added
-    return 0;
+    const label = await getElementLabel(this.pflocator.filterApplyButton);
+    const count = this.parseApplyCount(label);
+    console.log(`[getFilterProductCount] label="${label}" count=${count}`);
+    return count;
+  }
+
+  /** Apply stays on the previous total until the filter selection is applied in the sheet. */
+  private async waitForApplyCountUpdate(previous: number): Promise<number> {
+    let latest = previous;
+    const updated = await driver
+      .waitUntil(
+        async () => {
+          latest = await this.getFilterProductCount();
+          return latest !== previous;
+        },
+        { timeout: 10000, interval: 500 }
+      )
+      .then(() => true, () => false);
+    console.log(`[getFilterProductCount] previous=${previous} updated=${latest} result=${updated ? 'changed' : 'unchanged'}`);
+    return latest;
+  }
+
+  private parseApplyCount(label: string): number {
+    const numbers = label.match(/\d[\d.,]*/g);
+    return numbers ? Number(numbers[numbers.length - 1].replace(/[.,]/g, '')) : 0;
   }
 
   async getPfTabs(): Promise<string[]> {
@@ -400,20 +509,262 @@ export class PfPage extends BasePage {
     // TODO: Implement PF redirect verification
   }
 
-  async clickFilter(): Promise<void> {
-    // TODO: Implement filter panel open
-  }
-
-  async clickFilterApply(): Promise<void> {
-    // TODO: Implement filter apply action
-  }
-
   async clickSort(): Promise<void> {
-    // TODO: Implement sort panel open
+    await markFailedAndStop(
+      () => clickElement(this.pflocator.sortIcon, { timeout: 10000 }),
+      '[clickSort] sort button not found'
+    );
+    console.log('[clickSort] sort list opened');
   }
 
   async clickSortApply(): Promise<void> {
-    // TODO: Implement sort apply action
+    const apply = this.pflocator.sortApplyButton;
+    await markFailedAndStop(() => clickElement(apply, { timeout: 5000 }), '[clickSortApply] Apply button not found');
+    await driver.pause(1000);
+    if (await isDisplayedOrFalse(apply)) {
+      await clickElement(apply, { timeout: 5000 });
+      await driver.pause(1000);
+    }
+    console.log('[clickSortApply] applied');
+  }
+
+  private async selectFirstFilter(): Promise<Omit<PfFilterChoice, 'count'>> {
+    const found = await this.kindOfFilterOption();
+    markFailedAndStop([{ label: 'no price, product, or resolution filter', pass: Boolean(found) }], 'selectFirstFilter');
+    const { kind, option } = found!;
+    await option.waitForDisplayed({ timeout: 5000 });
+    await option.click();
+    const chipShown = await waitForDisplayedOrFalse(this.pflocator.selectedFilterChip, { timeout: 3000 });
+    const value = chipShown ? (await getElementLabel(this.pflocator.selectedFilterChip)).trim() : '';
+    console.log(`[selectFirstFilter] ${kind}="${value}"`);
+    return { kind, value };
+  }
+
+  /** First on-screen checkbox under a price, product, or resolution section. In stock is not one of these. */
+  private async kindOfFilterOption(): Promise<{ kind: PfFilterKind; option: WebdriverIO.Element } | undefined> {
+    const sections: { kind: PfFilterKind; options: ChainablePromiseArray }[] = [
+      { kind: 'price', options: this.pflocator.priceOptions },
+      { kind: 'product', options: this.pflocator.productOptions },
+      { kind: 'resolution', options: this.pflocator.resolutionOptions },
+    ];
+    for (let scroll = 0; scroll < 5; scroll += 1) {
+      const shown: { kind: PfFilterKind; option: WebdriverIO.Element; top: number }[] = [];
+      for (const section of sections) {
+        for (const option of [...(await section.options)]) {
+          if (!(await isDisplayedOrFalse(option))) {
+            continue;
+          }
+          const { y } = await option.getLocation();
+          shown.push({ kind: section.kind, option, top: y });
+        }
+      }
+      shown.sort((a, b) => a.top - b.top);
+      const first = shown[0];
+      if (first) {
+        console.log(`[kindOfFilterOption] ${first.kind}`);
+        return first;
+      }
+      console.log(`[kindOfFilterOption] scroll ${scroll + 1}: no price, product, or resolution option`);
+      if (!(await scrollDown())) {
+        break;
+      }
+    }
+    return undefined;
+  }
+
+  private async selectPriceSort(): Promise<PfSortChoice> {
+    const option = this.pflocator.priceHighToLowOption;
+    const shown = await this.scrollUntilShown(option, 5);
+    markFailedAndStop([{ label: 'price sort option not found', pass: shown }], 'selectPriceSort');
+    const value = (await getElementLabel(option)).trim();
+    await clickElement(option, { timeout: 5000 });
+    console.log(`[selectPriceSort] price="${value}"`);
+    return { kind: 'price', value };
+  }
+
+  private async scrollUntilShown(element: ChainablePromiseElement, scrolls: number): Promise<boolean> {
+    for (let attempt = 0; attempt <= scrolls; attempt += 1) {
+      if (await isDisplayedOrFalse(element)) {
+        return true;
+      }
+      await scrollDown();
+    }
+    return false;
+  }
+
+  private async collectPfProducts(): Promise<PfProduct[]> {
+    await switchToNative();
+    const products = new Map<string, PfProduct & { ratingText: string }>();
+    let missed = 0;
+    for (let scroll = 0; scroll < 30; scroll += 1) {
+      const cards = [...(await this.pflocator.productGrid)];
+      console.log(`[collectPfProducts] scroll ${scroll + 1}: visible cards=${cards.length}, stored=${products.size}`);
+      let added = false;
+      for (const [index, card] of cards.entries()) {
+        const cardDesc = ((await card.getAttribute('content-desc').catch(() => '')) ?? '').trim();
+        const name = await this.cardProductName(card);
+        const priceText = this.isPriceLabel(cardDesc) ? cardDesc : await this.firstContentDesc([...(await this.pflocator.cardPrices(card))]);
+        if (!name || !priceText) {
+          console.log(
+            `[collectPfProducts] scroll ${scroll + 1} card ${index + 1}: not stored (name="${name}" price="${priceText}" card="${cardDesc}")`
+          );
+          continue;
+        }
+        const ratingText = await this.firstContentDesc([...(await this.pflocator.cardRatings(card))]);
+        const ratingMatch = ratingText.match(/(\d+(?:[.,]\d+)?)\s*\/\s*5/) ?? ratingText.match(/(\d+(?:\.\d+)?)/);
+        const outOfStock = this.isOutOfStock(`${cardDesc}\n${name}`);
+        const product = {
+          name,
+          price: this.parseCardPrice(priceText),
+          rating: Number((ratingMatch?.[1] ?? '0').replace(',', '.')),
+          ratingText,
+          outOfStock,
+        };
+        const key = `${name}|${product.price}|${product.rating}`;
+        const sameCard = [...products.entries()].find(([, stored]) => this.isSamePfCard(stored, product));
+        if (sameCard) {
+          const [previousKey, previous] = sameCard;
+          if (name.length > previous.name.length) {
+            products.delete(previousKey);
+            products.set(key, product);
+            console.log(`[collectPfProducts] scroll ${scroll + 1} card ${index + 1}: name "${previous.name}" -> "${name}"`);
+          } else {
+            console.log(`[collectPfProducts] scroll ${scroll + 1} card ${index + 1}: same card "${previous.name}", skipped "${name}"`);
+          }
+          continue;
+        }
+        if (products.has(key)) {
+          console.log(`[collectPfProducts] scroll ${scroll + 1} card ${index + 1}: duplicate "${name}"`);
+          continue;
+        }
+        products.set(key, product);
+        added = true;
+        console.log(
+          `[collectPfProducts] stored ${products.size}: name="${name}" priceText="${priceText}" price=${product.price} ratingText="${ratingText}" rating=${product.rating} stock=${outOfStock ? 'out' : 'in'}`
+        );
+      }
+      if (!added) {
+        missed += 1;
+        console.log(`[collectPfProducts] no new card, empty scroll ${missed}/5`);
+        if (missed >= 5) {
+          break;
+        }
+      } else {
+        missed = 0;
+      }
+      if (!(await scrollDown())) {
+        console.log('[collectPfProducts] list cannot scroll further');
+        break;
+      }
+    }
+    const list = [...products.values()];
+    console.log(`[collectPfProducts] done stored=${list.length}`);
+    list.forEach((product, index) => {
+      console.log(`[collectPfProducts] [${index}] name="${product.name}" price=${product.price} rating=${product.rating} stock=${product.outOfStock ? 'out' : 'in'}`);
+    });
+    return list;
+  }
+
+  /**
+   * A color chip such as "Lavender" shares the price and rating text with its card, and neither name contains the other.
+   * "Galaxy Z Fold8 Ultra" and "Galaxy Z Fold8 Ultra (chỉ có tại Samsung.com)" share a price and a 9999+ rating, but one name contains the other, so both stay.
+   */
+  private isSamePfCard(stored: { name: string; price: number; ratingText: string }, next: { name: string; price: number; ratingText: string }): boolean {
+    if (!next.ratingText || stored.ratingText !== next.ratingText || stored.price !== next.price) {
+      return false;
+    }
+    const longer = next.name.length >= stored.name.length ? next.name : stored.name;
+    const shorter = next.name.length >= stored.name.length ? stored.name : next.name;
+    return !longer.toLowerCase().includes(shorter.toLowerCase());
+  }
+
+  /** Longest clickable label on the card. A scrolled card can leave only a color chip such as "Lavender". */
+  private async cardProductName(card: WebdriverIO.Element): Promise<string> {
+    const labels: string[] = [];
+    for (const node of [...(await this.pflocator.pfCardTitles(card))]) {
+      const text = ((await node.getAttribute('content-desc').catch(() => '')) ?? '').trim();
+      if (text && !this.isPriceLabel(text)) {
+        labels.push(text);
+      }
+    }
+    return labels.sort((a, b) => b.length - a.length)[0] ?? '';
+  }
+
+  /** First match only. `$$` returns at once, so a missing child does not sit on `waitforTimeout`. */
+  private async firstContentDesc(nodes: WebdriverIO.Element[]): Promise<string> {
+    const found = nodes[0];
+    if (!found) {
+      return '';
+    }
+    return ((await found.getAttribute('content-desc').catch(() => '')) ?? '').trim();
+  }
+
+  /** Card content-desc on this PF is the price, e.g. "52.990.000 VND". "." groups thousands. */
+  private isPriceLabel(label: string): boolean {
+    return /\d/.test(label) && /vnd|usd|eur|krw|\$|€|£|₩|¥|₫/i.test(label);
+  }
+
+  private parseCardPrice(priceText: string): number {
+    const compact = priceText.replace(/[^\d.,]/g, '');
+    if (/^\d{1,3}(\.\d{3})+$/.test(compact)) {
+      return Number(compact.replace(/\./g, ''));
+    }
+    return parsePriceToNumber(priceText);
+  }
+
+  private checkFilter(products: PfProduct[], filter: Omit<PfFilterChoice, 'count'>): { label: string; pass: boolean }[] {
+    if (filter.kind === 'price') {
+      const [min, max] = this.priceBounds(filter.value);
+      const failures = products
+        .filter((product) => product.price < min || product.price > max)
+        .map((product) => ({ label: `price out of range: ${product.name} (${product.price})`, pass: false }));
+      console.log(`[checkFilter] price="${filter.value}" range=${min}..${max === Number.POSITIVE_INFINITY ? '∞' : max} cards=${products.length}`);
+      products.forEach((product, index) => {
+        const pass = product.price >= min && product.price <= max;
+        console.log(`[checkFilter] [${index}] name="${product.name}" price=${product.price} result=${pass ? 'PASS' : 'FAIL'}`);
+      });
+      return failures;
+    }
+    const keyword = filter.value.toLowerCase();
+    const accepted = FILTER_EXCEPTION_KEYWORDS[keyword] ?? [keyword];
+    const failures = products
+      .filter((product) => !accepted.some((word) => product.name.toLowerCase().includes(word)))
+      .map((product) => ({ label: `filter mismatch: ${product.name} does not match "${filter.value}"`, pass: false }));
+    console.log(`[checkFilter] ${filter.kind}="${filter.value}" accepted=${accepted.join(' | ')} cards=${products.length}`);
+    products.forEach((product, index) => {
+      const matched = accepted.find((word) => product.name.toLowerCase().includes(word));
+      console.log(`[checkFilter] [${index}] name="${product.name}" matched="${matched ?? ''}" result=${matched ? 'PASS' : 'FAIL'}`);
+    });
+    return failures;
+  }
+
+  private checkSort(products: PfProduct[], sort: PfSortChoice, label: string): { label: string; pass: boolean }[] {
+    if (products.length === 0) {
+      return [];
+    }
+    const actual = products.map((product) => (sort.kind === 'rating' ? product.rating : product.price));
+    const expected = [...actual].sort((a, b) => b - a);
+    const pass = actual.every((value, index) => value === expected[index]);
+    console.log(`[verifyFilterAndSort] ${label} ${sort.kind}=${actual.join(', ')} result=${pass ? 'PASS' : 'FAIL'}`);
+    return pass ? [] : [{ label: `${label} products are not sorted by ${sort.kind}`, pass: false }];
+  }
+
+  private priceBounds(label: string): [number, number] {
+    const numbers = [...label.matchAll(/(\d[\d\s.,]*)/g)].map((match) => Number(match[1].replace(/[\s.,]/g, '')));
+    if (numbers.length >= 2) {
+      return [numbers[0], numbers[1]];
+    }
+    if (numbers.length === 1) {
+      const below = PRICE_BELOW_WORDS.some((word) => label.toLowerCase().includes(word));
+      return below ? [0, numbers[0]] : [numbers[0], Number.POSITIVE_INFINITY];
+    }
+    return [0, Number.POSITIVE_INFINITY];
+  }
+
+  /** "Out of stock" is the first line of the card content-desc, not the product title. */
+  private isOutOfStock(label: string): boolean {
+    const lower = label.toLowerCase();
+    return OUT_OF_STOCK_WORDS.some((word) => lower.includes(word));
   }
 
   /** Taps the first "add to wishlist" heart on PF and returns that card's SKU. */
