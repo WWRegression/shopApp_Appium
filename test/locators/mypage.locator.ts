@@ -492,7 +492,10 @@ export class MypageLocator {
   }
 
   get inboxPage() {
-    return $(`//android.view.View[contains(@content-desc, 'There are no new notifications')]`);
+    return $(
+      `//android.view.View[contains(@content-desc, 'There are no new notifications')]
+      | //android.widget.ImageView[@content-desc and .//android.widget.Button]`
+    );
   }
 
   get mySmartThings() {
@@ -543,6 +546,29 @@ export class MypageLocator {
         return this.orderSupport;
       case 'myAddresses':
         return this.myAddresses;
+    }
+  }
+
+  productMenuPage(menu: ProductMenu) {
+    switch (menu) {
+      case 'myProducts':
+        return this.myProductsPage;
+      case 'myOrders':
+        return this.myOrdersPage;
+      case 'myRepairs':
+        return this.myRepairsPage;
+      case 'myReferrals':
+        return this.myReferralsPage;
+      case 'myQRCode':
+        return this.myQRCodePage;
+      case 'inbox':
+        return this.inboxPage;
+      case 'mySmartThings':
+        return this.mySmartThingsPage;
+      case 'orderSupport':
+        return this.orderSupportPage;
+      case 'myAddresses':
+        return this.myAddressesPage;
     }
   }
 

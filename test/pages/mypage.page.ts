@@ -11,7 +11,7 @@ import { LoginPage, SAMSUNG_ACCOUNT_PACKAGE, SAMSUNG_ACCOUNT_SETTINGS_ACTIVITY }
 import { getRunConfig } from '../../config/run.config';
 import { getSiteData } from '../../config/site';
 import type { LoadedSite } from '../../config/site';
-import { prepareWebViewPage, switchToNative } from '../helpers/context.helper';
+import { getDetailedWebViewWindows, prepareWebViewPage, switchToNative, switchToWebView } from '../helpers/context.helper';
 import { parsePoints } from '../helpers/data.helper';
 import { getBrowserPages } from '../helpers/device.helper';
 import {
@@ -429,8 +429,8 @@ export class MypagePage extends BasePage {
     return menuLabel;
   }
 
-  /** The opened page must carry the clicked menu's name — WebView page title (CDP, no context switch), selected tab or title next to Back. */
-  async verifyProductMenuRedirected(menuLabel: string): Promise<void> {
+  /** The opened page's title must contain the clicked menu's name — WebView page title (CDP, no context switch), selected tab or title next to Back. */
+  async verifyPageTitleMatchesMenu(menuLabel: string): Promise<void> {
     let actual = '';
     const pass = await driver
       .waitUntil(
@@ -441,11 +441,53 @@ export class MypagePage extends BasePage {
         { timeout: 10000, interval: 500 }
       )
       .then(() => true, () => false);
-    console.log(`[verifyProductMenuRedirected] expected menu="${menuLabel}" actual page="${actual}" result=${pass ? 'PASS' : 'FAIL'}`);
+    console.log(`[verifyPageTitleMatchesMenu] expected menu="${menuLabel}" actual page="${actual}" result=${pass ? 'PASS' : 'FAIL'}`);
     markFailed(
-      [{ label: `menu did not open its page: ${menuLabel}`, pass, detail: `expected menu="${menuLabel}", actual page="${actual}"` }],
-      'verifyProductMenuRedirected'
+      [{ label: `page title does not match the menu: ${menuLabel}`, pass, detail: `expected menu="${menuLabel}", actual page="${actual}"` }],
+      'verifyPageTitleMatchesMenu'
     );
+  }
+
+  /** The menu's own page content (mypage.locator *Page) must be shown — in the newly opened WebView window (CSS locator) or on the native screen (xpath). */
+  async verifyMenuPageContentShown(menu: ProductMenu): Promise<void> {
+    const isNativePage = /^[/(]/.test(String((await this.locator.productMenuPage(menu)).selector));
+    let pass: boolean;
+    let actual: string;
+    if (isNativePage) {
+      await switchToNative();
+      pass = await waitForDisplayedOrFalse(this.locator.productMenuPage(menu), { timeout: 15000 });
+      actual = `${pass ? 'shown' : 'not shown'} on the native screen`;
+    } else {
+      const url = await this.switchToNewWebViewWindow(10000);
+      pass = !!url && (await waitForDisplayedOrFalse(this.locator.productMenuPage(menu), { timeout: 15000 }));
+      actual = url ? `${pass ? 'shown' : 'not shown'} in the new WebView window ${url}` : 'no new WebView window opened';
+      await switchToNative();
+    }
+    console.log(`[verifyMenuPageContentShown] expected=${menu} page content shown actual=${actual} result=${pass ? 'PASS' : 'FAIL'}`);
+    markFailed([{ label: `${menu} page content not shown`, pass, detail: actual }], 'verifyMenuPageContentShown');
+  }
+
+  /** Switches to the WebView window the last menu click opened (absent from the baseline); returns its URL, '' when none opens. */
+  private async switchToNewWebViewWindow(timeoutMs: number): Promise<string> {
+    if (!(await switchToWebView(timeoutMs))) {
+      return '';
+    }
+    let url = '';
+    await driver
+      .waitUntil(
+        async () => {
+          const window = (await getDetailedWebViewWindows()).find((w) => !this.knownPageIds.has(w.webviewPageId));
+          if (!window) {
+            return false;
+          }
+          await driver.switchToWindow(window.webviewPageId);
+          url = window.url;
+          return true;
+        },
+        { timeout: timeoutMs, interval: 500 }
+      )
+      .catch(() => undefined);
+    return url;
   }
 
   /** Names the opened page shows: title of the newly opened WebView page, the selected tab and the title next to Back. */
