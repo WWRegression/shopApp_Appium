@@ -4,8 +4,13 @@ import { switchToNative, switchToWebView, switchToWindowByPage } from '../helper
 import { clickElement, waitForDisplayedOrFalse } from '../helpers/element.helper';
 import { markFailed, markFailedAndStop } from '../helpers/report.helper';
 
+const KEYCODE_DEL = 67;
+
+const BLACKLIST_WORDS = ['google', 'apple', 'iphone', '@'];
+
 export class SearchPage extends BasePage {
   private readonly locator = new SearchLocator();
+  private typedLength = 0;
 
   async openSearch(): Promise<void> {
     await this.selectHeaderIcon('search');
@@ -16,8 +21,12 @@ export class SearchPage extends BasePage {
     console.warn('[search] searching for:', keyword);
     await this.locator.searchInput.waitForDisplayed({ timeout: 10000 });
     await this.locator.searchInput.click();
+    for (let index = 0; index < this.typedLength; index += 1) {
+      await driver.pressKeyCode(KEYCODE_DEL);
+    }
     await driver.keys(keyword.split(''));
     await driver.keys(['Enter']);
+    this.typedLength = keyword.length;
     await driver.pause(500);
   }
 
@@ -126,7 +135,18 @@ export class SearchPage extends BasePage {
     await this.locator.searchResults.waitForDisplayed({ timeout: 15000 });
   }
 
+  /** Searches each blacklist word and checks that the no-result message is shown. */
+  async verifyBlacklistSearch(): Promise<void> {
+    for (const word of BLACKLIST_WORDS) {
+      await this.search(word);
+      await this.verifyNoResultPage();
+    }
+  }
+
   async verifyNoResultPage(): Promise<void> {
-    // site별 UI 차이 — 필요 시 구현
+    await switchToNative();
+    const shown = await waitForDisplayedOrFalse(this.locator.noResultMessage, { timeout: 10000 });
+    console.log(`[verifyNoResultPage] expected=no results actual=${shown ? 'shown' : 'not shown'} result=${shown ? 'PASS' : 'FAIL'}`);
+    markFailedAndStop([{ label: 'No results page was not displayed', pass: shown }], 'verifyNoResultPage');
   }
 }

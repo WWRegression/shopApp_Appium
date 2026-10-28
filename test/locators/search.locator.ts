@@ -42,6 +42,39 @@ export class SearchLocator {
     );
   }
 
+  /** Empty-result message on the search screen. */
+  get noResultMessage() {
+    const phrases = [
+      'no matches were found',
+      'عذراً، لم يتم العثور على نتائج مطابقة.',
+      'Désolé, aucun résultat trouvé.',
+      'Lo sentimos, no hay resultados que coincidan con tu búsqueda.',
+      'Vaya, no hemos encontrado ninguna coincidencia.',
+      'Maaf, tidak ada hasil yang ditemukan.',
+      'Spiacente, non sono state trovate corrispondenze',
+      'Leider wurden keine passenden Ergebnisse gefunden.',
+      'Sorry, er zijn geen overeenkomsten gevonden.',
+      'Niestety, nie znaleziono pasujących wyników.',
+      'Tyvärr hittades inga resultat.',
+      'ขออภัย ไม่พบผลลัพธ์',
+      '很抱歉，找不到任何相符結果。',
+      'Rất tiếc, không tìm thấy kết quả phù hợp.',
+      'Omlouváme se, nebyly nalezeny žádné shody.',
+      '很抱歉，找不到任何匹配結果。',
+      'Sajnáljuk, nincs találat.',
+      'Lo sentimos, no se encontraron resultados.',
+      'Ne pare rău, nu au fost găsite potriviri.',
+      'Eşleşme bulunamadı.',
+      '抱歉，未找到匹配项。',
+      'Sorry, er zijn geen resultaten gevonden.',
+      "Désolé, aucun résultat n'a été trouvé.",
+      ' לא נמצאו תוצאות תואמות',
+      'Não foram encontrados resultados',
+      'Try a new search or the below suggestions',
+    ].map((phrase) => `contains(@content-desc, "${phrase}")`).join(' or ');
+    return $(`//android.view.View[${phrases}]`);
+  }
+
   /** PF/search result card that mentions SKU or product name */
   productCardContaining(text: string) {
     return $(`//*[contains(@content-desc,"${text}") or contains(@text,"${text}")]`);

@@ -10,6 +10,8 @@
  *
  * [Native convenience]
  *   scrollDown         One-page Native list scroll down (scrollGesture).
+ *   scrollListDown     Finger drag that brings the next list rows into view.
+ *   scrollListUp       Short finger drag that brings the previous row back into view.
  *   scrollUp           Short W3C-pointer drag up — reveals Header/BNB after long pages.
  *   swipeToTop         Strong swipe toward top of screen.
  *   swipeByBoundary    Directional swipe in a boundary box.
@@ -84,6 +86,45 @@ export async function gestureByElement(
 /** One-page Native list scroll down (mobile: scrollGesture); false once the list cannot scroll further. */
 export async function scrollDown(): Promise<boolean> {
   return gestureByBoundary('scroll', 'down', 1, { left: 250, top: 400 });
+}
+
+/**
+ * Finger moves up so the next rows enter the viewport.
+ * `scrollGesture` reports "cannot scroll" on the PF list while rows are still below.
+ */
+export async function scrollListDown(): Promise<void> {
+  const { width, height } = await driver.getWindowSize();
+  const x = Math.floor(width / 2);
+  const startY = Math.floor(height * 0.72);
+  const endY = Math.floor(height * 0.4);
+
+  await driver
+    .action('pointer', { parameters: { pointerType: 'touch' } })
+    .move({ x, y: startY, duration: 0 })
+    .down()
+    .pause(80)
+    .move({ x, y: endY, duration: 500 })
+    .up()
+    .perform();
+  await driver.pause(400);
+}
+
+/** Finger moves down a short way so the row that just left the top comes back. */
+export async function scrollListUp(): Promise<void> {
+  const { width, height } = await driver.getWindowSize();
+  const x = Math.floor(width / 2);
+  const startY = Math.floor(height * 0.52);
+  const endY = Math.floor(height * 0.6);
+
+  await driver
+    .action('pointer', { parameters: { pointerType: 'touch' } })
+    .move({ x, y: startY, duration: 0 })
+    .down()
+    .pause(80)
+    .move({ x, y: endY, duration: 400 })
+    .up()
+    .perform();
+  await driver.pause(400);
 }
 
 /**

@@ -92,15 +92,6 @@ export class PfLocator {
     )]`);
   }
 
-  
-  /** Filter entry on PF: the control after the result total, or a Filters icon. */
-  get filterIcon() {
-    return $(
-      `//android.view.View[${this.resultTotalLabel}]/following-sibling::${this.pfToolbarControl}[1]` +
-        ` | //android.widget.ImageView[${this.filtersIconLabel}]`
-    );
-  }
-
   /** Sort control beside the filter icon. */
   get sortIcon() {
     return $(
@@ -109,20 +100,50 @@ export class PfLocator {
     );
   }
 
-  /** Apply (n) inside the filter sheet, e.g. content-desc "Filters (1)". */
-  get filterApplyButton() {
+  /** Filter entry on PF: the control after the result total, or a Filters icon. */
+  get filterIcon() {
     return $(
-      `//android.view.View[contains(@content-desc, 'Filter') or contains(@content-desc, '篩選')]//android.widget.Button[${this.applyButtonLabel}]`
+      `//android.view.View[${this.resultTotalLabel}]/following-sibling::${this.pfToolbarControl}[1]` +
+        ` | //android.widget.ImageView[${this.filtersIconLabel}]`
     );
   }
 
-  /** "Apply sort" inside the sort sheet. The sheet title is "Sort" plus a newline and the selected option. */
-  get sortApplyButton() {
-    return $(`//android.view.View[${this.sortSheetLabel}]//android.widget.Button[${this.applyButtonLabel}]`);
+  /** Popup title carries the selected-filter count, e.g. "Filters (3)". */
+  get filterPopup() {
+    return $(`//android.view.View[${this.filterPopupLabel}]`);
   }
 
-  /** Sort sheet root, e.g. "Sort\nĐược khuyến nghị". "Sort By" does not match that title. */
-  private get sortSheetLabel() {
+  /** Immediate matches. `$().isDisplayed` waits `waitforTimeout` when the popup is absent. */
+  get filterPopups() {
+    return $$(`//android.view.View[${this.filterPopupLabel}]`);
+  }
+
+  /** Apply button inside the filter popup, e.g. content-desc "Apply (3)". */
+  get filterApplyButton() {
+    return $(`//android.view.View[${this.filterPopupLabel}]//android.widget.Button[${this.applyButtonLabel}]`);
+  }
+
+  /** "Clear all" inside the filter popup. */
+  get filterClearAllButton() {
+    return $(`//android.view.View[${this.filterPopupLabel}]//android.widget.Button[contains(@content-desc, 'Clear all')]`);
+  }
+
+  /** Close control at the top of the filter popup. The chip remove icons sit deeper in the tree. */
+  get filterPopupCloseButton() {
+    return $(`//android.view.View[${this.filterPopupLabel}]/android.widget.ImageView[1]`);
+  }
+
+  private get filterPopupLabel() {
+    return `(starts-with(@content-desc, 'Filter') or starts-with(@content-desc, '篩選')) and .//android.widget.Button`;
+  }
+
+  /** "Apply sort" inside the sort popup. The popup title is "Sort" plus a newline and the selected option. */
+  get sortApplyButton() {
+    return $(`//android.view.View[${this.sortPopupLabel}]//android.widget.Button[${this.applyButtonLabel}]`);
+  }
+
+  /** Sort popup root, e.g. "Sort\nĐược khuyến nghị". "Sort By" does not match that title. */
+  private get sortPopupLabel() {
     const titles = [
       'فرز بحسب', 'ترتيب حسب', 'Trier par', 'Ordenar por', '排序方式', 'Seřadit podle', 'Rendezés',
       'Urut berdasarkan', 'Ordina per', 'Filtrează după', 'เรียงตาม', 'Sırala', '排序', 'Sắp xếp theo',
@@ -203,7 +224,7 @@ export class PfLocator {
     );
   }
 
-  /** Price high-to-low option in the sort list. */
+  /** Price high-to-low option in the sort popup. */
   get priceHighToLowOption() {
     const label = [
       'High to Low', 'high to low', 'mayor a menor', 'الأعلى للأقل', 'Von hoch nach niedrig', 'élevé à bas',
@@ -211,7 +232,7 @@ export class PfLocator {
       'Tinggi -> Rendah', 'alto a basso', 'hoog - laag', 'wysokiej do niskiej', 'descrescător', 'Högt till lågt',
       'Azalan', 'Cao đến thấp', 'מהגבוה לנמוך', 'mais alto', '高い順', 'plus cher',
     ].map((text) => `contains(@content-desc, '${text}')`).join(' or ');
-    return $(`//android.view.View[${this.sortSheetLabel}]//android.view.View[${label}]`);
+    return $(`//android.view.View[${this.sortPopupLabel}]//android.view.View[${label}]`);
   }
 
   get ratingSortOption() {

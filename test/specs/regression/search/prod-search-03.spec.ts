@@ -1,13 +1,25 @@
 import { runOrSkip } from '../../../helpers/tc-filter.helper';
+import { HomePage } from '../../../pages/home.page';
+import { PfPage } from '../../../pages/pf.page';
 import { SearchPage } from '../../../pages/search.page';
 
-describe('PROD_SEARCH_03', () => {
-  const searchPage = new SearchPage();
+const SKU_RESULT_KEYWORDS = ['Galaxy S', 'S26', 'S25'];
 
-  it('search by SKU then filter/sort on Search PF', async function () {
-    await runOrSkip.call(this, 'PROD_SEARCH_03', async (site) => {
-      await searchPage.searchByKeyword(site.product.sku);
-      // TODO: reimplement using new PfPage API
+/** Able to search by SKU and use one filter and one sort on the search PF. */
+describe('PROD_SEARCH_03', () => {
+  const homePage = new HomePage();
+  const searchPage = new SearchPage();
+  const pfPage = new PfPage();
+
+  it('search by SKU then filter and sort on Search PF', async function () {
+    await runOrSkip.call(this, 'PROD_SEARCH_03', async () => {
+      await homePage.prepareHomePage();
+      await searchPage.searchByKeyword('SM-S');
+      await pfPage.verifySearchResultCount(SKU_RESULT_KEYWORDS);
+
+      const filter = await pfPage.applyFilter();
+      const sort = await pfPage.applySort();
+      await pfPage.verifyFilterAndSort(filter, sort);
     });
   });
 });

@@ -3,7 +3,7 @@ import { PfLocator } from '../locators/pf.locator';
 import { BcLocator } from '../locators/bc.locator';
 import { PdLocator } from '../locators/pd.locator';
 import { switchToNative, getCurrentWebViewPage } from '../helpers/context.helper';
-import { scrollByBoundary, scrollDown } from '../helpers/gesture.helper';
+import { scrollByBoundary, scrollDown, scrollListDown, scrollListUp } from '../helpers/gesture.helper';
 import { currentSiteCode } from '../helpers/tc-filter.helper';
 import { normalizeText, isExactTokenMatch, stripMarkerText, normalizeProductName, parsePriceToNumber } from '../helpers/data.helper';
 import { clickElement, getElementLabel, isDisplayedOrFalse, scrollUntilVisible, waitForDisplayedOrFalse, readDisplayedText } from '../helpers/element.helper';
@@ -265,10 +265,15 @@ export class PfPage extends BasePage {
     return waitForDisplayedOrFalse(this.pflocator.productGrid[0], { timeout: 5000 });
   }
 
-  /** Opens the filter popup, selects one option, and applies. Returns the Apply product count after it updates. */
+  /** Opens the filter popup. When filters are already selected, clears them and opens the popup again, then selects one option. */
   async applyFilter(): Promise<PfFilterChoice> {
-    await this.clickFilter();
-    await waitForDisplayedOrFalse(this.pflocator.filterApplyButton, { timeout: 5000 });
+    await this.openFilterPopup();
+    const selected = await this.getSelectedFilterCount();
+    if (selected > 0) {
+      console.log(`[applyFilter] selected filters=${selected}`);
+      await this.clickFilterClearAll();
+      await this.openFilterPopup();
+    }
     const before = await this.getFilterProductCount();
     const filter = await this.selectFirstFilter();
     const count = await this.waitForApplyCountUpdate(before);
@@ -276,7 +281,7 @@ export class PfPage extends BasePage {
     return { ...filter, count };
   }
 
-  /** Opens the sort list beside the filter button and selects price, high to low. */
+  /** Opens the sort popup beside the filter button and selects price, high to low. */
   async applySort(): Promise<PfSortChoice> {
     await this.clickSort();
     const sort = await this.selectPriceSort();
@@ -305,12 +310,46 @@ export class PfPage extends BasePage {
   }
 
   async clickFilter(): Promise<void> {
-    await switchToNative();
     await markFailedAndStop(
       () => clickElement(this.pflocator.filterIcon, { timeout: 10000 }),
       '[clickFilter] filter icon not found'
     );
-    console.log('[clickFilter] filter sheet opened');
+    console.log('[clickFilter] filter popup opened');
+  }
+
+  /** Opens the filter popup. Closes a popup that is already up so the next open is a fresh one. */
+  private async openFilterPopup(): Promise<void> {
+    if (await this.isFilterPopupOpen()) {
+      await clickElement(this.pflocator.filterPopupCloseButton, { timeout: 3000 });
+      await driver.pause(500);
+    }
+    await this.clickFilter();
+    const opened = await waitForDisplayedOrFalse(this.pflocator.filterApplyButton, { timeout: 5000 });
+    markFailedAndStop([{ label: 'filter popup not opened', pass: opened }], 'openFilterPopup');
+  }
+
+  private async isFilterPopupOpen(): Promise<boolean> {
+    const popup = [...(await this.pflocator.filterPopups)][0];
+    if (!popup) {
+      return false;
+    }
+    return popup.isDisplayed().catch(() => false);
+  }
+
+  /** Selected-filter count on the popup title, e.g. "Filters (3)". */
+  private async getSelectedFilterCount(): Promise<number> {
+    const label = await getElementLabel(this.pflocator.filterPopup);
+    const count = Number(label.match(/\((\d+)\)/)?.[1] ?? 0);
+    console.log(`[getSelectedFilterCount] label="${label}" count=${count}`);
+    return count;
+  }
+
+  /** Clears a selection already checked when the filter popup opens. */
+  async clickFilterClearAll(): Promise<void> {
+    const clearAll = this.pflocator.filterClearAllButton;
+    await markFailedAndStop(() => clickElement(clearAll, { timeout: 5000 }), '[clickFilterClearAll] Clear all not found');
+    await driver.pause(1000);
+    console.log('[clickFilterClearAll] cleared');
   }
 
   async clickFilterApply(): Promise<void> {
@@ -355,70 +394,6 @@ export class PfPage extends BasePage {
     return [];
   }
 
-  /** Scrolls the PF list to the end and counts the unique cards; stops the TC if a card lacks every keyword. */
-  async getPfCardMatchCount(keywords: string[], maxScrolls = 15): Promise<number> {
-    await switchToNative();
-    const normalizedKeywords = keywords.map((keyword) => normalizeText(keyword));
-    // Keyed by card desc so a card seen on several scrolls is counted once
-    const matchedByCard = new Map<string, boolean>();
-    let previousLastCardPosition: string | undefined;
-    let canScrollMore = true;
-    let scrolls = 0;
-
-    for (; scrolls < maxScrolls; scrolls += 1) {
-      const cards = [...(await this.pflocator.productGrid)];
-      await this.collectPfCardMatches(cards, normalizedKeywords, matchedByCard);
-
-      // Stop at the bottom, or when the list did not move (the scroll result can be wrong)
-      if (!canScrollMore) break;
-      const lastCardPosition = await this.getLastPfCardPosition(cards);
-      if (lastCardPosition === previousLastCardPosition) break;
-
-      previousLastCardPosition = lastCardPosition;
-      canScrollMore = await scrollDown();
-    }
-
-    const unmatchedCards = [...matchedByCard].filter(([, matched]) => !matched).map(([desc]) => desc.replace(/\s+/g, ' '));
-    markFailedAndStop(
-      unmatchedCards.map((desc) => ({ label: `Keyword not found in PF card: ${desc}`, pass: false })),
-      'getPfCardMatchCount'
-    );
-    console.log(`[getPfCardMatchCount] keywords=${JSON.stringify(keywords)} unique PF cards=${matchedByCard.size} scrolls=${scrolls}`);
-    return matchedByCard.size;
-  }
-
-  /** Records whether each visible card's label or title contains a keyword; a card matched on an earlier scroll stays matched. */
-  private async collectPfCardMatches(
-    cards: WebdriverIO.Element[],
-    normalizedKeywords: string[],
-    matchedByCard: Map<string, boolean>
-  ): Promise<void> {
-    const containsKeyword = (text: string) => normalizedKeywords.some((keyword) => normalizeText(text).includes(keyword));
-
-    for (const card of cards) {
-      const desc = ((await card.getAttribute('content-desc').catch(() => '')) ?? '').trim();
-      if (!desc) continue;
-      let matched = matchedByCard.get(desc) || containsKeyword(desc);
-      // UK keeps the product name in a child view
-      const title = this.pflocator.pfCardTitle(card);
-      if (!matched && (await title.isExisting().catch(() => false))) {
-        matched = containsKeyword((await title.getAttribute('content-desc').catch(() => '')) ?? '');
-      }
-      matchedByCard.set(desc, matched);
-    }
-  }
-
-  /** Label and position of the last card on screen ("desc@{x,y}"), compared across scrolls to see if the list moved. */
-  private async getLastPfCardPosition(cards: WebdriverIO.Element[]): Promise<string> {
-    const lastCard = cards.at(-1);
-    if (!lastCard) {
-      return '';
-    }
-    const desc = await lastCard.getAttribute('content-desc').catch(() => '');
-    const location = await lastCard.getLocation().catch(() => null);
-    return `${desc}@${JSON.stringify(location)}`;
-  }
-
   /** Reads the product count from the "Products (10)" tab shown on search results; 0 when not shown. */
   async getSearchProductCount(): Promise<number> {
     await switchToNative();
@@ -439,7 +414,7 @@ export class PfPage extends BasePage {
     return count;
   }
 
-  /** Apply stays on the previous total until the filter selection is applied in the sheet. */
+  /** Apply stays on the previous total until the filter selection is applied in the popup. */
   private async waitForApplyCountUpdate(previous: number): Promise<number> {
     let latest = previous;
     const updated = await driver
@@ -448,7 +423,7 @@ export class PfPage extends BasePage {
           latest = await this.getFilterProductCount();
           return latest !== previous;
         },
-        { timeout: 10000, interval: 500 }
+        { timeout: 3000, interval: 500 }
       )
       .then(() => true, () => false);
     console.log(`[getFilterProductCount] previous=${previous} updated=${latest} result=${updated ? 'changed' : 'unchanged'}`);
@@ -475,16 +450,26 @@ export class PfPage extends BasePage {
     return 'remove';
   }
 
-  /** Verifies the Products tab count equals the number of PF cards containing the keyword. */
+  /** Products tab count equals the PF cards from collectPfProducts, and each product name contains a keyword. */
   async verifySearchResultCount(keywords: string[]): Promise<void> {
     const productCount = await this.getSearchProductCount();
-    const matchingCount = await this.getPfCardMatchCount(keywords);
-    const pass = matchingCount === productCount;
+    const products = await this.collectPfProducts();
+    const normalizedKeywords = keywords.map((keyword) => normalizeText(keyword));
+    const unmatched = products.filter((product) => !normalizedKeywords.some((keyword) => normalizeText(product.name).includes(keyword)));
+    const countMatches = products.length === productCount;
+    const pass = countMatches && unmatched.length === 0;
     console.log(
-      `[verifySearchResultCount] expected=${productCount} (Products tab count) actual=${matchingCount} (matching PF cards) result=${pass ? 'PASS' : 'FAIL'}`
+      `[verifySearchResultCount] Products tab=${productCount} PF cards=${products.length} unmatched=${unmatched.length} result=${pass ? 'PASS' : 'FAIL'}`
     );
+    products.forEach((product, index) => {
+      const matched = normalizedKeywords.find((keyword) => normalizeText(product.name).includes(keyword));
+      console.log(`[verifySearchResultCount] [${index}] name="${product.name}" matched="${matched ?? ''}" result=${matched ? 'PASS' : 'FAIL'}`);
+    });
     markFailed(
-      [{ label: 'Mismatch between Products tab count and number of matching PF cards', pass, detail: `Products tab ${productCount}, PF cards ${matchingCount}` }],
+      [
+        { label: 'PF card count does not match Products tab count', pass: countMatches, detail: `Products tab ${productCount}, PF cards ${products.length}` },
+        ...unmatched.map((product) => ({ label: `Keyword not found in PF card: ${product.name}`, pass: false })),
+      ],
       'verifySearchResultCount'
     );
   }
@@ -514,7 +499,7 @@ export class PfPage extends BasePage {
       () => clickElement(this.pflocator.sortIcon, { timeout: 10000 }),
       '[clickSort] sort button not found'
     );
-    console.log('[clickSort] sort list opened');
+    console.log('[clickSort] sort popup opened');
   }
 
   async clickSortApply(): Promise<void> {
@@ -596,15 +581,22 @@ export class PfPage extends BasePage {
     await switchToNative();
     const products = new Map<string, PfProduct & { ratingText: string }>();
     let missed = 0;
+    let previousSight = '';
+    let stuck = 0;
+    const revealed = new Set<string>();
     for (let scroll = 0; scroll < 30; scroll += 1) {
       const cards = [...(await this.pflocator.productGrid)];
       console.log(`[collectPfProducts] scroll ${scroll + 1}: visible cards=${cards.length}, stored=${products.size}`);
       let added = false;
+      const revealSkus: string[] = [];
+      const sights: string[] = [];
       for (const [index, card] of cards.entries()) {
         const cardDesc = ((await card.getAttribute('content-desc').catch(() => '')) ?? '').trim();
+        sights.push(cardDesc);
+        const sku = this.cardSku(cardDesc);
         const name = await this.cardProductName(card);
         const priceText = this.isPriceLabel(cardDesc) ? cardDesc : await this.firstContentDesc([...(await this.pflocator.cardPrices(card))]);
-        if (!name || !priceText) {
+        if (!priceText || (!name && !sku)) {
           console.log(
             `[collectPfProducts] scroll ${scroll + 1} card ${index + 1}: not stored (name="${name}" price="${priceText}" card="${cardDesc}")`
           );
@@ -620,28 +612,70 @@ export class PfPage extends BasePage {
           ratingText,
           outOfStock,
         };
-        const key = `${name}|${product.price}|${product.rating}`;
-        const sameCard = [...products.entries()].find(([, stored]) => this.isSamePfCard(stored, product));
-        if (sameCard) {
-          const [previousKey, previous] = sameCard;
-          if (name.length > previous.name.length) {
-            products.delete(previousKey);
+        const key = sku || `${name}|${product.price}`;
+        const previous = products.get(key);
+        if (previous) {
+          if (name && name !== previous.name) {
             products.set(key, product);
-            console.log(`[collectPfProducts] scroll ${scroll + 1} card ${index + 1}: name "${previous.name}" -> "${name}"`);
+            added = true;
+            console.log(`[collectPfProducts] scroll ${scroll + 1} card ${index + 1}: name "${previous.name}" -> "${name}" sku=${sku}`);
+          } else if (!previous.ratingText && product.ratingText) {
+            products.set(key, { ...previous, rating: product.rating, ratingText });
+            console.log(
+              `[collectPfProducts] scroll ${scroll + 1} card ${index + 1}: rating "${name || sku}" ${previous.rating} -> ${product.rating}`
+            );
           } else {
-            console.log(`[collectPfProducts] scroll ${scroll + 1} card ${index + 1}: same card "${previous.name}", skipped "${name}"`);
+            console.log(`[collectPfProducts] scroll ${scroll + 1} card ${index + 1}: duplicate "${name || sku}"`);
+          }
+          if (!name && sku && !revealed.has(sku)) {
+            revealSkus.push(sku);
           }
           continue;
         }
-        if (products.has(key)) {
-          console.log(`[collectPfProducts] scroll ${scroll + 1} card ${index + 1}: duplicate "${name}"`);
-          continue;
+        if (!sku) {
+          const sameCard = [...products.entries()].find(([, stored]) => this.isSamePfCard(stored, product));
+          if (sameCard) {
+            const [previousKey, stored] = sameCard;
+            if (name.length > stored.name.length) {
+              products.delete(previousKey);
+              products.set(key, product);
+              console.log(`[collectPfProducts] scroll ${scroll + 1} card ${index + 1}: name "${stored.name}" -> "${name}"`);
+            } else {
+              console.log(`[collectPfProducts] scroll ${scroll + 1} card ${index + 1}: same card "${stored.name}", skipped "${name}"`);
+            }
+            continue;
+          }
         }
         products.set(key, product);
-        added = true;
-        console.log(
-          `[collectPfProducts] stored ${products.size}: name="${name}" priceText="${priceText}" price=${product.price} ratingText="${ratingText}" rating=${product.rating} stock=${outOfStock ? 'out' : 'in'}`
-        );
+        if (name) {
+          added = true;
+          console.log(
+            `[collectPfProducts] stored ${products.size}: name="${name}" sku=${sku} priceText="${priceText}" price=${product.price} ratingText="${ratingText}" rating=${product.rating} stock=${outOfStock ? 'out' : 'in'}`
+          );
+        } else {
+          console.log(`[collectPfProducts] scroll ${scroll + 1} card ${index + 1}: title off screen sku=${sku} price=${product.price}`);
+          if (!revealed.has(sku)) {
+            revealSkus.push(sku);
+          }
+        }
+      }
+      if (revealSkus.length > 0) {
+        revealSkus.forEach((sku) => revealed.add(sku));
+        stuck = 0;
+        console.log(`[collectPfProducts] reveal title ${revealSkus.join(', ')}`);
+        await scrollListUp();
+        continue;
+      }
+      const sight = sights.join('\n');
+      if (sight && sight === previousSight) {
+        stuck += 1;
+        console.log(`[collectPfProducts] visible cards unchanged ${stuck}/2`);
+        if (stuck >= 2) {
+          break;
+        }
+      } else {
+        stuck = 0;
+        previousSight = sight;
       }
       if (!added) {
         missed += 1;
@@ -652,12 +686,9 @@ export class PfPage extends BasePage {
       } else {
         missed = 0;
       }
-      if (!(await scrollDown())) {
-        console.log('[collectPfProducts] list cannot scroll further');
-        break;
-      }
+      await scrollListDown();
     }
-    const list = [...products.values()];
+    const list = [...products.values()].filter((product) => product.name);
     console.log(`[collectPfProducts] done stored=${list.length}`);
     list.forEach((product, index) => {
       console.log(`[collectPfProducts] [${index}] name="${product.name}" price=${product.price} rating=${product.rating} stock=${product.outOfStock ? 'out' : 'in'}`);
@@ -666,28 +697,93 @@ export class PfPage extends BasePage {
   }
 
   /**
-   * A color chip such as "Lavender" shares the price and rating text with its card, and neither name contains the other.
-   * "Galaxy Z Fold8 Ultra" and "Galaxy Z Fold8 Ultra (chỉ có tại Samsung.com)" share a price and a 9999+ rating, but one name contains the other, so both stay.
+   * A color chip such as "Cobalt Violet" shares the price with its product card.
+   * Two product names at the same price stay separate: "Galaxy S26+" does not contain "Galaxy S26 (Samsung.com only)".
    */
   private isSamePfCard(stored: { name: string; price: number; ratingText: string }, next: { name: string; price: number; ratingText: string }): boolean {
-    if (!next.ratingText || stored.ratingText !== next.ratingText || stored.price !== next.price) {
+    if (stored.price !== next.price) {
+      return false;
+    }
+    if (stored.ratingText && next.ratingText && stored.ratingText !== next.ratingText) {
       return false;
     }
     const longer = next.name.length >= stored.name.length ? next.name : stored.name;
     const shorter = next.name.length >= stored.name.length ? stored.name : next.name;
-    return !longer.toLowerCase().includes(shorter.toLowerCase());
+    const shorterName = shorter.toLowerCase();
+    if (longer.toLowerCase().includes(shorterName) || this.isProductTitle(shorterName)) {
+      return false;
+    }
+    return true;
   }
 
-  /** Longest clickable label on the card. A scrolled card can leave only a color chip such as "Lavender". */
+  /** Model titles contain "Galaxy" or a digit. Color chips such as "Cobalt Violet" do not. */
+  private isProductTitle(name: string): boolean {
+    return /\d/.test(name) || /galaxy|갤럭시|جالاكسي|삼성|samsung/.test(name);
+  }
+
+  /** SKU printed on the card, e.g. "SM-S948BZDBXXV". Color chips do not carry it. */
+  private cardSku(cardDesc: string): string {
+    return cardDesc.match(/\bSM-[A-Z0-9]+\b/)?.[0] ?? '';
+  }
+
+  /**
+   * Product title on the card. A color chip such as "Xanh Sky Blue" is left out.
+   * CN puts the title on the card content-desc. Other sites put it on a clickable child.
+   */
   private async cardProductName(card: WebdriverIO.Element): Promise<string> {
     const labels: string[] = [];
+    const cardDesc = ((await card.getAttribute('content-desc').catch(() => '')) ?? '').trim();
+    if (this.isProductLabel(cardDesc)) {
+      labels.push(cardDesc);
+    }
     for (const node of [...(await this.pflocator.pfCardTitles(card))]) {
       const text = ((await node.getAttribute('content-desc').catch(() => '')) ?? '').trim();
-      if (text && !this.isPriceLabel(text)) {
+      if (this.isProductLabel(text)) {
         labels.push(text);
       }
     }
-    return labels.sort((a, b) => b.length - a.length)[0] ?? '';
+    const titles = labels.filter((label) => this.isProductTitle(label));
+    const inside = titles.sort((a, b) => b.length - a.length)[0] ?? '';
+    if (inside) {
+      return inside;
+    }
+    return this.titleAboveCard(card);
+  }
+
+  /**
+   * A card clipped at the top keeps the price and SKU, while the Galaxy title sits just above that node.
+   * Stop at the previous card so its title is not reused.
+   */
+  private async titleAboveCard(card: WebdriverIO.Element): Promise<string> {
+    const cardTop = await card.getLocation().then((point) => point.y).catch(() => 0);
+    const above: { y: number; text: string }[] = [];
+    for (const node of [...(await card.$$(`./preceding-sibling::android.view.View[@content-desc!='']`))]) {
+      const text = ((await node.getAttribute('content-desc').catch(() => '')) ?? '').trim();
+      const y = await node.getLocation().then((point) => point.y).catch(() => -1);
+      if (text && y >= 0 && y < cardTop) {
+        above.push({ y, text });
+      }
+    }
+    above.sort((a, b) => b.y - a.y);
+    for (const { text } of above) {
+      if (this.isPriceLabel(text) || this.cardSku(text) || this.isWishlistLabel(text)) {
+        break;
+      }
+      if (this.isProductLabel(text) && this.isProductTitle(text)) {
+        return text;
+      }
+    }
+    return '';
+  }
+
+  /** A title line. Prices and wishlist hearts ("添加 SM-F9760DGDCHC 至我的收藏") are not titles. */
+  private isProductLabel(label: string): boolean {
+    return Boolean(label) && !this.isPriceLabel(label) && !this.isWishlistLabel(label);
+  }
+
+  /** Wishlist heart. The label carries the SKU, e.g. "Add to wishlist SM-A185FZKDEUB". */
+  private isWishlistLabel(label: string): boolean {
+    return /\b[A-Z]{2}-[A-Z0-9]+\b/.test(label);
   }
 
   /** First match only. `$$` returns at once, so a missing child does not sit on `waitforTimeout`. */
@@ -704,12 +800,17 @@ export class PfPage extends BasePage {
     return /\d/.test(label) && /vnd|usd|eur|krw|\$|€|£|₩|¥|₫/i.test(label);
   }
 
+  /** "." groups thousands in "40.990.000 ₫". The card text also carries the SKU on the next line. */
   private parseCardPrice(priceText: string): number {
-    const compact = priceText.replace(/[^\d.,]/g, '');
+    const priceLine = priceText
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .find((line) => this.isPriceLabel(line)) ?? priceText;
+    const compact = priceLine.replace(/[^\d.,]/g, '');
     if (/^\d{1,3}(\.\d{3})+$/.test(compact)) {
       return Number(compact.replace(/\./g, ''));
     }
-    return parsePriceToNumber(priceText);
+    return parsePriceToNumber(priceLine);
   }
 
   private checkFilter(products: PfProduct[], filter: Omit<PfFilterChoice, 'count'>): { label: string; pass: boolean }[] {
@@ -721,7 +822,7 @@ export class PfPage extends BasePage {
       console.log(`[checkFilter] price="${filter.value}" range=${min}..${max === Number.POSITIVE_INFINITY ? '∞' : max} cards=${products.length}`);
       products.forEach((product, index) => {
         const pass = product.price >= min && product.price <= max;
-        console.log(`[checkFilter] [${index}] name="${product.name}" price=${product.price} result=${pass ? 'PASS' : 'FAIL'}`);
+        console.log(`[checkFilter] [${index}] result=${pass ? 'PASS' : 'FAIL'} name="${product.name}" price=${product.price}`);
       });
       return failures;
     }
@@ -733,7 +834,7 @@ export class PfPage extends BasePage {
     console.log(`[checkFilter] ${filter.kind}="${filter.value}" accepted=${accepted.join(' | ')} cards=${products.length}`);
     products.forEach((product, index) => {
       const matched = accepted.find((word) => product.name.toLowerCase().includes(word));
-      console.log(`[checkFilter] [${index}] name="${product.name}" matched="${matched ?? ''}" result=${matched ? 'PASS' : 'FAIL'}`);
+      console.log(`[checkFilter] [${index}] result=${matched ? 'PASS' : 'FAIL'} name="${product.name}" matched="${matched ?? ''}"`);
     });
     return failures;
   }
@@ -745,7 +846,7 @@ export class PfPage extends BasePage {
     const actual = products.map((product) => (sort.kind === 'rating' ? product.rating : product.price));
     const expected = [...actual].sort((a, b) => b - a);
     const pass = actual.every((value, index) => value === expected[index]);
-    console.log(`[verifyFilterAndSort] ${label} ${sort.kind}=${actual.join(', ')} result=${pass ? 'PASS' : 'FAIL'}`);
+    console.log(`[verifyFilterAndSort] result=${pass ? 'PASS' : 'FAIL'} ${label} ${sort.kind}=${actual.join(', ')} `);
     return pass ? [] : [{ label: `${label} products are not sorted by ${sort.kind}`, pass: false }];
   }
 
