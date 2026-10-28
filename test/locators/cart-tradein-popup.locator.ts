@@ -111,6 +111,8 @@ export class CartTradeInPopupLocator {
         `${this.popup} input[name*="imei"]`,
         `${this.popup} input[placeholder*="IMEI"]`,
         `${this.popup} input[placeholder*="imei"]`,
+        `${this.popup} input[matinput][maxlength="15"][required]`,
+        `${this.popup} input[matinput][maxlength="16"][required]`,
       ].join(', ')
     );
   }
@@ -127,7 +129,7 @@ export class CartTradeInPopupLocator {
 
   /** VN `mat-hint.valid-input` once the serial/IMEI is accepted. */
   get imeiSuccess() {
-    return $(`${this.popup} mat-hint.valid-input`);
+    return $(`${this.popup} mat-hint.valid-input, ${this.popup} .trade-in-summary__imei-success`);
   }
 
   get imeiError() {

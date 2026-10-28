@@ -14,6 +14,7 @@ export class CartLocator {
         'cx-cart-totals-v2 button.sticky-cart-totals__checkout-btn:not([disabled])',
         'app-sticky-cart-totals-cn [data-an-tr="cart-to-checkout" i]',
         'app-continue-to-checkout button[data-an-tr="cart-to-checkout" i][data-an-la="proceed to checkout" i]:not(.sticky-cta-enabled):not([disabled])',
+
       ].join(', ')
     );
   }
@@ -150,7 +151,7 @@ export class CartLocator {
   }
 
   get tradeInPriceLabel() {
-    return $('[data-modelcode="TRADE-IN"] .price, [data-modelcode="TRADE-IN"] .action-text--mobile, .tradein-service .price, .trade-in-total-price, span.trade-in__item-discount');
+    return $('[data-modelcode="TRADE-IN"] .price, [data-modelcode="TRADE-IN"] .action-text--mobile, .tradein-service .price, .trade-in-total-price, span.trade-in__item-discount, [data-modelcode="TRADE-IN"] .text-right');
   }
 
   serviceErrorText(service: 'tradeIn' | 'scPlus' | 'tradeUp' | 'eup') {

@@ -39,11 +39,12 @@ const CONDITION_ANSWERS: Record<string, (question: number) => number | null> = {
   NZ: () => 1,
   SG: () => 1,
   TH: (q) => (q === 0 ? 0 : 1),
-  PH: (q) => (q === 0 ? 1 : 0),
+  PH: (q) => (q < 8 ? 0 : 1),
   AE: (q) => (q === 0 ? 0 : null),
   AE_AR: (q) => (q === 0 ? 0 : null),
   UK: (q) => (q === 0 ? 0 : null),
   IN: (q) => [0, 1, 1, 1, 0, 0][q] ?? 0,
+  VN: (q) => (q === 0 ? 0 : 1),
 };
 
 /** Middle token of the footer primary button `data-an-la`. Add a row when a new step appears. */
