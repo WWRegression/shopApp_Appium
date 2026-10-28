@@ -3,6 +3,7 @@ import { HeaderLocator, type HeaderIcon } from '../locators/header.locator';
 import { BnbLocator, BNB_MENUS, type BnbMenu } from '../locators/bnb.locator';
 import { LoginLocator } from '../locators/login.locator';
 import { HomeLocator } from '../locators/home.locator';
+import { SearchLocator } from '../locators/search.locator';
 import { switchToNative, getCurrentContext } from '../helpers/context.helper';
 import { getRunConfig } from '../../config/run.config';
 import { flingToStart, scrollUp } from '../helpers/gesture.helper';
@@ -32,6 +33,7 @@ export type { HeaderIcon, BnbMenu };
 export class BasePage {
   protected readonly popupLocator = new PopupLocator();
   protected readonly headerLocator = new HeaderLocator();
+  protected readonly searchLocator = new SearchLocator();
   protected readonly bnbLocator = new BnbLocator();
   protected readonly homeLocator = new HomeLocator();
   /** App entry screens (guest splash, profile select) — used to tell when the app is up without a permission popup */
@@ -380,6 +382,28 @@ export class BasePage {
   async selectHeaderIcon(icon: HeaderIcon): Promise<void> {
     await this.prepareHeaderBnb();
     await clickElement(this.headerLocator.icon(icon));
+  }
+
+  /** Chat icon opens the chat page. The title button "Samsung Chat" must be shown. UK has no header chat icon. */
+  async verifyChat(): Promise<void> {
+    if (getRunConfig().siteCode === 'UK') {
+      console.log('[verifyChat] UK — skipped');
+      return;
+    }
+    await this.selectHeaderIcon('chat');
+    const shown = await waitForDisplayedOrFalse(this.headerLocator.chatTitle, { timeout: 5000 });
+    console.log(`[verifyChat] Samsung Chat=${shown ? 'PASS' : 'FAIL'}`);
+    markFailedAndStop([{ label: 'Failed to navigate Chat page', pass: shown }], 'verifyChat');
+  }
+
+  /** Search icon opens the search box. A missing box is recorded, then Back returns to the previous page. */
+  async verifySearch(): Promise<void> {
+    await this.selectHeaderIcon('search');
+    await driver.pause(5000);
+    const shown = await waitForDisplayedOrFalse(this.searchLocator.searchInput, { timeout: 5000 });
+    console.log(`[verifySearch] search box=${shown ? 'PASS' : 'FAIL'}`);
+    markFailed([{ label: 'Failed to navigate to Search page', pass: shown }], 'verifySearch');
+    await this.pressDeviceBack();
   }
 
   async matchesHeaderTitle(expected: keyof typeof BasePage.titleTexts ): Promise<boolean> {

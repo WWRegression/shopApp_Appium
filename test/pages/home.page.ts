@@ -1,6 +1,5 @@
 import { BasePage } from './base.page';
 import { HomeLocator } from '../locators/home.locator';
-import { SearchLocator } from '../locators/search.locator';
 import { getDetailedWebViewWindows, switchToNative } from '../helpers/context.helper';
 import { parsePoints } from '../helpers/data.helper';
 import { getRunConfig } from '../../config/run.config';
@@ -18,7 +17,6 @@ import { markFailed, markFailedAndStop, type FieldCheck } from '../helpers/repor
 
 export class HomePage extends BasePage {
   private readonly locator = new HomeLocator();
-  private readonly searchLocator = new SearchLocator();
 
   /** True when the header title matches the Home title texts (BasePage.titleTexts.HOME). */
   async isOnHome(): Promise<boolean> {
@@ -174,28 +172,6 @@ export class HomePage extends BasePage {
     await scrollUntilVisible(option, 10);
     await markFailedAndStop(() => clickElement(option, { timeout: 5000 }), `[applyBuildSetup] ${label} option not found`);
     console.log(`[applyBuildSetup] selected ${label}`);
-  }
-
-  /** Chat icon opens the chat page. The title button "Samsung Chat" must be shown. UK has no header chat icon. */
-  async verifyChat(): Promise<void> {
-    if (getRunConfig().siteCode === 'UK') {
-      console.log('[verifyChat] UK — skipped');
-      return;
-    }
-    await this.selectHeaderIcon('chat');
-    const shown = await waitForDisplayedOrFalse(this.headerLocator.chatTitle, { timeout: 5000 });
-    console.log(`[verifyChat] Samsung Chat=${shown ? 'PASS' : 'FAIL'}`);
-    markFailedAndStop([{ label: 'Failed to navigate Chat page', pass: shown }], 'verifyChat');
-  }
-
-  /** Search icon opens the search box. A missing box is recorded, then Back returns to the previous page. */
-  async verifySearch(): Promise<void> {
-    await this.selectHeaderIcon('search');
-    await driver.pause(5000);
-    const shown = await waitForDisplayedOrFalse(this.searchLocator.searchInput, { timeout: 5000 });
-    console.log(`[verifySearch] search box=${shown ? 'PASS' : 'FAIL'}`);
-    markFailed([{ label: 'Failed to navigate to Search page', pass: shown }], 'verifySearch');
-    await this.pressDeviceBack();
   }
 
   /** Scrolls Home until the T&C row is shown. False means the later T&C steps are skipped. */
