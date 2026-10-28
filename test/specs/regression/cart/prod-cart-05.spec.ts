@@ -9,14 +9,14 @@ describe('PROD_CART_05', () => {
 
   it('add Trade-Up on cart and go to payment', async function () {
     await runOrSkip.call(this, 'PROD_CART_05', async (site) => {
-      const sku = cartPage.tradeUp.getProductSku(site);
+      const vdSku = site.search.vdSku ?? '';
       await cartPage.clearCart();
-      await addToCart(sku);
+      await addToCart(vdSku);
 
       await cartPage.prepareCartPage();
-      await cartPage.verifySku(sku);
+      await cartPage.verifySku(vdSku);
       if (['AE', 'AE_AR', 'VN'].includes(site.siteCode)) {
-        await cartPage.tradeIn.addService();
+        await cartPage.tradeIn.addService(site.tradeIn);
       } else {
         await cartPage.tradeUp.addService(site.tradeUp?.postalCode ?? '');
       }

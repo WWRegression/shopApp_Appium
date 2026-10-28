@@ -5,10 +5,6 @@ import { parsePriceToNumber } from "../../helpers/data.helper";
 import { clickIfDisplayed, isDisplayedOrFalse, scrollAndJsClick, scrollAndWdioClick, setInputValue } from "../../helpers/element.helper";
 import { scrollElementToCenter } from "../../helpers/gesture.helper";
 import { switchToWebView } from "../../helpers/context.helper";
-import type { LoadedSite } from "../../../config/site";
-
-/** Sites whose Trade-Up runs on an HA product; the rest use a VD product. */
-const HA_TRADE_UP_SITES = ['ES', 'IN', 'HK', 'HK_EN', 'HU', 'MX', 'PE', 'PT', 'CO'];
 
 const WAIT_MS = 10000;
 const STEP_LEAVE_MS = 8000;
@@ -22,12 +18,6 @@ type PanelKind = "ready" | "pending" | "answered";
 
 export class CartTradeUpService implements AddedService {
   private readonly locator = new CartLocator();
-
-  /** Sku of the product the Trade-Up is added to (HA or VD by site). */
-  getProductSku(site: LoadedSite): string {
-    const sku = HA_TRADE_UP_SITES.includes(site.siteCode.toUpperCase()) ? site.search.haSku : site.search.vdSku;
-    return sku ?? '';
-  }
 
   async addService(postalCode?: string): Promise<void> {
     if (!(await clickIfDisplayed(this.locator.tradeUpAddButton, WAIT_MS))) {
