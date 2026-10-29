@@ -96,32 +96,48 @@ export async function removePortForward(port: string): Promise<void> {
   await adb('forward', '--remove', `tcp:${port}`);
 }
 
+/** Local port forwarded to the app WebView's devtools; kept open and reused while the app process lives. */
+let devtoolsPort = '';
+
 /**
  * List browser pages via Chrome DevTools /json (no Appium context switch).
  * Returns type === 'page' entries with a url.
  */
 export async function getBrowserPages(): Promise<BrowserPageInfo[]> {
+  if (devtoolsPort) {
+    const pages = await fetchBrowserPages(devtoolsPort);
+    if (pages) {
+      return pages;
+    }
+    // The app restarted, so the old WebView socket is gone — forward again below
+    await removePortForward(devtoolsPort).catch(() => undefined);
+    devtoolsPort = '';
+  }
+
   const pid = await getAppPid();
   if (!pid) {
     return [];
   }
+  devtoolsPort = await getWebviewDevtoolsPort(pid);
+  const pages = await fetchBrowserPages(devtoolsPort);
+  if (!pages) {
+    // No WebView in the app yet
+    await removePortForward(devtoolsPort).catch(() => undefined);
+    devtoolsPort = '';
+  }
+  return pages ?? [];
+}
 
-  const port = await getWebviewDevtoolsPort(pid);
+/** Page entries from the devtools /json list; undefined when the port does not answer. */
+async function fetchBrowserPages(port: string): Promise<BrowserPageInfo[] | undefined> {
   try {
-    const res = await fetch(`http://localhost:${port}/json`);
-    const entries = (await res.json()) as Array<{
-      id: string;
-      url?: string;
-      title?: string;
-      type?: string;
-    }>;
+    const res = await fetch(`http://localhost:${port}/json`, { signal: AbortSignal.timeout(2000) });
+    const entries = (await res.json()) as Array<{ id: string; url?: string; title?: string; type?: string }>;
     return entries
       .filter((e) => e.type === 'page' && !!e.url)
       .map((e) => ({ id: e.id, url: e.url!, title: e.title ?? '' }));
   } catch {
-    return [];
-  } finally {
-    await removePortForward(port).catch(() => undefined);
+    return undefined;
   }
 }
 

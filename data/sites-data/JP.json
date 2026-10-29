@@ -40,6 +40,12 @@
     "inbox": true,
     "mySmartThings": false,
     "orderSupport": false,
-    "myAddresses": false
+    "myAddresses": false,
+    "support": true,
+    "policy": true,
+    "smartThings": false,
+    "settings": true,
+    "accountManagement": true,
+    "logout": true
   }
 }

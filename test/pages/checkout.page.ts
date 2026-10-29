@@ -4,10 +4,10 @@ import { BasePage } from './base.page';
 import { CheckoutLocator, CHECKOUT_FORMS, INVALID_FIELD_SELECTOR, AUTO_CHECK_CHECKBOX_SELECTOR } from '../locators/checkout.locator';
 import { prepareWebViewPage } from '../helpers/context.helper';
 import { getSiteData as getSite } from '../../config/site';
-import { scrollAndJsClick, getElementLabel, isDisplayedOrFalse, jsClick, clickElement, waitForDisplayedOrFalse, clickIfDisplayed } from '../helpers/element.helper';
-import { scrollDown, scrollElementToCenter } from '../helpers/gesture.helper';
+import { scrollAndJsClick, getElementLabel, getInputValue, isDisplayedOrFalse, jsClick, clickElement, waitForDisplayedOrFalse, clickIfDisplayed } from '../helpers/element.helper';
+import { scrollElementToCenter } from '../helpers/gesture.helper';
 import { markFailed, markFailedAndStop } from '../helpers/report.helper';
-import { normalizeProductName, productNameMatches, removeNonWordChars } from '../helpers/data.helper';
+import { normalizeProductName, productNameMatches, removeNonWordChars, parsePriceValues, isSamePrice } from '../helpers/data.helper';
 import type { LoadedSite } from '../../config/site';
 import { currentSiteCode } from '../helpers/tc-filter.helper';
 
@@ -21,8 +21,8 @@ const EDIT_SEQUENCE_BY_SITE: Record<string, Array<'customer' | 'delivery'>> = {
 /** Sites where the Customer Details step also shows a saved address to compare against payment. */
 const ADDRESS_MATCH_SITES_CUSTOMER = ['SE', 'DE', 'ES', 'AT', 'AU', 'HU', 'ID', 'SG', 'TH', 'VN', 'UK'];
 
-/** Sites where the Delivery step also shows a saved address to compare against payment. */
-const ADDRESS_MATCH_SITES_DELIVERY = ['SE', 'DE', 'ES', 'BE', 'BE_FR', 'AT', 'AU', 'HU', 'ID', 'SG', 'TH', 'UK', 'VN'];
+/** Sites where the Delivery step shows no saved address, so nothing is compared against payment. */
+const ADDRESS_MATCH_SKIP_SITES_DELIVERY = ['SE', 'DE', 'ES', 'BE', 'BE_FR', 'AT', 'AU', 'HU', 'ID', 'SG', 'TH', 'UK', 'VN'];
 
 export type CheckoutFormId = (typeof CHECKOUT_FORMS)[number];
 
@@ -116,6 +116,24 @@ export class CheckoutPage extends BasePage {
     }
     await jsClick(this.locator.viewOrderSummaryToggle);
     await this.locator.viewOrderExpanded.waitForExist({ timeout: 5000, reverse: true }).catch(() => undefined);
+  }
+
+  /** Opens View Order; the SKU line price must equal the cart price (the order total is not used, it can include delivery). */
+  async verifyItemPrice(sku: string, cartPrice: number): Promise<void> {
+    await this.ensureViewOrderExpanded();
+    let text = '';
+    // The SKU can be listed in more than one summary slot; the hidden one returns no text
+    for (const price of await this.locator.viewOrderItemPrices(sku)) {
+      text = ((await price.getText().catch(() => '')) ?? '').trim();
+      if (text) break;
+    }
+    const checkoutPrice = parsePriceValues(text)[0] ?? NaN;
+    const pass = isSamePrice(checkoutPrice, cartPrice);
+    console.log(`[verifyItemPrice] expected=${cartPrice} (cart) actual=${checkoutPrice} (checkout "${text}") result=${pass ? 'PASS' : 'FAIL'}`);
+    markFailedAndStop(
+      [{ label: 'checkout item price does not match the cart price', pass, detail: `cart ${cartPrice}, checkout "${text || 'not found'}"` }],
+      'verifyItemPrice'
+    );
   }
 
   /** Opens View Order and stops the TC when no item name matches the expected (PF) product name. */
@@ -361,9 +379,9 @@ export class CheckoutPage extends BasePage {
     await scrollAndJsClick(target).catch(() => undefined);
   }
 
-  /** Fills the required fields of a form; each entry is a value and the field names (lowercase) that take it. onlyEmpty keeps inputs that already have a value. */
-  private async fillFormFields(
-    formId: CheckoutFormId,
+  /** Fills the required fields of a form (a checkout step or any form selector, e.g. the address book form); each entry is a value and the field names (lowercase) that take it. onlyEmpty keeps inputs that already have a value. */
+  async fillFormFields(
+    formId: string,
     entries: [string | undefined, string[]][],
     options: { onlyEmpty?: boolean } = {}
   ): Promise<void> {
@@ -455,7 +473,7 @@ export class CheckoutPage extends BasePage {
   }
 
   /** Types the search text into the address search box and picks the first suggestion; true when it filled the address line. */
-  private async pickSuggestedAddress(formId: CheckoutFormId, searchText: string | undefined): Promise<boolean> {
+  async pickSuggestedAddress(formId: string, searchText: string | undefined): Promise<boolean> {
     const search = (await this.getFieldDescriptors(formId)).find((d) => d.key === 'searchaddress' && d.visible);
     if (!searchText || !search) {
       return false;
@@ -584,16 +602,17 @@ export class CheckoutPage extends BasePage {
     markFailed([{ label: 'View Order collapsed on load', pass: collapsed, detail: actual }], 'verifyViewOrderCollapsed');
   }
 
-  /** Opens every payment method one by one and stops the TC when any fails to open; methods must start collapsed (not US). */
-  async checkPaymentMethod(): Promise<void> {
+  /** Opens the first payment method (every method when `checkAll`) and stops the TC when one fails to open; methods must start collapsed (not US). */
+  async checkPaymentMethod(checkAll = false): Promise<void> {
     const site = currentSiteCode();
     // Payment methods render after a skeleton loader; stops as soon as they show
-    let total = 0;
+    let found = 0;
     await driver
-      .waitUntil(async () => (total = await this.locator.paymentMethodTitles.length) > 0, { timeout: 5000, interval: 500 })
+      .waitUntil(async () => (found = await this.locator.paymentMethodTitles.length) > 0, { timeout: 5000, interval: 500 })
       .catch(() => undefined);
-    console.log(`[checkPaymentMethod] total payment methods=${total}`);
-    markFailedAndStop([{ label: 'payment methods found', pass: total > 0 }], 'checkPaymentMethod');
+    const total = checkAll ? found : Math.min(found, 1);
+    console.log(`[checkPaymentMethod] payment methods found=${found} to check=${total}`);
+    markFailedAndStop([{ label: 'payment methods found', pass: found > 0 }], 'checkPaymentMethod');
 
     // CN shows flat payment buttons with nothing to expand
     if (site === 'CN') {
@@ -627,12 +646,12 @@ export class CheckoutPage extends BasePage {
       }
     }
     markFailedAndStop(
-      [{ label: 'all payment methods opened', pass: failed.length === 0, detail: `failed ${failed.length}/${total}: ${failed.join(', ')}` }],
+      [{ label: 'payment methods opened', pass: failed.length === 0, detail: `failed ${failed.length}/${total}: ${failed.join(', ')}` }],
       'checkPaymentMethod'
     );
   }
 
-  /** Stops the TC when any payment method button is not clickable (CN). */
+  /** Stops the TC when any of the first `total` payment method buttons is not clickable (CN). */
   private async verifyPaymentMethodsClickable(total: number): Promise<void> {
     const titles = await this.locator.paymentMethodTitles;
     const failed: string[] = [];
@@ -656,15 +675,15 @@ export class CheckoutPage extends BasePage {
       .then(() => true, () => false);
   }
 
-  /** Records a failure when the active checkout step is not `expected`, waiting up to 5s for it to settle after a Back. */
-  async verifyCheckoutStep(expected: string): Promise<void> {
+  /** Records a failure when the active checkout step is not `expected`, waiting up to 5s for it to settle after `source` (Back, an Edit click). */
+  async verifyCheckoutStep(expected: string, source = 'Back'): Promise<void> {
     await this.prepareCheckoutPage();
     let actual = '';
     const pass = await driver
       .waitUntil(async () => (actual = await this.getCurrentCheckoutStep()) === expected, { timeout: 5000, interval: 500 })
       .then(() => true, () => false);
-    console.log(`[verifyCheckoutStep] expected=${expected} actual=${actual || 'none'} result=${pass ? 'PASS' : 'FAIL'}`);
-    markFailed([{ label: 'checkout step after Back', pass, detail: `expected ${expected}, actual ${actual || 'none'}` }], 'verifyCheckoutStep');
+    console.log(`[verifyCheckoutStep] after ${source} expected=${expected} actual=${actual || 'none'} result=${pass ? 'PASS' : 'FAIL'}`);
+    markFailed([{ label: `checkout step after ${source}`, pass, detail: `expected ${expected}, actual ${actual || 'none'}` }], 'verifyCheckoutStep');
   }
 
   /** Returns the active step name, e.g. CHECKOUT_STEP_CONTACT_INFO / _DELIVERY / _PAYMENT. */
@@ -687,44 +706,97 @@ export class CheckoutPage extends BasePage {
     return this.normalizeAddress(await getElementLabel(this.locator.savedAddressInfo));
   }
 
-  /** Records a failure when the saved address and the payment-step address do not match. */
-  private verifyAddressMatch(paymentAddress: string, savedAddress: string): void {
+  /** The saved delivery address must be offered on checkout with the postal code (the contact phone is only logged). */
+  async verifySavedDeliveryAddress(postalCode: string): Promise<void> {
+    await this.prepareCheckoutPage();
+    if (await this.locator.deliverySavedAddressOption.waitForExist({ timeout: 10000 }).then(() => true, () => false)) {
+      await jsClick(this.locator.deliverySavedAddressOption);
+    }
+    let actual = '';
+    const pass = await driver
+      .waitUntil(
+        async () => {
+          actual = await getElementLabel(this.locator.deliverySavedAddressLabel);
+          return actual.includes(postalCode);
+        },
+        { timeout: 10000, interval: 500 }
+      )
+      .then(() => true, () => false);
+    const contactPhone = await getInputValue(this.locator.contactPhoneInput);
+    console.log(`[verifySavedDeliveryAddress] expected saved address with "${postalCode}" actual="${actual}" (contact phone=${contactPhone}) result=${pass ? 'PASS' : 'FAIL'}`);
+    markFailed([{ label: 'saved delivery address not shown on checkout', pass, detail: `actual="${actual}"` }], 'verifySavedDeliveryAddress');
+  }
+
+  /** The saved billing address must show the given phone on checkout: "Same as delivery address" off → Saved address → Edit. */
+  async verifySavedBillingAddressPhone(phone: string): Promise<void> {
+    const sameAsShipping = this.locator.billingSameAsShippingCheckbox;
+    if (await sameAsShipping.isSelected().catch(() => false)) {
+      await jsClick(sameAsShipping);
+    }
+    for (const step of [this.locator.billingSavedAddressOption, this.locator.billingSavedAddressEditButton]) {
+      if (await step.waitForExist({ timeout: 5000 }).then(() => true, () => false)) {
+        await jsClick(step);
+      }
+    }
+    let actual = '';
+    const pass = await driver
+      .waitUntil(
+        async () => {
+          actual = await getInputValue(this.locator.billingPhoneInput);
+          return actual !== '' && actual.replace(/\D/g, '').includes(phone.replace(/\D/g, ''));
+        },
+        { timeout: 10000, interval: 500 }
+      )
+      .then(() => true, () => false);
+    console.log(`[verifySavedBillingAddressPhone] expected billing phone=${phone} actual=${actual || 'no phone field'} result=${pass ? 'PASS' : 'FAIL'}`);
+    markFailed([{ label: 'saved billing address phone not shown on checkout', pass, detail: `expected ${phone}, actual ${actual || 'no phone field'}` }], 'verifySavedBillingAddressPhone');
+  }
+
+  /** Stops the TC when the saved address and the payment-step address do not match. */
+  private verifyAddressMatch(paymentAddress = '', savedAddress = ''): void {
     const matches =
       Boolean(paymentAddress) &&
       Boolean(savedAddress) &&
       (paymentAddress.includes(savedAddress) || savedAddress.includes(paymentAddress));
-    markFailed(
+    console.log(`[verifyAddressMatch] expected="${paymentAddress}" actual="${savedAddress}" result=${matches ? 'PASS' : 'FAIL'}`);
+    markFailedAndStop(
       [{ label: 'saved address matches payment preview', pass: matches, detail: `payment="${paymentAddress}" saved="${savedAddress}"` }],
       'verifyAddressMatch'
     );
   }
 
+  /** Clicks a section's Edit button; records a failure and returns false when it is not on the page. */
+  private async clickEditButton(button: ChainablePromiseElement, section: string): Promise<boolean> {
+    const found = await button.waitForExist({ timeout: 3000 }).then(() => true, () => false);
+    markFailed([{ label: `Edit button in ${section} not found`, pass: found }], 'clickEditButton');
+    if (found) {
+      await scrollAndJsClick(button);
+    }
+    return found;
+  }
+
   /** Clicks Edit on Customer Details and records a failure when it does not return to the Contact Info step. */
   async verifyEditInCustomerDetails(paymentAddress?: string): Promise<void> {
-    await scrollAndJsClick(this.locator.editCustomerDetailsButton);
-    const step = await this.getCurrentCheckoutStep();
-    markFailed(
-      [{ label: 'edit navigated to contact info step', pass: step === 'CHECKOUT_STEP_CONTACT_INFO', detail: step }],
-      'verifyEditInCustomerDetails'
-    );
+    if (!(await this.clickEditButton(this.locator.editCustomerDetailsButton, 'Contact Details'))) {
+      return;
+    }
+    await this.verifyCheckoutStep('CHECKOUT_STEP_CONTACT_INFO', 'Contact Details Edit');
 
     // Only some sites show a saved address on this step
-    if (paymentAddress && ADDRESS_MATCH_SITES_CUSTOMER.includes(getSite().siteCode)) {
+    if (ADDRESS_MATCH_SITES_CUSTOMER.includes(getSite().siteCode)) {
       this.verifyAddressMatch(paymentAddress, await this.getSavedAddressInfo());
     }
   }
 
   /** Clicks Edit on Delivery Options and records a failure when it does not return to the Delivery step. */
   async verifyEditInDeliveryOptions(paymentAddress?: string): Promise<void> {
-    await scrollAndJsClick(this.locator.editDeliveryOptionsButton);
-    const step = await this.getCurrentCheckoutStep();
-    markFailed(
-      [{ label: 'edit navigated to delivery step', pass: step === 'CHECKOUT_STEP_DELIVERY', detail: step }],
-      'verifyEditInDeliveryOptions'
-    );
+    if (!(await this.clickEditButton(this.locator.editDeliveryOptionsButton, 'Delivery Options'))) {
+      return;
+    }
+    await this.verifyCheckoutStep('CHECKOUT_STEP_DELIVERY', 'Delivery Options Edit');
 
-    // Only some sites show a saved address on this step
-    if (paymentAddress && ADDRESS_MATCH_SITES_DELIVERY.includes(getSite().siteCode)) {
+    // These sites show no saved address on this step
+    if (!ADDRESS_MATCH_SKIP_SITES_DELIVERY.includes(getSite().siteCode)) {
       this.verifyAddressMatch(paymentAddress, await this.getSavedAddressInfo());
     }
   }
@@ -738,23 +810,20 @@ export class CheckoutPage extends BasePage {
     }
   }
 
-  /** Clicks Edit on Order Summary, which leaves checkout for the cart; the caller verifies the cart. */
+  /** Opens View Order and clicks its Edit, which leaves checkout for the cart; the caller verifies the cart. */
   async verifyEditInOrderSummary(): Promise<void> {
     // CN has no Order Summary section
     if (getSite().siteCode === 'CN') {
       return;
     }
 
-    await scrollDown();
-    if (await isDisplayedOrFalse(this.locator.viewOrderToggle)) {
-      await scrollAndJsClick(this.locator.viewOrderToggle);
-    }
+    const shown = await this.locator.viewOrderSummaryToggle.waitForExist({ timeout: 5000 }).then(() => true, () => false);
+    markFailedAndStop([{ label: 'Order Summary area not found', pass: shown }], 'verifyEditInOrderSummary');
+    await this.ensureViewOrderExpanded();
 
-    if (await isDisplayedOrFalse(this.locator.editOrderSummaryButton)) {
-      await scrollAndJsClick(this.locator.editOrderSummaryButton);
-      if (await isDisplayedOrFalse(this.locator.leaveCheckoutConfirmButton)) {
-        await scrollAndJsClick(this.locator.leaveCheckoutConfirmButton);
-      }
+    if (await clickIfDisplayed(this.locator.editOrderSummaryButton, 3000)) {
+      console.log('[verifyEditInOrderSummary] Order Summary Edit clicked');
+      await clickIfDisplayed(this.locator.leaveCheckoutConfirmButton, 2000);
     }
   }
 

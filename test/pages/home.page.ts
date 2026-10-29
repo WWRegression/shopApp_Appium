@@ -174,6 +174,44 @@ export class HomePage extends BasePage {
     console.log(`[applyBuildSetup] selected ${label}`);
   }
 
+  /** Opens chat: the floating chat button when shown (UK has no header chat icon), else the header chat icon. */
+  async clickChat(): Promise<void> {
+    await switchToNative();
+    if (await clickIfDisplayed(this.locator.chatFabButton, 2000)) {
+      return;
+    }
+    await this.selectHeaderIcon('chat');
+  }
+
+  /** Chat must open: the Samsung Chat title, or a screen without the Home header (UK shows a cookie notice instead of the chat). */
+  async verifyChatOpened(): Promise<void> {
+    let actual = 'still on Home';
+    const opened = await driver
+      .waitUntil(
+        async () => {
+          if (await isDisplayedOrFalse(this.headerLocator.chatTitle)) {
+            actual = 'chat page';
+            return true;
+          }
+          if (!(await isDisplayedOrFalse(this.headerLocator.title))) {
+            actual = 'screen over Home (no header)';
+            return true;
+          }
+          return false;
+        },
+        { timeout: 8000, interval: 500 }
+      )
+      .then(() => true, () => false);
+    console.log(`[verifyChatOpened] expected=chat opened actual=${actual} result=${opened ? 'PASS' : 'FAIL'}`);
+    markFailedAndStop([{ label: 'Failed to navigate Chat page', pass: opened, detail: actual }], 'verifyChatOpened');
+  }
+
+  /** Clicks the main KV at the top of Home. */
+  async clickMainKv(): Promise<void> {
+    await switchToNative();
+    await markFailedAndStop(() => clickElement(this.locator.mainKv, { timeout: 5000 }), '[clickMainKv] main KV not found on Home');
+  }
+
   /** Scrolls Home until the T&C row is shown. False means the later T&C steps are skipped. */
   async isTermsShown(): Promise<boolean> {
     await switchToNative();

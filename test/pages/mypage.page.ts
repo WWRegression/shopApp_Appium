@@ -3,17 +3,23 @@ import {
   DASHBOARD_MENUS,
   MypageLocator,
   PRODUCT_MENUS,
+  SETTINGS_MENUS,
+  STORE_OPTIONS,
   type DashboardMenu,
   type MypageMenu,
   type ProductMenu,
+  type SettingsMenu,
+  type StoreOption,
 } from '../locators/mypage.locator';
 import { LoginPage, SAMSUNG_ACCOUNT_PACKAGE, SAMSUNG_ACCOUNT_SETTINGS_ACTIVITY } from './login.page';
+import { PdPage } from './pd.page';
+import { PfPage } from './pf.page';
 import { getRunConfig } from '../../config/run.config';
 import { getSiteData } from '../../config/site';
 import type { LoadedSite } from '../../config/site';
-import { getDetailedWebViewWindows, prepareWebViewPage, switchToNative, switchToWebView } from '../helpers/context.helper';
-import { parsePoints } from '../helpers/data.helper';
-import { getBrowserPages } from '../helpers/device.helper';
+import { getDetailedWebViewWindows, prepareWebViewPage, switchToNative, switchToWebView, targetPackage } from '../helpers/context.helper';
+import { normalizeProductName, parsePoints, productNameMatches } from '../helpers/data.helper';
+import { closeExternalBrowserIfOpen, getBrowserPages } from '../helpers/device.helper';
 import {
   clickElement,
   clickIfDisplayed,
@@ -37,8 +43,8 @@ const SAME_MENU_WORDS = [['inbox', 'notification']];
 export class MypagePage extends BasePage {
   private readonly locator = new MypageLocator();
   private readonly loginPage = new LoginPage();
-  /** Page ids captured as a baseline before the loop starts — excluded when detecting new items. */
-  private readonly knownPageIds = new Set<string>();
+  private readonly pfPage = new PfPage();
+  private readonly pdPage = new PdPage();
 
   /** Scrolls to and clicks the menu button with this on-screen label. */
   async selectMenu(label: string): Promise<void> {
@@ -53,111 +59,70 @@ export class MypagePage extends BasePage {
     }
   }
 
-  /**
-   * subMenuItems matches on @content-desc presence alone, so loading/empty
-   * placeholder rows can slip in — keep only rows with a non-empty content-desc.
-   * Shared by getSubMenuCount()/clickItemAt() so both use the same criteria.
-   */
+  /** Sub-menu rows on the open list; rows without a label (loading placeholders) are left out. */
   private async getValidSubMenuItems() {
     const items = this.locator.subMenuItems;
     await items[0].waitForExist({ timeout: 3000 }).catch(() => undefined);
-    const all = await items;
-
     const valid = [];
-    for (const item of all) {
-      const desc = ((await item.getAttribute('content-desc').catch(() => '')) || '').trim();
-      if (desc) {
+    for (const item of await items) {
+      if (((await item.getAttribute('content-desc').catch(() => '')) || '').trim()) {
         valid.push(item);
       }
     }
     return valid;
   }
 
-  /** Sub-menu item count — read from the screen since it varies by country. */
+  /** Number of sub-menus on the open list — read from the screen since it varies by country. */
   async getSubMenuCount(): Promise<number> {
     await switchToNative();
-    const items = await this.getValidSubMenuItems();
-    console.log(`[getSubMenuCount] count=${items.length}`);
-
-    // Baseline before the loop — prevents leftover webview pages from earlier
-    // sessions being mistaken for newly opened ones.
-    this.knownPageIds.clear();
-    const existing = await getBrowserPages();
-    for (const p of existing) {
-      this.knownPageIds.add(p.id);
-    }
-    console.log(`[getSubMenuCount] baseline page ids=${existing.map((p) => p.id).join(',')}`);
-
-    return items.length;
+    const count = (await this.getValidSubMenuItems()).length;
+    console.log(`[getSubMenuCount] count=${count}`);
+    return count;
   }
 
-  /** Clicks the item at index and returns its label (content-desc). */
+  /** Clicks the sub-menu at index and returns its label ('' when the row is gone). */
   async clickItemAt(index: number): Promise<string> {
     await switchToNative();
-    const items = await this.getValidSubMenuItems();
-    const item = items[index];
-    if (!item) {
+    const item = (await this.getValidSubMenuItems())[index];
+    const itemLabel = item ? ((await item.getAttribute('content-desc').catch(() => '')) || '').trim() : '';
+    if (!itemLabel) {
       console.log(`[clickItemAt] index=${index} not found`);
       return '';
     }
-
-    const itemLabel = ((await item.getAttribute('content-desc').catch(() => '')) || '')
-      .trim()
-      .toLowerCase();
-    console.log(`[clickItemAt] index=${index} label="${itemLabel}" — clicking`);
-    await item.click();
+    console.log(`[clickItemAt] index=${index} label="${itemLabel}"`);
+    await this.saveWebViewBaseline();
+    await clickElement(this.locator.subMenuRow(itemLabel), { timeout: 3000 }).catch(() =>
+      console.log(`[clickItemAt] could not click "${itemLabel}"`)
+    );
     return itemLabel;
   }
 
-  /**
-   * Verifies the clicked sub-menu actually navigated there.
-   * MyPage.verifySubMenus() equivalent. Checks whether the label appears in
-   * the url (webview) or header title (native). The url is read directly
-   * from the chrome devtools socket, staying in NATIVE — no Appium context
-   * switch (switchToWebView, several seconds) needed.
-   */
-  async verifyRedirected(itemLabel: string): Promise<void> {
-    console.log(`[verifyRedirected] start menu="${itemLabel}"`);
-    if (!itemLabel) {
-      console.log('[verifyRedirected] skip — empty label');
-      return;
-    }
-
-    const page = await this.findWebviewPage();
-    let matched: boolean;
-    if (page) {
-      matched = this.matchesLabel(page.url, itemLabel);
-      console.log(
-        `[verifyRedirected] context=webview url="${page.url}" title="${page.title}" matched=${matched}`
-      );
-    } else {
-      const headerTitle = await getElementLabel(this.headerLocator.title);
-      matched = this.matchesLabel(headerTitle, itemLabel);
-      console.log(`[verifyRedirected] context=native header="${headerTitle}" matched=${matched}`);
-    }
-    expect(matched).toBe(true);
-
-    console.log(`[verifyRedirected] done menu="${itemLabel}"`);
-    await this.pressBack();
+  /** The clicked sub-menu must leave the list and open a page containing its name (or one of acceptedNames). */
+  async verifyRedirected(itemLabel: string, acceptedNames: readonly string[] = []): Promise<void> {
+    await this.verifyDetailPageOpened(itemLabel, () => this.waitForSubMenuListLeft(itemLabel), acceptedNames);
   }
 
-  /**
-   * Polls briefly since the webview may not have appeared yet right after
-   * the click. Only ids absent from the baseline (knownPageIds) count as
-   * new — leftover webviews are always in the baseline and get excluded.
-   */
-  private async findWebviewPage(timeoutMs = 4000): Promise<{ url: string; title: string } | null> {
-    const deadline = Date.now() + timeoutMs;
-    while (Date.now() < deadline) {
-      const pages = await getBrowserPages();
-      const page = pages.find((p) => p.url && !this.knownPageIds.has(p.id));
-      if (page) {
-        this.knownPageIds.add(page.id);
-        return { url: page.url, title: page.title };
-      }
-      await new Promise((resolve) => setTimeout(resolve, 250));
-    }
-    return null;
+  /** True once the clicked row is gone, i.e. the next screen replaced the list. */
+  private async waitForSubMenuListLeft(itemLabel: string): Promise<boolean> {
+    return this.locator
+      .subMenuRow(itemLabel)
+      .waitForDisplayed({ timeout: 10000, reverse: true })
+      .then(() => true, () => false);
+  }
+
+  /** Polls the opened page's names for up to 10s until they contain the label. */
+  private async waitForPageNamed(label: string): Promise<{ pass: boolean; actual: string }> {
+    let actual = '';
+    const pass = await driver
+      .waitUntil(
+        async () => {
+          actual = await this.getOpenedPageName();
+          return this.matchesLabel(actual, label);
+        },
+        { timeout: 10000, interval: 500 }
+      )
+      .then(() => true, () => false);
+    return { pass, actual };
   }
 
   /** Checks whether any key word of the label appears in text — both values come from the same screen, so no per-language data is needed. */
@@ -170,6 +135,12 @@ export class MypagePage extends BasePage {
       const sameMenu = SAME_MENU_WORDS.find((group) => group.includes(stem) || group.includes(word)) ?? [stem];
       return sameMenu.some((name) => target.includes(name));
     });
+  }
+
+  /** Same title ignoring spaces and case — the list title repeats its menu's name ("  Support" for "Support"). */
+  private isSameTitle(title: string, menuLabel: string): boolean {
+    const normalize = (text: string) => text.replace(/\s+/g, '').toLowerCase();
+    return !!title && normalize(title) === normalize(menuLabel);
   }
 
   /** Android system back — returns to the sub-menu list screen. */
@@ -417,11 +388,7 @@ export class MypagePage extends BasePage {
       await scrollUntilVisible(menuElement, 3);
     }
     const menuLabel = (await getElementLabel(menuElement)).replace(/\n/g, ' ');
-    // Baseline of WebView pages, so the redirect check only reads the page this click opens
-    this.knownPageIds.clear();
-    for (const page of await getBrowserPages()) {
-      this.knownPageIds.add(page.id);
-    }
+    await this.saveWebViewBaseline();
     await markFailedAndStop(
       () => clickElement(menuElement, { timeout: 5000 }),
       `[selectProductMenu] menu not found on My Page: ${menu}`
@@ -429,18 +396,9 @@ export class MypagePage extends BasePage {
     return menuLabel;
   }
 
-  /** The opened page's title must contain the clicked menu's name — WebView page title (CDP, no context switch), selected tab or title next to Back. */
+  /** The opened page's names must contain the clicked menu's name (see getOpenedPageName). */
   async verifyPageTitleMatchesMenu(menuLabel: string): Promise<void> {
-    let actual = '';
-    const pass = await driver
-      .waitUntil(
-        async () => {
-          actual = await this.getOpenedPageName();
-          return this.matchesLabel(actual, menuLabel);
-        },
-        { timeout: 10000, interval: 500 }
-      )
-      .then(() => true, () => false);
+    const { pass, actual } = await this.waitForPageNamed(menuLabel);
     console.log(`[verifyPageTitleMatchesMenu] expected menu="${menuLabel}" actual page="${actual}" result=${pass ? 'PASS' : 'FAIL'}`);
     markFailed(
       [{ label: `page title does not match the menu: ${menuLabel}`, pass, detail: `expected menu="${menuLabel}", actual page="${actual}"` }],
@@ -490,13 +448,20 @@ export class MypagePage extends BasePage {
     return url;
   }
 
-  /** Names the opened page shows: title of the newly opened WebView page, the selected tab and the title next to Back. */
+  /**
+   * Names the opened page shows: title and URL of WebView pages opened since the click (CDP, no context switch),
+   * the selected tab, the page heading, the title next to Back, the browser address bar and an external app's package.
+   */
   private async getOpenedPageName(): Promise<string> {
-    const newPage = (await getBrowserPages()).find((page) => !this.knownPageIds.has(page.id));
+    const newPages = (await getBrowserPages()).filter((page) => !this.knownPageIds.has(page.id));
+    const currentPackage = await driver.getCurrentPackage().catch(() => '');
     const names = [
-      newPage?.title ?? '',
+      ...newPages.flatMap((page) => [page.title, page.url.split('?')[0]]),
       await getElementLabel(this.locator.selectedMypageTab),
+      await getElementLabel(this.locator.subPageHeading),
       await getElementLabel(this.locator.subPageTitle),
+      await getElementLabel(this.locator.browserUrlBar),
+      currentPackage === targetPackage() ? '' : currentPackage,
     ];
     return names.filter(Boolean).join(' | ').replace(/\n/g, ' / ');
   }
@@ -504,18 +469,276 @@ export class MypagePage extends BasePage {
   /** After Back, the opened page is gone and the menu is shown on My Page again. */
   async verifyReturnedToMypage(menu: MypageMenu): Promise<void> {
     await switchToNative();
-    const isDashboard = (DASHBOARD_MENUS as readonly string[]).includes(menu);
-    const menuElement = isDashboard ? this.locator.dashboardMenu(menu as DashboardMenu) : this.locator.productMenu(menu as ProductMenu);
+    const menuElement = this.locator.mypageMenu(menu);
     // Every page opened from My Page has a Back button, My Page itself has none
     const pageClosed = await this.locator.subPageBackButton
       .waitForDisplayed({ timeout: 3000, reverse: true })
       .then(() => true, () => false);
+    // My Page can come back scrolled (e.g. after the Samsung account app), so the menu is looked for further down too
+    if (pageClosed && !(await isDisplayedOrFalse(menuElement))) {
+      await scrollUntilVisible(menuElement, 3);
+    }
     const pass = pageClosed && (await waitForDisplayedOrFalse(menuElement, { timeout: 3000 }));
     const actual = (await getElementLabel(menuElement)).replace(/\n/g, ' / ');
     console.log(`[verifyReturnedToMypage] expected=${menu} menu on My Page actual="${actual}" page closed=${pageClosed} result=${pass ? 'PASS' : 'FAIL'}`);
     markFailed(
       [{ label: `not back on My Page after Back: ${menu}`, pass, detail: `menu on My Page="${actual}", page closed=${pageClosed}` }],
       'verifyReturnedToMypage'
+    );
+  }
+
+  /** Registered Products must be shown on My Page — searched from the top, scrolling down up to 2 times. */
+  async verifyRegisteredProductsShown(): Promise<void> {
+    await switchToNative();
+    await flingToStart();
+    await scrollUntilVisible(this.locator.registeredProductsArea, 3);
+    const pass = await waitForDisplayedOrFalse(this.locator.registeredProductsArea, { timeout: 5000 });
+    console.log(`[verifyRegisteredProductsShown] expected=Registered Products shown actual=${pass ? 'shown' : 'not shown'} result=${pass ? 'PASS' : 'FAIL'}`);
+    markFailed([{ label: 'Registered Products not shown on My Page', pass }], 'verifyRegisteredProductsShown');
+  }
+
+  /** The recommended products area ("Suggested for …") must be shown — scrolling down up to 2 times. */
+  async verifyRecommendedAreaShown(): Promise<void> {
+    await scrollUntilVisible(this.locator.recommendedArea, 3);
+    const pass = await waitForDisplayedOrFalse(this.locator.recommendedArea, { timeout: 5000 });
+    const actual = pass ? `"${(await getElementLabel(this.locator.recommendedArea)).replace(/\n/g, ' / ')}"` : 'not shown';
+    console.log(`[verifyRecommendedAreaShown] expected=recommended area shown actual=${actual} result=${pass ? 'PASS' : 'FAIL'}`);
+    markFailedAndStop([{ label: 'recommended area not shown on My Page', pass }], 'verifyRecommendedAreaShown');
+  }
+
+  /** The recommended area must sit right below Registered Products. */
+  async verifyRecommendedAreaBelowRegisteredProducts(): Promise<void> {
+    const maxGap = this.getMaxGapBelow();
+    const gap = await this.getVerticalGap(this.locator.registeredProductsArea, this.locator.recommendedArea);
+    const pass = gap >= 0 && gap <= maxGap;
+    console.log(`[verifyRecommendedAreaBelowRegisteredProducts] expected gap=0~${maxGap}px actual gap=${gap}px result=${pass ? 'PASS' : 'FAIL'}`);
+    markFailed(
+      [{ label: 'recommended area not right below Registered Products', pass, detail: `gap=${gap}px, allowed 0~${maxGap}px` }],
+      'verifyRecommendedAreaBelowRegisteredProducts'
+    );
+  }
+
+  /** Support must sit right below the recommended area, or right below Registered Products on sites without one. */
+  async verifySupportBelowProductsArea(): Promise<void> {
+    if (!getSiteData().mypageMenuList?.support) {
+      console.log('[verifySupportBelowProductsArea] no Support menu on this site — skipped');
+      return;
+    }
+    await switchToNative();
+    await flingToStart();
+    await scrollUntilVisible(this.locator.supportMenu, 5);
+
+    const hasRecommended = await isDisplayedOrFalse(this.locator.recommendedArea);
+    const upperName = hasRecommended ? 'recommended area' : 'Registered Products';
+    const upper = hasRecommended ? this.locator.recommendedArea : this.locator.registeredProductsArea;
+    if (!hasRecommended) {
+      const shown = await isDisplayedOrFalse(upper);
+      markFailedAndStop([{ label: 'neither the recommended area nor Registered Products is shown above Support', pass: shown }], 'verifySupportBelowProductsArea');
+    }
+
+    const maxGap = this.getMaxGapBelow();
+    const gap = await this.getVerticalGap(upper, this.locator.supportMenu);
+    const pass = gap >= 0 && gap <= maxGap;
+    console.log(`[verifySupportBelowProductsArea] expected Support below ${upperName} gap=0~${maxGap}px actual gap=${gap}px result=${pass ? 'PASS' : 'FAIL'}`);
+    markFailed(
+      [{ label: `Support not right below ${upperName}`, pass, detail: `gap=${gap}px, allowed 0~${maxGap}px` }],
+      'verifySupportBelowProductsArea'
+    );
+  }
+
+  /** Pixels between the bottom of `upper` and the top of `lower`; NaN when either is not found. */
+  private async getVerticalGap(upper: ChainablePromiseElement, lower: ChainablePromiseElement): Promise<number> {
+    return Promise.all([upper.getLocation(), upper.getSize(), lower.getLocation()])
+      .then(([upperTop, upperSize, lowerTop]) => Math.round(lowerTop.y - (upperTop.y + upperSize.height - 1)))
+      .catch(() => NaN);
+  }
+
+  /** Largest gap still counted as "right below" — US leaves more room between My Page sections. */
+  private getMaxGapBelow(): number {
+    return getRunConfig().siteCode === 'US' ? 400 : 10;
+  }
+
+  /** Bottom menus shown on the site (data/sites-data mypageMenuList). */
+  getAvailableSettingsMenus(site: LoadedSite): SettingsMenu[] {
+    return SETTINGS_MENUS.filter((menu) => site.mypageMenuList?.[menu] === true);
+  }
+
+  /** Selects a bottom menu (Support ~ Logout) on My Page and returns its name ('' when it could not be clicked). */
+  async selectSettingsMenu(menu: SettingsMenu): Promise<string> {
+    await switchToNative();
+    const menuElement = this.locator.settingsMenuButton(menu);
+    if (!(await isDisplayedOrFalse(menuElement))) {
+      // scrollUntilVisible only scrolls down — start from the top, since My Page can be left scrolled past the menu
+      await flingToStart();
+      await scrollUntilVisible(menuElement, 5);
+    }
+    const menuLabel = (await getElementLabel(menuElement)).replace(/\n/g, ' ');
+    await this.saveWebViewBaseline();
+    const clicked = await clickElement(menuElement, { timeout: 5000 }).then(() => true, () => false);
+    // A missing menu is recorded and the next menu is checked
+    markFailed([{ label: `menu not found on My Page: ${menu}`, pass: clicked }], 'selectSettingsMenu');
+    return clicked ? menuLabel : '';
+  }
+
+  /** Verifies what the bottom menu opened: its sub-menu list, the Samsung account, the logout popup or its page. */
+  async verifySettingsMenuPage(menu: SettingsMenu, menuLabel: string): Promise<void> {
+    switch (menu) {
+      case 'accountManagement':
+        return this.verifyAccountManagementPage();
+      case 'logout':
+        return this.verifyLogoutPopupShown();
+      case 'smartThings':
+        return this.verifyPageTitleMatchesMenu(menuLabel);
+      default:
+        return this.verifySubMenus(menuLabel);
+    }
+  }
+
+  /** Clicks each sub-menu on the list and checks the detail page it opens; a sub-menu opening another list is checked the same way. */
+  private async verifySubMenus(listLabel: string): Promise<void> {
+    // Waits for the list to load before counting its rows
+    await this.isSubMenuListShown(listLabel, 5000);
+    await this.verifyGiveFeedbackHidden();
+    const acceptedNames = await this.getAcceptedPageNames();
+
+    const count = await this.getSubMenuCount();
+    markFailed([{ label: `no sub-menu shown: ${listLabel}`, pass: count > 0 }], 'verifySubMenus');
+    for (let index = 0; index < count; index++) {
+      const itemLabel = await this.clickItemAt(index);
+      if (!itemLabel) {
+        markFailed([{ label: `sub-menu ${index + 1} of ${count} not found on the list: ${listLabel}`, pass: false }], 'verifySubMenus');
+        continue;
+      }
+      if (await this.isSubMenuListOpened(itemLabel)) {
+        await this.verifySubMenus(itemLabel);
+      } else {
+        await this.verifyRedirected(itemLabel, acceptedNames.get(itemLabel));
+      }
+      if (!(await this.returnToSubMenuList(listLabel))) {
+        markFailed([{ label: `could not return to the sub-menu list, rest not checked: ${listLabel}`, pass: false }], 'verifySubMenus');
+        return;
+      }
+    }
+  }
+
+  /** Closes the opened sub-menu page until its list is back — an external app is closed, TrustArc needs Back twice. */
+  private async returnToSubMenuList(listLabel: string): Promise<boolean> {
+    await switchToNative();
+    // A sub-menu that opened nothing is still on the list — Back would leave it
+    if (await this.isSubMenuListShown(listLabel, 0)) {
+      return true;
+    }
+    if ((await driver.getCurrentPackage().catch(() => '')) !== targetPackage()) {
+      await closeExternalBrowserIfOpen();
+      if (await this.isSubMenuListShown(listLabel, 3000)) {
+        return true;
+      }
+    }
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      await driver.back();
+      if (await this.isSubMenuListShown(listLabel, 2000)) {
+        return true;
+      }
+    }
+    console.log(`[returnToSubMenuList] list "${listLabel}" not shown after Back`);
+    return false;
+  }
+
+  /** True when the open sub-menu list's title equals listLabel (checked once when timeoutMs is 0). */
+  private async isSubMenuListShown(listLabel: string, timeoutMs: number): Promise<boolean> {
+    const isShown = async () => this.isSameTitle(await getElementLabel(this.locator.subMenuListTitle), listLabel);
+    if (timeoutMs === 0) {
+      return isShown();
+    }
+    return driver.waitUntil(isShown, { timeout: timeoutMs, interval: 300 }).then(() => true, () => false);
+  }
+
+  /** Give Feedback must not be offered on the sub-menu list. */
+  private async verifyGiveFeedbackHidden(): Promise<void> {
+    const shown = await isDisplayedOrFalse(this.locator.giveFeedbackMenu);
+    console.log(`[verifyGiveFeedbackHidden] expected=Give Feedback not shown actual=${shown ? 'shown' : 'not shown'} result=${shown ? 'FAIL' : 'PASS'}`);
+    markFailed([{ label: 'Give Feedback is shown on the sub-menu list', pass: !shown }], 'verifyGiveFeedbackHidden');
+  }
+
+  /** Sub-menus on the open list whose page does not show their name, with the page names accepted instead. */
+  private async getAcceptedPageNames(): Promise<Map<string, string[]>> {
+    const rules: [ChainablePromiseElement, string[]][] = [
+      // Cookie Preferences opens the TrustArc consent
+      [this.locator.cookiePreferencesMenu, ['trustarc']],
+      // Marketing Preferences opens the profile page in the app or the Samsung account
+      [this.locator.marketingPreferencesMenu, ['profile-setting', 'account.samsung.com', SAMSUNG_ACCOUNT_PACKAGE]],
+    ];
+    const accepted = new Map<string, string[]>();
+    for (const [row, names] of rules) {
+      const label = await getElementLabel(row);
+      if (label) {
+        accepted.set(label, names);
+      }
+    }
+    return accepted;
+  }
+
+  /** True when the clicked sub-menu opened another sub-menu list (e.g. Personal Data Management). */
+  private async isSubMenuListOpened(itemLabel: string): Promise<boolean> {
+    // The next screen is already drawn once the clicked row is gone, so the title is checked once
+    return (await this.waitForSubMenuListLeft(itemLabel)) && (await this.isSubMenuListShown(itemLabel, 0));
+  }
+
+  /** Account Management must open the Samsung account settings (CN: its own account page with "退出登录"). */
+  private async verifyAccountManagementPage(): Promise<void> {
+    await switchToNative();
+    // IN: Account Management lists "Delete Account" first — the Samsung account opens from it
+    const openedViaDeleteAccount = await clickIfDisplayed(this.locator.deleteAccountMenu, 2000);
+    const { pass, expected, actual } = await this.waitForSamsungAccountSettings(() =>
+      isDisplayedOrFalse(this.locator.cnAccountLogoutButton)
+    );
+    console.log(`[verifyAccountManagementPage] expected activity="${expected}" actual activity="${actual}" result=${pass ? 'PASS' : 'FAIL'}`);
+    markFailedAndStop(
+      [{ label: 'Samsung account settings not opened from Account Management', pass, detail: `expected="${expected}", actual="${actual}"` }],
+      'verifyAccountManagementPage'
+    );
+    if (openedViaDeleteAccount) {
+      await driver.back();
+    }
+  }
+
+  /** Logout must ask for confirmation first; the popup is closed afterwards with Back, so the user stays logged in. */
+  private async verifyLogoutPopupShown(): Promise<void> {
+    const pass = await waitForDisplayedOrFalse(this.locator.logoutOkayButton, { timeout: 5000 });
+    const actual = pass ? `popup with "${await getElementLabel(this.locator.logoutOkayButton)}"` : 'no popup';
+    console.log(`[verifyLogoutPopupShown] expected=logout confirm popup actual=${actual} result=${pass ? 'PASS' : 'FAIL'}`);
+    markFailed([{ label: 'logout confirm popup not shown', pass, detail: actual }], 'verifyLogoutPopupShown');
+  }
+
+  /** Clicks the first product in the recommended area and returns its name (content-desc). */
+  async clickFirstRecommendedProduct(): Promise<string> {
+    const product = this.locator.recommendedFirstProduct;
+    const shown = await waitForDisplayedOrFalse(product, { timeout: 3000 });
+    markFailedAndStop([{ label: 'first recommended product not shown', pass: shown }], 'clickFirstRecommendedProduct');
+    const productName = (await getElementLabel(product)).replace(/\n/g, ' ');
+    console.log(`[clickFirstRecommendedProduct] product="${productName}"`);
+    await clickElement(product, { timeout: 3000 });
+    return productName;
+  }
+
+  /** The page opened from the recommended product must be its BC/PD — names compared on BC/PD, or the product found on the native PD. */
+  async verifyRecommendedProductPage(productName: string): Promise<void> {
+    const bcPdName = await this.pfPage.getBcPdProductName();
+    if (bcPdName === null) {
+      // Not a BC/PD WebView page — some products open the native PD
+      await markFailedAndStop(
+        () => this.pdPage.verifySkuForNativePdPage(productName),
+        `[verifyRecommendedProductPage] product not shown on BC/PD or native PD: "${productName}"`
+      );
+      console.log(`[verifyRecommendedProductPage] expected="${productName}" actual=shown on native PD result=PASS`);
+      return;
+    }
+    const expected = normalizeProductName(productName);
+    const pass = productNameMatches(expected, bcPdName);
+    console.log(`[verifyRecommendedProductPage] expected="${expected}" actual BC/PD="${bcPdName}" result=${pass ? 'PASS' : 'FAIL'}`);
+    markFailedAndStop(
+      [{ label: 'recommended product page mismatch', pass, detail: `expected "${productName}", actual BC/PD "${bcPdName}"` }],
+      'verifyRecommendedProductPage'
     );
   }
 
@@ -553,6 +776,18 @@ export class MypagePage extends BasePage {
   /** Selecting the profile must open the Samsung account settings screen (activity only — the name is not compared). */
   async verifyProfileRedirected(): Promise<void> {
     await switchToNative();
+    const { pass, expected, actual } = await this.waitForSamsungAccountSettings();
+    console.log(`[verifyProfileRedirected] expected activity="${expected}" actual activity="${actual}" result=${pass ? 'PASS' : 'FAIL'}`);
+    markFailedAndStop(
+      [{ label: 'Samsung account settings not opened from the profile', pass, detail: `expected="${expected}", actual="${actual}"` }],
+      'verifyProfileRedirected'
+    );
+  }
+
+  /** Waits up to 10s for the Samsung account settings activity (or `alsoAccept`); returns the activity seen last. */
+  private async waitForSamsungAccountSettings(
+    alsoAccept: () => Promise<boolean> = async () => false
+  ): Promise<{ pass: boolean; expected: string; actual: string }> {
     const expected = `${SAMSUNG_ACCOUNT_PACKAGE}/…${SAMSUNG_ACCOUNT_SETTINGS_ACTIVITY}`;
     let actual = '';
     const pass = await driver
@@ -561,16 +796,13 @@ export class MypagePage extends BasePage {
           const currentPackage = await driver.getCurrentPackage();
           const currentActivity = await driver.getCurrentActivity();
           actual = `${currentPackage}/${currentActivity}`;
-          return currentPackage === SAMSUNG_ACCOUNT_PACKAGE && currentActivity.endsWith(SAMSUNG_ACCOUNT_SETTINGS_ACTIVITY);
+          const isSettings = currentPackage === SAMSUNG_ACCOUNT_PACKAGE && currentActivity.endsWith(SAMSUNG_ACCOUNT_SETTINGS_ACTIVITY);
+          return isSettings || (await alsoAccept());
         },
         { timeout: 10000, interval: 500 }
       )
       .then(() => true, () => false);
-    console.log(`[verifyProfileRedirected] expected activity="${expected}" actual activity="${actual}" result=${pass ? 'PASS' : 'FAIL'}`);
-    markFailedAndStop(
-      [{ label: 'Samsung account settings not opened from the profile', pass, detail: `expected="${expected}", actual="${actual}"` }],
-      'verifyProfileRedirected'
-    );
+    return { pass, expected, actual };
   }
 
   /** My Page > Settings, then the given rows in order; My Page and Settings are skipped when the Settings page is already open. */
@@ -584,6 +816,12 @@ export class MypagePage extends BasePage {
       await scrollUntilVisible(menu, 5);
       await markFailedAndStop(() => clickElement(menu, { timeout: 5000 }), `[${step}] menu not found under My Page > Settings`);
     }
+  }
+
+  /** My Page > Settings > Select Country, then selects the given country. */
+  async changeCountryInSettings(countryName?: string): Promise<void> {
+    await this.selectSettingsMenus([this.locator.selectCountryMenu], 'changeCountryInSettings');
+    await this.selectCountry(countryName);
   }
 
   /** My Page > Settings > Push Notification, then verifies the notification switch is shown. */
@@ -649,5 +887,51 @@ export class MypagePage extends BasePage {
     );
     // Close the TrustArc choices with "Save" after the check
     await clickElement(this.locator.trustArcSaveButton, { timeout: 5000 });
+  }
+
+  /** Store options the site shows in the Select Store sheet (data/sites-data shopMenuList). */
+  getAvailableStoreOptions(site: LoadedSite): StoreOption[] {
+    return STORE_OPTIONS.filter((store) => site.shopMenuList?.[store] === true);
+  }
+
+  /** Scrolls to Select Store at the bottom of My Page and clicks it. */
+  async clickSelectStore(): Promise<void> {
+    await switchToNative();
+    const button = this.locator.selectStoreButton;
+    if (!(await isDisplayedOrFalse(button))) {
+      await flingToEnd();
+    }
+    const clicked = await clickElement(button, { timeout: 3000 }).then(() => true, () => false);
+    markFailed([{ label: 'Select Store not found on My Page', pass: clicked }], 'clickSelectStore');
+  }
+
+  /** The store option must be shown in the Select Store sheet when expected, and hidden otherwise. */
+  async verifyStoreOptionShown(store: StoreOption, expected: boolean): Promise<void> {
+    const shown = await waitForDisplayedOrFalse(this.locator.storeOption(store), { timeout: expected ? 3000 : 1000 });
+    const pass = shown === expected;
+    console.log(`[verifyStoreOptionShown] store=${store} expected=${expected ? 'shown' : 'hidden'} actual=${shown ? 'shown' : 'hidden'} result=${pass ? 'PASS' : 'FAIL'}`);
+    markFailedAndStop(
+      [{ label: `${store} option ${expected ? 'not shown' : 'shown'} in Select Store`, pass }],
+      'verifyStoreOptionShown'
+    );
+  }
+
+  /** Opens the Select Store sheet again (e.g. after Back from a store page) when the option is not on screen. */
+  async ensureStoreOptionShown(store: StoreOption): Promise<void> {
+    await switchToNative();
+    if (await isDisplayedOrFalse(this.locator.storeOption(store))) {
+      return;
+    }
+    await this.prepareMypage();
+    await this.clickSelectStore();
+  }
+
+  /** Clicks the store option in the Select Store sheet. */
+  async selectStoreOption(store: StoreOption): Promise<void> {
+    await switchToNative();
+    await markFailedAndStop(
+      () => clickElement(this.locator.storeOption(store), { timeout: 3000 }),
+      `[selectStoreOption] ${store} not found in Select Store`
+    );
   }
 }

@@ -4,7 +4,8 @@ import { BnbLocator, BNB_MENUS, type BnbMenu } from '../locators/bnb.locator';
 import { LoginLocator } from '../locators/login.locator';
 import { HomeLocator } from '../locators/home.locator';
 import { SearchLocator } from '../locators/search.locator';
-import { switchToNative, getCurrentContext } from '../helpers/context.helper';
+import { switchToNative, getCurrentContext, targetPackage } from '../helpers/context.helper';
+import { getBrowserPages } from '../helpers/device.helper';
 import { getRunConfig } from '../../config/run.config';
 import { flingToStart, scrollUp } from '../helpers/gesture.helper';
 import { assertEqual } from '../helpers/validation.helper';
@@ -36,6 +37,8 @@ export class BasePage {
   protected readonly searchLocator = new SearchLocator();
   protected readonly bnbLocator = new BnbLocator();
   protected readonly homeLocator = new HomeLocator();
+  /** WebView pages open before the last menu click — page checks only read pages opened after it. */
+  protected readonly knownPageIds = new Set<string>();
   /** App entry screens (guest splash, profile select) — used to tell when the app is up without a permission popup */
   private readonly appEntryLocator = new LoginLocator();
 
@@ -421,9 +424,109 @@ export class BasePage {
     return getElementLabel(this.headerLocator.title);
   }
 
+  /** A tapped link/KV must open another page — one with a Back button in the header (BNB pages have none). */
+  async verifySubPageOpened(source: string): Promise<void> {
+    await switchToNative();
+    const opened = await waitForDisplayedOrFalse(this.headerLocator.backButton, { timeout: 10000 });
+    console.log(`[verifySubPageOpened] ${source} expected=page with Back opened actual=${opened ? 'opened' : 'not opened'} result=${opened ? 'PASS' : 'FAIL'}`);
+    markFailedAndStop([{ label: `${source}: page navigation failed`, pass: opened }], 'verifySubPageOpened');
+  }
+
   /** Presses the Android Back key in any context; driver.back() in a WebView would only go back in that page's history. */
   async pressDeviceBack(): Promise<void> {
     await driver.pressKeyCode(4);
+  }
+
+  // Sub-menu page check (menu → sub-menu list → detail page)
+  /** Remembers the WebView pages open now, so the next page check only reads what the next click opens. */
+  protected async saveWebViewBaseline(): Promise<void> {
+    this.knownPageIds.clear();
+    for (const page of await getBrowserPages()) {
+      this.knownPageIds.add(page.id);
+    }
+  }
+
+  /** After a sub-menu click: the list must be gone (page moved) and the page must contain a word of the sub-menu name (its own page). */
+  protected async verifyDetailPageOpened(
+    menuName: string,
+    isListGone: () => Promise<boolean>,
+    acceptedNames: readonly string[] = []
+  ): Promise<void> {
+    const words = [...this.getMenuWords(menuName), ...acceptedNames.map((name) => name.toLowerCase())];
+    const listGone = await isListGone();
+    const { pass, actual } = listGone
+      ? await this.waitForPageContaining(words)
+      : { pass: false, actual: 'still on the sub-menu list' };
+    console.log(`[verifyDetailPageOpened] menu="${menuName}" expected=page containing "${words.join('" or "')}" actual=${actual} result=${pass ? 'PASS' : 'FAIL'}`);
+    markFailed([{ label: `sub-menu page not opened: ${menuName}`, pass, detail: actual }], 'verifyDetailPageOpened');
+  }
+
+  /** Lower-case words (3+ letters) of a menu name; a plural "s" is dropped so "Cookies" also finds "Cookie". */
+  private getMenuWords(menuName: string): string[] {
+    const fillers = ['and', 'for', 'the', 'you', 'your'];
+    const words: string[] = [];
+    for (const raw of menuName.toLowerCase().split(/\s+/)) {
+      const word = raw.replace(/[^\p{L}\p{N}-]/gu, '');
+      if (word.length > 2 && !fillers.includes(word)) {
+        words.push(word.length > 4 ? word.replace(/e?s$/, '') : word);
+      }
+    }
+    // CJK names have no spaces and can be 2 letters long — the whole name is used
+    return words.length > 0 ? words : [menuName.toLowerCase().replace(/[\s'"]/g, '')];
+  }
+
+  /**
+   * Polls up to 10s until the opened page contains one of the words.
+   * A newly opened WebView page (or another app) is judged by its title / URL only; otherwise the native screen elements are searched.
+   */
+  private async waitForPageContaining(words: readonly string[]): Promise<{ pass: boolean; actual: string }> {
+    let actual = '';
+    const pass = await driver
+      .waitUntil(
+        async () => {
+          const pageNames = await this.getOpenedPageNames();
+          if (pageNames.length === 0) {
+            actual = await this.findElementContaining(words);
+            return actual !== '';
+          }
+          const matched = pageNames.find((name) => words.some((word) => name.toLowerCase().includes(word)));
+          actual = `page "${matched ?? pageNames.join(' | ')}"`;
+          return matched !== undefined;
+        },
+        { timeout: 10000, interval: 500 }
+      )
+      .then(() => true, () => false);
+    return { pass, actual: actual || 'no element contains the words' };
+  }
+
+  /** Label of the first screen element containing one of the words; BNB tabs are skipped since they show on every page. */
+  private async findElementContaining(words: readonly string[]): Promise<string> {
+    // Pages without BNB (e.g. Select Country): isExisting answers at once, getLocation would wait 10s for it
+    const bnbHome = this.bnbLocator.menu('home');
+    const bnbTop = (await bnbHome.isExisting()) ? (await bnbHome.getLocation()).y : Infinity;
+    for (const element of await this.headerLocator.elementsContaining(words)) {
+      const { y } = await element.getLocation().catch(() => ({ y: Infinity }));
+      if (y < bnbTop) {
+        const label = (await element.getText().catch(() => '')) || (await element.getAttribute('content-desc').catch(() => '')) || '';
+        return `element "${label.replace(/\n/g, ' / ').trim()}"`;
+      }
+    }
+    return '';
+  }
+
+  /** Title and URL of each WebView page opened since the click, plus the package of another app in front; empty for a native page. */
+  private async getOpenedPageNames(): Promise<string[]> {
+    const names: string[] = [];
+    for (const page of await getBrowserPages()) {
+      if (!this.knownPageIds.has(page.id)) {
+        names.push(page.title, page.url.split('?')[0]);
+      }
+    }
+    const currentPackage = await driver.getCurrentPackage().catch(() => '');
+    if (currentPackage !== targetPackage()) {
+      names.push(currentPackage);
+    }
+    return names;
   }
   // BNB
   /** Reads the item count from the BNB cart tab's content-desc (leading number). */

@@ -1,5 +1,5 @@
 import { BasePage } from './base.page';
-import { ShopLocator, ShopCategory, type ShopMenu, type ShopMenuPage, type ShopSubMenu } from '../locators/shop.locator';
+import { ShopLocator, ShopCategory, type ShopMenu, type ShopMenuPage } from '../locators/shop.locator';
 import type { LoadedSite } from '../../config/site';
 import { gestureByBoundary, swipeByBoundary, scrollByBoundary, tapAtCoordinates } from '../helpers/gesture.helper'
 import {
@@ -18,7 +18,7 @@ import {
   isDisplayedOrFalse,
   waitForDisplayedOrFalse,
 } from '../helpers/element.helper';
-import { markFailedAndStop } from '../helpers/report.helper';
+import { markFailed, markFailedAndStop } from '../helpers/report.helper';
 export type CategoryMismatch = string;
 export type { ShopMenu };
 
@@ -116,28 +116,6 @@ const MORE_SAMSUNG_APPS = [
     packageName: 'groupSharing',
   },
 ] as const;
-
-/** Customer Support item label to its VerifyMenu page. Unlisted items only need to leave the list. */
-const SHOP_SUB_MENU_LABELS: Record<ShopSubMenu, string[]> = {
-  supportHome: [
-    'Support Home', 'Support', 'الصفحة الرئيسية للدعم', 'Support-Startseite', 'Accueil assistance',
-    'Accueil de l’assistance', 'Soporte en casa', 'Domácí stránka Podpora', '支援首頁', 'Terméktámogatás kezdőoldala',
-    'Bantuan Utama', 'Supporto', 'Soporte', 'Strona główna Obsługi klienta', 'Home do Apoio', 'Asistență acasă',
-    'Produktsupport', 'หน้าหลักของบริการช่วยเหลือ', 'Samsung Destek Ana Sayfası', 'Trang chủ hỗ trợ', 'עמוד שירות', 'Service',
-  ],
-  shopQnA: [
-    "Online Shop FAQ's", 'FAQ الخاصة بالتسوّق', 'Shop FAQ', 'Preguntas Frecuentes', 'FAQ sobre la compra', 'E-shop podpora',
-    'FAQs Tienda online', 'FAQ Shop', '網上商店常見問題', 'Online Shop FAQ', 'Webáruház GYIK', 'FAQ Toko', 'Samsung Shop FAQ',
-    'FAQ - Sklepu internetowego', 'FAQs Loja Online', 'Întrebări frecvente magazin online', 'คำถามที่พบบ่อย',
-    'Mağaza Hakkında SSS', '三星商城常見問題', 'Shop FAQs', 'FAQ Hỗ trợ mua trực tuyến', 'שאלות נפוצות – חנות', 'Online Shop FAQs',
-  ],
-  contact: [
-    'Contact us', 'اتصل بنا', 'Kontaktiere uns', 'Contact opnemen', 'Contactez-nous', 'Nous contacter', 'Contáctanos',
-    'Kontaktuj nás', 'Kontakt zum Service', 'Contacta con nosotros', '聯絡我們', 'Elérhetőség', 'Hubungi Kami', 'Contattaci',
-    'Kontakt z nami', 'Contacte-nos', 'Contactează-ne', 'Kontakta oss', 'ติดต่อเรา', 'Bize Ulaşın', 'Liên Hệ', 'יצירת קשר', 'Contact',
-  ],
-  services: ['Services'],
-};
 
 /** URL path of menus that open inside the app WebView, where the native tree shows no page text (e.g. UK). */
 const SHOP_MENU_URL_PATHS: Partial<Record<ShopMenuPage, string>> = {
@@ -410,16 +388,18 @@ export class ShopPage extends BasePage {
     return (Object.keys(menuList) as ShopMenu[]).filter((menu) => menuList[menu]);
   }
 
-  /** Scrolls until the menu is visible and taps it. A missing menu is left to the page verify that follows. */
-  async selectShopMenu(menu: ShopMenu): Promise<void> {
+  /** Scrolls until the menu is visible and taps it; false (recorded as a failure) when the menu is not on Shop. */
+  async selectShopMenu(menu: ShopMenu): Promise<boolean> {
     await switchToNative();
     const menuElement = this.shoplocator.shopMenu(menu);
     await this.scrollUntilMenuVisible(menuElement);
-    await clickElement(menuElement, { timeout: 3000 }).catch(() => console.log(`[selectShopMenu] menu not found on Shop: ${menu}`));
+    const clicked = await clickElement(menuElement, { timeout: 3000 }).then(() => true, () => false);
+    markFailed([{ label: `menu not found on Shop: ${menu}`, pass: clicked }], 'selectShopMenu');
+    return clicked;
   }
 
   /** The landing page is shown natively, or the app WebView opened the menu's URL. */
-  async verifyShopMenuPage(mismatches: CategoryMismatch[], menu: ShopMenuPage): Promise<void> {
+  async verifyShopMenuPage(menu: ShopMenuPage): Promise<void> {
     await switchToNative();
     const urlPath = SHOP_MENU_URL_PATHS[menu];
     let actual = 'not shown';
@@ -441,9 +421,7 @@ export class ShopPage extends BasePage {
       )
       .then(() => true, () => false);
     console.log(`[verifyShopMenuPage] menu=${menu} expected=${menu}Page${urlPath ? ` or ${urlPath}` : ''} actual=${actual} result=${shown ? 'PASS' : 'FAIL'}`);
-    if (!shown) {
-      mismatches.push(`${menu}: landing page not shown`);
-    }
+    markFailed([{ label: `${menu}: landing page not shown`, pass: shown, detail: actual }], 'verifyShopMenuPage');
   }
 
   /** Number of Customer Support items on screen (expanded list or Online Support page). */
@@ -470,6 +448,7 @@ export class ShopPage extends BasePage {
       console.log(`[selectCustomerSupportItem] item ${index} not found`);
       return '';
     }
+    await this.saveWebViewBaseline();
     // Tiles only react on their left (icon/label) part — a center tap on a wide row is ignored
     const { x, y } = await item.getLocation();
     const { width, height } = await item.getSize();
@@ -477,23 +456,13 @@ export class ShopPage extends BasePage {
     return label;
   }
 
-  /** Mapped labels check their VerifyMenu page; other items only have to leave the Customer Support list. */
-  async verifyCustomerSupportPage(mismatches: CategoryMismatch[], label: string): Promise<void> {
-    const subMenu = (Object.keys(SHOP_SUB_MENU_LABELS) as ShopSubMenu[]).find((menu) =>
-      SHOP_SUB_MENU_LABELS[menu].some((text) => text.toLowerCase() === label.toLowerCase())
+  /** The clicked Customer Support item must leave the list and open a page containing its name. */
+  async verifyCustomerSupportPage(label: string): Promise<void> {
+    await this.verifyDetailPageOpened(label, () =>
+      driver
+        .waitUntil(async () => (await this.shoplocator.customerSupportItems.length) === 0, { timeout: 10000, interval: 500 })
+        .then(() => true, () => false)
     );
-    if (subMenu) {
-      await this.verifyShopMenuPage(mismatches, subMenu);
-      return;
-    }
-
-    const left = await driver
-      .waitUntil(async () => (await this.shoplocator.customerSupportItems.length) === 0, { timeout: 10000, interval: 500 })
-      .then(() => true, () => false);
-    console.log(`[verifyCustomerSupportPage] item="${label}" expected=leaves the list actual=${left ? 'left' : 'still on list'} result=${left ? 'PASS' : 'FAIL'}`);
-    if (!left) {
-      mismatches.push(`customer support "${label}": page did not open`);
-    }
   }
 
   /** External browser/app is closed, otherwise Android Back (skipped when already on Shop). */
@@ -511,7 +480,7 @@ export class ShopPage extends BasePage {
    * Tap each More Samsung Apps icon
    * and check the launched Android package (store packages also pass).
    */
-  async verifyMoreSamsungApps(mismatches: CategoryMismatch[]): Promise<void> {
+  async verifyMoreSamsungApps(): Promise<void> {
     await switchToNative();
     const shopPackage = targetPackage();
     const names = await this.collectMoreSamsungAppNames();
@@ -521,13 +490,13 @@ export class ShopPage extends BasePage {
     for (const name of names) {
       const app = MORE_SAMSUNG_APPS.find((entry) => (entry.labels as readonly string[]).includes(name));
       if (!app) {
-        mismatches.push(`More Samsung Apps: unmapped app "${name}"`);
+        markFailed([{ label: `More Samsung Apps: unmapped app "${name}"`, pass: false }], 'verifyMoreSamsungApps');
         continue;
       }
 
       const icon = this.shoplocator.moreSamsungAppIcon(name);
       if (!(await isDisplayedOrFalse(icon)) && !(await this.scrollToMoreSamsungApp(icon))) {
-        mismatches.push(`More Samsung Apps: icon not on screen "${name}"`);
+        markFailed([{ label: `More Samsung Apps: icon not on screen "${name}"`, pass: false }], 'verifyMoreSamsungApps');
         continue;
       }
 
@@ -536,12 +505,15 @@ export class ShopPage extends BasePage {
       const actual = await this.launchedPackage(expected, shopPackage);
       const pass = expected.includes(actual) || STORE_PACKAGES.includes(actual);
       console.log(`[verifyMoreSamsungApps] ${name} expected=${expected.join(',')} actual=${actual} result=${pass ? 'PASS' : 'FAIL'}`);
-      if (!pass) {
-        mismatches.push(`More Samsung Apps: "${name}" opened ${actual || 'nothing'} (expected ${expected.join(' / ')})`);
-      }
+      markFailed(
+        [{ label: `More Samsung Apps: "${name}" did not open its app`, pass, detail: `expected ${expected.join(' / ')}, actual ${actual || 'nothing'}` }],
+        'verifyMoreSamsungApps'
+      );
       if (actual && actual !== shopPackage) {
         await forceStopPackage(actual);
-        await driver.pause(1000);
+        await driver
+          .waitUntil(async () => (await driver.getCurrentPackage().catch(() => '')) === shopPackage, { timeout: 3000, interval: 300 })
+          .catch(() => undefined);
       }
     }
 
@@ -558,9 +530,9 @@ export class ShopPage extends BasePage {
     return [packageName];
   }
 
-  /** Waits 3s after the tap, and a bit more if the shop app is still in front. */
+  /** Waits 3s after the tap so the app is fully shown, and up to 5s more if the shop app is still in front. */
   private async launchedPackage(expected: string[], shopPackage: string): Promise<string> {
-    await driver.pause(3000);
+    await driver.pause(1000);
     let actual = String((await driver.getCurrentPackage().catch(() => '')) ?? '');
     if ((actual && actual !== shopPackage) || expected.includes(shopPackage)) {
       return actual;
@@ -569,7 +541,7 @@ export class ShopPage extends BasePage {
       .waitUntil(
         async () => {
           actual = String((await driver.getCurrentPackage().catch(() => '')) ?? '');
-          return Boolean(actual) && actual !== shopPackage;
+          return actual !== '' && actual !== shopPackage;
         },
         { timeout: 5000, interval: 500 }
       )

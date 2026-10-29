@@ -137,4 +137,14 @@ export class HeaderLocator {
         return this.chatButton;
     }
   }
+
+  elementsContaining(words: readonly string[]) {
+    const conditions = words
+      .flatMap((word) => [
+        `contains(translate(@text, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), '${word}')`,
+        `contains(translate(@content-desc, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), '${word}')`,
+      ])
+      .join(' or ');
+    return $$(`//*[${conditions || 'false()'}]`);
+  }
 }

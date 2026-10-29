@@ -95,6 +95,15 @@ export class OfferPage extends BasePage {
     }
   }
 
+  /** Clicks the first offer content (link/KV) below the category tabs. */
+  async clickOfferContents(): Promise<void> {
+    await switchToNative();
+    await markFailedAndStop(
+      () => clickElement(this.locator.offerContents, { timeout: 5000 }),
+      '[clickOfferContents] offer contents not found on Offers'
+    );
+  }
+
   /** Opens the RTB currently shown at the top of Offers. */
   async openRtbSection(): Promise<void> {
     await clickElement(this.locator.rtbItem);

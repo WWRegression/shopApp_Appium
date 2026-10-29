@@ -189,6 +189,10 @@ export class CheckoutLocator {
     return $('.RightContentCheckoutSlot app-cart-item-list-us mat-expansion-panel-header[aria-expanded="false"] mat-icon[data-an-la="order summary:view more"]');
   }
 
+  viewOrderItemPrices(sku: string) {
+    return $$(`.checkoutPage[data-modelcode="${sku}" i] .price-container .price__current, .checkoutPage[data-modelcode="${sku}" i] .price-special__current`);
+  }
+
   get viewOrderItemNames() {
     return $$('.RightContentCheckoutSlot .cart-item__name-checkout');
   }
@@ -199,5 +203,33 @@ export class CheckoutLocator {
 
   get leaveCheckoutConfirmButton() {
     return $('[data-an-la="leave the checkout page:yes"], .savings-modal button.resend-otp-btn');
+  }
+
+  get deliverySavedAddressOption() {
+    return $('app-customer-address-v2 input[name="addressOptionShipping"][value="SAVED_ADDRESS"]');
+  }
+
+  get deliverySavedAddressLabel() {
+    return $('app-customer-address-v2 .address-box label');
+  }
+
+  get billingSameAsShippingCheckbox() {
+    return $('app-billing-address-v2 input[name="sameAsShipping"], app-billing-address-v2 mat-checkbox[formcontrolname="sameAsShipping"] input');
+  }
+
+  get billingSavedAddressOption() {
+    return $('app-billing-address-v2 input[name="addressOptionBilling"][value="SAVED_ADDRESS"]');
+  }
+
+  get billingSavedAddressEditButton() {
+    return $('app-billing-address-v2 a.actions__edit');
+  }
+
+  get billingPhoneInput() {
+    return $('app-billing-address-v2 input[formcontrolname="phone"], app-billing-address-v2 input[name="phone"]');
+  }
+
+  get contactPhoneInput() {
+    return $('app-customer-info-v2 input[formcontrolname="phone"], app-customer-info-v2 input[name="phone"]');
   }
 }

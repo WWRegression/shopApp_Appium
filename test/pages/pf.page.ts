@@ -247,6 +247,17 @@ export class PfPage extends BasePage {
     );
   }
 
+  /** The BC/PD opened from the PF card must show the card's product name. */
+  async verifyBcPdProductName(pfName: string | null): Promise<void> {
+    const bcPdName = await this.getBcPdProductName();
+    const pass = this.productNameIncludes(pfName, bcPdName);
+    console.log(`[verifyBcPdProductName] expected="${pfName}" actual="${bcPdName}" result=${pass ? 'PASS' : 'FAIL'}`);
+    markFailed(
+      [{ label: 'BC/PD product name does not match the PF card', pass, detail: `PF "${pfName}", BC/PD "${bcPdName}"` }],
+      'verifyBcPdProductName'
+    );
+  }
+
   private productNameIncludes(pfName: string | null, bcPdName: string | null): boolean {
     const pf = pfName?.trim().toLowerCase() ?? '';
     const bcPd = bcPdName?.trim().toLowerCase() ?? '';
@@ -613,7 +624,8 @@ export class PfPage extends BasePage {
     return false;
   }
 
-  private async collectPfProducts(): Promise<PfProduct[]> {
+  /** Name, price, rating and stock of every PF card, collected while scrolling the list. */
+  async collectPfProducts(): Promise<PfProduct[]> {
     await switchToNative();
     const products = new Map<string, PfProduct & { ratingText: string }>();
     let missed = 0;

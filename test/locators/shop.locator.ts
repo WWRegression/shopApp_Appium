@@ -242,6 +242,15 @@ export class ShopLocator {
     );
   }
 
+  get vipStore() {
+    return $(
+      `//android.view.View[
+	@content-desc = 'vip store' or
+	@content-desc = 'متجر vip'
+]`
+    );
+  }
+
   get inStoreMode() {
     return $(
       `//android.view.View[
@@ -361,6 +370,7 @@ export class ShopLocator {
 	@content-desc = '教育優惠商店' or
 	@content-desc = 'متجر الطالب'
 ] |
+${BACK_BUTTON_XPATH}/following-sibling::android.view.View/android.widget.Button[contains(@content-desc, 'Education Offers') or contains(@content-desc, 'Student Store')] |
 //android.view.View[
 	@content-desc = 'EPPLoginEDU' or
 	@content-desc = 'Vérifiez votre courriel d’étudiant' or
@@ -402,6 +412,7 @@ export class ShopLocator {
     @content-desc= 'التحقق من البريد الإلكتروني لشركتك' or
 	@content-desc='İş Ortaklarına Özel Mağaza'
 ] |
+${BACK_BUTTON_XPATH}/following-sibling::android.view.View/android.widget.Button[contains(@content-desc, 'Corporate offer') or contains(@content-desc, 'Corporate Store')] |
 //android.view.View[
 	@content-desc = 'Verify your Corporate email' or
 	@content-desc = 'GOVLoginEDU' or
@@ -411,6 +422,12 @@ export class ShopLocator {
 	@content-desc='Xác nhận email của bạn' or
 	@content-desc='Hesabınızı doğrulayın'
 ]`
+    );
+  }
+
+  get vipStorePage() {
+    return $(
+      `${BACK_BUTTON_XPATH}/following-sibling::android.view.View/android.widget.Button[contains(@content-desc, 'VIP Offers') or contains(@content-desc, 'VIP offers')]`
     );
   }
 

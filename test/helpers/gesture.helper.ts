@@ -29,6 +29,8 @@
  * Layout: types → primitives → Native convenience → WebView → tap.
  */
 
+import { isWebViewContext } from './context.helper';
+
 // ── Types ────────────────────────────────────────────────────────────────
 
 export type GestureDirection = 'up' | 'down' | 'left' | 'right';
@@ -236,6 +238,8 @@ export async function scrollWebViewDown(): Promise<void> {
 export async function scrollElementToCenter(
   element: ChainablePromiseElement | WebdriverIO.Element
 ): Promise<void> {
+  // Native context has no DOM: the JS call only fails and is retried (~1.6s per click)
+  if (!(await isWebViewContext())) return;
   await driver.execute(
     'arguments[0].scrollIntoView({ behavior: "instant", block: "center" });',
     await element

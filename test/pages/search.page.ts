@@ -143,6 +143,14 @@ export class SearchPage extends BasePage {
     );
   }
 
+  /** After Back from BC/PD, the search result page (with its search box) must be shown again. */
+  async verifyReturnedToSearchResults(): Promise<void> {
+    await switchToNative();
+    const shown = await waitForDisplayedOrFalse(this.locator.searchInput, { timeout: 5000 });
+    console.log(`[verifyReturnedToSearchResults] expected=search box shown actual=${shown ? 'shown' : 'not shown'} result=${shown ? 'PASS' : 'FAIL'}`);
+    markFailed([{ label: 'Failed to return to search result page', pass: shown }], 'verifyReturnedToSearchResults');
+  }
+
   async verifySearchResultsDisplayed(): Promise<void> {
     await this.locator.searchResults.waitForDisplayed({ timeout: 15000 });
   }

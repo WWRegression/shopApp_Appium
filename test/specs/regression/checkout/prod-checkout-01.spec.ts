@@ -49,7 +49,7 @@ describe('PROD_CHECKOUT_01', function () {
 
       await checkoutPage.proceedToPayment({ verifyRewardOptIn: true, verifyNoSavedAddress: true });
 
-      await checkoutPage.checkPaymentMethod();
+      await checkoutPage.checkPaymentMethod(true);
 
       await checkoutPage.verifyViewOrderCollapsed();
       await checkoutPage.verifyRewardArea();

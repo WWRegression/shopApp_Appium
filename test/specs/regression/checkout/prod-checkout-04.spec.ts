@@ -3,6 +3,7 @@ import { CartPage } from '../../../pages/cart.page';
 import { CheckoutPage } from '../../../pages/checkout.page';
 import { addToCart } from '../../../helpers/api.helper';
 
+/** Verify that clicking Edit in Order Summary/Contact Details/Delivery Mode navigates back to the corresponding section. */
 describe('PROD_CHECKOUT_04', () => {
   const cartPage = new CartPage();
   const checkoutPage = new CheckoutPage();
@@ -23,10 +24,12 @@ describe('PROD_CHECKOUT_04', () => {
         paymentAddress = await checkoutPage.getAddressInfoFromPayment();
       }
 
+      // Contact Details / Delivery Mode Edit
       await checkoutPage.handleCheckoutEditButton(paymentAddress);
 
+      // Order Summary Edit > Cart
       await checkoutPage.verifyEditInOrderSummary();
-      await cartPage.prepareCartPage();
+      await cartPage.verifyCartPage();
     });
   });
 });

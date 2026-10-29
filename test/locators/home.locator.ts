@@ -262,4 +262,15 @@ export class HomeLocator {
       `//*[contains(@content-desc, 'Join now') or contains(@content-desc, 'Join Now') or contains(@content-desc, 'Join Samsung Rewards') or contains(@content-desc, '立即加入')]`
     );
   }
+
+  get chatFabButton() {
+    return $(`//android.widget.Button[@content-desc = 'Open chat']`);
+  }
+
+  get mainKv() {
+    return $(
+      `(//android.widget.ScrollView//android.view.View[@clickable = 'true' and preceding-sibling::android.widget.ImageView]
+      | //android.widget.ScrollView/android.view.View[1]//android.view.View[android.view.View]//*[self::android.widget.ImageView or self::android.view.View][@clickable = 'true'])[1]`
+    );
+  }
 }

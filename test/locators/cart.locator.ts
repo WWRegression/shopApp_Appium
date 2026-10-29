@@ -13,7 +13,7 @@ export class CartLocator {
         'cx-cart-totals-v2 button[data-an-tr="cart-to-checkout" i]:not(div.hideContinueCta *):not([disabled])',
         'cx-cart-totals-v2 button.sticky-cart-totals__checkout-btn:not([disabled])',
         'app-sticky-cart-totals-cn [data-an-tr="cart-to-checkout" i]',
-        'app-continue-to-checkout button[data-an-tr="cart-to-checkout" i][data-an-la="proceed to checkout" i]:not(.sticky-cta-enabled):not([disabled])',
+        'app-continue-to-checkout button[data-an-tr="cart-to-checkout" i][data-an-la="proceed to checkout" i]:not(.sticky-cta-enabled):not(div.hideContinueCta *):not([disabled])',
       ].join(', ')
     );
   }
@@ -124,6 +124,28 @@ export class CartLocator {
     );
   }
 
+  get totalSavingPrice() {
+    return $(`//*[contains(@class,'summary-total__details')]//div[contains(@class,'cx-summary-label') and (
+      normalize-space()='Other discounts' or normalize-space()='Total saving' or normalize-space()='Total Savings' or
+      normalize-space()='Total savings' or normalize-space()='其他折扣' or normalize-space()='Łączne oszczędności' or
+      normalize-space()='Outros descontos' or normalize-space()='Promotievoordeel' or normalize-space()='Avantage promotionnel' or
+      normalize-space()='Gesamtersparnis' or normalize-space()='Économies totales' or normalize-space()='Diskon tambahan' or
+      normalize-space()='Ahorro total' or normalize-space()='Ahorros totales' or normalize-space()='إجمالي التوفير' or
+      normalize-space()='Giảm giá khác'
+    )]/following-sibling::div[contains(@class,'cx-summary-amount')]`);
+  }
+
+  get expandTotalSavingButton() {
+    return $(`//*[contains(@class,'summary-total__details')]//mat-expansion-panel-header[
+      .//*[normalize-space()='Total Savings'] or .//*[normalize-space()='Desconto Total'] or
+      .//*[normalize-space()='總計省下金額'] or .//*[normalize-space()='Tổng số tiền tiết kiệm']
+    ]`);
+  }
+
+  promotionBanners(sku: string) {
+    return $$(`.cart-item[data-modelcode="${sku}" i] app-promotions .promotion-description, .cart-item[data-modelcode="${sku}" i] .highlight .price__discount, div.voucher-promotion-message-container .promotion-message`);
+  }
+
   itemPrice(sku: string) {
     return $(
       [
@@ -154,13 +176,13 @@ export class CartLocator {
   }
 
   serviceErrorText(service: 'tradeIn' | 'scPlus' | 'tradeUp' | 'eup') {
-    const area = {
-      tradeIn: '.service-item__trade-in',
-      scPlus: '.service-item__smc',
-      tradeUp: '[data-modelcode="TRADE-UP"]',
-      eup: '.service-item__smf',
+    const errorArea = {
+      tradeIn: '.service-item__error.trade-in-error',
+      scPlus: '.service-item__smc .service-item__error',
+      tradeUp: '[data-modelcode="TRADE-UP"] .service-item__error',
+      eup: '.service-item__smf .service-item__error',
     }[service];
-    return $(`${area} .service-item__error span.error-text`);
+    return $(`${errorArea} span.error-text`);
   }
 
   get quantityChangeConfirmYesButton() {

@@ -49,6 +49,16 @@ export class MypageWishlistPage extends BasePage {
     markFailedAndStop([{ label: 'product was not added to the wishlist', pass: found, detail: `sku=${sku}` }], 'verifyAddedToWishlist');
   }
 
+  /** After Back, the wishlist must be shown again with the SKU listed (no navigation to it). */
+  async verifyReturnedToWishlist(sku: string): Promise<void> {
+    const onWishlist = await prepareWebViewPage('mypageWishlist', () => this.locator.pageContainer, 15000);
+    const found = onWishlist && (await waitForDisplayedOrFalse(this.locator.productCard(sku), { timeout: 10000 }));
+    const actual = !onWishlist ? 'wishlist not shown' : found ? sku : 'not listed';
+    console.log(`[verifyReturnedToWishlist] expected=wishlist with ${sku} actual=${actual} result=${found ? 'PASS' : 'FAIL'}`);
+    markFailedAndStop([{ label: 'not back on the wishlist with the product', pass: found, detail: `actual ${actual}` }], 'verifyReturnedToWishlist');
+    await switchToNative();
+  }
+
   /** "Add to cart" on the card of this SKU, then Skip/OK if a popup follows. Caller is already on the wishlist. */
   async clickAddToCart(sku: string): Promise<void> {
     const addToCart = this.locator.addToCartButton(sku);

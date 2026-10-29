@@ -10,7 +10,7 @@ import { getElementLabel, clickIfDisplayed, clickElement, isDisplayedOrFalse, js
 import { assertEqual } from '../helpers/validation.helper';
 import { markFailed, markFailedAndStop, FieldCheck } from '../helpers/report.helper';
 import { currentSiteCode } from '../helpers/tc-filter.helper';
-import { parseNumber, removeNonWordChars, normalizeProductName, productNameMatches } from '../helpers/data.helper';
+import { parseNumber, removeNonWordChars, normalizeProductName, productNameMatches, parsePriceValues, isSamePrice } from '../helpers/data.helper';
 
 export interface CartItemOptions {
   deviceName?: string;
@@ -196,6 +196,69 @@ export class CartPage extends BasePage {
     const el = this.locator.itemPrice(sku);
     await el.waitForExist({ timeout: 10000 });
     return ((await el.getText().catch(() => '')) ?? '').trim();
+  }
+
+  /**
+   * Cart price of the SKU (qty 1) must be the PF price, or PF with the cart's promotion banners applied in order
+   * ("10%" off the running price, else the amount in the text), or PF − Total Saving. Returns the cart price for checkout.
+   */
+  async verifyItemPrice(sku: string, pfPrice: number): Promise<number> {
+    const cartPrice = parsePriceValues(await this.getItemPrice(sku))[0] ?? NaN;
+    const banners = await this.getPromotionBannerTexts(sku);
+    let expected = pfPrice;
+    let reason = 'no discount';
+    if (!isSamePrice(cartPrice, pfPrice) && banners.length) {
+      expected = this.applyPromotions(pfPrice, banners);
+      reason = `PF with promotions ${JSON.stringify(banners)}`;
+    }
+    // A % discount can leave cents; sites round either way, so the rounded values also count
+    let pass = [expected, Math.floor(expected), Math.ceil(expected)].some((price) => isSamePrice(cartPrice, price));
+    if (!pass) {
+      const saving = await this.getTotalSaving();
+      if (!Number.isNaN(saving) && isSamePrice(cartPrice, pfPrice - saving)) {
+        pass = true;
+        expected = pfPrice - saving;
+        reason = `PF − Total Saving (${saving})`;
+      }
+    }
+    console.log(`[verifyItemPrice] expected=${expected} (${reason}, PF ${pfPrice}) actual=${cartPrice} (cart) result=${pass ? 'PASS' : 'FAIL'}`);
+    markFailedAndStop(
+      [{ label: 'cart price does not match the PF price with the cart discounts', pass, detail: `PF ${pfPrice}, expected ${expected}, cart ${cartPrice}, promotions ${JSON.stringify(banners)}` }],
+      'verifyItemPrice'
+    );
+    return cartPrice;
+  }
+
+  /** Applies each promotion text to the running price: "10%" takes that share off, otherwise the first amount in the text is subtracted. */
+  private applyPromotions(price: number, banners: string[]): number {
+    return banners.reduce((current, text) => {
+      const percent = text.match(/(\d+(?:[.,]\d+)?)\s*%/);
+      if (percent) {
+        return current * (1 - Number(percent[1].replace(',', '.')) / 100);
+      }
+      return current - (parsePriceValues(text)[0] ?? 0);
+    }, price);
+  }
+
+  /** Total Saving amount in the cart summary (expanded first when collapsed); NaN when the cart shows none. */
+  private async getTotalSaving(): Promise<number> {
+    const saving = this.locator.totalSavingPrice;
+    if (!(await saving.isDisplayed().catch(() => false)) && (await this.locator.expandTotalSavingButton.isExisting().catch(() => false))) {
+      await scrollAndJsClick(this.locator.expandTotalSavingButton);
+      await saving.waitForDisplayed({ timeout: 3000 }).catch(() => undefined);
+    }
+    const text = (await saving.getText().catch(() => '')) ?? '';
+    return parsePriceValues(text)[0] ?? NaN;
+  }
+
+  /** Promotion texts on the cart item and the e-voucher message; texts that are not a price discount (Katalon list) are skipped. */
+  private async getPromotionBannerTexts(sku: string): Promise<string[]> {
+    const texts: string[] = [];
+    for (const banner of await this.locator.promotionBanners(sku)) {
+      const text = ((await banner.getText().catch(() => '')) ?? '').replace(/\s+/g, ' ').trim();
+      if (text && !['Save', 'خصم 20'].some((word) => text.includes(word))) texts.push(text);
+    }
+    return texts;
   }
 
   /** Get the quantity of the cart item */

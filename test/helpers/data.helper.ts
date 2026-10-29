@@ -15,6 +15,12 @@ export function parsePoints(pointsText: string): number {
   return digits ? Number(digits) : -1;
 }
 
+/** The phone with its last digit raised by `step` (9 + 1 → 0), so the length and format stay valid. */
+export function raiseLastDigit(phone: string, step: number): string {
+  const lastDigit = Number(phone.slice(-1));
+  return phone.slice(0, -1) + String((lastDigit + step) % 10);
+}
+
 /** True when normalized prices contain each other. */
 export function pricesMatch(actual: string, expected: string): boolean {
   const a = normalizePriceDigits(actual);
@@ -27,6 +33,28 @@ export function parsePriceToNumber(priceText: string): number {
   const normalized = priceText.replace(/[^0-9.-]/g, '');
   const value = Number.parseFloat(normalized);
   return Number.isNaN(value) ? 0 : value;
+}
+
+/** Every price in the text as a number, in order ("£47.20/mo. or £1,699.00" → [47.2, 1699], "45.990.000 VND" → [45990000]). */
+export function parsePriceValues(priceText: string): number[] {
+  const text = (priceText ?? '').replace(/[\s  ]+/g, '');
+  return (text.match(/[\d٫٬]+(?:[.,][\d٫٬]+)*/g) ?? []).map((token) => {
+    let price = token.replace(/٬/g, '').replace(/٫/g, '.');
+    if (price.includes(',') && price.includes('.')) {
+      // The later separator is the decimal one: 2.399,95 / 1,299.95
+      price = price.lastIndexOf(',') > price.lastIndexOf('.') ? price.replace(/\./g, '').replace(',', '.') : price.replace(/,/g, '');
+    } else if (price.includes(',')) {
+      price = /,\d{2}$/.test(price) ? price.replace(',', '.') : price.replace(/,/g, '');
+    } else if (price.includes('.')) {
+      price = /\.\d{2}$/.test(price) ? price : price.replace(/\./g, '');
+    }
+    return Number(price);
+  });
+}
+
+/** True when two prices are the same amount (to the cent). */
+export function isSamePrice(a: number, b: number): boolean {
+  return Math.abs(a - b) < 0.005;
 }
 
 // 1234.56 -> "$1,234.56"

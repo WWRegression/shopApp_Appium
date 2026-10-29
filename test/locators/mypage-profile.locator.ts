@@ -63,6 +63,30 @@ export class MypageProfileLocator {
     return $('button[data-an-la="address:delete"]');
   }
 
+  get addAddressButton() {
+    return $('.add-address-btn[data-an-la="address:add"]');
+  }
+
+  get addressFormSelector() {
+    return '.address-form__fields';
+  }
+
+  get addressForm() {
+    return $(this.addressFormSelector);
+  }
+
+  get saveAddressButton() {
+    return $('button[data-an-la^="address:"][data-an-la$=":save"]');
+  }
+
+  get editAddressButton() {
+    return $('.card__edit[data-an-la="address:edit"]');
+  }
+
+  get addressCardInfoSelector() {
+    return 'div.address__cards .card__info';
+  }
+
   get confirmDeleteButton() {
     return $('button[data-an-la="delete address:delete"], button[data-an-la="delete address:yes"]');
   }

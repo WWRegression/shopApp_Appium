@@ -3,7 +3,7 @@ import { LoginPage } from '../../../pages/login.page';
 import { MypagePage } from '../../../pages/mypage.page';
 import { ShopPage } from '../../../pages/shop.page';
 
-/** Change country from Shop > Country and stay logged in. Does not switch the country back. */
+/** Change country from Shop > Country and stay logged in, then switch back via My Page > Settings. */
 describe('PROD_SHOP_04', () => {
   const shopPage = new ShopPage();
   const loginPage = new LoginPage();
@@ -20,6 +20,11 @@ describe('PROD_SHOP_04', () => {
       
       await mypagePage.verifyLoggedIn();
       await shopPage.verifyCountry(target);
+
+      await mypagePage.changeCountryInSettings(site.countryName);
+      await loginPage.skipPurpose(30000);
+      await shopPage.dismissOverlays();
+      await shopPage.verifyCountry(site.countryName);
     });
   });
 });

@@ -43,7 +43,13 @@
     "inbox": true,
     "mySmartThings": false,
     "orderSupport": true,
-    "myAddresses": true
+    "myAddresses": true,
+    "support": false,
+    "policy": true,
+    "smartThings": true,
+    "settings": true,
+    "accountManagement": true,
+    "logout": true
   },
   "shopMenuList": {
     "studentStore": false,

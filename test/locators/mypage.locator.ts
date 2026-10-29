@@ -19,7 +19,15 @@ export const PRODUCT_MENUS = [
 
 export type ProductMenu = (typeof PRODUCT_MENUS)[number];
 
-export type MypageMenu = DashboardMenu | ProductMenu;
+export const SETTINGS_MENUS = ['support', 'policy', 'smartThings', 'settings', 'accountManagement', 'logout'] as const;
+
+export type SettingsMenu = (typeof SETTINGS_MENUS)[number];
+
+export type MypageMenu = DashboardMenu | ProductMenu | SettingsMenu;
+
+export const STORE_OPTIONS = ['studentStore', 'corporateStore'] as const;
+
+export type StoreOption = (typeof STORE_OPTIONS)[number];
 
 export class MypageLocator {
   menuButton(label: string) {
@@ -572,6 +580,65 @@ export class MypageLocator {
     }
   }
 
+  get registeredProductsArea() {
+    return $(
+      `//*[(self::android.widget.ImageView or self::android.view.View) and (
+        @content-desc = 'Registered Products'
+        or @content-desc = 'Registered products'
+        or @content-desc = 'Registrierte Produkte'
+        or @content-desc = 'Produits enregistrés'
+        or @content-desc = 'Prodotti registrati'
+        or @content-desc = 'Productos registrados'
+        or @content-desc = 'Produtos Registados'
+        or @content-desc = 'Sản phẩm đã đăng ký'
+        or @content-desc = 'Daftarkan produk saya'
+        or @content-desc = 'สินค้าที่ลงทะเบียน'
+        or @content-desc = 'Registrerade produkter'
+        or @content-desc = 'المنتجات المسجّلة'
+        or @content-desc = 'Geregistreerde producten'
+        or @content-desc = 'Zarejestrowane produkty'
+        or @content-desc = 'Produse înregistrate'
+        or @content-desc = 'Registrované produkty'
+        or @content-desc = '已註冊產品'
+        or @content-desc = '已登記的產品'
+        or @content-desc = 'Regisztrált termékeim'
+        or @content-desc = 'Kayıtlı Ürünler'
+        or @content-desc = '登録済みの製品'
+        or @content-desc = '登録済み製品'
+      )]`
+    );
+  }
+
+  get recommendedArea() {
+    return $(
+      `//android.view.View[
+        contains(@content-desc, 'Suggested for')
+        or contains(@content-desc, 'Recommended for')
+        or contains(@content-desc, 'منتجات مقترحة لـ')
+        or contains(@content-desc, 'Suggéré pour')
+        or contains(@content-desc, 'Recommandé pour')
+        or contains(@content-desc, 'Sugerido para')
+        or contains(@content-desc, 'Sugestie dla')
+        or contains(@content-desc, 'คำแนะนำสำหรับ')
+        or contains(@content-desc, '的專屬推薦')
+        or contains(@content-desc, '精選')
+        or contains(@content-desc, 'Đề xuất cho')
+        or contains(@content-desc, 'Empfohlen für')
+        or contains(@content-desc, 'Doporučujeme pro')
+        or contains(@content-desc, 'Neked ajánljuk')
+        or contains(@content-desc, 'Produse recomandate pentru tine')
+        or contains(@content-desc, 'Disarankan untuk')
+        or contains(@content-desc, 'Suggerimenti per')
+        or contains(@content-desc, 'Aanbevolen voor')
+        or contains(@content-desc, 'さんへのおすすめ')
+      ]`
+    );
+  }
+
+  get recommendedFirstProduct() {
+    return this.recommendedArea.$('.//android.widget.HorizontalScrollView[1]/android.widget.ImageView[1]');
+  }
+
   /** Back button of a page opened from My Page — My Page itself has none */
   get subPageBackButton() {
     return $(BACK_BUTTON_XPATH);
@@ -591,6 +658,212 @@ export class MypageLocator {
         .map((word) => `contains(@content-desc, '${word}')`)
         .join(' and ') || 'false()';
     return $(`//android.widget.ImageView[(${hasName}) or contains(@content-desc, '欢迎光临')]`);
+  }
+
+  get supportMenu() {
+    return $(
+      `//android.widget.ImageView[
+        @content-desc = 'Support' or
+        @content-desc = 'الدعم' or
+        @content-desc = 'Destek' or
+        @content-desc = 'Aide' or
+        @content-desc = 'Soporte' or
+        @content-desc = 'Suporte' or
+        @content-desc = 'Guide et solutions' or
+        @content-desc = 'Supporto' or
+        @content-desc = 'Asistencia técnica' or
+        @content-desc = 'Pomoc' or
+        @content-desc = 'Podpora' or
+        @content-desc = 'Asistenţă' or
+        @content-desc = 'Támogatás' or
+        @content-desc = '售后服务' or
+        @content-desc = '支援' or
+        @content-desc = 'Dukungan' or
+        @content-desc = 'สนับสนุน' or
+        @content-desc = 'שירות לקוחות' or
+        @content-desc = 'Hỗ trợ' or
+        @content-desc = 'サポート' or
+        @content-desc = 'Assistance' or
+        @content-desc = 'Customer Support' or
+        @content-desc = 'お問い合わせ' or
+        @content-desc = 'カスタマーサポート'
+      ]`
+    );
+  }
+
+  get policyMenu() {
+    return $(
+      `//android.widget.ImageView[
+        @content-desc = 'Policy' or
+        @content-desc = 'Politique' or
+        @content-desc = 'السياسات' or
+        @content-desc = 'Política' or
+        @content-desc = 'Política de privacidad' or
+        @content-desc = 'Conditions générales' or
+        @content-desc = 'Keamanan & Privasi' or
+        @content-desc = 'Informativa' or
+        @content-desc = 'Términos y condiciones' or
+        @content-desc = 'Over ons' or
+        @content-desc = '政策' or
+        @content-desc = 'Polityka' or
+        @content-desc = 'Chính sách' or
+        @content-desc = 'Rechtliche Hinweise' or
+        @content-desc = 'นโยบาย' or
+        @content-desc = 'Richtlinien' or
+        @content-desc = 'Pravidla a podmínky' or
+        @content-desc = 'Jogi irányelvek' or
+        @content-desc = 'מדיניות' or
+        @content-desc = 'Politică' or
+        @content-desc = 'Gizlilik Politikası' or
+        @content-desc = 'Samsungプライバシーポリシー'
+      ]`
+    );
+  }
+
+  get smartThingsMenu() {
+    return $(`//android.widget.ImageView[contains(@content-desc, 'SmartThings')]`);
+  }
+
+  get accountManagementMenu() {
+    return $(
+      `//android.widget.ImageView[
+        @content-desc = 'Account Management' or
+        @content-desc = 'Gestion des comptes' or
+        @content-desc = 'حذف الحساب' or
+        @content-desc = 'Gestión de cuentas' or
+        @content-desc = 'Gestión de cuenta' or
+        @content-desc = 'Mon compte' or
+        @content-desc = 'Manajemen Akun' or
+        @content-desc = 'Gestione account' or
+        @content-desc = 'Accountbeheer' or
+        @content-desc = '账号管理' or
+        @content-desc = 'Zarządzanie kontem' or
+        @content-desc = 'إدارة الحساب' or
+        @content-desc = 'Hantera konto' or
+        @content-desc = 'Quản lý Tài khoản' or
+        @content-desc = '帳戶管理' or
+        @content-desc = 'การจัดการบัญชี' or
+        @content-desc = 'Account-Verwaltung' or
+        @content-desc = 'Správa účtu' or
+        @content-desc = 'Fiók kezelése' or
+        @content-desc = 'Gestionare cont' or
+        @content-desc = 'Hesabım' or
+        @content-desc = 'Gestão de conta' or
+        @content-desc = 'アカウント設定'
+      ]`
+    );
+  }
+
+  settingsMenuButton(menu: SettingsMenu) {
+    switch (menu) {
+      case 'support':
+        return this.supportMenu;
+      case 'policy':
+        return this.policyMenu;
+      case 'smartThings':
+        return this.smartThingsMenu;
+      case 'settings':
+        return this.settingsMenu;
+      case 'accountManagement':
+        return this.accountManagementMenu;
+      case 'logout':
+        return this.logoutButton;
+    }
+  }
+
+  mypageMenu(menu: MypageMenu) {
+    if ((DASHBOARD_MENUS as readonly string[]).includes(menu)) {
+      return this.dashboardMenu(menu as DashboardMenu);
+    }
+    if ((SETTINGS_MENUS as readonly string[]).includes(menu)) {
+      return this.settingsMenuButton(menu as SettingsMenu);
+    }
+    return this.productMenu(menu as ProductMenu);
+  }
+
+  get subMenuListTitle() {
+    return $(
+      `//android.view.View[
+        @clickable = 'false'
+        and string-length(normalize-space(@content-desc)) > 0
+        and following-sibling::*[1]//android.view.View[@clickable = 'true' and .//android.widget.ImageView]
+      ]`
+    );
+  }
+
+  subMenuRow(label: string) {
+    return $(`//android.view.View[@clickable = 'true' and normalize-space(@content-desc) = "${label}"]`);
+  }
+
+  get subPageHeading() {
+    return $(`(//android.view.View[@clickable = 'false' and string-length(normalize-space(@content-desc)) > 0])[1]`);
+  }
+
+  get giveFeedbackMenu() {
+    return $(
+      `//android.view.View[
+        contains(@content-desc, 'Give Feedback') or
+        contains(@content-desc, 'Give My Opinion') or
+        contains(@content-desc, 'Give Me Opinion') or
+        contains(@content-desc, 'الدراسة الاستقصائية تغذية راجعة') or
+        contains(@content-desc, 'Feedback Survey') or
+        contains(@content-desc, 'Partagez vos commentaires') or
+        contains(@content-desc, 'Share your feedback') or
+        contains(@content-desc, 'Danos tu opinión') or
+        contains(@content-desc, 'Encuesta de satisfacción') or
+        contains(@content-desc, 'Donnez votre avis') or
+        contains(@content-desc, '反映意見') or
+        contains(@content-desc, 'Berikan masukan') or
+        contains(@content-desc, 'Lascia il tuo feedback') or
+        contains(@content-desc, 'Feedback geben') or
+        contains(@content-desc, 'Oferă o opinie') or
+        contains(@content-desc, 'Dar feedback') or
+        contains(@content-desc, 'アプリを評価する') or
+        contains(@content-desc, 'Donner ton avis') or
+        contains(@content-desc, 'Ge feedback')
+      ]`
+    );
+  }
+
+  get marketingPreferencesMenu() {
+    return $(
+      `//android.view.View[
+        contains(@content-desc, 'Marketing') or
+        @content-desc = 'Préférences marketing' or
+        @content-desc = 'تفضيلات التسويق' or
+        @content-desc = 'Preferencias de marketing' or
+        @content-desc = 'Preferensi Pemasaran' or
+        @content-desc = 'Modifica le tue preferenze' or
+        @content-desc = 'Editar preferencias' or
+        @content-desc = 'Marketingvoorkeuren' or
+        @content-desc = '地址管理' or
+        @content-desc = 'Preferencje marketingowe' or
+        @content-desc = 'Inställningar för marknadsföring' or
+        @content-desc = 'Tùy chọn Tiếp thị' or
+        @content-desc = 'Adress- & Marketing-Einstellungen' or
+        @content-desc = '行銷偏好設定' or
+        @content-desc = 'การตั้งค่าด้านการตลาด' or
+        @content-desc = 'Předvolby marketingu' or
+        @content-desc = 'Präferenzen bearbeiten' or
+        @content-desc = 'Marketingmegkeresésekkel kapcsolatos beállítások' or
+        @content-desc = 'Editați preferințele' or
+        @content-desc = 'Pazarlama Tercihleri' or
+        @content-desc = '編輯偏好' or
+        @content-desc = 'Edit Preferences' or
+        @content-desc = 'マーケティングに関する設定(マーケティング通信など)' or
+        @content-desc = 'Os meus pedidos' or
+        normalize-space(@content-desc) = 'העדפות שיווקיות' or
+        @content-desc = 'Manage Preferences'
+      ]`
+    );
+  }
+
+  get deleteAccountMenu() {
+    return $(`//android.widget.ImageView[@content-desc = 'Delete Account']`);
+  }
+
+  get cnAccountLogoutButton() {
+    return $(`//android.widget.Button[@content-desc = '退出登录']`);
   }
 
   /** "Settings" row at the bottom of My Page */
@@ -768,8 +1041,127 @@ export class MypageLocator {
     );
   }
 
+  get selectCountryMenu() {
+    return $(
+      `//android.view.View[
+        contains(@content-desc, 'Select Country') or
+        contains(@content-desc, 'Land auswählen') or
+        contains(@content-desc, 'Sélectionner un pays') or
+        contains(@content-desc, 'Sélectionnez le pays') or
+        contains(@content-desc, 'Seleziona Paese') or
+        contains(@content-desc, 'Selecciona el país') or
+        contains(@content-desc, 'Seleccionar país') or
+        contains(@content-desc, 'Selecionar país') or
+        contains(@content-desc, 'Chọn Quốc gia') or
+        contains(@content-desc, 'Pilih Negara') or
+        contains(@content-desc, 'เลือกประเทศ') or
+        contains(@content-desc, 'Välj land') or
+        contains(@content-desc, 'Selecteer land') or
+        contains(@content-desc, 'Wybierz kraj') or
+        contains(@content-desc, 'Selectare țară') or
+        contains(@content-desc, 'Vyberte zemi') or
+        contains(@content-desc, 'Ország kiválasztása') or
+        contains(@content-desc, 'Ülke Seçin') or
+        contains(@content-desc, '選取國家') or
+        contains(@content-desc, '選擇語言／地區') or
+        contains(@content-desc, 'Language / Region') or
+        contains(@content-desc, 'البلد') or
+        contains(@content-desc, 'בחירת מדינה')
+      ]`
+    );
+  }
+
   /** The switch on the Push Notification page */
   get pushNotificationSwitch() {
     return $(`//android.widget.Switch`);
+  }
+
+  get selectStoreButton() {
+    return $(
+      `//android.widget.Button[
+        @content-desc = 'Select Store' or
+        @content-desc = 'تحديد المتجر' or
+        @content-desc = 'Selecionar loja' or
+        @content-desc = 'Sélectionner la boutique' or
+        @content-desc = 'Seleccionar tienda' or
+        @content-desc = 'Sélectionner le magasin' or
+        @content-desc = 'Pilih Toko' or
+        @content-desc = 'Accedi allo Student Store' or
+        @content-desc = 'Wybierz sklep' or
+        @content-desc = 'เลือกร้านค้า' or
+        @content-desc = '選取商店' or
+        @content-desc = 'Chọn cửa hàng' or
+        @content-desc = 'Wähle einen Store' or
+        @content-desc = '選擇商店' or
+        @content-desc = 'Select your store' or
+        @content-desc = 'Select store' or
+        @content-desc = 'Bir mağaza seç' or
+        @content-desc = '选择商店' or
+        @content-desc = 'ショップを選ぶ'
+      ]`
+    );
+  }
+
+  get studentStoreOption() {
+    const desc = `translate(@content-desc, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz')`;
+    return $(
+      `//android.widget.ImageView[
+        ${desc} = 'student store' or
+        ${desc} = 'الطالب ' or
+        contains(@content-desc, 'Loja Samsung Educação') or
+        ${desc} = 'student offer program' or
+        ${desc} = '教育優惠商店' or
+        ${desc} = 'estudiante' or
+        ${desc} = 'studente' or
+        ${desc} = 'education shop' or
+        ${desc} = 'education store' or
+        ${desc} = 'samsung education' or
+        ${desc} = 'samsung education store' or
+        ${desc} = 'magasin étudiant' or
+        ${desc} = 'beneficios estudiantes' or
+        ${desc} = 'tienda estudiantes' or
+        ${desc} = 'tienda para estudiantes' or
+        ${desc} = 'samsung 教育商店' or
+        ${desc} = 'pelajar' or
+        ${desc} = 'tienda samsung para estudiantes' or
+        ${desc} = 'student' or
+        ${desc} = 'tienda oficial para estudiantes' or
+        ${desc} = 'sklep samsung dla edukacji' or
+        ${desc} = 'loja educação' or
+        ${desc} = 'متجر الطالب' or
+        ${desc} = 'ร้านค้าสำหรับนักเรียน-นักศึกษา' or
+        contains(@content-desc, 'Eğitim İndirim Programı mağazası') or
+        ${desc} = '進入教育優惠商店' or
+        contains(@content-desc, 'Cửa hàng Giáo dục')
+      ]`
+    );
+  }
+
+  get corporateStoreOption() {
+    const desc = `translate(@content-desc, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz')`;
+    return $(
+      `//android.widget.ImageView[
+        ${desc} = 'corporate store' or
+        ${desc} = 'موظفي الشركات' or
+        ${desc} = 'corporate employee' or
+        ${desc} = 'corporate shop' or
+        ${desc} = 'samsung government store' or
+        ${desc} = 'متجر موظفي الشركات' or
+        ${desc} = 'tienda para alianzas corporativas' or
+        ${desc} = 'samsung 合作夥伴商店' or
+        ${desc} = 'samsung partnership store' or
+        ${desc} = 'samsung ksa corporate' or
+        contains(@content-desc, 'İş ortaklarına özel mağaza') or
+        contains(@content-desc, 'Ưu đãi Doanh nghiệp')
+      ]`
+    );
+  }
+
+  storeOption(store: StoreOption) {
+    return store === 'studentStore' ? this.studentStoreOption : this.corporateStoreOption;
+  }
+
+  get browserUrlBar() {
+    return $(`//android.widget.EditText[@resource-id = 'com.android.chrome:id/url_bar']`);
   }
 }

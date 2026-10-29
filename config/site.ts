@@ -4,7 +4,7 @@ import tcExclusionsFile from './tc-exclusions.json';
 import siteFeaturesFile from './site-features.json';
 import { getRunConfig } from './run.config';
 import { getResolvedSkuCache } from '../test/helpers/api.helper';
-import type { ProductMenu } from '../test/locators/mypage.locator';
+import type { ProductMenu, SettingsMenu } from '../test/locators/mypage.locator';
 
 export interface AppIdentity {
   packageName: string;
@@ -108,18 +108,13 @@ export interface Site {
     iban?: string;
     eupImei?: string;
   };
-  /** My Page menus shown on the site — product menus (myProducts ~ myAddresses) vary by country */
-  mypageMenuList?: Partial<Record<ProductMenu, boolean>> & {
-    support?: boolean;
-    policy?: boolean;
-    settings?: boolean;
-    accountManagement?: boolean;
-    logout?: boolean;
-  };
+  /** My Page menus shown on the site — product menus (myProducts ~ myAddresses) and bottom menus (support ~ logout) vary by country */
+  mypageMenuList?: Partial<Record<ProductMenu | SettingsMenu, boolean>>;
   /** Shop main menus shown on the site; customerSupport = has the expandable Customer Support (any sub_ menu) — its items are counted at runtime */
   shopMenuList?: {
     studentStore?: boolean;
     corporateStore?: boolean;
+    vipStore?: boolean;
     inStoreMode?: boolean;
     samsungPlus?: boolean;
     samsungCarePlus?: boolean;

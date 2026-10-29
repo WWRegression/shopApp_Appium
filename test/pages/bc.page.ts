@@ -7,7 +7,7 @@ import { BcSimService } from '../services/sim/bc-sim.service';
 import { BcGalaxyClubService } from '../services/galaxyclub/bc-galaxyclub.service';
 import { prepareWebViewPage, isCurrentWebViewPage, getCurrentWebViewPage, switchToNative } from '../helpers/context.helper';
 import { getRunConfig } from '../../config/run.config';
-import { storageCapacityMatches, pickStorageLabel, normalizeProductName, productNameMatches } from '../helpers/data.helper';
+import { storageCapacityMatches, pickStorageLabel, normalizeProductName, productNameMatches, parsePriceValues, isSamePrice } from '../helpers/data.helper';
 import { clickIfDisplayed, scrollAndJsClick, scrollAndWdioClick, scrollUntilVisibleInWebView, readDisplayedText } from '../helpers/element.helper';
 import { markFailedAndStop } from '../helpers/report.helper';
 import type { CartItemOptions } from './cart.page';
@@ -222,6 +222,14 @@ export class BcPage extends BasePage {
     const el = this.locator.summaryTotalPrice;
     await el.waitForExist({ timeout: 10000 }).catch(() => undefined);
     return ((await el.getText().catch(() => '')) ?? '').trim();
+  }
+
+  /** The BC total must show the PF price; the text can also hold the monthly price ("£47.20/mo. or £1,699.00"). */
+  async verifyTotalPrice(pfPrice: number): Promise<void> {
+    const text = await this.getTotalPrice();
+    const pass = parsePriceValues(text).some((price) => isSamePrice(price, pfPrice));
+    console.log(`[verifyTotalPrice] expected=${pfPrice} (PF) actual="${text}" (BC total) result=${pass ? 'PASS' : 'FAIL'}`);
+    markFailedAndStop([{ label: 'BC total price does not match the PF price', pass, detail: `PF ${pfPrice}, BC "${text}"` }], 'verifyTotalPrice');
   }
 
   /** Click Add to Cart only. Cart arrival is confirmed later by cartPage.prepareCartPage(). */
