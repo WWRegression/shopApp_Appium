@@ -1,7 +1,7 @@
 import { BasePage } from './base.page';
 import { SearchLocator } from '../locators/search.locator';
 import { switchToNative, switchToWebView, switchToWindowByPage } from '../helpers/context.helper';
-import { clickElement, waitForDisplayedOrFalse } from '../helpers/element.helper';
+import { clickElement, clickIfDisplayed, waitForDisplayedOrFalse } from '../helpers/element.helper';
 import { markFailed, markFailedAndStop } from '../helpers/report.helper';
 
 const KEYCODE_DEL = 67;
@@ -19,8 +19,7 @@ export class SearchPage extends BasePage {
   async search(keyword: string): Promise<void> {
     await switchToNative();
     console.warn('[search] searching for:', keyword);
-    await this.locator.searchInput.waitForDisplayed({ timeout: 10000 });
-    await this.locator.searchInput.click();
+    await clickIfDisplayed(this.locator.searchInput, 3000);
     for (let index = 0; index < this.typedLength; index += 1) {
       await driver.pressKeyCode(KEYCODE_DEL);
     }
@@ -31,8 +30,21 @@ export class SearchPage extends BasePage {
   }
 
   async searchByKeyword(keyword: string): Promise<void> {
-    await this.openSearch();
+    await switchToNative();
+    if (!(await this.isSearchOpen())) {
+      await this.openSearch();
+    }
     await this.search(keyword);
+  }
+
+  /** The no-result page keeps the search field and has no header search icon. */
+  private async isSearchOpen(): Promise<boolean> {
+    for (const input of await this.locator.searchInputs) {
+      if (await input.isDisplayed().catch(() => false)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   async openProductFromResults(skuOrName: string): Promise<void> {

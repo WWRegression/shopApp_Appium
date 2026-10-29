@@ -6,14 +6,23 @@ export class SearchLocator {
    * — match the fixed English suffix instead of the full string.
    */
   get searchInput() {
-    return $(
-      [
-        "//android.view.View[contains(@content-desc, 'field Double tap to enter search term')]/parent::android.widget.Button",
-        "//android.view.View[contains(@content-desc, '搜索')]/parent::android.widget.Button",
-        // IN shows the newer search bar (with a microphone) whose input is a real EditText
-        '//android.widget.EditText',
-      ].join(' | ')
-    );
+    return $(this.searchInputSelector);
+  }
+
+  /** Immediate matches. `$().isDisplayed` waits `waitforTimeout` when the search screen is not open. */
+  get searchInputs() {
+    return $$(this.searchInputSelector);
+  }
+
+  private get searchInputSelector() {
+    return [
+      "//android.view.View[contains(@content-desc, 'field Double tap to enter search term')]/parent::android.widget.Button",
+      "//android.view.View[contains(@content-desc, '搜索')]/parent::android.widget.Button",
+      // CN search screen: the field itself is "Search  " and is not inside a Button
+      "//android.view.View[normalize-space(@content-desc)='Search' or normalize-space(@content-desc)='搜索']",
+      // IN shows the newer search bar (with a microphone) whose input is a real EditText
+      '//android.widget.EditText',
+    ].join(' | ');
   }
 
   get searchSubmitButton() {
@@ -45,6 +54,8 @@ export class SearchLocator {
   /** Empty-result message on the search screen. */
   get noResultMessage() {
     const phrases = [
+      'Try a new search or the below suggestions',
+      '尝试进行新搜索或查看以下建议',
       'no matches were found',
       'عذراً، لم يتم العثور على نتائج مطابقة.',
       'Désolé, aucun résultat trouvé.',
