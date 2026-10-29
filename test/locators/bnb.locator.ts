@@ -96,6 +96,10 @@ export class BnbLocator {
       or (contains(@content-desc, "Oferte") and contains(@content-desc, "Fila 3"))
       or (contains(@content-desc, "Kampanyalar") and contains(@content-desc, "Sekme 3"))
       or (contains(@content-desc, "オファー") and contains(@content-desc, "タブ"))
+      or (contains(@content-desc, "Aanbiedingen") and contains(@content-desc, "Tabblad 3"))
+      or (contains(@content-desc, "Offres") and contains(@content-desc, "Onglet 3"))
+      or (contains(@content-desc, "מבצעים") and contains(@content-desc, "כרטיסייה 3"))
+      or (contains(@content-desc, "Ofertas") and contains(@content-desc, "Separador 3"))
      ]`
     );
   }
