@@ -3,7 +3,6 @@ import { HomePage } from '../../../pages/home.page';
 import { PfPage } from '../../../pages/pf.page';
 import { SearchPage } from '../../../pages/search.page';
 
-const SKU_RESULT_KEYWORDS = ['Galaxy S', 'S26', 'S25'];
 
 /** Able to search by SKU and use one filter and one sort on the search PF. */
 describe('PROD_SEARCH_03', () => {
@@ -11,15 +10,19 @@ describe('PROD_SEARCH_03', () => {
   const searchPage = new SearchPage();
   const pfPage = new PfPage();
 
-  it('search by SKU then filter and sort on Search PF', async function () {
+  it('search by SKU then sort and filter on Search PF', async function () {
     await runOrSkip.call(this, 'PROD_SEARCH_03', async () => {
+      const keyword = 'SM-S';
+      const matches = ['Galaxy S', 'S26', 'S25'];
+
       await homePage.prepareHomePage();
-      await searchPage.searchByKeyword('SM-S');
-      await pfPage.verifySearchResultCount(SKU_RESULT_KEYWORDS);
+      await searchPage.searchByKeyword(keyword);
+      
+      const sort = await pfPage.applySort();
+      await pfPage.verifySearchResultAndSort(matches, sort);
 
       const filter = await pfPage.applyFilter();
-      const sort = await pfPage.applySort();
-      await pfPage.verifyFilterAndSort(filter, sort);
+      await pfPage.verifySearchResultAndFilter(matches, filter);
     });
   });
 });

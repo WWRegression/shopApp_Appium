@@ -176,7 +176,7 @@ export class PfLocator {
 
   /** Section title inside the filter ScrollView. The option rows under it are checkboxes without a content-desc. */
   get priceFilter() {
-    return $(`//android.widget.ScrollView//android.widget.ImageView[(${this.priceFilterLabel}) and not(contains(@content-desc, 'High to Low')) and not(contains(@content-desc, 'high to low'))]`);
+    return $(`//android.widget.ScrollView//android.widget.ImageView[${this.priceFilterLabel}]`);
   }
 
   get productFilter() {
@@ -189,8 +189,7 @@ export class PfLocator {
 
   /** Unchecked checkboxes under the price section. */
   get priceOptions() {
-    const header = `(${this.priceFilterLabel}) and not(contains(@content-desc, 'High to Low')) and not(contains(@content-desc, 'high to low'))`;
-    return $$(this.filterCheckboxSelector(header));
+    return $$(this.filterCheckboxSelector(this.priceFilterLabel));
   }
 
   /** Unchecked checkboxes under the product section. */
@@ -205,8 +204,7 @@ export class PfLocator {
 
   /** First enabled checkbox under that section. */
   get priceOption() {
-    const header = `(${this.priceFilterLabel}) and not(contains(@content-desc, 'High to Low')) and not(contains(@content-desc, 'high to low'))`;
-    return $(`(${this.filterCheckboxSelector(header)})[1]`);
+    return this.filterCheckbox(this.priceFilterLabel);
   }
 
   get productOption() {
@@ -220,7 +218,7 @@ export class PfLocator {
   /** Chip above the list, e.g. "Galaxy Z", shown after a checkbox is selected. */
   get selectedFilterChip() {
     return $(
-      `//android.view.View[contains(@content-desc, 'Filter')]/android.view.View[android.widget.ImageView]/android.view.View[@content-desc != '']`
+      `//android.view.View[${this.filterPopupLabel}]/android.view.View[android.widget.ImageView]/android.view.View[@content-desc != '']`
     );
   }
 
@@ -280,10 +278,11 @@ export class PfLocator {
   }
 
   private get priceFilterLabel() {
-    return [
+    const titles = [
       'Price', 'Preis', 'Precio', 'Prix', 'Prijs', '价格', '價格', '價錢', 'Cenové', 'Árkategória', 'harga',
       'prezzo', 'السعر', 'Prisklass', 'ราคา', 'Fiyat', 'giá', 'מחיר', '価格', 'Preço', 'Preț', 'Cena',
     ].map((label) => `contains(@content-desc, '${label}')`).join(' or ');
+    return `(${titles}) and not(contains(@content-desc, 'High to Low')) and not(contains(@content-desc, 'high to low'))`;
   }
 
   private get productFilterLabel() {

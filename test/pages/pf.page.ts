@@ -220,23 +220,23 @@ export class PfPage extends BasePage {
   ): void {
     const where = `${L0Title ?? ''}${L1Title ? ` > ${L1Title}` : ''}`;
     if (pfName === null) {
-      console.log(`[verifyProductNameMatch] ${where} PF card not shown result=FAIL`);
+      console.log(`[ FAIL ] [verifyProductNameMatch] ${where} PF card not shown`);
       mismatches.push(`PF card not shown: ${where}`);
       return;
     }
     if (!pfName) {
-      console.log(`[verifyProductNameMatch] ${where} PF card name not read result=FAIL`);
+      console.log(`[ FAIL ] [verifyProductNameMatch] ${where} PF card name not read`);
       mismatches.push(`PF card name not read: ${where}`);
       return;
     }
     if (!bcPdName) {
-      console.log(`[verifyProductNameMatch] ${where} BC/PD name not found result=FAIL`);
+      console.log(`[ FAIL ] [verifyProductNameMatch] ${where} BC/PD name not found`);
       mismatches.push(`BC/PD product name not found: ${where}`);
       return;
     }
     const pass = this.productNameIncludes(pfName, bcPdName);
     console.log(
-      `[verifyProductNameMatch] ${where} expected="${pfName}" actual="${bcPdName}" result=${pass ? 'PASS' : 'FAIL'}`
+      `${this.checkResult(pass)} [verifyProductNameMatch] ${where} expected="${pfName}" actual="${bcPdName}"`
     );
     if (pass) {
       return;
@@ -257,7 +257,7 @@ export class PfPage extends BasePage {
   async verifyPfPage(): Promise<void> {
     await switchToNative();
     const shown = await this.isPfCardDisplayed();
-    console.log(`[verifyPfPage] expected=PF cards actual=${shown ? 'shown' : 'not shown'} result=${shown ? 'PASS' : 'FAIL'}`);
+    console.log(`${this.checkResult(shown)} [verifyPfPage] expected=PF cards actual=${shown ? 'shown' : 'not shown'}`);
     markFailedAndStop([{ label: 'PF cards not shown', pass: shown }], 'verifyPfPage');
   }
 
@@ -295,7 +295,7 @@ export class PfPage extends BasePage {
     const products = await this.collectPfProducts();
     const countMatches = products.length === filter.count;
     console.log(
-      `[verifyFilterAndSort] Filter count=${filter.count} | PFcards=${products.length} | result=${countMatches ? 'PASS' : 'FAIL'} | filter=${filter.kind}:"${filter.value}" sort=${sort.kind}`
+      `${this.checkResult(countMatches)} [verifyFilterAndSort] Filter count=${filter.count} | PFcards=${products.length} | filter=${filter.kind}:"${filter.value}" sort=${sort.kind}`
     );
     markFailed(
       [{ label: 'PF card count does not match Filter count', pass: countMatches, detail: `FilterCount: ${filter.count} | PFcards: ${products.length}` }],
@@ -307,6 +307,42 @@ export class PfPage extends BasePage {
       ...this.checkSort(products.filter((product) => product.outOfStock), sort, 'out of stock'),
     ];
     markFailed(failures, 'verifyFilterAndSort');
+  }
+
+  /** After sort: Products tab count, keyword match, then price order inside each stock group. */
+  async verifySearchResultAndSort(keywords: string[], sort: PfSortChoice): Promise<void> {
+    console.log('[verifySearchResultAndSort] sort=', sort);
+    const productCount = await this.getSearchProductCount();
+    const products = await this.collectPfProducts();
+    const countMatches = products.length === productCount;
+    const failures = [
+      { label: 'PF card count does not match Products tab count', pass: countMatches, detail: `Products tab ${productCount}, PF cards ${products.length}` },
+      ...this.checkSearchKeywords(products, keywords),
+      ...this.checkSort(products.filter((product) => !product.outOfStock), sort, 'in stock'),
+      ...this.checkSort(products.filter((product) => product.outOfStock), sort, 'out of stock'),
+    ];
+    const pass = failures.every((failure) => failure.pass);
+    console.log(
+      `${this.checkResult(pass)} [verifySearchResultAndSort] Products tab=${productCount} | PFcards=${products.length} | sort=${sort.kind}`
+    );
+    markFailed(failures, 'verifySearchResultAndSort');
+  }
+
+  /** After filter: keyword match, Apply count, then the selected filter on the same card list. */
+  async verifySearchResultAndFilter(keywords: string[], filter: PfFilterChoice): Promise<void> {
+    console.log('[verifySearchResultAndFilter] filter=', filter);
+    const products = await this.collectPfProducts();
+    const countMatches = products.length === filter.count;
+    const failures = [
+      { label: 'PF card count does not match Filter count', pass: countMatches, detail: `FilterCount: ${filter.count} | PFcards: ${products.length}` },
+      ...this.checkSearchKeywords(products, keywords),
+      ...this.checkFilter(products, filter),
+    ];
+    const pass = failures.every((failure) => failure.pass);
+    console.log(
+      `${this.checkResult(pass)} [verifySearchResultAndFilter] Filter count=${filter.count} | PFcards=${products.length} | filter=${filter.kind}:"${filter.value}"`
+    );
+    markFailed(failures, 'verifySearchResultAndFilter');
   }
 
   async clickFilter(): Promise<void> {
@@ -459,11 +495,11 @@ export class PfPage extends BasePage {
     const countMatches = products.length === productCount;
     const pass = countMatches && unmatched.length === 0;
     console.log(
-      `[verifySearchResultCount] Products tab=${productCount} PF cards=${products.length} unmatched=${unmatched.length} result=${pass ? 'PASS' : 'FAIL'}`
+      `${this.checkResult(pass)} [verifySearchResultCount] Products tab=${productCount} PF cards=${products.length} unmatched=${unmatched.length}`
     );
     products.forEach((product, index) => {
       const matched = normalizedKeywords.find((keyword) => normalizeText(product.name).includes(keyword));
-      console.log(`[verifySearchResultCount] [${index}] name="${product.name}" matched="${matched ?? ''}" result=${matched ? 'PASS' : 'FAIL'}`);
+      console.log(`${this.checkResult(Boolean(matched))} [verifySearchResultCount] [${index}] name="${product.name}" matched="${matched ?? ''}"`);
     });
     markFailed(
       [
@@ -813,6 +849,20 @@ export class PfPage extends BasePage {
     return parsePriceToNumber(priceLine);
   }
 
+  private checkResult(pass: boolean): string {
+    return pass ? '[ PASS ]' : '[ FAIL ]';
+  }
+
+  private checkSearchKeywords(products: PfProduct[], keywords: string[]): { label: string; pass: boolean }[] {
+    const normalizedKeywords = keywords.map((keyword) => normalizeText(keyword));
+    const unmatched = products.filter((product) => !normalizedKeywords.some((keyword) => normalizeText(product.name).includes(keyword)));
+    products.forEach((product, index) => {
+      const matched = normalizedKeywords.find((keyword) => normalizeText(product.name).includes(keyword));
+      console.log(`${this.checkResult(Boolean(matched))} [checkSearchKeywords] [${index}] name="${product.name}" matched="${matched ?? ''}"`);
+    });
+    return unmatched.map((product) => ({ label: `Keyword not found in PF card: ${product.name}`, pass: false }));
+  }
+
   private checkFilter(products: PfProduct[], filter: Omit<PfFilterChoice, 'count'>): { label: string; pass: boolean }[] {
     if (filter.kind === 'price') {
       const [min, max] = this.priceBounds(filter.value);
@@ -822,7 +872,7 @@ export class PfPage extends BasePage {
       console.log(`[checkFilter] price="${filter.value}" range=${min}..${max === Number.POSITIVE_INFINITY ? '∞' : max} cards=${products.length}`);
       products.forEach((product, index) => {
         const pass = product.price >= min && product.price <= max;
-        console.log(`[checkFilter] [${index}] result=${pass ? 'PASS' : 'FAIL'} name="${product.name}" price=${product.price}`);
+        console.log(`${this.checkResult(pass)} [checkFilter] [${index}] name="${product.name}" price=${product.price}`);
       });
       return failures;
     }
@@ -834,7 +884,7 @@ export class PfPage extends BasePage {
     console.log(`[checkFilter] ${filter.kind}="${filter.value}" accepted=${accepted.join(' | ')} cards=${products.length}`);
     products.forEach((product, index) => {
       const matched = accepted.find((word) => product.name.toLowerCase().includes(word));
-      console.log(`[checkFilter] [${index}] result=${matched ? 'PASS' : 'FAIL'} name="${product.name}" matched="${matched ?? ''}"`);
+      console.log(`${this.checkResult(Boolean(matched))} [checkFilter] [${index}] name="${product.name}" matched="${matched ?? ''}"`);
     });
     return failures;
   }
@@ -846,7 +896,7 @@ export class PfPage extends BasePage {
     const actual = products.map((product) => (sort.kind === 'rating' ? product.rating : product.price));
     const expected = [...actual].sort((a, b) => b - a);
     const pass = actual.every((value, index) => value === expected[index]);
-    console.log(`[verifyFilterAndSort] result=${pass ? 'PASS' : 'FAIL'} ${label} ${sort.kind}=${actual.join(', ')} `);
+    console.log(`${this.checkResult(pass)} [checkSort] ${label} ${sort.kind}=${actual.join(', ')}`);
     return pass ? [] : [{ label: `${label} products are not sorted by ${sort.kind}`, pass: false }];
   }
 
@@ -892,7 +942,7 @@ export class PfPage extends BasePage {
   async verifyLoginPopup(): Promise<void> {
     await switchToNative();
     const shown = await waitForDisplayedOrFalse(this.pflocator.loginConfirmModal, { timeout: 5000 });
-    console.log(`[verifyLoginPopup] expected=login popup actual=${shown ? 'login popup' : 'not shown'} result=${shown ? 'PASS' : 'FAIL'}`);
+    console.log(`${this.checkResult(shown)} [verifyLoginPopup] expected=login popup actual=${shown ? 'login popup' : 'not shown'}`);
     markFailedAndStop([{ label: 'Login popup failed to appear on guest wishlist action', pass: shown }], 'verifyLoginPopup');
   }
 
