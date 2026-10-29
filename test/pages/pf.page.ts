@@ -21,7 +21,7 @@ export type PfFilterChoice = { kind: PfFilterKind; value: string; count: number 
 /** One sort option. Price sort is high to low. */
 export type PfSortChoice = { kind: PfSortKind; value: string };
 
-type PfProduct = { name: string; price: number; rating: number; outOfStock: boolean };
+type PfProduct = { name: string; sku: string; price: number; rating: number; outOfStock: boolean };
 
 const FILTER_EXCEPTION_KEYWORDS: Record<string, string[]> = {
   'galaxy z': ['fold', 'flip', 'فولد', 'فليب'],
@@ -640,9 +640,11 @@ export class PfPage extends BasePage {
         }
         const ratingText = await this.firstContentDesc([...(await this.pflocator.cardRatings(card))]);
         const ratingMatch = ratingText.match(/(\d+(?:[.,]\d+)?)\s*\/\s*5/) ?? ratingText.match(/(\d+(?:\.\d+)?)/);
-        const outOfStock = this.isOutOfStock(`${cardDesc}\n${name}`);
+        const imageLabel = await this.cardImageLabel(card);
+        const outOfStock = this.isOutOfStock(`${cardDesc}\n${name}\n${imageLabel}`);
         const product = {
           name,
+          sku,
           price: this.parseCardPrice(priceText),
           rating: Number((ratingMatch?.[1] ?? '0').replace(',', '.')),
           ratingText,
@@ -727,7 +729,7 @@ export class PfPage extends BasePage {
     const list = [...products.values()].filter((product) => product.name);
     console.log(`[collectPfProducts] done stored=${list.length}`);
     list.forEach((product, index) => {
-      console.log(`[collectPfProducts] [${index}] name="${product.name}" price=${product.price} rating=${product.rating} stock=${product.outOfStock ? 'out' : 'in'}`);
+      console.log(`[collectPfProducts] [${index}] name="${product.name}" sku=${product.sku} price=${product.price} rating=${product.rating} stock=${product.outOfStock ? 'out' : 'in'}`);
     });
     return list;
   }
@@ -831,12 +833,12 @@ export class PfPage extends BasePage {
     return ((await found.getAttribute('content-desc').catch(() => '')) ?? '').trim();
   }
 
-  /** Card content-desc on this PF is the price, e.g. "52.990.000 VND". "." groups thousands. */
+  /** Card content-desc on this PF is the price, e.g. "52.990.000 VND", "Rp10.499.000", or "2,499.00 ⃁". */
   private isPriceLabel(label: string): boolean {
-    return /\d/.test(label) && /vnd|usd|eur|krw|\$|€|£|₩|¥|₫/i.test(label);
+    return /\d/.test(label) && /vnd|usd|eur|krw|rp|\$|€|£|₩|¥|₫|﷼|⃁/i.test(label);
   }
 
-  /** "." groups thousands in "40.990.000 ₫". The card text also carries the SKU on the next line. */
+  /** "." groups thousands in "40.990.000 ₫" and "Rp10.499.000". The card text also carries the SKU on the next line. */
   private parseCardPrice(priceText: string): number {
     const priceLine = priceText
       .split(/\r?\n/)
@@ -912,7 +914,19 @@ export class PfPage extends BasePage {
     return [0, Number.POSITIVE_INFINITY];
   }
 
-  /** "Out of stock" is the first line of the card content-desc, not the product title. */
+  /** US puts "Out of Stock" on the product image, not on the card title. */
+  private async cardImageLabel(card: WebdriverIO.Element): Promise<string> {
+    const labels: string[] = [];
+    for (const node of [...(await card.$$('.//android.widget.ImageView[@content-desc != ""]'))]) {
+      const text = ((await node.getAttribute('content-desc').catch(() => '')) ?? '').trim();
+      if (text) {
+        labels.push(text);
+      }
+    }
+    return labels.join('\n');
+  }
+
+  /** "Out of stock" is the first line of the card content-desc, or a line on the product image. */
   private isOutOfStock(label: string): boolean {
     const lower = label.toLowerCase();
     return OUT_OF_STOCK_WORDS.some((word) => lower.includes(word));

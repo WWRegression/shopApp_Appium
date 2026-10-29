@@ -536,6 +536,16 @@ export class BasePage {
       return;
     }
 
+    // The search screen has no BNB. Its header Back, e.g. "Kembali", returns to the page that has one.
+    if (await this.isSearchScreenOpen()) {
+      console.warn('[ensureBnbVisible] search screen open');
+      await clickElement(this.headerLocator.backButton);
+      if (await waitForDisplayedOrFalse(this.bnbLocator.menu(menu), { timeout: 3000 })) {
+        console.warn('[ensureBnbVisible] BNB shown after leaving search');
+        return;
+      }
+    }
+
     // Popups cover BNB (permission a few seconds after launch, CN ad splash, cookie, welcome / promotion) — close them one by one
     for (let closed = 0; closed < 5 && (await this.closeTopPopup()); closed += 1) {
       // BNB comes back only after the popup's close animation; another popup can be underneath
@@ -578,6 +588,16 @@ export class BasePage {
     }
 
     throw new Error(`BNB is not visible: ${menu}`);
+  }
+
+  /** The search field is up. `$$` returns at once when this is not the search screen. */
+  private async isSearchScreenOpen(): Promise<boolean> {
+    for (const input of await this.searchLocator.searchInputs) {
+      if (await input.isDisplayed().catch(() => false)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   private async getFirstVisibleHeaderIcon(

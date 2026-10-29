@@ -10,11 +10,17 @@ export class PfLocator {
     `);
   }
 
+  /** Search result tab, e.g. "Products (10)", "Prodotti (10)". */
   get productCount() {
-    return $(`//android.view.View[
-      starts-with(@content-desc, 'Products (')
-      or starts-with(@content-desc, '产品 (')
-    ]`);
+    return $(`//android.view.View[${this.productCountLabel}]`);
+  }
+
+  private get productCountLabel() {
+    return [
+      'Products', 'Prodotti', 'Produits', 'Produkte', 'Productos', 'Produtos', 'Producten', 'Produkty',
+      'Produkter', 'Produse', 'Termékek', 'Ürünler', 'Sản phẩm', 'สินค้า', 'Produk',
+      '产品', '產品', '製品', 'المنتجات', 'מוצרים',
+    ].map((label) => `starts-with(@content-desc, '${label} (')`).join(' or ');
   }
 
   pfCardTitle(card: WebdriverIO.Element) {
@@ -249,7 +255,7 @@ export class PfLocator {
 
   private get cardPriceSelector() {
     const money = [
-      '$', '€', '£', '¥', '₩', '₱', '₫', 'NT$', 'HK$', 'AED', 'د.إ', 'SAR', 'ر.س', '﷼', 'Kč', 'Ft', 'lei',
+      '$', '€', '£', '¥', '₩', '₱', '₫', '⃁', 'NT$', 'HK$', 'AED', 'د.إ', 'SAR', 'ر.س', '﷼', 'Kč', 'Ft', 'lei',
       'S/', 'zł', 'kr', '฿', '₺', 'Rp', 'RM', 'TL', '₹', '₪', '円',
     ].map((mark) => `contains(@content-desc, '${mark}')`).join(' or ');
     return `.//android.view.View[${money}]`;

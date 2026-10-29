@@ -23,7 +23,7 @@ export class SearchPage extends BasePage {
     for (let index = 0; index < this.typedLength; index += 1) {
       await driver.pressKeyCode(KEYCODE_DEL);
     }
-    await driver.keys(keyword.split(''));
+    await driver.execute('mobile: type', { text: keyword });
     await driver.keys(['Enter']);
     this.typedLength = keyword.length;
     await driver.pause(500);
