@@ -222,7 +222,7 @@ export class CartLocator {
   get scPlusTermsCheckboxes() {
     return $$(
       [
-        '.modal__checkbox-wrapper mat-checkbox input',
+        '.modal.show input.mdc-checkbox__native-control[type="checkbox"]',
       ].join(', ')
     );
   }
