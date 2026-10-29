@@ -364,7 +364,7 @@ export class MypageLocator {
   }
 
   get myProductsPage() {
-    return $(`.myd17-my-product-list-full-ux25:not(.skeleton)`);
+    return $(`div.myd17-my-product-list-full-ux25.js-my-product-list-full-ux25`);
   }
 
   get myOrders() {
@@ -399,7 +399,7 @@ export class MypageLocator {
   }
 
   get myOrdersPage() {
-    return $(`app-orders-search`);
+    return $(`.ProfileOrdersPageTemplate app-orders-search-cn, .ProfileOrdersPageTemplate app-orders-search`);
   }
 
   /** CN shows "服务支持" */
@@ -437,7 +437,7 @@ export class MypageLocator {
   }
 
   get myRepairsPage() {
-    return $(`.myd18-my-repair-history__summary, cx-page-layout.ProfileMyRepairPageTemplate`);
+    return $(`.myd18-my-repair-history__summary, cx-page-layout.ProfileMyRepairPageTemplate, [class*="myd18-my-repair-history-v2__no-history js-no-history"]`);
   }
 
   get myReferrals() {
@@ -456,7 +456,7 @@ export class MypageLocator {
   }
 
   get myReferralsPage() {
-    return $(`.myd07-my-referrals__top, cx-paragraph.ng-star-inserted, .my-referrals__refer-via-email`);
+    return $(`.myd07-my-referrals__top, cx-paragraph.ng-star-inserted, .my-referrals__refer-via-email, cx-page-layout[class="MyReferralPageTemplate"]`);
   }
 
   get myQRCode() {
@@ -501,8 +501,14 @@ export class MypageLocator {
 
   get inboxPage() {
     return $(
-      `//android.view.View[contains(@content-desc, 'There are no new notifications')]
-      | //android.widget.ImageView[@content-desc and .//android.widget.Button]`
+      `//android.view.View[
+      contains(@content-desc, 'There are no new notifications')
+      or contains(@content-desc, "No hay nuevas notificaciones")
+      or contains(@content-desc, "新しい通知はありません")
+      or contains(@content-desc, "沒有新的通知")
+      ]
+      | //android.view.View[@content-desc != '' and .//android.widget.ImageView]
+      | //android.widget.ImageView[@content-desc != '' and .//android.widget.Button]`
     );
   }
 
@@ -511,7 +517,7 @@ export class MypageLocator {
   }
 
   get mySmartThingsPage() {
-    return $(`h2.myd26-my-story-st__wrapper-headline`);
+    return $(`.st-feature-benefit__wrap`);
   }
 
   /** IN only */
