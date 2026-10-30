@@ -1,8 +1,10 @@
 import { BasePage } from './base.page';
 import { MypageWishlistLocator } from '../locators/mypage-wishlist.locator';
 import { MypagePage } from './mypage.page';
+import type { PfWishlistItem } from './pf.page';
 import { prepareWebViewPage, switchToNative } from '../helpers/context.helper';
-import { clickIfDisplayed, isDisplayedOrFalse, jsClick, waitForDisplayedOrFalse } from '../helpers/element.helper';
+import { normalizeText } from '../helpers/data.helper';
+import { clickIfDisplayed, getElementLabel, isDisplayedOrFalse, jsClick, waitForDisplayedOrFalse } from '../helpers/element.helper';
 import { markFailedAndStop } from '../helpers/report.helper';
 
 /** My Page > Wishlist. */
@@ -41,12 +43,29 @@ export class MypageWishlistPage extends BasePage {
     await switchToNative();
   }
 
-  /** The SKU added from PF must be listed. */
-  async verifyAddedToWishlist(sku: string): Promise<void> {
+  /** The SKU and device name from the PF add must both match the wishlist card. */
+  async verifyAddedToWishlist(item: PfWishlistItem): Promise<void> {
     await this.prepareWishlistPage();
-    const found = await waitForDisplayedOrFalse(this.locator.productCard(sku), { timeout: 10000 });
-    console.log(`[verifyAddedToWishlist] expected=${sku} actual=${found ? sku : 'not listed'} result=${found ? 'PASS' : 'FAIL'}`);
-    markFailedAndStop([{ label: 'product was not added to the wishlist', pass: found, detail: `sku=${sku}` }], 'verifyAddedToWishlist');
+    const card = this.locator.productCard(item.sku);
+    const found = await waitForDisplayedOrFalse(card, { timeout: 10000 });
+    const modelDisplay = ((await card.getAttribute('data-modeldisplay').catch(() => '')) ?? '').trim();
+    const nameText = ((await getElementLabel(this.locator.productName(item.sku))) || modelDisplay).trim();
+    const expectedName = normalizeText(item.deviceName);
+    const actualName = normalizeText(nameText);
+    const nameMatch =
+      Boolean(expectedName) &&
+      Boolean(actualName) &&
+      (actualName.includes(expectedName) || expectedName.includes(actualName));
+    console.log(
+      `[verifyAddedToWishlist] sku=${item.sku} found=${found} expectedName="${item.deviceName}" actualName="${nameText}" nameMatch=${nameMatch}`
+    );
+    markFailedAndStop(
+      [
+        { label: 'product was not added to the wishlist', pass: found, detail: `sku=${item.sku}` },
+        { label: 'wishlist device name mismatch', pass: nameMatch, detail: `expected "${item.deviceName}" actual "${nameText}"` },
+      ],
+      'verifyAddedToWishlist'
+    );
   }
 
   /** After Back, the wishlist must be shown again with the SKU listed (no navigation to it). */

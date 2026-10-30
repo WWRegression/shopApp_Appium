@@ -17,7 +17,7 @@ describe('PROD_SHOP_05', () => {
       await mypagePage.verifyLoggedOut();
 
       await shopPage.openCategory('mobile');
-      await pfPage.clickAddToWishlist();
+      await pfPage.clickAddToWishlist(false);
       await pfPage.verifyLoginPopup();
     });
   });

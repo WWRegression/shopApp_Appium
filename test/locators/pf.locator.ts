@@ -72,6 +72,35 @@ export class PfLocator {
       ) and contains(@content-desc, '${sku}')])[1]`);
   }
 
+  /**
+   * "remove from wishlist" heart; its label carries the SKU.
+   * Without `sku`, the first one on PF.
+   */
+  wishlistRemoveIcon(sku = '') {
+    return $(`(//*[(self::android.widget.Button or self::android.view.View) and (
+        (contains(@content-desc, 'Remove') and contains(@content-desc, 'wishlist'))
+        or (contains(@content-desc, 'Supprimer') and contains(@content-desc, 'souhaits'))
+        or (contains(@content-desc, 'Eliminar') and contains(@content-desc, 'favoritos'))
+        or (contains(@content-desc, 'Hapus') and contains(@content-desc, 'keinginan'))
+        or (contains(@content-desc, 'Rimuovi') and contains(@content-desc, 'desideri'))
+        or (contains(@content-desc, '删除') and contains(@content-desc, '愿望清单'))
+        or (contains(@content-desc, 'entfernen') and contains(@content-desc, 'Wunschliste'))
+        or (contains(@content-desc, 'Eliminar') and contains(@content-desc, 'deseos'))
+        or (contains(@content-desc, 'Verwijder') and contains(@content-desc, 'verlanglijst'))
+        or (contains(@content-desc, 'Usuń') and contains(@content-desc, 'życzeń'))
+        or (contains(@content-desc, 'Ta bort') and contains(@content-desc, 'önskelista'))
+        or (contains(@content-desc, 'ลบ') and contains(@content-desc, 'รายการที่อยากได้'))
+        or (contains(@content-desc, 'Xóa') and contains(@content-desc, 'yêu thích'))
+        or (contains(@content-desc, 'Odebrat') and contains(@content-desc, 'přání'))
+        or (contains(@content-desc, '移除') and contains(@content-desc, '願望清單'))
+        or (contains(@content-desc, 'eltávolítása') and contains(@content-desc, 'kívánságlist'))
+        or (contains(@content-desc, 'Elimină') and contains(@content-desc, 'dorințe'))
+        or (contains(@content-desc, 'kaldır') and contains(@content-desc, 'favori'))
+        or (contains(@content-desc, '移除心') and contains(@content-desc, '愿单'))
+        or (contains(@content-desc, 'Remover') and contains(@content-desc, 'desejos'))
+      ) and contains(@content-desc, '${sku}')])[1]`);
+  }
+
   /** Login popup shown to a guest who taps the wishlist heart. */
   get loginConfirmModal() {
     return $(`//*[@class='android.view.View' and (

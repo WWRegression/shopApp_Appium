@@ -23,6 +23,9 @@ export type PfSortChoice = { kind: PfSortKind; value: string };
 
 type PfProduct = { name: string; sku: string; price: number; rating: number; outOfStock: boolean };
 
+/** SKU and title of the PF card whose wishlist heart was tapped. */
+export type PfWishlistItem = { sku: string; deviceName: string };
+
 const FILTER_EXCEPTION_KEYWORDS: Record<string, string[]> = {
   'galaxy z': ['fold', 'flip', 'فولد', 'فليب'],
   fhd: ['flip', 'فليب', 'a57'],
@@ -984,24 +987,77 @@ export class PfPage extends BasePage {
     );
   }
 
-  /** Taps the first "add to wishlist" heart on PF and returns that card's SKU. */
-  async clickAddToWishlist(): Promise<string> {
+  /**
+   * Taps the first add-to-wishlist heart on PF and returns that card's sku + deviceName.
+   * `verifyAdded` (default true) checks that the heart becomes the remove icon after the tap.
+   * Guest flows that expect a login popup (SHOP_05) pass `verifyAdded: false`.
+   */
+  async clickAddToWishlist(verifyAdded = true): Promise<PfWishlistItem> {
     await switchToNative();
     const icon = this.pflocator.wishlistIcon();
     // PF cards render a few seconds after landing; scrolling earlier skips the first cards
     await waitForDisplayedOrFalse(icon, { timeout: 10000 });
-    markFailedAndStop([{ label: 'add-to-wishlist heart not found on PF', pass: await scrollUntilVisible(icon) }], 'clickAddToWishlist');
+    markFailedAndStop(
+      [{ label: 'add-to-wishlist heart not found on PF', pass: await scrollUntilVisible(icon) }],
+      'clickAddToWishlist'
+    );
 
-    // The SKU sits anywhere in the label ("Add to wishlist SM-A185FZKDEUB", CN "添加 SM-F9710ZGDCHC 至我的收藏")
     const label = (await icon.getAttribute('content-desc')) ?? '';
-    const sku = label.split(/\s+/).find((token) => /^[A-Z0-9]+-[A-Z0-9]+$/.test(token)) ?? '';
-    markFailedAndStop([{ label: 'SKU not found in the wishlist heart label', pass: Boolean(sku), detail: label }], 'clickAddToWishlist');
+    const sku = this.skuFromWishlistLabel(label);
+    markFailedAndStop(
+      [{ label: 'SKU not found in the wishlist heart label', pass: Boolean(sku), detail: label }],
+      'clickAddToWishlist'
+    );
+
+    const card = await this.findPfCardContainingSku(sku);
+    markFailedAndStop(
+      [{ label: 'PF card not found for wishlist heart', pass: Boolean(card), detail: sku }],
+      'clickAddToWishlist'
+    );
+    const { name } = await this.readPfCard(card!);
+    const deviceName = name || (await this.cardProductName(card!));
+    markFailedAndStop(
+      [{ label: 'device name not found on PF card', pass: Boolean(deviceName), detail: sku }],
+      'clickAddToWishlist'
+    );
 
     // Nudge so the floating Chat button cannot sit on top of the heart
     await scrollByBoundary('down', 0.1);
-    await clickElement(this.pflocator.wishlistIcon(sku), { timeout: 5000 });
-    console.log(`[clickAddToWishlist] sku=${sku}`);
-    return sku;
+    await clickElement(icon, { timeout: 5000 });
+    console.log(`[clickAddToWishlist] sku=${sku} deviceName="${deviceName}" verifyAdded=${verifyAdded}`);
+
+    if (verifyAdded) {
+      const removeShown = await waitForDisplayedOrFalse(this.pflocator.wishlistRemoveIcon(sku), { timeout: 5000 });
+      console.log(
+        `${this.checkResult(removeShown)} [clickAddToWishlist] remove heart after add sku=${sku} shown=${removeShown}`
+      );
+      markFailedAndStop(
+        [{ label: 'remove-from-wishlist heart not shown after add', pass: removeShown, detail: sku }],
+        'clickAddToWishlist'
+      );
+    }
+
+    return { sku, deviceName };
+  }
+
+  /** Visible PF card whose content-desc (or a child) carries this SKU — typically the wishlist heart. */
+  private async findPfCardContainingSku(sku: string): Promise<WebdriverIO.Element | undefined> {
+    for (const card of [...(await this.pflocator.productGrid)]) {
+      const cardDesc = ((await card.getAttribute('content-desc').catch(() => '')) ?? '').trim();
+      if (cardDesc.includes(sku)) {
+        return card;
+      }
+      const children = [...(await card.$$(`.//*[@content-desc and contains(@content-desc, '${sku}')]`))];
+      if (children.length > 0) {
+        return card;
+      }
+    }
+    return undefined;
+  }
+
+  /** SKU token inside a wishlist heart label ("Add to wishlist SM-A185FZKDEUB", CN "添加 SM-F9710ZGDCHC 至我的收藏"). */
+  private skuFromWishlistLabel(label: string): string {
+    return label.split(/\s+/).find((token) => /^[A-Z0-9]+-[A-Z0-9]+$/.test(token)) ?? '';
   }
 
   /** A guest tapping the wishlist heart gets the login popup. */

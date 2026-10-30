@@ -10,6 +10,16 @@ export class MypageWishlistLocator {
     return $(`.wishlist-product[data-modelcode="${sku}" i]`);
   }
 
+  /** Display name on the card of this SKU. */
+  productName(sku: string) {
+    return $(
+      [
+        `.wishlist-product[data-modelcode="${sku}" i] .wishlist-product__name span`,
+        `.wishlist-product[data-modelcode="${sku}" i] [class*="wishlist-product__name"]`,
+      ].join(', ')
+    );
+  }
+
   get emptySection() {
     return $('.wishlist .wishlist__empty .empty-page');
   }

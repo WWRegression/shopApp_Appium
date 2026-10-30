@@ -14,20 +14,20 @@ describe('PROD_SHOP_02', () => {
   it('add/remove wishlist and move wishlist item to cart', async function () {
     await runOrSkip.call(this, 'PROD_SHOP_02', async () => {
       await cartPage.clearCart();
+
       await wishlistPage.clearWishlist();
-
       await shopPage.openCategory('mobile');
-      const sku = await pfPage.clickAddToWishlist();
-      await wishlistPage.verifyAddedToWishlist(sku);
+      const added = await pfPage.clickAddToWishlist();
 
-      await wishlistPage.clickAddToCart(sku);
-      // Some sites (e.g. IN) stay on the wishlist after adding — open the cart from BNB
+      await wishlistPage.verifyAddedToWishlist(added);
+      await wishlistPage.clickAddToCart(added.sku);
+      
       await cartPage.selectBnbMenu('cart');
       await cartPage.prepareCartPage();
-      await cartPage.verifySku(sku);
+      await cartPage.verifySku(added.sku);
 
-      await wishlistPage.clickRemoveFromWishlist(sku);
-      await wishlistPage.verifyRemovedFromWishlist(sku);
+      await wishlistPage.clickRemoveFromWishlist(added.sku);
+      await wishlistPage.verifyRemovedFromWishlist(added.sku);
     });
   });
 });
