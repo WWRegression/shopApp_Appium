@@ -86,6 +86,48 @@ export class SearchLocator {
     return $(`//android.view.View[${phrases}]`);
   }
 
+  /** Clickable rows under Suggested Searches. Related products is not clickable. */
+  get suggestedCategories() {
+    return $$(`(${this.suggestedSearchHeading})/following-sibling::android.view.View[@content-desc != '' and @clickable='true']`);
+  }
+
+  private get suggestedSearchHeading() {
+    return this.suggestionHeading([
+      ['推荐搜索'],
+      ['عن', 'ابحث'],
+      ['Suggested', 'Searches'],
+      ['Suggested', 'searches'],
+      ['Vorgeschlagene', 'Suchanfragen'],
+      ['Recherches', 'suggérées'],
+      ['Búsquedas', 'sugeridas'],
+      ['推薦', '搜索'],
+      ['Doporučená', 'vyhledávání'],
+      ['Búsquedas', 'recomendadas'],
+      ['搜尋', '建議'],
+      ['Javasolt', 'keresések'],
+      ['Saran', 'Pencarian'],
+      ['Ricerche', 'suggerite'],
+      ['Voorgestelde', 'zoekopdrachten'],
+      ['Căutări', 'sugerate'],
+      ['คำค้นหาที่', 'แนะนํา'],
+      ['คำค้นหาที่แนะนํา'],
+      ['Önerilen', 'Aramalar'],
+      ['建議', '搜尋'],
+      ['Tìm kiếm', 'được đề xuất'],
+      ['Föreslagna', 'sökningar'],
+    ]);
+  }
+
+  /** One content-desc, or every part of a pair, on the suggestion heading. */
+  private suggestionHeading(labels: string[][]): string {
+    const clauses = labels.map((parts) =>
+      parts.length === 1
+        ? `@content-desc='${parts[0]}'`
+        : parts.map((part) => `contains(@content-desc, '${part}')`).join(' and ')
+    );
+    return `//android.view.View[${clauses.map((clause) => `(${clause})`).join(' or ')}]`;
+  }
+
   /** PF/search result card that mentions SKU or product name */
   productCardContaining(text: string) {
     return $(`//*[contains(@content-desc,"${text}") or contains(@text,"${text}")]`);

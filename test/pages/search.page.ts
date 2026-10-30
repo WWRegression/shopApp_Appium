@@ -2,11 +2,15 @@ import { BasePage } from './base.page';
 import { SearchLocator } from '../locators/search.locator';
 import { switchToNative, switchToWebView, switchToWindowByPage } from '../helpers/context.helper';
 import { clickElement, clickIfDisplayed, waitForDisplayedOrFalse } from '../helpers/element.helper';
+import { normalizeText } from '../helpers/data.helper';
 import { markFailed, markFailedAndStop } from '../helpers/report.helper';
 
 const KEYCODE_DEL = 67;
 
 const BLACKLIST_WORDS = ['google', 'apple', 'iphone', '@'];
+
+/** Category line under a Suggested Searches row, e.g. "in Smartphones". */
+const SMARTPHONE_CATEGORY_WORDS = ['smartphone', 'smartphones', '스마트폰', '智能手机', 'teléfono', 'telefon'];
 
 export class SearchPage extends BasePage {
   private readonly locator = new SearchLocator();
@@ -16,7 +20,7 @@ export class SearchPage extends BasePage {
     await this.selectHeaderIcon('search');
   }
 
-  async search(keyword: string): Promise<void> {
+  async search(keyword: string, submit = true): Promise<void> {
     await switchToNative();
     console.warn('[search] searching for:', keyword);
     await clickIfDisplayed(this.locator.searchInput, 3000);
@@ -24,9 +28,16 @@ export class SearchPage extends BasePage {
       await driver.pressKeyCode(KEYCODE_DEL);
     }
     await driver.execute('mobile: type', { text: keyword });
-    await driver.keys(['Enter']);
+    if (submit) {
+      await driver.keys(['Enter']);
+    }
     this.typedLength = keyword.length;
     await driver.pause(500);
+  }
+
+  /** Types the keyword and leaves the suggestion list open. */
+  async typeKeyword(keyword: string): Promise<void> {
+    await this.search(keyword, false);
   }
 
   async searchByKeyword(keyword: string): Promise<void> {
@@ -149,6 +160,58 @@ export class SearchPage extends BasePage {
     const shown = await waitForDisplayedOrFalse(this.locator.searchInput, { timeout: 5000 });
     console.log(`[verifyReturnedToSearchResults] expected=search box shown actual=${shown ? 'shown' : 'not shown'} result=${shown ? 'PASS' : 'FAIL'}`);
     markFailed([{ label: 'Failed to return to search result page', pass: shown }], 'verifyReturnedToSearchResults');
+  }
+
+  /** Suggested Searches rows that contain the keyword. Stops when none are shown. */
+  async verifySuggestedSearches(keyword: string): Promise<void> {
+    const matches = await this.findSuggestions(keyword);
+    markFailedAndStop(
+      [{ label: 'Suggested Searches with the keyword not shown', pass: matches.length > 0, detail: keyword }],
+      'verifySuggestedSearches'
+    );
+    console.log(`[verifySuggestedSearches] keyword="${keyword}" count=${matches.length}`);
+  }
+
+  /**
+   * Smartphone category suggestion that also contains the keyword, e.g. "Galaxy S26\nin Smartphones".
+   * Stops when that row is missing.
+   */
+  async openSuggestedCategory(keyword: string): Promise<void> {
+    const match = (await this.findSuggestions(keyword, SMARTPHONE_CATEGORY_WORDS)).at(0);
+    markFailedAndStop(
+      [{ label: 'Smartphone Suggested Searches not shown', pass: Boolean(match), detail: keyword }],
+      'openSuggestedCategory'
+    );
+    const label = ((await match!.getAttribute('content-desc').catch(() => '')) ?? '').trim();
+    await match!.click();
+    console.log(`[openSuggestedCategory] opened "${label}"`);
+  }
+
+  /** Displayed Suggested Searches rows that contain the keyword, and optionally a category word. */
+  private async findSuggestions(keyword: string, categoryWords: string[] = []): Promise<WebdriverIO.Element[]> {
+    const expected = normalizeText(keyword);
+    const categories = categoryWords.map((word) => normalizeText(word));
+    let matches: WebdriverIO.Element[] = [];
+    await driver
+      .waitUntil(
+        async () => {
+          matches = [];
+          for (const node of [...(await this.locator.suggestedCategories)]) {
+            const label = normalizeText(await node.getAttribute('content-desc').catch(() => ''));
+            if (!label.includes(expected) || !(await node.isDisplayed().catch(() => false))) {
+              continue;
+            }
+            if (categories.length > 0 && !categories.some((word) => label.includes(word))) {
+              continue;
+            }
+            matches.push(node);
+          }
+          return matches.length > 0;
+        },
+        { timeout: 5000, interval: 500 }
+      )
+      .catch(() => undefined);
+    return matches;
   }
 
   async verifySearchResultsDisplayed(): Promise<void> {

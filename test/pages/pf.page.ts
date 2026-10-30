@@ -624,8 +624,7 @@ export class PfPage extends BasePage {
     return false;
   }
 
-  /** Name, price, rating and stock of every PF card, collected while scrolling the list. */
-  async collectPfProducts(): Promise<PfProduct[]> {
+  private async collectPfProducts(): Promise<PfProduct[]> {
     await switchToNative();
     const products = new Map<string, PfProduct & { ratingText: string }>();
     let missed = 0;
@@ -845,12 +844,15 @@ export class PfPage extends BasePage {
     return ((await found.getAttribute('content-desc').catch(() => '')) ?? '').trim();
   }
 
-  /** Card content-desc on this PF is the price, e.g. "52.990.000 VND", "Rp10.499.000", or "2,499.00 ⃁". */
+  /** Card content-desc on this PF is the price, e.g. "52.990.000 VND", "Rp10.499.000", "R 27 499,00", or "2,499.00 ⃁". */
   private isPriceLabel(label: string): boolean {
-    return /\d/.test(label) && /vnd|usd|eur|krw|rp|\$|€|£|₩|¥|₫|﷼|⃁/i.test(label);
+    return /\d/.test(label) && /vnd|usd|eur|krw|rp|\br\s*\d|\$|€|£|₩|¥|₫|﷼|⃁/i.test(label);
   }
 
-  /** "." groups thousands in "40.990.000 ₫" and "Rp10.499.000". The card text also carries the SKU on the next line. */
+  /**
+   * "." groups thousands in "40.990.000 ₫". ZA uses spaces and a comma decimal, e.g. "R 27 499,00".
+   * The card text also carries the SKU on a later line.
+   */
   private parseCardPrice(priceText: string): number {
     const priceLine = priceText
       .split(/\r?\n/)
@@ -859,6 +861,13 @@ export class PfPage extends BasePage {
     const compact = priceLine.replace(/[^\d.,]/g, '');
     if (/^\d{1,3}(\.\d{3})+$/.test(compact)) {
       return Number(compact.replace(/\./g, ''));
+    }
+    // "27 499,00" → "27499,00" after spaces are dropped
+    if (/^\d+,\d{1,2}$/.test(compact)) {
+      return Number(compact.replace(',', '.'));
+    }
+    if (/^\d{1,3}(\.\d{3})+,\d{1,2}$/.test(compact)) {
+      return Number(compact.replace(/\./g, '').replace(',', '.'));
     }
     return parsePriceToNumber(priceLine);
   }
