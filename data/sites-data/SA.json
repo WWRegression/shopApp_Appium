@@ -18,15 +18,15 @@
     "town": "أبها"
   },
   "product": {
-    "sku": "SM-S948BZKIMEA",
+    "haSku": "RT53DG7A60B1ZA",
+    "vdSku": "UA55M70HAUXSA",
+    "imSku": "SM-S948BZKIMEA",
     "deviceName": "Galaxy S26 Ultra",
     "color": "black",
     "storage": "256GB"
   },
   "search": {
-    "keyword": "سماعة",
-    "haSku": "RT53DG7A60B1ZA",
-    "vdSku": "UA55M70HAUXSA"
+    "localKeyword": "ساعة"
   },
   "tradeIn": {
     "brand": "Samsung",

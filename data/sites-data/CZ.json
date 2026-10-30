@@ -17,15 +17,15 @@
     "town": "asdf"
   },
   "product": {
-    "sku": "SM-F976BDGBEUE",
+    "haSku": "RB50DG632EB1EO",
+    "vdSku": "QE65S99HATXXH",
+    "imSku": "SM-F976BDGBEUE",
     "deviceName": "Galaxy Z Fold8 Ultra",
     "color": "green shadow",
     "storage": "256GB"
   },
   "search": {
-    "keyword": "hodinky",
-    "haSku": "RB50DG632EB1EO",
-    "vdSku": "QE65S99HATXXH"
+    "localKeyword": "hodinky"
   },
   "tradeIn": {
     "brand": "samsung",

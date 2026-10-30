@@ -19,15 +19,15 @@
     "searchText": "123"
   },
   "product": {
-    "sku": "SM-F971BZGDXNZ",
+    "haSku": "RR40H39G4VSA",
+    "vdSku": "UA65M1EHASXNZ",
+    "imSku": "SM-F971BZGDXNZ",
     "deviceName": "Galaxy Z Fold8",
     "color": "pistachio",
     "storage": "256GB"
   },
   "search": {
-    "keyword": "smart watch",
-    "haSku": "RR40H39G4VSA",
-    "vdSku": "UA65M1EHASXNZ"
+    "localKeyword": "watch"
   },
   "tradeIn": {
     "brand": "Apple",

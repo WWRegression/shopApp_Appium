@@ -16,15 +16,15 @@
     "postalCode": "123456"
   },
   "product": {
-    "sku": "SM-F976BDGBEUE",
+    "haSku": "RF50C510ES9/EO",
+    "vdSku": "UE85M72HAUXXH",
+    "imSku": "SM-F976BDGBEUE",
     "deviceName": "Galaxy Z Fold8 Ultra",
     "color": "green shadow",
     "storage": "256GB"
   },
   "search": {
-    "keyword": "ceas",
-    "haSku": "RF50C510ES9/EO",
-    "vdSku": "UE85M72HAUXXH"
+    "localKeyword": "ceas"
   },
   "tradeIn": {
     "brand": "Apple",

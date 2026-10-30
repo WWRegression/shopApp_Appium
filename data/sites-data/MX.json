@@ -21,15 +21,15 @@
     "town": "Álvaro Obregón"
   },
   "product": {
-    "sku": "SM-F976BDGVLTM",
+    "haSku": "RT70F18TRS9EM",
+    "vdSku": "QN75LS03HWFXZX",
+    "imSku": "SM-F976BDGVLTM",
     "deviceName": "Galaxy Z Fold8 Ultra",
     "color": "green shadow",
     "storage": "1TB"
   },
   "search": {
-    "keyword": "relojes",
-    "haSku": "RT70F18TRS9EM",
-    "vdSku": "QN75LS03HWFXZX"
+    "localKeyword": "relojes"
   },
   "tradeIn": {
     "brand": "Samsung",

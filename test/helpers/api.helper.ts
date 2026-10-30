@@ -310,9 +310,9 @@ async function fetchImInfo(site: LoadedSite, sku: string): Promise<ResolvedProdu
 // === 5) Public API ===
 
 function getCurrentSkuFor(site: LoadedSite, type: ProductType): string | undefined {
-  if (type === 'IM') return site.product.sku;
-  if (type === 'VD') return site.search.vdSku;
-  return site.search.haSku;
+  if (type === 'IM') return site.product.imSku;
+  if (type === 'VD') return site.product.vdSku;
+  return site.product.haSku;
 }
 
 /** Resolves a fresh, valid sku for the site+type, preferring the current sku when still valid. */
@@ -621,7 +621,7 @@ function addMultipleToCartScript(
     .catch((err) => done({ ok: false, body: String(err) }));
 }
 
-/** Adds several products (e.g. site.product.sku + site.search.haSku/vdSku) to the cart in one call via the OCC bulk-add endpoint. */
+/** Adds several products (e.g. site.product.imSku + site.product.haSku/vdSku) to the cart in one call via the OCC bulk-add endpoint. */
 export async function addMultipleToCart(skus: string[]): Promise<AddMultipleToCartResult> {
   const webviewReady = await switchToWebView(5000);
   markFailed([{ label: 'webview context', pass: webviewReady }], 'addMultipleToCart');

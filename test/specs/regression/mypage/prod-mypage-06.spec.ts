@@ -33,7 +33,7 @@ describe('PROD_MYPAGE_06', () => {
 
       // Checkout: the delivery address as added, the billing address as edited
       await cartPage.clearCart();
-      await addToCart(site.product.sku);
+      await addToCart(site.product.imSku);
       await cartPage.prepareCartPage();
       await cartPage.clickContinueToCheckout();
       await checkoutPage.verifySavedDeliveryAddress(site.shipping.postalCode ?? '');

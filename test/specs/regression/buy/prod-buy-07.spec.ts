@@ -14,11 +14,11 @@ describe('PROD_BUY_07', () => {
   
   it('AR function on TV/Monitor PD', async function () {
     await runOrSkip.call(this, 'PROD_BUY_07', async (site) => {
-      await searchPage.searchByKeyword(site.search.vdSku ?? '');
+      await searchPage.searchByKeyword(site.product.vdSku ?? '');
       await pfPage.selectPfCard({ mode: 'first' });
 
       await pdPage.preparePdPage();
-      await pdPage.verifySku(site.search.vdSku ?? '');      
+      await pdPage.verifySku(site.product.vdSku ?? '');      
       await pdPage.openArAndVerify();
     });
   });

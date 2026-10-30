@@ -22,15 +22,15 @@
     "searchText": "Bogota, D.C."
   },
   "product": {
-    "sku": "SM-S938BZTJLTC",
+    "haSku": "RB43DG6005S9CO",
+    "vdSku": "UN65M75HAKXZL",
+    "imSku": "SM-S938BZTJLTC",
     "deviceName": "Galaxy S25 Ultra",
     "color": "titanium gray",
     "storage": "256GB"
   },
   "search": {
-    "keyword": "reloj",
-    "haSku": "RB43DG6005S9CO",
-    "vdSku": "UN65M75HAKXZL"
+    "localKeyword": "reloj"
   },
   "tradeIn": {
     "brand": "Samsung",

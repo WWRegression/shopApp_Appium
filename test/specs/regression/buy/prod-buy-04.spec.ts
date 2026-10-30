@@ -16,12 +16,12 @@ describe('PROD_BUY_04', () => {
     await runOrSkip.call(this, 'PROD_BUY_04', async (site) => {
       await cartPage.clearCart();
 
-      await searchPage.searchByKeyword(site.product.sku);
+      await searchPage.searchByKeyword(site.product.imSku);
       await pfPage.selectPfCard({ mode: 'first' });
 
       await bcPage.prepareBcPage();
       await bcPage.selectOptions(site.product);
-      await bcPage.verifySku(site.product.sku);
+      await bcPage.verifySku(site.product.imSku);
       
       await bcPage.eup.addService();
       await bcPage.eup.verifyServiceApplied();
@@ -34,11 +34,11 @@ describe('PROD_BUY_04', () => {
       await splashPage.clickSplashContinue();
 
       await cartPage.prepareCartPage();
-      await cartPage.verifySku(site.product.sku);      
+      await cartPage.verifySku(site.product.imSku);      
       await cartPage.eup.verifyServiceApplied();
 
       // Increase quantity to 2 and verify the EUP error text is shown
-      await cartPage.increaseQuantity(site.product.sku);
+      await cartPage.increaseQuantity(site.product.imSku);
       await cartPage.verifyServiceErrorText('eup');
     });
   });

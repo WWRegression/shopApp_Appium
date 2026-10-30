@@ -165,7 +165,7 @@ export class PdPage extends BasePage {
   }
 
   private async selectColor(product: FlagshipWatchProduct): Promise<void> {
-    const displayColor = resolveDisplayColor(product.color, product.sku, 'watch');
+    const displayColor = resolveDisplayColor(product.color, product.sku ?? '', 'watch');
     const colorOpt = this.locator.watchColorOption(displayColor);
     await colorOpt.waitForDisplayed({ timeout: 10000 }).catch(() => undefined);
     await markFailedAndStop(() => scrollAndJsClick(colorOpt), `[PD][watch] color option not selectable: "${displayColor}"`);

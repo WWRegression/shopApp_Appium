@@ -77,15 +77,15 @@ export interface Site {
     searchText?: string;
   };
   product: {
-    sku: string;
+    haSku?: string;
+    vdSku?: string;
+    imSku: string;
     deviceName: string;
     color: string;
     storage: string;
   };
   search: {
-    keyword: string;
-    haSku?: string;
-    vdSku?: string;
+    localKeyword: string;
   };
   tradeIn?: {
     brand?: string;
@@ -195,28 +195,32 @@ function resolveExcludedTcs(siteCode: string, siteJsonExcluded?: string[]): stri
   return [...new Set(merged)];
 }
 
-/** Overlays the cached IM product onto the static value, only when every field resolved. */
+/** Overlays cached IM/HA/VD SKUs onto the static product when the API resolved them. */
 function resolveProduct(
   cache: ReturnType<typeof getResolvedSkuCache>,
   staticProduct: Site['product']
 ): Site['product'] {
+  const product = { ...staticProduct };
+  if (cache.HA?.sku) {
+    product.haSku = cache.HA.sku;
+  }
+  if (cache.VD?.sku) {
+    product.vdSku = cache.VD.sku;
+  }
   const im = cache.IM;
   if (im?.sku && im.color && im.name && im.storage) {
-    return { sku: im.sku, deviceName: im.name, color: im.color, storage: im.storage };
+    product.imSku = im.sku;
+    product.deviceName = im.name;
+    product.color = im.color;
+    product.storage = im.storage;
   }
-  return staticProduct;
-}
-
-function resolveSearch(
-  cache: ReturnType<typeof getResolvedSkuCache>,
-  staticSearch: Site['search']
-): Site['search'] {
-  // JP has no search block (no HA/VD products)
-  const search = staticSearch ?? ({} as Site['search']);
   return {
-    ...search,
-    vdSku: cache.VD?.sku ?? search.vdSku,
-    haSku: cache.HA?.sku ?? search.haSku,
+    ...(product.haSku ? { haSku: product.haSku } : {}),
+    ...(product.vdSku ? { vdSku: product.vdSku } : {}),
+    imSku: product.imSku,
+    deviceName: product.deviceName,
+    color: product.color,
+    storage: product.storage,
   };
 }
 
@@ -254,7 +258,6 @@ function withResolvedSku(site: LoadedSite): LoadedSite {
   return {
     ...site,
     product: resolveProduct(skuCache, site.product),
-    search: resolveSearch(skuCache, site.search),
   };
 }
 

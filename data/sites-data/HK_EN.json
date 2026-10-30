@@ -16,15 +16,15 @@
     "town": "Hong Kong SAR"
   },
   "product": {
-    "sku": "SM-F9760DGPTGY",
+    "haSku": "RS80F65J1FSH",
+    "vdSku": "QA55QN80HAJXZK",
+    "imSku": "SM-F9760DGPTGY",
     "deviceName": "Galaxy Z Fold8 Ultra",
     "color": "green shadow",
     "storage": "1TB"
   },
   "search": {
-    "keyword": "smart watch",
-    "haSku": "RS80F65J1FSH",
-    "vdSku": "QA55QN80HAJXZK"
+    "localKeyword": "watch"
   },
   "tradeIn": {
     "brand": "APPLE",

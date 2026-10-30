@@ -17,17 +17,15 @@ describe('PROD_BUY_09', () => {
 
   it('Price/Special Price consistent across PF/BC/Cart/Checkout', async function () {
     await runOrSkip.call(this, 'PROD_BUY_09', async (site) => {
-      const { sku } = site.product;
       await cartPage.clearCart();
 
-      await searchPage.searchByKeyword(sku);
-      const [pfProduct] = await pfPage.collectPfProducts();
-      const pfPrice = pfProduct?.price ?? NaN;
+      await searchPage.searchByKeyword(site.product.imSku);
+      const pfPrice = await pfPage.getFirstCardPrice();
       await pfPage.selectPfCard({ mode: 'first' });
 
       await bcPage.prepareBcPage();
       await bcPage.selectOptions(site.product);
-      await bcPage.verifySku(sku);
+      await bcPage.verifySku(site.product.imSku);
       await bcPage.tradeIn.selectNoForService();
       await bcPage.scPlus.selectNoForService();
       await bcPage.galaxyClub.selectNoForService();
@@ -37,12 +35,12 @@ describe('PROD_BUY_09', () => {
       await splashPage.clickSplashContinue();
 
       await cartPage.prepareCartPage();
-      await cartPage.verifySku(sku);
-      const cartPrice = await cartPage.verifyItemPrice(sku, pfPrice);
+      await cartPage.verifySku(site.product.imSku);
+      const cartPrice = await cartPage.verifyItemPrice(site.product.imSku, pfPrice);
 
       await cartPage.clickContinueToCheckout();
       await checkoutPage.prepareCheckoutPage();
-      await checkoutPage.verifyItemPrice(sku, cartPrice);
+      await checkoutPage.verifyItemPrice(site.product.imSku, cartPrice);
     });
   });
 });

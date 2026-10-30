@@ -21,15 +21,15 @@
     "searchText": "Berliner St. 1"
   },
   "product": {
-    "sku": "SM-F971BZGCEUB",
+    "haSku": "RB38C607AB1/EF",
+    "vdSku": "GQ43LS03HEUXZG",
+    "imSku": "SM-F971BZGCEUB",
     "deviceName": "Galaxy Z Fold8",
     "color": "pistachio",
     "storage": "512GB"
   },
   "search": {
-    "keyword": "Armbanduhr",
-    "haSku": "RB38C607AB1/EF",
-    "vdSku": "GQ43LS03HEUXZG"
+    "localKeyword": "Armbanduhr"
   },
   "tradeIn": {
     "brand": "Samsung",

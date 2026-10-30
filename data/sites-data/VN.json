@@ -17,15 +17,15 @@
     "searchText": "Thành phố Cần Thơ"
   },
   "product": {
-    "sku": "SM-F971BZGGXXV",
+    "haSku": "RF59CB66F8S/SV",
+    "vdSku": "UA65M8EHAKXXV",
+    "imSku": "SM-F971BZGGXXV",
     "deviceName": "Galaxy Z Fold8",
     "color": "pistachio",
     "storage": "512GB"
   },
   "search": {
-    "keyword": "Đồng hồ",
-    "haSku": "RF59CB66F8S/SV",
-    "vdSku": "UA65M8EHAKXXV"
+    "localKeyword": "đồng hồ"
   },
   "tradeIn": {
     "brand": "SAMSUNG",

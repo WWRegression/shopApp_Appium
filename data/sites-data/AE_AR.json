@@ -19,15 +19,15 @@
     "searchText": "دبي"
   },
   "product": {
-    "sku": "SM-F976BDGIMEA",
+    "haSku": "RS90F66B1FAE",
+    "vdSku": "QA75LS03HWUXZN",
+    "imSku": "SM-F976BDGIMEA",
     "deviceName": "Galaxy Z Fold8 Ultra",
     "color": "green shadow",
     "storage": "256GB"
   },
   "search": {
-    "keyword": "ساعة ذكية",
-    "haSku": "RS90F66B1FAE",
-    "vdSku": "QA75LS03HWUXZN"
+    "localKeyword": "ساعة ذكية"
   },
   "tradeIn": {
     "brand": "سامسونج",

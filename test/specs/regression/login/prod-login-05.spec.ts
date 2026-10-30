@@ -19,7 +19,7 @@ describe('PROD_LOGIN_05', () => {
 
       await cartPage.selectBnbMenu('cart');
       await cartPage.prepareCartPage();
-      await addToCart(site.product.sku);
+      await addToCart(site.product.imSku);
       // await cartPage.prepareCartPage();
       await cartPage.clickContinueToCheckout();
 

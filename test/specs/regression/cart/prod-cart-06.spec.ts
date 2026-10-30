@@ -11,13 +11,13 @@ describe('PROD_CART_06', () => {
   it('Click the product name in the Cart to open the BC page and verify the SKU', async function () {
     await runOrSkip.call(this, 'PROD_CART_06', async (site) => {
       await cartPage.clearCart();
-      await addToCart(site.product.sku);
+      await addToCart(site.product.imSku);
       await cartPage.prepareCartPage();
-      await cartPage.verifySku(site.product.sku);
-      await cartPage.clickProductName(site.product.sku);
+      await cartPage.verifySku(site.product.imSku);
+      await cartPage.clickProductName(site.product.imSku);
 
       await bcPage.prepareBcPage();
-      await bcPage.verifySku(site.product.sku);
+      await bcPage.verifySku(site.product.imSku);
     });
   });
 });

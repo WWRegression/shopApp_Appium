@@ -18,15 +18,15 @@
     "town": "PARIS"
   },
   "product": {
-    "sku": "SM-S948BLBDEUB",
+    "haSku": "BRB80F30ADS0EF",
+    "vdSku": "TQ65LS03FAUXXC",
+    "imSku": "SM-S948BLBDEUB",
     "deviceName": "Galaxy S26 Ultra",
     "color": "sky blue",
     "storage": "256GB"
   },
   "search": {
-    "keyword": "montre",
-    "haSku": "BRB80F30ADS0EF",
-    "vdSku": "TQ65LS03FAUXXC"
+    "localKeyword": "montre"
   },
   "tradeIn": {
     "brand": "Samsung",

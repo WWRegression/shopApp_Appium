@@ -26,7 +26,7 @@ describe('PROD_CHECKOUT_01', function () {
       await mypageProfilePage.prepareAddressPage();
       await mypageProfilePage.clearAllAddresses();
 
-      await searchPage.searchByKeyword(site.product.sku);
+      await searchPage.searchByKeyword(site.product.imSku);
       await pfPage.selectPfCard({ mode: 'first' });
 
       await bcPage.prepareBcPage();

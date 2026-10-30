@@ -19,15 +19,15 @@
     "searchText": "İSTANBUL"
   },
   "product": {
-    "sku": "SM-S948BZKGTUR",
+    "haSku": "RT62K704RSL/TR",
+    "vdSku": "QE75QN70FAUXTK",
+    "imSku": "SM-S948BZKGTUR",
     "deviceName": "Galaxy S26 Ultra",
     "color": "black",
     "storage": "512GB"
   },
   "search": {
-    "keyword": "Akıllı saat",
-    "haSku": "RT62K704RSL/TR",
-    "vdSku": "QE75QN70FAUXTK"
+    "localKeyword": "Akıllı saat"
   },
   "tradeIn": {
     "brand": "Apple",

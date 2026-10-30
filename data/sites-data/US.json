@@ -17,15 +17,15 @@
     "searchText": "AZ"
   },
   "product": {
-    "sku": "SM-F971UZKAXAA",
+    "haSku": "RF70H30GERAA",
+    "vdSku": "QN77S85FAEXZA",
+    "imSku": "SM-F971UZKAXAA",
     "deviceName": "Galaxy Z Fold8",
     "color": "graphite",
     "storage": "256GB"
   },
   "search": {
-    "keyword": "smart watch",
-    "haSku": "RF70H30GERAA",
-    "vdSku": "QN77S85FAEXZA"
+    "localKeyword": "watch"
   },
   "tradeIn": {
     "brand": "Samsung",

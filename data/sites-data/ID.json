@@ -19,15 +19,15 @@
     "searchText": "DKI Jakarta"
   },
   "product": {
-    "sku": "SM-F976BDGHXID",
+    "haSku": "RS90F65DNFSE",
+    "vdSku": "UA75M1EHAKXXD",
+    "imSku": "SM-F976BDGHXID",
     "deviceName": "Galaxy Z Fold8 Ultra",
     "color": "green shadow",
     "storage": "1TB"
   },
   "search": {
-    "keyword": "jam tangan",
-    "haSku": "RS90F65DNFSE",
-    "vdSku": "UA75M1EHAKXXD"
+    "localKeyword": "jam tangan"
   },
   "tradeIn": {
     "brand": "Samsung",

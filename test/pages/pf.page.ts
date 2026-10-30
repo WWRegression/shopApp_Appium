@@ -40,8 +40,6 @@ const OUT_OF_STOCK_WORDS = [
 ];
 
 export type PfTabTarget = { tab: string } | { product: string };
-export type WishState = 'add' | 'remove';
-
 /** How the spec picks a PF card; matchPfCard only compares text. */
 export type PfCardQuery =
   | { mode: 'first'; exclude?: boolean }
@@ -138,6 +136,21 @@ export class PfPage extends BasePage {
       return null;
     }
     return normalizeProductName(await this.selectPfCard({ mode: 'first', exclude }));
+  }
+
+  /** Price on the first visible PF card. Does not scroll the list, so a following selectPfCard({ mode: 'first' }) hits the same card. */
+  async getFirstCardPrice(): Promise<number> {
+    const [card] = [...(await this.pflocator.productGrid)];
+    if (!card) {
+      return NaN;
+    }
+    const cardDesc = ((await card.getAttribute('content-desc').catch(() => '')) ?? '').trim();
+    const priceText = this.isPriceLabel(cardDesc)
+      ? cardDesc
+      : await this.firstContentDesc([...(await this.pflocator.cardPrices(card))]);
+    const price = priceText ? this.parseCardPrice(priceText) : NaN;
+    console.log(`[getFirstCardPrice] priceText="${priceText}" price=${price}`);
+    return price;
   }
 
   /** desc and product name of a PF card; the name is the title view when the card has one (UK), else the desc. */
@@ -523,11 +536,6 @@ export class PfPage extends BasePage {
     return [];
   }
 
-  async getWishState(): Promise<WishState> {
-    // TODO: Implement wish icon state readback
-    return 'remove';
-  }
-
   async verifyNoSearchResultsFound(): Promise<void> {
     // TODO: Implement no-results verification
   }
@@ -538,10 +546,6 @@ export class PfPage extends BasePage {
 
   async verifySortApplied(_selected: string, _products?: string[]): Promise<void> {
     // TODO: Implement sort-applied verification
-  }
-
-  async verifyWishState(_expected: WishState): Promise<void> {
-    // TODO: Implement wish state verification
   }
 
   async verifyPfRedirect(_options: Record<string, string>): Promise<void> {
@@ -958,6 +962,26 @@ export class PfPage extends BasePage {
   private isOutOfStock(label: string): boolean {
     const lower = label.toLowerCase();
     return OUT_OF_STOCK_WORDS.some((word) => lower.includes(word));
+  }
+
+  /**
+   * After the product was removed from the wishlist page, PF shows the add heart again for that SKU.
+   * The remove heart must not be shown.
+   */
+  async verifyWishlistRemovedOnPf(sku: string): Promise<void> {
+    await switchToNative();
+    const addShown = await scrollUntilVisible(this.pflocator.wishlistIcon(sku));
+    const removeShown = await isDisplayedOrFalse(this.pflocator.wishlistRemoveIcon(sku));
+    console.log(
+      `${this.checkResult(addShown && !removeShown)} [verifyWishlistRemovedOnPf] sku=${sku} add=${addShown} remove=${removeShown}`
+    );
+    markFailedAndStop(
+      [
+        { label: 'add-to-wishlist heart not shown on PF after wishlist remove', pass: addShown, detail: sku },
+        { label: 'remove-from-wishlist heart still shown on PF', pass: !removeShown, detail: sku },
+      ],
+      'verifyWishlistRemovedOnPf'
+    );
   }
 
   /** Taps the first "add to wishlist" heart on PF and returns that card's SKU. */

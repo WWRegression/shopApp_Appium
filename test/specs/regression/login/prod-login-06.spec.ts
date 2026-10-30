@@ -17,7 +17,7 @@ describe('PROD_LOGIN_06', () => {
 
       await cartPage.selectBnbMenu('cart');
       await cartPage.prepareCartPage();
-      await addToCart(site.product.sku);
+      await addToCart(site.product.imSku);
 
       // Cart Sign in opens the login page; its login button logs in with the device account, or with Gmail when it was signed out (IN)
       await cartPage.clickLoginOnCart();

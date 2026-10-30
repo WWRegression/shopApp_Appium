@@ -17,11 +17,11 @@ describe('PROD_BUY_05', () => {
     await runOrSkip.call(this, 'PROD_BUY_05', async (site) => {
       await cartPage.clearCart();
 
-      await searchPage.searchByKeyword(site.search.vdSku ?? '');
+      await searchPage.searchByKeyword(site.product.vdSku ?? '');
       await pfPage.selectPfCard({ mode: 'first' });
 
       await pdPage.preparePdPage();
-      await pdPage.verifySku(site.search.vdSku ?? '');
+      await pdPage.verifySku(site.product.vdSku ?? '');
       if(['AE', 'AE_AR', 'VN'].includes(site.siteCode)) {
         await pdPage.tradeIn.addService(site.tradeIn);
       }else{
@@ -35,10 +35,10 @@ describe('PROD_BUY_05', () => {
       await cartPage.prepareCartPage();
       await cartPage.tradeUp.verifyServiceApplied();
       await cartPage.prepareCartPage();
-      await cartPage.verifySku(site.search.vdSku ?? '');
+      await cartPage.verifySku(site.product.vdSku ?? '');
 
       // Increase quantity to 2 and verify the Trade-Up error text is shown
-      await cartPage.increaseQuantity(site.search.vdSku ?? '');
+      await cartPage.increaseQuantity(site.product.vdSku ?? '');
       await cartPage.verifyServiceErrorText('tradeUp');
     });
   });

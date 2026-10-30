@@ -17,15 +17,15 @@
     "district": "Metropolitana de Santiago"
   },
   "product": {
-    "sku": "SM-S948BZVKLTL",
+    "haSku": "RT22FARADS8/ZS",
+    "vdSku": "LS27FG602SLXZS",
+    "imSku": "SM-S948BZVKLTL",
     "deviceName": "Galaxy S26 Ultra",
     "color": "cobalt violet",
     "storage": "512GB"
   },
   "search": {
-    "keyword": "reloj ",
-    "haSku": "RT22FARADS8/ZS",
-    "vdSku": "LS27FG602SLXZS"
+    "localKeyword": "reloj"
   },
   "tradeIn": {
     "brand": "Samsung",

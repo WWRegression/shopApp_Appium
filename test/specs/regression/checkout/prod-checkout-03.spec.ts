@@ -26,7 +26,7 @@ describe('PROD_CHECKOUT_03', () => {
 
       await cartPage.clearCart();
 
-      await searchPage.searchByKeyword(site.product.sku);
+      await searchPage.searchByKeyword(site.product.imSku);
       await pfPage.selectPfCard({ mode: 'first' });
 
       await bcPage.prepareBcPage();

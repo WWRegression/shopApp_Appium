@@ -20,15 +20,15 @@
     "searchText": "Abu Dhabi"
   },
   "product": {
-    "sku": "SM-F976BDGIMEA",
+    "haSku": "RS90F66B1FAE",
+    "vdSku": "QA65LS03HEUXZN",
+    "imSku": "SM-F976BDGIMEA",
     "deviceName": "Galaxy Z Fold8 Ultra",
     "color": "green shadow",
     "storage": "256GB"
   },
   "search": {
-    "keyword": "smart watch",
-    "haSku": "RS90F66B1FAE",
-    "vdSku": "QA65LS03HEUXZN"
+    "localKeyword": "watch"
   },
   "tradeIn": {
     "brand": "Samsung",

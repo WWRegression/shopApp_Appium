@@ -16,15 +16,15 @@
     "town": "אבו גווייעד שבט"
   },
   "product": {
-    "sku": "SM-F976BDGNMEC",
+    "haSku": "RF65DB970E22EU",
+    "vdSku": "QE77S90HATXIL",
+    "imSku": "SM-F976BDGNMEC",
     "deviceName": "Galaxy Z Fold8 Ultra",
     "color": "green shadow",
     "storage": ""
   },
   "search": {
-    "keyword": "שעונים",
-    "haSku": "RF65DB970E22EU",
-    "vdSku": "QE77S90HATXIL"
+    "localKeyword": "שעונים"
   },
   "tradeIn": {
     "brand": "Samsung",

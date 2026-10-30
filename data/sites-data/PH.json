@@ -17,15 +17,15 @@
     "searchText": "Metro Manila"
   },
   "product": {
-    "sku": "SM-S948BZKCPHL",
+    "haSku": "RT22FARBDS9/TC",
+    "vdSku": "QA83S90HAEXXP",
+    "imSku": "SM-S948BZKCPHL",
     "deviceName": "Galaxy S26 Ultra",
     "color": "black",
     "storage": "512GB"
   },
   "search": {
-    "keyword": "smart watch",
-    "haSku": "RT22FARBDS9/TC",
-    "vdSku": "QA83S90HAEXXP"
+    "localKeyword": "watch"
   },
   "tradeIn": {
     "brand": "Apple",

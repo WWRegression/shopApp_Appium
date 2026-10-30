@@ -21,15 +21,15 @@
     "searchText": "Piazza Addolorata, Acqui Terme, AL, Italia"
   },
   "product": {
-    "sku": "SM-F971BZGBEUE",
+    "haSku": "RR70H39CCFEF",
+    "vdSku": "QE50QN70HAUXZT",
+    "imSku": "SM-F971BZGBEUE",
     "deviceName": "Galaxy Z Fold8",
     "color": "pistachio",
     "storage": "256GB"
   },
   "search": {
-    "keyword": "orologio",
-    "haSku": "RR70H39CCFEF",
-    "vdSku": "QE50QN70HAUXZT"
+    "localKeyword": "orologio"
   },
   "tradeIn": {
     "brand": "SAMSUNG",

@@ -17,15 +17,15 @@
     "town": "Abha"
   },
   "product": {
-    "sku": "SM-F966BZKGMEA",
+    "haSku": "RS57DG4000M9ZA",
+    "vdSku": "UA85M1EHAUXSA",
+    "imSku": "SM-F966BZKGMEA",
     "deviceName": "Galaxy Z Fold7",
     "color": "jetblack",
     "storage": "512GB"
   },
   "search": {
-    "keyword": "earphone",
-    "haSku": "RS57DG4000M9ZA",
-    "vdSku": "UA85M1EHAUXSA"
+    "localKeyword": "watch"
   },
   "tradeIn": {
     "brand": "Samsung",

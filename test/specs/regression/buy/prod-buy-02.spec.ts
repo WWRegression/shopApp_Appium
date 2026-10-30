@@ -20,12 +20,12 @@ describe('PROD_BUY_02', () => {
     await runOrSkip.call(this, 'PROD_BUY_02', async (site) => {
       await cartPage.clearCart();
 
-      await searchPage.searchByKeyword(site.product.sku);
+      await searchPage.searchByKeyword(site.product.imSku);
       await pfPage.selectPfCard({ mode: 'first' });
       
       await bcPage.prepareBcPage();
       await bcPage.selectOptions(site.product);
-      await bcPage.verifySku(site.product.sku);
+      await bcPage.verifySku(site.product.imSku);
 
       await bcPage.scPlus.addService();
       await bcPage.scPlus.verifyServiceApplied();
@@ -37,11 +37,11 @@ describe('PROD_BUY_02', () => {
       await splashPage.clickSplashContinue();
 
       await cartPage.prepareCartPage();
-      await cartPage.verifySku(site.product.sku);
+      await cartPage.verifySku(site.product.imSku);
       await cartPage.scPlus.verifyServiceApplied();
 
       // Increase quantity to 2 and verify the SC+ error text is shown
-      await cartPage.increaseQuantity(site.product.sku);
+      await cartPage.increaseQuantity(site.product.imSku);
       await cartPage.verifyServiceErrorText('scPlus');
     });
   });

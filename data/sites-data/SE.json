@@ -19,15 +19,15 @@
     "town": "Stockholm"
   },
   "product": {
-    "sku": "SM-F971BZGNEUB",
+    "haSku": "RF65DB970E22EF",
+    "vdSku": "TQ75QN85FAUXXC",
+    "imSku": "SM-F971BZGNEUB",
     "deviceName": "Galaxy Z Fold8",
     "color": "pistachio",
     "storage": "1TB"
   },
   "search": {
-    "keyword": "smartklocka",
-    "haSku": "RF65DB970E22EF",
-    "vdSku": "TQ75QN85FAUXXC"
+    "localKeyword": "smartklocka"
   },
   "tradeIn": {
     "brand": "Apple",

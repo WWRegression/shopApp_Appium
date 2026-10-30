@@ -19,15 +19,15 @@
     "town": "asdf"
   },
   "product": {
-    "sku": "SM-F971BZGNEUE",
+    "haSku": "RZ70H32HDTEF",
+    "vdSku": "QE85QN80HAUXXN",
+    "imSku": "SM-F971BZGNEUE",
     "deviceName": "Galaxy Z Fold8",
     "color": "pistachio",
     "storage": "1TB"
   },
   "search": {
-    "keyword": "Armbanduhr",
-    "haSku": "RZ70H32HDTEF",
-    "vdSku": "QE85QN80HAUXXN"
+    "localKeyword": "Armbanduhr"
   },
   "tradeIn": {
     "brand": "Apple",

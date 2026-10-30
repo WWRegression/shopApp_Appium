@@ -9,7 +9,7 @@ describe('PROD_CART_05', () => {
 
   it('add Trade-Up on cart and go to payment', async function () {
     await runOrSkip.call(this, 'PROD_CART_05', async (site) => {
-      const vdSku = site.search.vdSku ?? '';
+      const vdSku = site.product.vdSku ?? '';
       await cartPage.clearCart();
       await addToCart(vdSku);
 

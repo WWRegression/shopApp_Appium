@@ -17,15 +17,15 @@
     "town": "Toronto"
   },
   "product": {
-    "sku": "SM-F971WZGAXAC",
+    "haSku": "RB10FSR4ESR/AA",
+    "vdSku": "QN65LS03HWFXZC",
+    "imSku": "SM-F971WZGAXAC",
     "deviceName": "Galaxy Z Fold8",
     "color": "pistachio",
     "storage": "256GB"
   },
   "search": {
-    "keyword": "smart watch",
-    "haSku": "RB10FSR4ESR/AA",
-    "vdSku": "QN65LS03HWFXZC"
+    "localKeyword": "watch"
   },
   "tradeIn": {
     "brand": "Samsung",

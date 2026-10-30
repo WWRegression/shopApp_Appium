@@ -20,12 +20,12 @@ describe('PROD_BUY_01', () => {
     await runOrSkip.call(this, 'PROD_BUY_01', async (site) => {
       await cartPage.clearCart();
 
-      await searchPage.searchByKeyword(site.product.sku);
+      await searchPage.searchByKeyword(site.product.imSku);
       await pfPage.selectPfCard({ mode: 'first' });
 
       await bcPage.prepareBcPage();
       await bcPage.selectOptions(site.product);
-      await bcPage.verifySku(site.product.sku);
+      await bcPage.verifySku(site.product.imSku);
 
       await bcPage.tradeIn.addService(site.tradeIn);
       await bcPage.tradeIn.verifyServiceApplied();
@@ -39,10 +39,10 @@ describe('PROD_BUY_01', () => {
       await cartPage.prepareCartPage();
       await cartPage.tradeIn.verifyServiceApplied();
       await cartPage.prepareCartPage();
-      await cartPage.verifySku(site.product.sku);
+      await cartPage.verifySku(site.product.imSku);
 
       // Increase quantity to 2 and verify the Trade-In error text is shown
-      await cartPage.increaseQuantity(site.product.sku);
+      await cartPage.increaseQuantity(site.product.imSku);
       await cartPage.verifyServiceErrorText('tradeIn');
     });
   });

@@ -15,7 +15,10 @@ import type { CartItemOptions } from './cart.page';
 
 /** Fields BC accepts from site JSON / Flagship phone / watch. kind, ram, isPFDefaultSKU are catalog-only. */
 export type ProductOptionFields = {
-  sku: string;
+  /** Site fixture IM SKU. */
+  imSku?: string;
+  /** Flagship catalog SKU (same role as imSku). */
+  sku?: string;
   deviceName: string;
   color: string;
   storage?: string;
@@ -115,7 +118,8 @@ export class BcPage extends BasePage {
       markFailedAndStop([{ label: `${field} not in the BC summary`, pass, detail: `expected "${expected}", actual "${actual}"` }], 'BC.verifyOptions');
     };
 
-    check('sku', product.sku, summary.sku, this.matchesSummary('sku', summary.sku, product.sku));
+    const expectedSku = product.imSku ?? product.sku ?? '';
+    check('sku', expectedSku, summary.sku, this.matchesSummary('sku', summary.sku, expectedSku));
 
     const selected: CartItemOptions = {};
     for (const field of OPTION_FIELDS) {

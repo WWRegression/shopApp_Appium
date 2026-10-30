@@ -15,15 +15,15 @@
     "district": "KUALA LUMPUR"
   },
   "product": {
-    "sku": "SM-F976BDGHXME",
+    "haSku": "RS70F65KNFME",
+    "vdSku": "QA55QN1EHAKXXM",
+    "imSku": "SM-F976BDGHXME",
     "deviceName": "Galaxy Z Fold8 Ultra",
     "color": "green shadow",
     "storage": "1TB"
   },
   "search": {
-    "keyword": "smart watch",
-    "haSku": "RS70F65KNFME",
-    "vdSku": "QA55QN1EHAKXXM"
+    "localKeyword": "watch"
   },
   "tradeIn": {
     "brand": "Samsung",

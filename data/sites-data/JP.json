@@ -19,7 +19,7 @@
     "searchText": "1060047"
   },
   "product": {
-    "sku": "SM-F976QDGFSJP",
+    "imSku": "SM-F976QDGFSJP",
     "deviceName": "Galaxy Z Fold8 Ultra",
     "color": "green shadow",
     "storage": "1TB"
@@ -47,5 +47,8 @@
     "settings": true,
     "accountManagement": true,
     "logout": true
+  },
+  "search": {
+    "localKeyword": "スマートウォッチ"
   }
 }

@@ -17,15 +17,15 @@
     "town": "BARANGAROO"
   },
   "product": {
-    "sku": "SM-F971BZGGATS",
+    "haSku": "RF59A7670SR/SA",
+    "vdSku": "QA43LS03HEWXXY",
+    "imSku": "SM-F971BZGGATS",
     "deviceName": "Galaxy Z Fold8",
     "color": "pistachio",
     "storage": "512GB"
   },
   "search": {
-    "keyword": "smart watch",
-    "haSku": "RF59A7670SR/SA",
-    "vdSku": "QA43LS03HEWXXY"
+    "localKeyword": "watch"
   },
   "tradeIn": {
     "brand": "Samsung",
@@ -41,7 +41,7 @@
     "policy": true,
     "settings": true,
     "accountManagement": true,
-    "logout": false,
+    "logout": true,
     "myProducts": false,
     "myOrders": true,
     "myRepairs": true,
@@ -51,12 +51,7 @@
     "mySmartThings": true,
     "orderSupport": false,
     "myAddresses": false,
-    "support": true,
-    "policy": true,
-    "smartThings": false,
-    "settings": true,
-    "accountManagement": true,
-    "logout": true
+    "smartThings": false
   },
   "shopMenuList": {
     "studentStore": true,

@@ -20,15 +20,15 @@
     "searchText": "Boomsesteenweg 1000"
   },
   "product": {
-    "sku": "SM-F971BLVNEUB",
+    "haSku": "RS90F64EDTEF",
+    "vdSku": "QE65S95HFTXXN",
+    "imSku": "SM-F971BLVNEUB",
     "deviceName": "Galaxy Z Fold8",
     "color": "lavender",
     "storage": "1TB"
   },
   "search": {
-    "keyword": "Montre",
-    "haSku": "RS90F64EDTEF",
-    "vdSku": "QE65S95HFTXXN"
+    "localKeyword": "montre"
   },
   "tradeIn": {
     "brand": "Samsung",

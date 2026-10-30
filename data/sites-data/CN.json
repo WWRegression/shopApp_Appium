@@ -14,15 +14,15 @@
     "town": "北京市"
   },
   "product": {
-    "sku": "SM-F9660ZKGCHC",
+    "haSku": "RM90F64X1CSC",
+    "vdSku": "QA85QN90FAJXXZ",
+    "imSku": "SM-F9660ZKGCHC",
     "deviceName": "Galaxy Z Fold7",
     "color": "Blue Shadow",
     "storage": "512GB"
   },
   "search": {
-    "keyword": "手表",
-    "haSku": "RM90F64X1CSC",
-    "vdSku": "QA85QN90FAJXXZ"
+    "localKeyword": "手表"
   },
   "tradeIn": {
     "brand": "三星",

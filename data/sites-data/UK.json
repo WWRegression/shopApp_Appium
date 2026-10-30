@@ -19,15 +19,15 @@
     "searchText": "SW1A 1AA"
   },
   "product": {
-    "sku": "SM-F971BZGBEUB",
+    "haSku": "RS90F64EEFEU",
+    "vdSku": "QE83S90HAEXXU",
+    "imSku": "SM-F971BZGBEUB",
     "deviceName": "Galaxy Z Fold8",
     "color": "Pistachio",
     "storage": "256GB"
   },
   "search": {
-    "keyword": "smart watch",
-    "haSku": "RS90F64EEFEU",
-    "vdSku": "QE83S90HAEXXU"
+    "localKeyword": "watch"
   },
   "tradeIn": {
     "brand": "Samsung",

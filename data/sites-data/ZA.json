@@ -21,15 +21,15 @@
     "searchText": "Gauteng"
   },
   "product": {
-    "sku": "SM-F971BZGOAFA",
+    "haSku": "RS90F64A2FFA",
+    "vdSku": "QA55QN70HAUXXA",
+    "imSku": "SM-F971BZGOAFA",
     "deviceName": "Galaxy Z Fold8",
     "color": "pistachio",
     "storage": "512GB"
   },
   "search": {
-    "keyword": "smart watch",
-    "haSku": "RS90F64A2FFA",
-    "vdSku": "QA55QN70HAUXXA"
+    "localKeyword": "watch"
   },
   "mypageMenuList": {
     "myProducts": false,

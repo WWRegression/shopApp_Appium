@@ -22,15 +22,15 @@
     "searchText": "Alicante"
   },
   "product": {
-    "sku": "SM-S947BZSDEUB",
+    "haSku": "RB38C776CS9/EF",
+    "vdSku": "TU55M80HAUXXC",
+    "imSku": "SM-S947BZSDEUB",
     "deviceName": "Galaxy S26+",
     "color": "silver shadow",
     "storage": "256GB"
   },
   "search": {
-    "keyword": "reloj",
-    "haSku": "RB38C776CS9/EF",
-    "vdSku": "TU55M80HAUXXC"
+    "localKeyword": "reloj"
   },
   "tradeIn": {
     "brand": "SAMSUNG",

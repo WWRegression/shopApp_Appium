@@ -14,9 +14,9 @@ describe('PROD_BUY_06', () => {
 
   it('Native PD is shown', async function () {
     await runOrSkip.call(this, 'PROD_BUY_06', async (site) => {
-      await searchPage.searchByKeyword(site.search.vdSku ?? '');
+      await searchPage.searchByKeyword(site.product.vdSku ?? '');
       await pfPage.selectPfCard({ mode: 'first' });
-      await pdPage.verifySkuForNativePdPage(site.search.vdSku ?? '');
+      await pdPage.verifySkuForNativePdPage(site.product.vdSku ?? '');
     });
   });
 });

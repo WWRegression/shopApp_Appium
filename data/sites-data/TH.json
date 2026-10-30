@@ -17,15 +17,15 @@
     "searchText": "กรุงเทพมหานคร"
   },
   "product": {
-    "sku": "SM-F971BZGGTHL",
+    "haSku": "RT42CG6644S9ST",
+    "vdSku": "QA55S95HAKXXT",
+    "imSku": "SM-F971BZGGTHL",
     "deviceName": "Galaxy Z Fold8",
     "color": "pistachio",
     "storage": "512GB"
   },
   "search": {
-    "keyword": "นาฬิกาอัจฉริยะ",
-    "haSku": "RT42CG6644S9ST",
-    "vdSku": "QA55S95HAKXXT"
+    "localKeyword": "นาฬิกาอัจฉริยะ"
   },
   "tradeIn": {
     "brand": "Samsung",

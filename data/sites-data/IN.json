@@ -13,15 +13,15 @@
     "postalCode": "110001"
   },
   "product": {
-    "sku": "SM-F966BDBD",
+    "haSku": "RS78CG8543S9",
+    "vdSku": "55S95HXU",
+    "imSku": "SM-F966BDBD",
     "deviceName": "galaxy z fold7",
     "color": "blue shadow",
     "storage": "256 GB"
   },
   "search": {
-    "keyword": "earphone",
-    "haSku": "RS78CG8543S9",
-    "vdSku": "55S95HXU"
+    "localKeyword": "watch"
   },
   "tradeIn": {
     "brand": "Samsung",

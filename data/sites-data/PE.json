@@ -18,15 +18,15 @@
     "landmark": "CALLAO"
   },
   "product": {
-    "sku": "SM-S942BZWVLTP",
+    "haSku": "RS57DG4000M9PE",
+    "vdSku": "MRN55R85HAGXPE",
+    "imSku": "SM-S942BZWVLTP",
     "deviceName": "Galaxy S26",
     "color": "white",
     "storage": "512GB"
   },
   "search": {
-    "keyword": "reloj ",
-    "haSku": "RS57DG4000M9PE",
-    "vdSku": "MRN55R85HAGXPE"
+    "localKeyword": "reloj"
   },
   "tradeIn": {
     "brand": "Samsung",

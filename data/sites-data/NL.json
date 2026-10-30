@@ -21,15 +21,15 @@
     "searchText": "Evert van de Beekstraat 1"
   },
   "product": {
-    "sku": "SM-S948BZKGEUB",
+    "haSku": "RS80F66KBFEF",
+    "vdSku": "QE55S95HFTXXN",
+    "imSku": "SM-S948BZKGEUB",
     "deviceName": "Galaxy S26 Ultra",
     "color": "black",
     "storage": "512GB"
   },
   "search": {
-    "keyword": "horloge",
-    "haSku": "RS80F66KBFEF",
-    "vdSku": "QE55S95HFTXXN"
+    "localKeyword": "horloge"
   },
   "tradeIn": {
     "brand": "Samsung",

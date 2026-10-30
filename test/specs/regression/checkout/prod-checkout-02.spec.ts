@@ -19,7 +19,7 @@ describe('PROD_CHECKOUT_02', () => {
 
       await cartPage.clearCart();
 
-      const skus = [site.product.sku, site.search.haSku, site.search.vdSku].filter(
+      const skus = [site.product.imSku, site.product.haSku, site.product.vdSku].filter(
         (sku): sku is string => Boolean(sku)
       );
       await addMultipleToCart(skus);

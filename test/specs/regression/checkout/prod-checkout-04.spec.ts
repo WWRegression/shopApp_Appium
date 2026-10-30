@@ -11,7 +11,7 @@ describe('PROD_CHECKOUT_04', () => {
   it('Edit buttons in Order Summary/Contact Details/Delivery Mode navigate back to the corresponding section', async function () {
     await runOrSkip.call(this, 'PROD_CHECKOUT_04', async (site) => {
       await cartPage.clearCart();
-      await addToCart(site.product.sku);
+      await addToCart(site.product.imSku);
 
       await cartPage.prepareCartPage();
       await cartPage.clickContinueToCheckout();

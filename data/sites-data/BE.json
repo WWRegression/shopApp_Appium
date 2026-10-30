@@ -20,15 +20,15 @@
     "searchText": "Boomsesteenweg 1000"
   },
   "product": {
-    "sku": "SM-F971BLVBEUB",
+    "haSku": "RS90F64EDTEF",
+    "vdSku": "QE65S95HFTXXN",
+    "imSku": "SM-F971BLVBEUB",
     "deviceName": "Galaxy Z Fold8",
     "color": "lavender",
     "storage": "256GB"
   },
   "search": {
-    "keyword": "horloge",
-    "haSku": "RS90F64EDTEF",
-    "vdSku": "QE65S95HFTXXN"
+    "localKeyword": "horloge"
   },
   "tradeIn": {
     "brand": "Samsung",

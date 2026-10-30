@@ -18,16 +18,15 @@
     "town": "Warszawa"
   },
   "product": {
-    "sku": "SM-F976BZKBEUE",
+    "haSku": "RB34C603CS9/EF",
+    "vdSku": "QE75QN77FATXXH",
+    "imSku": "SM-F976BZKBEUE",
     "deviceName": "Galaxy Z Fold8 Ultra",
     "color": "graphite",
     "storage": "256GB"
   },
-  
   "search": {
-    "keyword": "inteligentny zegarek",
-    "haSku": "RB34C603CS9/EF",
-    "vdSku": "QE75QN77FATXXH"
+    "localKeyword": "inteligentny zegarek"
   },
   "tradeIn": {
     "brand": "Apple",

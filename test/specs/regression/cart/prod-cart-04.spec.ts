@@ -10,10 +10,10 @@ describe('PROD_CART_04', () => {
   it('add EUP on cart and go to payment', async function () {
     await runOrSkip.call(this, 'PROD_CART_04', async (site) => {
       await cartPage.clearCart();
-      await addToCart(site.product.sku);
+      await addToCart(site.product.imSku);
 
       await cartPage.prepareCartPage();
-      await cartPage.verifySku(site.product.sku);
+      await cartPage.verifySku(site.product.imSku);
       await cartPage.eup.addService();
       await cartPage.clickContinueToCheckout();
 

@@ -16,15 +16,15 @@
     "town": "香港特別行政區"
   },
   "product": {
-    "sku": "SM-F9710ZGOTGY",
+    "haSku": "RS80F65J1FSH",
+    "vdSku": "QA65QN80HAJXZK",
+    "imSku": "SM-F9710ZGOTGY",
     "deviceName": "Galaxy Z Fold8",
     "color": "pistachio",
     "storage": "512GB"
   },
   "search": {
-    "keyword": "智能手錶",
-    "haSku": "RS80F65J1FSH",
-    "vdSku": "QA65QN80HAJXZK"
+    "localKeyword": "智能手錶"
   },
   "tradeIn": {
     "brand": "APPLE",

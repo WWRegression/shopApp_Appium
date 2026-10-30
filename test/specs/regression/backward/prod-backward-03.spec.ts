@@ -34,7 +34,7 @@ describe('PROD_BACKWARD_03', () => {
       await offerPage.verifyPageByTitleAndBnb('offers');
 
       // Search result PF card > BC/PD > Back > search results
-      await searchPage.searchByKeyword(site.search.keyword);
+      await searchPage.searchByKeyword(site.product.imSku);
       const pfProductName = await pfPage.selectFirstPfCard(true);
       await pfPage.verifyBcPdProductName(pfProductName);
       await pfPage.pressDeviceBack();

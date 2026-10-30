@@ -21,14 +21,14 @@ describe('PROD_BUY_03', () => {
     await runOrSkip.call(this, 'PROD_BUY_03', async (site) => {
       await cartPage.clearCart();
 
-      await searchPage.searchByKeyword(site.product.sku);
+      await searchPage.searchByKeyword(site.product.imSku);
       await pfPage.selectPfCard({ mode: 'first' });
 
       await bcPage.prepareBcPage();
       await bcPage.selectOptions(site.product);
-      await bcPage.verifySku(site.product.sku);
+      await bcPage.verifySku(site.product.imSku);
       
-      await bcPage.sim.addService(site.product.sku );
+      await bcPage.sim.addService(site.product.imSku );
       await bcPage.sim.verifyServiceApplied();
       
       await bcPage.tradeIn.selectNoForService();
@@ -39,11 +39,11 @@ describe('PROD_BUY_03', () => {
       await splashPage.clickSplashContinue();
 
       await cartPage.prepareCartPage();
-      await cartPage.verifySku(site.product.sku);
-      await cartPage.sim.verifyServiceApplied(site.product.sku);
+      await cartPage.verifySku(site.product.imSku);
+      await cartPage.sim.verifyServiceApplied(site.product.imSku);
 
       // Increase quantity to 2 and verify the SIM is removed
-      await cartPage.increaseQuantity(site.product.sku);
+      await cartPage.increaseQuantity(site.product.imSku);
       await cartPage.sim.verifyServiceRemoved();
     });
   });
