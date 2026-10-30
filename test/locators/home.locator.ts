@@ -253,13 +253,28 @@ export class HomeLocator {
 
   /** Rewards points under the greeting, e.g. "0 pts" (English), "10 星钻" (CN) */
   get rewardsPoints() {
-    return $(`//android.view.View[contains(@content-desc, ' pts') or contains(@content-desc, '星钻')]`);
+    return $(`//android.view.View[contains(@content-desc, ' pts') 
+      or contains(@content-desc, '星钻')
+      or contains(@content-desc, 'b.')
+      or contains(@content-desc, 'Pkt.')
+      or contains(@content-desc, '分')
+      or contains(@content-desc, 'pont')
+      or contains(@content-desc, 'ポイント')
+      or contains(@content-desc, 'puncte')
+      or contains(@content-desc, 'poäng')
+      ]`
+    );
   }
 
   /** Shown instead of the points when the account has not joined Rewards (English, CN) */
   get rewardsJoinButton() {
     return $(
-      `//*[contains(@content-desc, 'Join now') or contains(@content-desc, 'Join Now') or contains(@content-desc, 'Join Samsung Rewards') or contains(@content-desc, '立即加入')]`
+      `//*[contains(@content-desc, 'Join now') 
+      or contains(@content-desc, 'Join Now') 
+      or contains(@content-desc, 'Join Samsung Rewards') 
+      or contains(@content-desc, '立即加入')
+      or contains(@content-desc, 'Samsungリワードに参加')
+      ]`
     );
   }
 
