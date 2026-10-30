@@ -7,7 +7,7 @@ import { scrollByBoundary, scrollDown, scrollListDown, scrollListUp } from '../h
 import { currentSiteCode } from '../helpers/tc-filter.helper';
 import { normalizeText, isExactTokenMatch, stripMarkerText, normalizeProductName, parsePriceToNumber } from '../helpers/data.helper';
 import { clickElement, getElementLabel, isDisplayedOrFalse, scrollUntilVisible, waitForDisplayedOrFalse, readDisplayedText } from '../helpers/element.helper';
-import { markFailed, markFailedAndStop } from '../helpers/report.helper';
+import { markFailed, markFailedAndStop, type FieldCheck } from '../helpers/report.helper';
 import { ShopPage, type CategoryMismatch } from './shop.page';
 import { BcPage } from './bc.page';
 import { PdPage } from './pd.page';
@@ -300,60 +300,91 @@ export class PfPage extends BasePage {
     return sort;
   }
 
-  /** Apply count equals the PF cards. Cards match the filter, and each stock group is sorted by price descending. */
+  /**
+   * Shop PF after filter and sort (no search). No Products tab or keyword check.
+   * Apply count, filter match, then price order inside each stock group.
+   */
   async verifyFilterAndSort(filter: PfFilterChoice, sort: PfSortChoice): Promise<void> {
     console.log('[verifyFilterAndSort] filter=', filter, 'sort=', sort);
     const products = await this.collectPfProducts();
-    const countMatches = products.length === filter.count;
-    console.log(
-      `${this.checkResult(countMatches)} [verifyFilterAndSort] Filter count=${filter.count} | PFcards=${products.length} | filter=${filter.kind}:"${filter.value}" sort=${sort.kind}`
-    );
-    markFailed(
-      [{ label: 'PF card count does not match Filter count', pass: countMatches, detail: `FilterCount: ${filter.count} | PFcards: ${products.length}` }],
-      'verifyFilterAndSort'
-    );
-    const failures = [
+    const failures: FieldCheck[] = [
+      {
+        label: 'PF card count does not match Filter count',
+        pass: products.length === filter.count,
+        detail: `Filter ${filter.count}, PF cards ${products.length}`,
+      },
       ...this.checkFilter(products, filter),
-      ...this.checkSort(products.filter((product) => !product.outOfStock), sort, 'in stock'),
-      ...this.checkSort(products.filter((product) => product.outOfStock), sort, 'out of stock'),
+      ...this.checkSortByStock(products, sort),
     ];
+    console.log(
+      `${this.checkResult(failures.every((failure) => failure.pass))} [verifyFilterAndSort] Filter count=${filter.count} | PFcards=${products.length} | filter=${filter.kind}:"${filter.value}" sort=${sort.kind}`
+    );
     markFailed(failures, 'verifyFilterAndSort');
+  }
+
+  /** Products tab count and each card name contains a keyword. */
+  async verifySearchResult(keywords: string[]): Promise<void> {
+    console.log('[verifySearchResult] keywords=', keywords);
+    const productCount = await this.getSearchProductCount();
+    const { products, failures } = await this.verifySearchCards(keywords, [
+      { label: 'Products tab', count: productCount },
+    ]);
+    console.log(
+      `${this.checkResult(failures.every((failure) => failure.pass))} [verifySearchResult] Products tab=${productCount} | PFcards=${products.length}`
+    );
+    markFailed(failures, 'verifySearchResult');
   }
 
   /** After sort: Products tab count, keyword match, then price order inside each stock group. */
   async verifySearchResultAndSort(keywords: string[], sort: PfSortChoice): Promise<void> {
-    console.log('[verifySearchResultAndSort] sort=', sort);
+    console.log('[verifySearchResultAndSort] keywords=', keywords, 'sort=', sort);
     const productCount = await this.getSearchProductCount();
-    const products = await this.collectPfProducts();
-    const countMatches = products.length === productCount;
-    const failures = [
-      { label: 'PF card count does not match Products tab count', pass: countMatches, detail: `Products tab ${productCount}, PF cards ${products.length}` },
-      ...this.checkSearchKeywords(products, keywords),
-      ...this.checkSort(products.filter((product) => !product.outOfStock), sort, 'in stock'),
-      ...this.checkSort(products.filter((product) => product.outOfStock), sort, 'out of stock'),
-    ];
-    const pass = failures.every((failure) => failure.pass);
+    const { products, failures } = await this.verifySearchCards(keywords, [
+      { label: 'Products tab', count: productCount },
+    ]);
+    failures.push(...this.checkSortByStock(products, sort));
     console.log(
-      `${this.checkResult(pass)} [verifySearchResultAndSort] Products tab=${productCount} | PFcards=${products.length} | sort=${sort.kind}`
+      `${this.checkResult(failures.every((failure) => failure.pass))} [verifySearchResultAndSort] Products tab=${productCount} | PFcards=${products.length} | sort=${sort.kind}`
     );
     markFailed(failures, 'verifySearchResultAndSort');
   }
 
-  /** After filter: keyword match, Apply count, then the selected filter on the same card list. */
+  /** After filter: Apply count, keyword match, then the selected filter. Products tab stays the full total. */
   async verifySearchResultAndFilter(keywords: string[], filter: PfFilterChoice): Promise<void> {
-    console.log('[verifySearchResultAndFilter] filter=', filter);
-    const products = await this.collectPfProducts();
-    const countMatches = products.length === filter.count;
-    const failures = [
-      { label: 'PF card count does not match Filter count', pass: countMatches, detail: `FilterCount: ${filter.count} | PFcards: ${products.length}` },
-      ...this.checkSearchKeywords(products, keywords),
-      ...this.checkFilter(products, filter),
-    ];
-    const pass = failures.every((failure) => failure.pass);
+    console.log('[verifySearchResultAndFilter] keywords=', keywords, 'filter=', filter);
+    const { products, failures } = await this.verifySearchCards(keywords, [
+      { label: 'Filter', count: filter.count },
+    ]);
+    failures.push(...this.checkFilter(products, filter));
     console.log(
-      `${this.checkResult(pass)} [verifySearchResultAndFilter] Filter count=${filter.count} | PFcards=${products.length} | filter=${filter.kind}:"${filter.value}"`
+      `${this.checkResult(failures.every((failure) => failure.pass))} [verifySearchResultAndFilter] Filter count=${filter.count} | PFcards=${products.length} | filter=${filter.kind}:"${filter.value}"`
     );
     markFailed(failures, 'verifySearchResultAndFilter');
+  }
+
+  /**
+   * One collect for search PF. Compares each expected count to the card list, then checks keywords.
+   * Callers add sort/filter checks on the same list.
+   */
+  private async verifySearchCards(
+    keywords: string[],
+    counts: { label: string; count: number }[]
+  ): Promise<{ products: PfProduct[]; failures: FieldCheck[] }> {
+    const products = await this.collectPfProducts();
+    const countFailures: FieldCheck[] = counts.map(({ label, count }) => ({
+      label: `PF card count does not match ${label} count`,
+      pass: products.length === count,
+      detail: `${label} ${count}, PF cards ${products.length}`,
+    }));
+    const keywordFailures = this.checkSearchKeywords(products, keywords);
+    return { products, failures: [...countFailures, ...keywordFailures] };
+  }
+
+  private checkSortByStock(products: PfProduct[], sort: PfSortChoice): FieldCheck[] {
+    return [
+      ...this.checkSort(products.filter((product) => !product.outOfStock), sort, 'in stock'),
+      ...this.checkSort(products.filter((product) => product.outOfStock), sort, 'out of stock'),
+    ];
   }
 
   async clickFilter(): Promise<void> {
@@ -495,30 +526,6 @@ export class PfPage extends BasePage {
   async getWishState(): Promise<WishState> {
     // TODO: Implement wish icon state readback
     return 'remove';
-  }
-
-  /** Products tab count equals the PF cards from collectPfProducts, and each product name contains a keyword. */
-  async verifySearchResultCount(keywords: string[]): Promise<void> {
-    const productCount = await this.getSearchProductCount();
-    const products = await this.collectPfProducts();
-    const normalizedKeywords = keywords.map((keyword) => normalizeText(keyword));
-    const unmatched = products.filter((product) => !normalizedKeywords.some((keyword) => normalizeText(product.name).includes(keyword)));
-    const countMatches = products.length === productCount;
-    const pass = countMatches && unmatched.length === 0;
-    console.log(
-      `${this.checkResult(pass)} [verifySearchResultCount] Products tab=${productCount} PF cards=${products.length} unmatched=${unmatched.length}`
-    );
-    products.forEach((product, index) => {
-      const matched = normalizedKeywords.find((keyword) => normalizeText(product.name).includes(keyword));
-      console.log(`${this.checkResult(Boolean(matched))} [verifySearchResultCount] [${index}] name="${product.name}" matched="${matched ?? ''}"`);
-    });
-    markFailed(
-      [
-        { label: 'PF card count does not match Products tab count', pass: countMatches, detail: `Products tab ${productCount}, PF cards ${products.length}` },
-        ...unmatched.map((product) => ({ label: `Keyword not found in PF card: ${product.name}`, pass: false })),
-      ],
-      'verifySearchResultCount'
-    );
   }
 
   async verifyNoSearchResultsFound(): Promise<void> {

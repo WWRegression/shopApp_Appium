@@ -20,7 +20,7 @@ describe('PROD_SEARCH_01', () => {
       await searchPage.openSearch();
       await searchPage.clearSearchHistoryIfShown();
       await searchPage.search(keyword);
-      await pfPage.verifySearchResultCount([keyword]);
+      await pfPage.verifySearchResult([keyword]);
 
       await shopPage.prepareShopPage();
       await searchPage.openSearch();
