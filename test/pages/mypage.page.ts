@@ -825,12 +825,18 @@ export class MypagePage extends BasePage {
   /** My Page > Settings, then the given rows in order; My Page and Settings are skipped when the Settings page is already open. */
   private async selectSettingsMenus(menus: ChainablePromiseElement[], step: string): Promise<void> {
     await switchToNative();
-    if (!(await isDisplayedOrFalse(menus[0]))) {
+    // Already in Settings only on a sub page — My Page itself can show a same-named menu (PE "Notificaciones" inbox)
+    const inSettings = (await isDisplayedOrFalse(menus[0])) && (await isDisplayedOrFalse(this.locator.subPageBackButton));
+    if (!inSettings) {
       await this.prepareMypage();
       menus = [this.locator.settingsMenu, ...menus];
     }
     for (const menu of menus) {
       await scrollUntilVisible(menu, 5);
+      // A row clipped by the BNB (e.g. PE Settings, 61px shown) does not take the tap — move it up first
+      if ((await menu.getSize('height').catch(() => 0)) < 100) {
+        await swipeByBoundary('up', 0.3);
+      }
       await markFailedAndStop(() => clickElement(menu, { timeout: 5000 }), `[${step}] menu not found under My Page > Settings`);
     }
   }
@@ -870,9 +876,13 @@ export class MypagePage extends BasePage {
       return;
     }
     await this.selectSettingsMenus([this.locator.personalDataManagementMenu, this.locator.cookiePreferencesMenu], 'prepareCookiePreferencesPage');
-    // The consent can open on its summary first — "More info" shows the per-category choices
+    // The consent can open on its summary first — "More info" (US: "Continue") shows the per-category choices
     if (!(await waitForDisplayedOrFalse(this.locator.trustArcSaveButton, { timeout: 15000 }))) {
       await clickIfDisplayed(this.locator.trustArcMoreInfoButton, 3000);
+      // US shows a summary on the first visit — its Continue returns to the list, so open the menu again
+      if (!(await waitForDisplayedOrFalse(this.locator.trustArcSaveButton, { timeout: 5000 }))) {
+        await clickIfDisplayed(this.locator.cookiePreferencesMenu, 3000);
+      }
     }
     const ready = await waitForDisplayedOrFalse(this.locator.trustArcSaveButton, { timeout: 10000 });
     markFailedAndStop([{ label: 'Cookie Preferences not shown (TrustArc choices not found)', pass: ready }], 'prepareCookiePreferencesPage');

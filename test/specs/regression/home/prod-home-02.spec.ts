@@ -36,6 +36,7 @@ describe('PROD_HOME_02', () => {
 
       await shopPage.verifyCountry(site.countryName);
       await homePage.applyBuildSetup();
+      await homePage.clickTrustArcCookieIfShown('accept');
       await loginPage.loginOnSelectProfileIfShown();
       await loginPage.skipPurpose();
 

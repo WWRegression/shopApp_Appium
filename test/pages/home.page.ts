@@ -86,6 +86,17 @@ export class HomePage extends BasePage {
     console.log(`[clickTrustArcCookie] clicked "${choice} all"`);
   }
 
+  /** Clicks the TrustArc consent when it shows again after the build setup restart (e.g. AT, BE, CA, CZ, HU, PT, RO, TR). */
+  async clickTrustArcCookieIfShown(choice: 'accept' | 'decline'): Promise<void> {
+    if (!getSiteData().initialSetup?.trustArcCookie) {
+      return;
+    }
+    await switchToNative();
+    const button = choice === 'accept' ? this.locator.trustArcAcceptButton : this.locator.trustArcDeclineButton;
+    const clicked = await clickIfDisplayed(button, 10000);
+    console.log(`[clickTrustArcCookieIfShown] ${clicked ? `clicked "${choice} all"` : 'TrustArc cookie not shown — skipped'}`);
+  }
+
   /** Checks the first-launch T&C checkbox when the screen has one (CN: then "同意"). */
   async clickTncCheckbox(): Promise<void> {
     await switchToNative();

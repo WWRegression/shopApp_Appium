@@ -470,7 +470,8 @@ function pageUrlPatterns(page: FragmentPage): string[] {
     mypageRewards: ['mypage/reward'],
     wdsLogin: ['wds.samsung.com', 'sts.secsso.net'],
     useinsider: ['useinsider'],
-    trustArc: ['appassets.androidplatform.net'],
+    // The summary (#/) can stay open as a second window, so match the choices page only
+    trustArc: ['appassets.androidplatform.net/trustarc_assets/index.html#/preferences'],
   };
   return patterns[page];
 }

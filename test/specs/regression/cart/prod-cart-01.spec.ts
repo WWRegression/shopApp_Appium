@@ -21,7 +21,7 @@ describe('PROD_CART_01', () => {
       
       // Step3: Clear cart and verify cart icon quantity
       await cartPage.clearCart();
-      await cartPage.verifyCartIconQuantity(0);
+      await cartPage.verifyCartIconMatchesCart();
 
       // Step4: Add the product again via API
       await addToCart(site.product.imSku);

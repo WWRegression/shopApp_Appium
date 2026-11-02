@@ -1007,7 +1007,8 @@ export class MypageLocator {
         contains(@text, 'Daha fazla bilgi') or
         contains(@text, 'More Info') or
         contains(@text, 'Hantera val') or
-        contains(@text, 'More info')
+        contains(@text, 'More info') or
+        @text = 'Continue'
       ]`
     );
   }

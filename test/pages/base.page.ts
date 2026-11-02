@@ -8,7 +8,6 @@ import { switchToNative, getCurrentContext, targetPackage } from '../helpers/con
 import { getBrowserPages } from '../helpers/device.helper';
 import { getRunConfig } from '../../config/run.config';
 import { flingToStart, scrollUp } from '../helpers/gesture.helper';
-import { assertEqual } from '../helpers/validation.helper';
 import { markFailed, markFailedAndStop } from '../helpers/report.helper';
 import {
   clickElement,
@@ -570,11 +569,6 @@ export class BasePage {
       await driver.switchContext(startContext).catch(() => undefined);
     }
     return shown;
-  }
-
-  /** Verifies the BNB cart tab count. */
-  async verifyCartIconQuantity(expected: number): Promise<void> {
-    assertEqual(await this.getBNBCartCount(), expected);
   }
 
   async selectBnbMenu(menu: BnbMenu): Promise<void> {
