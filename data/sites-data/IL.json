@@ -39,7 +39,7 @@
     "myReferrals": false,
     "myQRCode": false,
     "inbox": true,
-    "mySmartThings": false,
+    "mySmartThings": true,
     "orderSupport": false,
     "myAddresses": false,
     "support": true,

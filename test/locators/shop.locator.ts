@@ -357,6 +357,103 @@ export class ShopLocator {
     );
   }
 
+  get supportHome() {
+    return $(
+      `//android.view.View[
+    @content-desc='Support Home' or
+    @content-desc='Support' or
+    @content-desc='الصفحة الرئيسية للدعم' or
+    @content-desc='Support-Startseite' or
+    @content-desc='Accueil assistance' or
+    @content-desc='Accueil de l’assistance' or
+    @content-desc='Soporte en casa' or
+    @content-desc='Domácí stránka Podpora' or
+    @content-desc='支援首頁' or
+    @content-desc='Terméktámogatás kezdőoldala' or
+    @content-desc='Bantuan Utama' or
+    @content-desc='Supporto' or
+    @content-desc='Soporte' or
+    @content-desc='Strona główna Obsługi klienta' or
+    @content-desc='Home do Apoio' or
+    @content-desc='Asistență acasă' or
+    @content-desc='Produktsupport' or
+    @content-desc='หน้าหลักของบริการช่วยเหลือ' or
+    @content-desc='Samsung Destek Ana Sayfası' or
+    @content-desc='Trang chủ hỗ trợ' or
+    @content-desc="עמוד שירות  " or
+    @content-desc='Service'
+]`
+    );
+  }
+
+  get shopQnA() {
+    return $(
+      `//android.view.View[
+    @content-desc="Online Shop FAQ's" or
+    @content-desc="FAQ الخاصة بالتسوّق" or
+    @content-desc="Shop FAQ" or
+    @content-desc="Preguntas Frecuentes" or
+    @content-desc="FAQ sobre la compra" or
+    @content-desc="E-shop podpora" or
+    @content-desc="FAQs Tienda online" or
+    @content-desc="FAQ Shop" or
+    @content-desc="網上商店常見問題" or
+    @content-desc="Online Shop FAQ" or
+    @content-desc="Webáruház GYIK" or
+    @content-desc="FAQ Toko" or
+    @content-desc="Samsung Shop FAQ" or
+    @content-desc="FAQ - Sklepu internetowego" or
+    @content-desc="FAQs Loja Online" or
+    @content-desc="Întrebări frecvente magazin online" or
+    @content-desc="คำถามที่พบบ่อย" or
+    @content-desc="Mağaza Hakkında SSS" or
+    @content-desc="三星商城常見問題" or
+    @content-desc="Shop FAQs" or
+    @content-desc="FAQ Hỗ trợ mua trực tuyến" or
+    @content-desc="שאלות נפוצות – חנות  " or
+    @content-desc="Online Shop FAQs"
+]`
+    );
+  }
+
+  get contact() {
+    return $(
+      `//android.view.View[
+    @content-desc='Contact us' or
+    @content-desc='اتصل بنا' or
+    @content-desc='Kontaktiere uns' or
+    @content-desc='Contact opnemen' or
+    @content-desc='Contactez-nous' or
+    @content-desc='Nous contacter' or
+    @content-desc='Contáctanos' or
+    @content-desc='Kontaktuj nás' or
+    @content-desc='Kontakt zum Service' or
+    @content-desc='Contacta con nosotros' or
+    @content-desc='聯絡我們' or
+    @content-desc='Elérhetőség' or
+    @content-desc='Hubungi Kami' or
+    @content-desc='Contattaci' or
+    @content-desc='Kontakt z nami' or
+    @content-desc='Contacte-nos' or
+    @content-desc='Contactează-ne' or
+    @content-desc='Kontakta oss' or
+    @content-desc='ติดต่อเรา' or
+    @content-desc='Bize Ulaşın ' or
+    @content-desc='Liên Hệ' or
+    @content-desc="יצירת קשר  " or
+    @content-desc='Contact'
+]`
+    );
+  }
+
+  get services() {
+    return $(`//*[@class = 'android.view.View' and (@content-desc = 'Services' or @content-desc = 'services')]`);
+  }
+
+  customerSupportSubMenu(subMenu: ShopSubMenu) {
+    return this[subMenu];
+  }
+
   get studentStorePage() {
     return $(
       `${BACK_BUTTON_XPATH}/following-sibling::android.view.View[
@@ -610,8 +707,11 @@ ${BACK_BUTTON_XPATH}/following-sibling::android.view.View/android.widget.Button[
     );
   }
 
-  customerSupportItem(index: number) {
-    return this.customerSupportItems[index];
+  customerSupportItem(label: string) {
+    return $(
+      `//android.view.View[@clickable = 'true' and @content-desc = "${label}"]
+      | //android.view.View[@content-desc = 'Online Support']//android.widget.ImageView[@clickable = 'true' and @content-desc = "${label}"]`
+    );
   }
 
   moreSamsungAppIcon(name: string) {

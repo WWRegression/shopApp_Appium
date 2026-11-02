@@ -52,6 +52,15 @@ export function parsePriceValues(priceText: string): number[] {
   });
 }
 
+/** Amounts written with a currency ("NT$300", "AED 500", "Rp850.000"); numbers without one (model "S26") are skipped. */
+export function parseCurrencyAmounts(text: string): number[] {
+  // A space can also split thousands ("R 1 500")
+  const amount = '[\\d\\u066B\\u066C]+(?:[.,][\\d\\u066B\\u066C]+|[\\s\\u00A0\\u202F]\\d{3}(?!\\d))*';
+  const currency = '\\$|€|£|¥|₩|₱|₫|₹|₪|⃁|円|Rp|RM|AED|د\\.إ|SAR|ر\\.س|VND|đ|Kč|Ft|lei|zł|kr|TL|₺|฿|S\\/|\\bR';
+  const pattern = new RegExp(`(?:${currency})\\s?(${amount})|(${amount})\\s?(?:${currency})`, 'g');
+  return [...(text ?? '').matchAll(pattern)].map((match) => parsePriceValues(match[1] ?? match[2])[0]);
+}
+
 /** True when two prices are the same amount (to the cent). */
 export function isSamePrice(a: number, b: number): boolean {
   return Math.abs(a - b) < 0.005;

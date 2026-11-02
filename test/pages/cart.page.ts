@@ -10,7 +10,8 @@ import { getElementLabel, clickIfDisplayed, clickElement, isDisplayedOrFalse, js
 import { assertEqual } from '../helpers/validation.helper';
 import { markFailed, markFailedAndStop, FieldCheck } from '../helpers/report.helper';
 import { currentSiteCode } from '../helpers/tc-filter.helper';
-import { parseNumber, removeNonWordChars, normalizeProductName, productNameMatches, parsePriceValues, isSamePrice } from '../helpers/data.helper';
+import { getSiteData } from '../../config/site';
+import { parseNumber, removeNonWordChars, normalizeProductName, productNameMatches, parsePriceValues, parseCurrencyAmounts, isSamePrice } from '../helpers/data.helper';
 
 export interface CartItemOptions {
   deviceName?: string;
@@ -200,7 +201,8 @@ export class CartPage extends BasePage {
 
   /**
    * Cart price of the SKU (qty 1) must be the PF price, or PF with the cart's promotion banners applied in order
-   * ("10%" off the running price, else the amount in the text), or PF − Total Saving. Returns the cart price for checkout.
+   * ("10%" off the running price, else the amount in the text), or PF − the item's discount ("Save 700.00 AED"),
+   * or PF − Total Saving. Returns the cart price for checkout.
    */
   async verifyItemPrice(sku: string, pfPrice: number): Promise<number> {
     const cartPrice = parsePriceValues(await this.getItemPrice(sku))[0] ?? NaN;
@@ -213,6 +215,16 @@ export class CartPage extends BasePage {
     }
     // A % discount can leave cents; sites round either way, so the rounded values also count
     let pass = [expected, Math.floor(expected), Math.ceil(expected)].some((price) => isSamePrice(cartPrice, price));
+    if (!pass) {
+      // Banners without an amount (AE "Your extra discount is applied"): the item shows the discount total
+      const discountText = ((await this.locator.itemDiscount(sku).getText().catch(() => '')) ?? '').trim();
+      const discount = parsePriceValues(discountText)[0];
+      if (discount !== undefined && isSamePrice(cartPrice, pfPrice - discount)) {
+        pass = true;
+        expected = pfPrice - discount;
+        reason = `PF − item discount "${discountText}", promotions ${JSON.stringify(banners)}`;
+      }
+    }
     if (!pass) {
       const saving = await this.getTotalSaving();
       if (!Number.isNaN(saving) && isSamePrice(cartPrice, pfPrice - saving)) {
@@ -229,14 +241,29 @@ export class CartPage extends BasePage {
     return cartPrice;
   }
 
-  /** Applies each promotion text to the running price: "10%" takes that share off, otherwise the first amount in the text is subtracted. */
+  /**
+   * Applies each promotion text to the running price: "10%" takes that share off, otherwise the currency amount in the text
+   * is subtracted; a text with no amount (or cut off before it) uses promotionDiscount below.
+   */
   private applyPromotions(price: number, banners: string[]): number {
+    // Promotions whose text shows no amount: one value per site, or per device name and storage
+    const promotionDiscount: Record<string, number | Record<string, Record<string, number>>> = {
+      VN: 1000000,
+      TW: {
+        'Galaxy S26 Ultra': { '1TB': 14000, '512GB': 11111, '256GB': 10000 },
+        'Galaxy S26+': { '512GB': 9000, '256GB': 8000 },
+        'Galaxy S26': { '512GB': 8000, '256GB': 7000 },
+      },
+    };
+    const { product } = getSiteData();
+    const setting = promotionDiscount[currentSiteCode()];
+    const fixedDiscount = typeof setting === 'number' ? setting : (setting?.[product.deviceName]?.[product.storage] ?? 0);
     return banners.reduce((current, text) => {
       const percent = text.match(/(\d+(?:[.,]\d+)?)\s*%/);
       if (percent) {
         return current * (1 - Number(percent[1].replace(',', '.')) / 100);
       }
-      return current - (parsePriceValues(text)[0] ?? 0);
+      return current - (parseCurrencyAmounts(text)[0] ?? fixedDiscount);
     }, price);
   }
 
@@ -267,14 +294,13 @@ export class CartPage extends BasePage {
     return parseNumber(cartTotalCountSection);
   }
 
-  /** Increments quantity via the stepper + button. */
+  /** Increments quantity via the stepper + button; the item's own quantity must go up by 1 (services such as SC+ change the cart total). */
   async increaseQuantity(sku: string): Promise<void> {
-    const before_cartCount = await this.getCartTotalCount();
-    const before_bnbCount = await this.getBNBCartCount();
     await this.selectBnbMenu('cart');
-    console.warn(`[increaseQuantity] before_bnbCount: ${before_bnbCount} | before_cartCount: ${before_cartCount}`);
-
     await this.prepareCartPage();
+    const before = Number(await getInputValue(this.locator.quantityInput(sku)));
+    console.log(`[increaseQuantity] sku=${sku} quantity before=${before}`);
+
     const increaseButton = await this.locator.quantityIncreaseButton(sku);
     await jsTouchStart(increaseButton);
     await jsClick(increaseButton);
@@ -284,14 +310,7 @@ export class CartPage extends BasePage {
       console.log('[increaseQuantity] quantity change confirm popup: Yes clicked');
       await driver.pause(3000);
     }
-    // await this.locator.checkoutButtons.waitForEnabled({ timeout: 3000 });
-
-    const after_cartCount = await this.getCartTotalCount();
-    const after_bnbCount = await this.getBNBCartCount();
-    console.warn(`[increaseQuantity] after_bnbCount: ${after_bnbCount} | after_cartCount: ${after_cartCount}`);
-    
-    assertEqual(after_cartCount, before_cartCount + 1);
-    assertEqual(after_bnbCount, before_bnbCount + 1);
+    await this.verifyItemQuantity(sku, before + 1);
   }
 
   /** Types a quantity into the item's quantity input and commits it; 0 removes the item. */
@@ -315,7 +334,7 @@ export class CartPage extends BasePage {
     if (quantity === 0) {
       await clickIfDisplayed(this.locator.removeConfirmButton, 3000);
     }
-    // Native gestures before the cart update lands can drop it (UK)
+    // Native gestures before the cart update lands can drop it 
     await driver.pause(['CL', 'PE', 'US'].includes(currentSiteCode()) ? 5000 : 3000);
     console.log(`[inputQuantity] sku=${sku} typed=${quantity} input="${typed}"`);
   }

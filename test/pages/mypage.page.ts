@@ -38,7 +38,7 @@ const PROFILE_TAP_OFFSET = { x: 350, y: 230, yForClPe: 260 };
 /** The name line is on the right side of the profile card. */
 const RTL_SITES = ['AE_AR', 'SA', 'IL'];
 /** Words that name the same menu — sites swap them between the menu and its page (US menu "Inbox" opens "Notification", IN the reverse). */
-const SAME_MENU_WORDS = [['inbox', 'notification']];
+const SAME_MENU_WORDS = [['inbox', 'notification', 'notificações', 'notificação', 'הודעות', 'התראות']];
 
 export class MypagePage extends BasePage {
   private readonly locator = new MypageLocator();
@@ -110,16 +110,16 @@ export class MypagePage extends BasePage {
       .then(() => true, () => false);
   }
 
-  /** Polls the opened page's names for up to 10s until they contain the label. */
+  /** Polls for up to 15s until the opened page's names contain the label, or the page shows the label as its text (e.g. "IMPRESSUM", shown after ~10s). */
   private async waitForPageNamed(label: string): Promise<{ pass: boolean; actual: string }> {
     let actual = '';
     const pass = await driver
       .waitUntil(
         async () => {
           actual = await this.getOpenedPageName();
-          return this.matchesLabel(actual, label);
+          return this.matchesLabel(actual, label) || (await isDisplayedOrFalse(this.locator.pageText(label)));
         },
-        { timeout: 10000, interval: 500 }
+        { timeout: 15000, interval: 500 }
       )
       .then(() => true, () => false);
     return { pass, actual };
@@ -356,6 +356,10 @@ export class MypagePage extends BasePage {
   /** Selects a dashboard menu (Rewards / Vouchers / Wishlist) on My Page. */
   async selectDashboardMenu(menu: DashboardMenu): Promise<void> {
     await switchToNative();
+    // My Page keeps its scroll position, so swipe back to the top when the dashboard is off screen
+    if (!(await isDisplayedOrFalse(this.locator.dashboardMenu(menu)))) {
+      await swipeByBoundary('down', 0.95);
+    }
     await markFailedAndStop(
       () => clickElement(this.locator.dashboardMenu(menu), { timeout: 5000 }),
       `[selectDashboardMenu] dashboard menu not found on My Page: ${menu}`
@@ -460,7 +464,7 @@ export class MypagePage extends BasePage {
       await getElementLabel(this.locator.selectedMypageTab),
       await getElementLabel(this.locator.subPageHeading),
       await getElementLabel(this.locator.subPageTitle),
-      await getElementLabel(this.locator.browserUrlBar),
+      await getElementLabel(this.headerLocator.browserUrlBar),
       currentPackage === targetPackage() ? '' : currentPackage,
     ];
     return names.filter(Boolean).join(' | ').replace(/\n/g, ' / ');
@@ -572,6 +576,10 @@ export class MypagePage extends BasePage {
       await flingToStart();
       await scrollUntilVisible(menuElement, 5);
     }
+    // A row clipped by the BNB (e.g. 39px of Settings shown) does not take the tap — move it up first
+    if ((await menuElement.getSize('height').catch(() => 0)) < 100) {
+      await swipeByBoundary('up', 0.3);
+    }
     const menuLabel = (await getElementLabel(menuElement)).replace(/\n/g, ' ');
     await this.saveWebViewBaseline();
     const clicked = await clickElement(menuElement, { timeout: 5000 }).then(() => true, () => false);
@@ -667,6 +675,11 @@ export class MypagePage extends BasePage {
       [this.locator.cookiePreferencesMenu, ['trustarc']],
       // Marketing Preferences opens the profile page in the app or the Samsung account
       [this.locator.marketingPreferencesMenu, ['profile-setting', 'account.samsung.com', SAMSUNG_ACCOUNT_PACKAGE]],
+      // JP: these pages use a different title than the menu name
+      [this.locator.supportTopMenu, ['サポート']],
+      [this.locator.appTermsMenu, ['利用規約']],
+      [this.locator.privacyPolicyMenu, ['プライバシーポリシー']],
+      [this.locator.legalInfoMenu, ['法務関連']],
     ];
     const accepted = new Map<string, string[]>();
     for (const [row, names] of rules) {
@@ -749,6 +762,10 @@ export class MypagePage extends BasePage {
       return;
     }
     const profileCard = this.locator.profileCard(accountName);
+    // My Page keeps its scroll position, so swipe back to the top when the card is off screen
+    if (!(await isDisplayedOrFalse(profileCard))) {
+      await swipeByBoundary('down', 0.95);
+    }
     const pass = await waitForDisplayedOrFalse(profileCard, { timeout: 5000 });
     const actual = (await getElementLabel(profileCard)).replace(/\n/g, ' / ') || '(profile with this name not found)';
     console.log(`[verifyProfileName] expected name="${accountName}" actual My Page profile="${actual}" result=${pass ? 'PASS' : 'FAIL'}`);

@@ -32,34 +32,67 @@ export class OfferPage extends BasePage {
     markFailedAndStop([{ label: 'RTB section not found on Offers', pass: shown }], 'verifyRtbShown');
   }
 
-  /** Opens every RTB and checks that it does not land on an error page. */
+  /** Opens every RTB; each must open its linked page. */
   async verifyRtbRedirects(): Promise<void> {
-    const count = await this.locator.rtbIndicators.length;
+    // A single RTB has no indicators
+    const count = Math.max(await this.locator.rtbIndicators.length, 1);
     console.log(`[verifyRtbRedirects] RTBs to verify: ${count}`);
 
     for (let index = 0; index < count; index++) {
       const title = await this.selectRtb(index);
-
+      await this.saveWebViewBaseline();
       await clickElement(this.locator.rtbItem);
-      // The tap must leave Offers — the RTB banner is gone once another page opens
-      const leftOffers = await this.locator.rtbItem
-        .waitForDisplayed({ timeout: 5000, reverse: true })
-        .then(() => true)
-        .catch(() => false);
-      markFailedAndStop([{ label: `RTB did not open a page (still on Offers): ${title}`, pass: leftOffers }], 'verifyRtbRedirects');
-
-      // An error page within 3s means the redirect failed
-      const errorShown = await waitForDisplayedOrFalse(this.locator.errorPage, { timeout: 3000 });
-      markFailedAndStop([{ label: `RTB redirected to an error page: ${title}`, pass: !errorShown }], 'verifyRtbRedirects');
-      console.log(`[verifyRtbRedirects] redirected: ${title}`);
-
-      await this.returnToOffers();
+      await this.verifyRtbPageOpened(title);
+      await this.returnToOffers(title);
     }
+  }
+
+  /** After an RTB tap: a new page (WebView URL, another app, or another app screen) must open, Offers must be left, and no error page shown. */
+  private async verifyRtbPageOpened(title: string): Promise<void> {
+    let opened = '';
+    const start = Date.now();
+    await driver
+      .waitUntil(
+        async () => {
+          opened = (await this.getOpenedPageNames()).filter(Boolean).join(' | ');
+          // A WebView page shows Back before its URL loads, so app screens are judged after 3s
+          if (opened || Date.now() - start < 3000) {
+            return opened !== '';
+          }
+          if (await isDisplayedOrFalse(this.headerLocator.backButton)) {
+            opened = 'native page with Back';
+          } else if (!(await this.isRtbShown(title)) && !(await this.isOnOffer())) {
+            // e.g. an RTB that opens the Shop or My Page tab
+            opened = `app screen "${await this.getHeaderTitle()}"`;
+          }
+          return opened !== '';
+        },
+        { timeout: 10000, interval: 500 }
+      )
+      .catch(() => undefined);
+    // An error page within 3s means the link is broken
+    const errorShown = await waitForDisplayedOrFalse(this.locator.errorPage, { timeout: 3000 });
+    const onOffers = await this.isOnOffer();
+    const pass = opened !== '' && !onOffers && !errorShown;
+    const actual = errorShown ? 'error page' : onOffers ? 'still on Offers' : opened ? `page "${opened}"` : 'no new page opened';
+    console.log(`[verifyRtbPageOpened] RTB="${title}" expected=linked page opened (not Offers, not error page) actual=${actual} result=${pass ? 'PASS' : 'FAIL'}`);
+    // Recorded only, so the remaining RTBs are still checked
+    markFailed([{ label: `RTB link not opened: ${title}`, pass, detail: actual }], 'verifyRtbPageOpened');
+  }
+
+  /** True while the RTB with this title is still on screen. */
+  private async isRtbShown(title: string): Promise<boolean> {
+    if (!(await isDisplayedOrFalse(this.locator.rtbItem))) {
+      return false;
+    }
+    return ((await this.locator.rtbItem.getAttribute('content-desc').catch(() => '')) ?? '').trim() === title;
   }
 
   /** Shows the RTB at index via its indicator (no swiping) and returns the banner title once it has stopped sliding. */
   private async selectRtb(index: number): Promise<string> {
-    await clickElement(this.locator.rtbIndicators[index]);
+    if ((await this.locator.rtbIndicators.length) > 0) {
+      await clickElement(this.locator.rtbIndicators[index]);
+    }
 
     // Stopped sliding = the same title on two reads in a row
     let title = '';
@@ -77,9 +110,12 @@ export class OfferPage extends BasePage {
     return title;
   }
 
-  /** Back, close an external app if the RTB opened one, then the Offers tab as a last resort. */
-  private async returnToOffers(): Promise<void> {
+  /** Back (skipped when the tapped RTB is still shown), close an external app if the RTB opened one, then the Offers tab as a last resort. */
+  private async returnToOffers(rtbTitle: string): Promise<void> {
     await switchToNative();
+    if (await this.isRtbShown(rtbTitle)) {
+      return;
+    }
     await driver.back();
 
     const currentPackage = await driver.getCurrentPackage();
@@ -89,7 +125,10 @@ export class OfferPage extends BasePage {
       await driver.activateApp(targetPackage());
     }
 
-    if (!(await waitForDisplayedOrFalse(this.locator.rtbItem, { timeout: 3000 }))) {
+    const backOnOffers = await driver
+      .waitUntil(() => this.isOnOffer(), { timeout: 3000, interval: 500 })
+      .then(() => true, () => false);
+    if (!backOnOffers) {
       console.log('[returnToOffers] Offers not shown after Back — opening the Offers tab');
       await this.selectBnbMenu('offers');
     }

@@ -31,7 +31,10 @@ export const ALL_OFFERS_TAB_LABELS = [
 export class OfferLocator {
   /** RTB banner currently shown at the top of Offers */
   get rtbItem() {
-    return $(`//android.widget.ScrollView//android.view.View[@scrollable = 'true']/android.view.View[@clickable = 'true']`);
+    return $(
+      `(//android.widget.ScrollView//android.view.View[@scrollable = 'true']/android.view.View[@clickable = 'true']
+      | //android.widget.ScrollView/android.view.View[@clickable = 'true' and @content-desc != ''])[1]`
+    );
   }
 
   /** Indicators under the RTB banner — one Button per RTB, content-desc = RTB title */

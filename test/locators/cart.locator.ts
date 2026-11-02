@@ -143,7 +143,11 @@ export class CartLocator {
   }
 
   promotionBanners(sku: string) {
-    return $$(`.cart-item[data-modelcode="${sku}" i] app-promotions .promotion-description, .cart-item[data-modelcode="${sku}" i] .highlight .price__discount, div.voucher-promotion-message-container .promotion-message`);
+    return $$(`.cart-item[data-modelcode="${sku}" i] app-promotions .promotion-description, div.voucher-promotion-message-container .promotion-message`);
+  }
+
+  itemDiscount(sku: string) {
+    return $(`.cart-item[data-modelcode="${sku}" i] .price-container .price__discount`);
   }
 
   itemPrice(sku: string) {

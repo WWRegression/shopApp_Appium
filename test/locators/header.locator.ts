@@ -33,7 +33,10 @@ export const BACK_BUTTON_XPATH = `//android.widget.Button[
 export class HeaderLocator {
   /** Title button shown after the header chat icon opens the chat page. */
   get chatTitle() {
-    return $('//android.widget.Button[contains(@content-desc, "Chat") and contains(@content-desc, "Samsung")]');
+    return $(
+      `//android.widget.Button[contains(@content-desc, "Chat") and contains(@content-desc, "Samsung")]
+      | //android.widget.Button[@content-desc = 'Back']/following-sibling::android.view.View[@content-desc = 'Chat']`
+    );
   }
 
   get title() {
@@ -88,6 +91,10 @@ export class HeaderLocator {
       |
       //android.widget.FrameLayout[1]/android.view.View[1]/android.view.View[1]/android.view.View[1]/android.view.View[1]/android.widget.Button[1]`
     );
+  }
+
+  get browserUrlBar() {
+    return $(`//android.widget.EditText[@resource-id = 'com.android.chrome:id/url_bar']`);
   }
 
   get chatButton() {

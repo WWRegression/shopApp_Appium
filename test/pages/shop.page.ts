@@ -1,5 +1,5 @@
 import { BasePage } from './base.page';
-import { ShopLocator, ShopCategory, type ShopMenu, type ShopMenuPage } from '../locators/shop.locator';
+import { ShopLocator, ShopCategory, type ShopMenu, type ShopMenuPage, type ShopSubMenu } from '../locators/shop.locator';
 import type { LoadedSite } from '../../config/site';
 import { gestureByBoundary, swipeByBoundary, scrollByBoundary, tapAtCoordinates } from '../helpers/gesture.helper'
 import {
@@ -125,6 +125,10 @@ const SHOP_MENU_URL_PATHS: Partial<Record<ShopMenuPage, string>> = {
   contact: '/support/contact',
   shopQnA: '/shop-faq',
 };
+
+const CUSTOMER_SUPPORT_SUB_MENUS: ShopSubMenu[] = ['supportHome', 'shopQnA', 'contact', 'services'];
+
+type CustomerSupportItem = { label: string; subMenu?: ShopSubMenu };
 
 /** Play Store / Galaxy Store — an app-install redirect counts as a pass. */
 const STORE_PACKAGES = [
@@ -424,41 +428,62 @@ export class ShopPage extends BasePage {
     markFailed([{ label: `${menu}: landing page not shown`, pass: shown, detail: actual }], 'verifyShopMenuPage');
   }
 
-  /** Number of Customer Support items on screen (expanded list or Online Support page). */
-  async getCustomerSupportItemCount(): Promise<number> {
+  /** Customer Support items on screen (expanded list or Online Support page), each with the sub-menu its label belongs to. */
+  async getCustomerSupportItems(): Promise<CustomerSupportItem[]> {
     await driver
       .waitUntil(async () => (await this.shoplocator.customerSupportItems.length) > 0, { timeout: 5000, interval: 500 })
       .catch(() => undefined);
-    const count = await this.shoplocator.customerSupportItems.length;
-    console.log(`[getCustomerSupportItemCount] ${count}`);
-    return count;
+    const items: CustomerSupportItem[] = [];
+    for (const element of await this.shoplocator.customerSupportItems) {
+      const label = ((await element.getAttribute('content-desc')) ?? '').trim();
+      if (label) {
+        items.push({ label, subMenu: await this.findCustomerSupportSubMenu(label) });
+      }
+    }
+    console.log(`[getCustomerSupportItems] [ ${items.map((item) => `${item.label}=${item.subMenu ?? 'unmapped'}`).join(', ')} ]`);
+    return items;
   }
 
-  /** Taps item `index` and returns its label. Re-opens Customer Support if Back closed it. */
-  async selectCustomerSupportItem(index: number): Promise<string> {
+  /** Sub-menu whose locator matches the item with this label on screen. */
+  private async findCustomerSupportSubMenu(label: string): Promise<ShopSubMenu | undefined> {
+    for (const subMenu of CUSTOMER_SUPPORT_SUB_MENUS) {
+      const element = this.shoplocator.customerSupportSubMenu(subMenu);
+      if ((await element.isExisting()) && ((await element.getAttribute('content-desc')) ?? '').trim() === label) {
+        return subMenu;
+      }
+    }
+    return undefined;
+  }
+
+  /** Taps the item with this label; false (recorded as a failure) when it is not found. Re-opens Customer Support if Back closed it. */
+  async selectCustomerSupportItem(label: string): Promise<boolean> {
     await switchToNative();
     if ((await this.shoplocator.customerSupportItems.length) === 0) {
       await this.prepareShopPage();
       await this.selectShopMenu('customerSupport');
     }
-    const item = this.shoplocator.customerSupportItem(index);
+    const item = this.shoplocator.customerSupportItem(label);
     await this.scrollUntilMenuVisible(item, 3);
-    const label = await getElementLabel(item);
-    if (!label) {
-      console.log(`[selectCustomerSupportItem] item ${index} not found`);
-      return '';
+    const shown = await isDisplayedOrFalse(item);
+    markFailed([{ label: `customerSupport item not found: ${label}`, pass: shown }], 'selectCustomerSupportItem');
+    if (!shown) {
+      return false;
     }
     await this.saveWebViewBaseline();
     // Tiles only react on their left (icon/label) part — a center tap on a wide row is ignored
     const { x, y } = await item.getLocation();
     const { width, height } = await item.getSize();
     await tapAtCoordinates(Math.round(x + width * 0.2), Math.round(y + height / 2));
-    return label;
+    return true;
   }
 
-  /** The clicked Customer Support item must leave the list and open a page containing its name. */
-  async verifyCustomerSupportPage(label: string): Promise<void> {
-    await this.verifyDetailPageOpened(label, () =>
+  /** The page opened from a Customer Support item: its sub-menu page locator, or a page containing its name for other items (IN Online Support icons). */
+  async verifyCustomerSupportPage(item: CustomerSupportItem): Promise<void> {
+    if (item.subMenu) {
+      await this.verifyShopMenuPage(item.subMenu);
+      return;
+    }
+    await this.verifyDetailPageOpened(item.label, () =>
       driver
         .waitUntil(async () => (await this.shoplocator.customerSupportItems.length) === 0, { timeout: 10000, interval: 500 })
         .then(() => true, () => false)

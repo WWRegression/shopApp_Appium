@@ -15,11 +15,13 @@ describe('PROD_SHOP_03', () => {
         }
 
         if (menu === 'customerSupport') {
-          const itemCount = await shopPage.getCustomerSupportItemCount();
-          markFailed([{ label: 'customerSupport: no sub-menu shown', pass: itemCount > 0 }], 'PROD_SHOP_03');
-          for (let index = 0; index < itemCount; index += 1) {
-            const label = await shopPage.selectCustomerSupportItem(index);
-            await shopPage.verifyCustomerSupportPage(label);
+          const items = await shopPage.getCustomerSupportItems();
+          markFailed([{ label: 'customerSupport: no sub-menu shown', pass: items.length > 0 }], 'PROD_SHOP_03');
+          for (const item of items) {
+            if (!(await shopPage.selectCustomerSupportItem(item.label))) {
+              continue;
+            }
+            await shopPage.verifyCustomerSupportPage(item);
             await shopPage.closeShopMenuPage();
           }
           continue;

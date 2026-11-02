@@ -32,7 +32,7 @@
     "imei": "356223188920373"
   },
   "mypageMenuList": {
-    "myProducts": false,
+    "myProducts": true,
     "myOrders": true,
     "myRepairs": true,
     "myReferrals": false,

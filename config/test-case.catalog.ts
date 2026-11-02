@@ -65,7 +65,6 @@ export const testCaseCatalog: TestCaseMeta[] = [
   // Phase3 only
   { tcId: 'PROD_HOME_03', suites: ['phase3'], description: 'BNB redirection' },
   { tcId: 'PROD_HOME_04', suites: ['phase3'], description: 'T&C folded and links' },
-  { tcId: 'PROD_HOME_05', suites: ['phase3'], description: 'Guest country change' },
   { tcId: 'PROD_SHOP_06', suites: ['phase3'], description: 'PF filter and sort' },
   { tcId: 'PROD_OFFER_02', suites: ['phase3'], description: 'Offer category filter icons' },
   { tcId: 'PROD_MYPAGE_04', suites: ['phase3'], description: 'Recommended products under devices' },
@@ -86,6 +85,8 @@ export const testCaseCatalog: TestCaseMeta[] = [
   { tcId: 'PROD_SEARCH_08', suites: ['phase3'], description: 'Wishlist from search PF', requiresFeatures: ['wishlist'] },
   { tcId: 'PROD_BACKWARD_02', suites: ['phase3'], description: 'Wishlist to payment then back' },
   { tcId: 'PROD_BACKWARD_03', suites: ['phase3'], description: 'Back navigation multi entry points' },
+  // Last: clears app data and leaves the debug/backend setup off
+  { tcId: 'PROD_HOME_05', suites: ['phase3'], description: 'Guest country change' },
 
   // Flagship
   { tcId: 'UAT_APP_01', suites: ['flagship'], description: 'PF card redirection / product setup' },

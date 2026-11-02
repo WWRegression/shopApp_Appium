@@ -41,4 +41,33 @@ export class SplashLocator {
       ].join(', ')
     );
   }
+
+  get addonSection() {
+    return $(
+      [
+        'div#content__addon:not([style*="display:none"]) section.hubble-addon-page',
+        'div#content__addon:not([style*="display:none"]) section.wearable-addon-page',
+        '[class*="AddOn_container"]',
+      ].join(', ')
+    );
+  }
+
+  get addonAddItemButtons() {
+    return $$(
+      [
+        'button[an-la="add-on:add item"]',
+        'button[an-la="evoucher:add item"]',
+        '.wearable-addon-page [an-la="add item"]',
+        'button[an-la^="add-on:"][an-la$=":add item"]',
+        'button[an-la="evoucher:推薦:add item"]',
+        'button[an-la="evoucher:Recommended:add item"]',
+        'button[an-la="evoucher:Samsung Cases & Film:add item"]',
+        'button[an-la^="bridge:add-on:"][an-la$=":add item"]',
+        'button[an-tr="bridge-flagship pdp-add item-option_click"]',
+        'button[an-la^="bridge:evoucher:"][an-la$=":add item"]',
+        '[data-testid="productCard"][an-la="add-on:add item"]',
+        'a[class*="AddOnProductItemMX_productCardTop"]',
+      ].join(', ')
+    );
+  }
 }

@@ -12,6 +12,7 @@ export const PRODUCT_MENUS = [
   'myReferrals',
   'myQRCode',
   'inbox',
+  'legalNotice',
   'mySmartThings',
   'orderSupport',
   'myAddresses',
@@ -358,9 +359,8 @@ export class MypageLocator {
     return $(`//android.widget.HorizontalScrollView//android.view.View[@selected = 'true']`);
   }
 
-  /** US only */
   get myProducts() {
-    return $(`//android.view.View[@content-desc = "My Products"]`);
+    return $(`//android.view.View[@content-desc = "My Products" or @content-desc = "マイ製品リスト"]`);
   }
 
   get myProductsPage() {
@@ -506,10 +506,19 @@ export class MypageLocator {
       or contains(@content-desc, "No hay nuevas notificaciones")
       or contains(@content-desc, "新しい通知はありません")
       or contains(@content-desc, "沒有新的通知")
+      or contains(@content-desc, "Es gibt keine neuen Benachrichtigungen")
       ]
-      | //android.view.View[@content-desc != '' and .//android.widget.ImageView]
-      | //android.widget.ImageView[@content-desc != '' and .//android.widget.Button]`
+      | //android.view.View[@content-desc != '' and ./android.widget.ImageView and ./android.widget.Button]
+      | //android.widget.ImageView[@content-desc != '' and ./android.widget.Button]`
     );
+  }
+
+  get legalNotice() {
+    return $(`//android.view.View[@content-desc = "Impressum"]`);
+  }
+
+  get legalNoticePage() {
+    return $(`//*[@text = "IMPRESSUM"]`);
   }
 
   get mySmartThings() {
@@ -554,6 +563,8 @@ export class MypageLocator {
         return this.myQRCode;
       case 'inbox':
         return this.inbox;
+      case 'legalNotice':
+        return this.legalNotice;
       case 'mySmartThings':
         return this.mySmartThings;
       case 'orderSupport':
@@ -577,6 +588,8 @@ export class MypageLocator {
         return this.myQRCodePage;
       case 'inbox':
         return this.inboxPage;
+      case 'legalNotice':
+        return this.legalNoticePage;
       case 'mySmartThings':
         return this.mySmartThingsPage;
       case 'orderSupport':
@@ -663,7 +676,7 @@ export class MypageLocator {
         .filter(Boolean)
         .map((word) => `contains(@content-desc, '${word}')`)
         .join(' and ') || 'false()';
-    return $(`//android.widget.ImageView[(${hasName}) or contains(@content-desc, '欢迎光临')]`);
+    return $(`//android.widget.ImageView[(${hasName}) or .//*[${hasName}] or contains(@content-desc, '欢迎光临')]`);
   }
 
   get supportMenu() {
@@ -803,6 +816,10 @@ export class MypageLocator {
 
   get subPageHeading() {
     return $(`(//android.view.View[@clickable = 'false' and string-length(normalize-space(@content-desc)) > 0])[1]`);
+  }
+
+  pageText(text: string) {
+    return $(`//*[@text = "${text}" or @text = "${text.toUpperCase()}"]`);
   }
 
   get giveFeedbackMenu() {
@@ -955,6 +972,22 @@ export class MypageLocator {
         @content-desc = 'Çerez tercihleri'
       ]`
     );
+  }
+
+  get supportTopMenu() {
+    return $(`//android.view.View[contains(@content-desc, 'カスタマーサポート') and contains(@content-desc, 'トップ')]`);
+  }
+
+  get appTermsMenu() {
+    return $(`//android.view.View[@content-desc = 'Samsungオンラインショップアプリの利用規約']`);
+  }
+
+  get privacyPolicyMenu() {
+    return $(`//android.view.View[@content-desc = '個人情報保護方針']`);
+  }
+
+  get legalInfoMenu() {
+    return $(`//android.view.View[@content-desc = 'リーガル情報']`);
   }
 
   /** Opens the per-category choices when the consent shows its summary first */
@@ -1165,9 +1198,5 @@ export class MypageLocator {
 
   storeOption(store: StoreOption) {
     return store === 'studentStore' ? this.studentStoreOption : this.corporateStoreOption;
-  }
-
-  get browserUrlBar() {
-    return $(`//android.widget.EditText[@resource-id = 'com.android.chrome:id/url_bar']`);
   }
 }

@@ -280,6 +280,17 @@ export class PfPage extends BasePage {
     return Boolean(pf) && Boolean(bcPd) && (pf.includes(bcPd) || bcPd.includes(pf));
   }
 
+  /** A SKU search must show that SKU on the PF card itself, not another option of the same model. */
+  verifyPfSku(product: PfProduct | undefined, expectedSku: string): void {
+    const actual = product?.sku ?? '';
+    const pass = actual.toLowerCase() === expectedSku.toLowerCase();
+    console.log(`[verifyPfSku] expected=${expectedSku} actual=${actual || 'none'} result=${pass ? 'PASS' : 'FAIL'}`);
+    markFailedAndStop(
+      [{ label: 'PF card does not show the searched SKU', pass, detail: `expected ${expectedSku}, PF card ${actual || 'none'}` }],
+      'verifyPfSku'
+    );
+  }
+
   /** Verifies the PF page is shown (product cards displayed). */
   async verifyPfPage(): Promise<void> {
     await switchToNative();
@@ -622,6 +633,7 @@ export class PfPage extends BasePage {
     const option = this.pflocator.priceHighToLowOption;
     const shown = await this.scrollUntilShown(option, 5);
     markFailedAndStop([{ label: 'price sort option not found', pass: shown }], 'selectPriceSort');
+    
     const value = (await getElementLabel(option)).trim();
     await clickElement(option, { timeout: 5000 });
     console.log(`[selectPriceSort] price="${value}"`);
@@ -638,7 +650,8 @@ export class PfPage extends BasePage {
     return false;
   }
 
-  private async collectPfProducts(): Promise<PfProduct[]> {
+  /** Name, price, rating and stock of every PF card, collected while scrolling the list. */
+  async collectPfProducts(): Promise<PfProduct[]> {
     await switchToNative();
     const products = new Map<string, PfProduct & { ratingText: string }>();
     let missed = 0;
@@ -784,9 +797,9 @@ export class PfPage extends BasePage {
     return /\d/.test(name) || /galaxy|갤럭시|جالاكسي|삼성|samsung/.test(name);
   }
 
-  /** SKU printed on the card, e.g. "SM-S948BZDBXXV". Color chips do not carry it. */
+  /** SKU printed on the card, e.g. "SM-S948BZDBXXV" or the Re-Newed "SM5S947BZKGEUB". Color chips do not carry it. */
   private cardSku(cardDesc: string): string {
-    return cardDesc.match(/\bSM-[A-Z0-9]+\b/)?.[0] ?? '';
+    return cardDesc.match(/\bSM-?[A-Z0-9]{8,}\b/)?.[0] ?? '';
   }
 
   /**
@@ -841,7 +854,8 @@ export class PfPage extends BasePage {
 
   /** A title line. Prices and wishlist hearts ("添加 SM-F9760DGDCHC 至我的收藏") are not titles. */
   private isProductLabel(label: string): boolean {
-    return Boolean(label) && !this.isPriceLabel(label) && !this.isWishlistLabel(label);
+    // Energy label / product sheet links carry the SKU, product titles do not
+    return Boolean(label) && !this.isPriceLabel(label) && !this.isWishlistLabel(label) && !this.cardSku(label);
   }
 
   /** Wishlist heart. The label carries the SKU, e.g. "Add to wishlist SM-A185FZKDEUB". */

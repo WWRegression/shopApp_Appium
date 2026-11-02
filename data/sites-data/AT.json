@@ -45,6 +45,7 @@
     "myReferrals": false,
     "myQRCode": false,
     "inbox": true,
+    "legalNotice": true,
     "mySmartThings": false,
     "orderSupport": false,
     "myAddresses": false,

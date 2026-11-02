@@ -14,7 +14,8 @@ describe('PROD_CART_01', () => {
       
       // Step1: Add quantity and verify cart icon quantity
       await cartPage.increaseQuantity(site.product.imSku);
-      
+      await cartPage.verifyCartIconMatchesCart();
+
       // Step2: Reduce quantity and verify cart icon quantity
       await cartPage.decreaseQuantity(site.product.imSku);
       

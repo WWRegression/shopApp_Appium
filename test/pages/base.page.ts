@@ -419,7 +419,7 @@ export class BasePage {
     return BasePage.titleTexts[expected].some((text) => matchesText(title, text));
   }
 
-  private async getHeaderTitle(): Promise<string> {
+  protected async getHeaderTitle(): Promise<string> {
     await this.prepareHeaderBnb();
     return getElementLabel(this.headerLocator.title);
   }
@@ -514,8 +514,8 @@ export class BasePage {
     return '';
   }
 
-  /** Title and URL of each WebView page opened since the click, plus the package of another app in front; empty for a native page. */
-  private async getOpenedPageNames(): Promise<string[]> {
+  /** Title and URL of each WebView page opened since the click, plus the package (and Chrome URL) of another app in front; empty for a native page. */
+  protected async getOpenedPageNames(): Promise<string[]> {
     const names: string[] = [];
     for (const page of await getBrowserPages()) {
       if (!this.knownPageIds.has(page.id)) {
@@ -525,6 +525,10 @@ export class BasePage {
     const currentPackage = await driver.getCurrentPackage().catch(() => '');
     if (currentPackage !== targetPackage()) {
       names.push(currentPackage);
+      const browserUrl = await getElementLabel(this.headerLocator.browserUrlBar);
+      if (browserUrl) {
+        names.push(browserUrl.split('?')[0]);
+      }
     }
     return names;
   }

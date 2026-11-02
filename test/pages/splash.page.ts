@@ -1,6 +1,9 @@
 import { BasePage } from './base.page';
 import { SplashLocator } from '../locators/splash.locator';
-import { getWindowIdsForPage } from '../helpers/context.helper';
+import { getWindowIdsForPage, prepareWebViewPage } from '../helpers/context.helper';
+import { clickIfDisplayed, isDisplayedOrFalse, scrollAndJsClick } from '../helpers/element.helper';
+import { markFailed, markFailedAndStop } from '../helpers/report.helper';
+import { getRunConfig } from '../../config/run.config';
 
 type SplashCheck = 'cart' | 'clicked' | 'none';
 
@@ -29,6 +32,56 @@ export class SplashPage extends BasePage {
       }
       await driver.pause(300);
     }
+  }
+
+  /** Waits for the add-on page after Add to Cart; a free gift page shown first is continued. Skips the TC when the site has no add-on. */
+  async prepareAddonPage(): Promise<void> {
+    await prepareWebViewPage('bc', () => this.locator.addonSection, 15000);
+    // Some sites show the free gift page before the add-on page
+    if (await clickIfDisplayed(this.locator.continueButtonOnGift)) {
+      console.log('[prepareAddonPage] free gift Continue clicked');
+    }
+    const shown = await driver
+      .waitUntil(async () => Boolean(await this.findAddItemButton()), { timeout: 10000, interval: 500 })
+      .then(() => true, () => false);
+    console.log(`[prepareAddonPage] add-on page shown=${shown}`);
+    markFailedAndStop([{ label: '[SKIPPED] No add-on page on this site', pass: shown }], 'prepareAddonPage');
+  }
+
+  /** The BNB cart icon on the add-on page must already count the product added on BC. */
+  async verifyCartIconUpdated(): Promise<void> {
+    // US add-on page has no BNB
+    if (getRunConfig().siteCode === 'US') {
+      return;
+    }
+    const count = await this.getBNBCartCount();
+    const pass = count > 0;
+    console.log(`[verifyCartIconUpdated] expected=more than 0 actual=${count} result=${pass ? 'PASS' : 'FAIL'}`);
+    markFailed([{ label: 'Cart icon not updated on the add-on page', pass, detail: `count ${count}` }], 'verifyCartIconUpdated');
+  }
+
+  /** Clicks Add on the first add-on product and returns its SKU. */
+  async selectAddonOption(): Promise<string> {
+    await prepareWebViewPage('bc', () => this.locator.addonSection, 10000);
+    const button = await this.findAddItemButton();
+    markFailedAndStop([{ label: 'No add-on Add button shown', pass: Boolean(button) }], 'selectAddonOption');
+    const sku = await driver.execute(
+      (el) => (el as unknown as HTMLElement).closest('[data-modelcode]')?.getAttribute('data-modelcode') ?? '',
+      button!
+    );
+    await scrollAndJsClick(button!);
+    console.log(`[selectAddonOption] add-on SKU=${sku}`);
+    markFailedAndStop([{ label: 'Add-on SKU not found', pass: Boolean(sku) }], 'selectAddonOption');
+    return sku;
+  }
+
+  private async findAddItemButton(): Promise<WebdriverIO.Element | undefined> {
+    for (const button of await this.locator.addonAddItemButtons) {
+      if (await isDisplayedOrFalse(button)) {
+        return button;
+      }
+    }
+    return undefined;
   }
 
   /** True when a new cart window opens within 3s; read from the window list because the hidden BC window answers slowly. */
