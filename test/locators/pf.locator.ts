@@ -12,7 +12,7 @@ export class PfLocator {
 
   /** Search result tab, e.g. "Products (10)", "Prodotti (10)". */
   get productCount() {
-    return $(`//android.view.View[${this.productCountLabel}]`);
+    return $(`//android.view.View[${this.productCountLabel}] | //android.view.View[contains(@content-desc, 'Total')]`);
   }
 
   private get productCountLabel() {

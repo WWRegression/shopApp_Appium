@@ -466,6 +466,8 @@ export class CheckoutPage extends BasePage {
         [data.district, ['state', 'district']],
         [data.floor, ['floor']],
         [data.searchText, ['regioniso', 'searchaddress']],
+        [data.apartment, ['apartment']],
+        [data.landmark, ['landmark']],
         [getSite().customer.mobile, ['phone']],
       ],
       { onlyEmpty: picked }
