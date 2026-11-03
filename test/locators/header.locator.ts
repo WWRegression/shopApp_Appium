@@ -34,8 +34,26 @@ export class HeaderLocator {
   /** Title button shown after the header chat icon opens the chat page. */
   get chatTitle() {
     return $(
-      `//android.widget.Button[contains(@content-desc, "Chat") and contains(@content-desc, "Samsung")]
-      | //android.widget.Button[@content-desc = 'Back']/following-sibling::android.view.View[@content-desc = 'Chat']`
+      `//android.widget.Button[
+      contains(@content-desc, 'Samsung')
+        and (contains(@content-desc, 'دردشة')
+        or contains(@content-desc, 'Live Chat')
+        or contains(@content-desc, 'Chat')
+        or contains(@content-desc, 'Clavardage')
+        or contains(@content-desc, '客服')
+        or contains(@content-desc, 'Live-Chat')
+        or contains(@content-desc, '實時對話')
+        or contains(@content-desc, 'Élő beszélgetés')
+        or contains(@content-desc, 'צ׳אט')
+        or contains(@content-desc, 'Czat na żywo z doradcą')
+        or contains(@content-desc, 'الدردشة')
+        or contains(@content-desc, 'แชท')
+        or contains(@content-desc, 'Canlı destek')
+        or contains(@content-desc, '線上顧問'))
+      ]
+      |
+      //android.widget.Button[@content-desc='Back']/following-sibling::*[(self::android.view.View and contains(@content-desc, 'Chat'))
+      or (self::android.view.View and .//android.widget.Button[contains(@content-desc, 'Samsung')])]`
     );
   }
 
