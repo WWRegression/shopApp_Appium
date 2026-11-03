@@ -12,7 +12,7 @@ describe('PROD_SEARCH_03', () => {
 
   it('search by SKU then sort and filter on Search PF', async function () {
     await runOrSkip.call(this, 'PROD_SEARCH_03', async () => {
-      const keyword = 'SM-S';
+      const keyword = 'SM-S9';
       const matches = ['Galaxy S', 'S26', 'S25'];
 
       await homePage.prepareHomePage();

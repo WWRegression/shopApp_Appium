@@ -1,91 +1,61 @@
 # Appium Samsung Automation
 
-Samsung ShopApp 자동화 Framework (Appium + TypeScript + WebdriverIO)
+삼성 Shop 앱(Android) 자동화 프레임워크입니다.  
+**Appium 2 + WebdriverIO 9 + TypeScript + Mocha** 기반이며, 사이트(국가)별 Sanity / Phase3 / Flagship 시나리오를 실행합니다.
 
-> **공유 시점 안내:** 하이브리드 Context/Window helper 정리와 샘플 spec 위주로 작업 중입니다.  
-> TC 전체 이식·상세 walkthrough는 추후 회의에서 이어갈 예정입니다.
+> English: [README.en.md](./README.en.md)
 
-## Prerequisites
+---
+
+## 이 문서를 읽는 순서 (신규 합류)
+
+1. [사전 준비](#사전-준비) → 기기·Node·APK 확인  
+2. [Quick start](#quick-start) → 한 번 실행해 보기  
+3. [프로젝트 구조](#프로젝트-구조) → 어디를 고치면 되는지  
+4. [실행 설정](#실행-설정) → `--site`, suite, 포트  
+5. [테스트 작성 가이드](#테스트-작성-가이드) → Spec / Page / Locator / Site 데이터  
+
+---
+
+## 사전 준비
 
 | 항목 | 비고 |
 |------|------|
-| Node.js | 18 이상 (`package.json` engines) |
-| Android 기기/에뮬레이터 | USB 디버깅 ON, `adb devices`에 device 표시 |
-| Android SDK platform-tools | `adb` PATH 등록 |
-| ShopApp APK | site region에 맞는 패키지 설치 (`config/site.ts`의 package/activity) |
+| Node.js | **18 이상** (`package.json` engines) |
+| Android 기기 또는 에뮬레이터 | USB 디버깅 ON |
+| Android SDK platform-tools | `adb`가 PATH에 있어야 함 |
+| Shop 앱 APK | 사이트에 맞는 패키지 설치 (아래 APK 표) |
 
-Appium 서버는 `@wdio/appium-service`가 테스트 실행 시 자동으로 띄웁니다.
-
-## 실행 Flow (npm 시작부터)
-
-```text
-npm run test:sanity | test:phase3 | test:flagship:* | test:spec
-  │
-  │  package.json scripts
-  │    · cross-env TEST_TYPE=… APP_ENV=…   (sanity/phase3/flagship)
-  │    · wdio run wdio.conf.ts [--spec …] [--site …] [--release …] …
-  ▼
-wdio CLI 기동
-  │
-  ▼
-wdio.conf.ts 로드
-  │  1) getRunConfig()
-  │       CLI(--site/--env/--release/--report-db/--udid/--appium-port/…)
-  │         > env(SITE/APP_ENV/UDID/APPIUM_PORT/…) > defaults
-  │  2) loadSite(siteCode)  — JSON을 메모리에 올림 (파일은 사이트당 1번)
-  │       getAppIdentity → 기본 GLOBAL APK, CN/IN/US만 다름
-  │       이후 spec/helper는 getSiteData()로 같은 객체를 읽음
-  │  3) getSpecsForTestType(testType)
-  │       sanity/phase3 → test/specs/regression/**
-  │       flagship      → test/specs/flagship/**
-  │       (--spec 있으면 해당 파일만)
-  │  4) capabilities에 appPackage / appActivity / (선택) udid / systemPort
-  │     Appium service port = appiumPort (기본 4723)
-  ▼
-Appium service 기동  (@wdio/appium-service)
-  ▼
-Session 생성  (UiAutomator2 ↔ Device)
-  ▼
-before hook
-  │  driver.activateApp(package)
-  ▼
-Mocha Spec 실행
-  │  Page / Service / Locator
-  │  context.helper (필요 시 Native ↔ WebView ↔ Window)
-  ▼
-afterTest
-  │  reportDb=true 이면 report.helper → DB 업로드
-  ▼
-Session 종료 / Appium 종료
+```bash
+adb devices          # device 로 보여야 함
+node -v              # v18+
 ```
 
-### Hybrid Context / Window (Spec 내부)
+Appium 서버는 `@wdio/appium-service`가 테스트 실행 시 **자동으로** 띄웁니다. 별도 Appium Desktop 실행은 필요 없습니다.
 
-```text
-Native (NATIVE_APP)
-  │  switchToWebView() / hasAppWebViewContext()
-  ▼
-WebView context (WEBVIEW_<package>)
-  │  switchToWindowByPage('cart'|'bc'|…)
-  │    · detailed getContexts → url 매칭
-  │    · switchToWindow(webviewPageId)
-  ▼
-Focused window → Page actions
-```
+### APK (패키지)
+
+| 사이트 | package |
+|--------|---------|
+| 기본(GLOBAL) | `com.samsung.ecomm.global.gbr` |
+| CN | `com.jv.samsungeshop` |
+| IN | `com.samsung.ecomm.global.in` |
+| US | `com.samsung.ecomm` |
+
+정의 위치: `config/site.ts` → `appBySite`
+
+---
 
 ## Quick start
 
 ```bash
 npm install
 
-# 기기 연결 확인
-adb devices
-
-# 기본 siteCode는 config/run.config.ts (CLI --site 로 덮어쓰기)
-npm run test:sanity -- --site DE
+# Sanity (기본 site는 config/run.config.ts defaults — 보통 CLI로 덮어씀)
+npm run test:sanity -- --site AU
 
 # 단일 spec
-npm run test:spec -- test/specs/sample/test-debug.spec.ts --site AT
+npm run test:spec -- test/specs/regression/search/prod-search-01.spec.ts --site AU
 ```
 
 ### Windows PowerShell
@@ -93,141 +63,260 @@ npm run test:spec -- test/specs/sample/test-debug.spec.ts --site AT
 `npm`이 `npm.ps1` 실행 정책에 막히면:
 
 ```powershell
-npm.cmd run test:spec -- test/specs/sample/test-debug.spec.ts --site AT
+npm.cmd run test:sanity -- --site AU
 ```
 
-또는 `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`
+---
 
 ## 프로젝트 구조
 
 ```text
 config/
-  run.config.ts          ← siteCode / testType / environment / releaseName / 기기·포트
-  site.ts                ← package/activity, loadSite(최초), getSiteData(참조)
-  site-features.json     ← site별 features · searchApiPath override
-  tc-exclusions.json
+  run.config.ts           # site / suite / env / release / udid / 포트 (CLI > env > defaults)
+  site.ts                 # Site 타입, APK, feature 기본값, loadSite / getSiteData
+  site-features.json      # 사이트별 feature·searchApiPath 오버라이드
+  tc-exclusions.json      # 사이트별 TC 제외
+  test-case.catalog.ts    # TC ID ↔ suite(sanity/phase3/flagship) · required features
+  db.config.ts            # 결과 DB (민감 정보 — 공유 주의)
+
 data/
-  sites-data/{SITE}.json ← 계정·주소·검색 픽스처
-  flagship-data/
-    skus/{SITE}.json     ← Flagship SKU 카탈로그
-    generator/           ← Products.csv, sku-from-csv.ts
+  sites-data/{SITE}.json  # 국가별 픽스처 (고객/배송/product/search …)
+  flagship-data/          # Flagship SKU 카탈로그 + CSV generator
+
 test/
-  helpers/               ← context, device, env, db, gesture, flagship SKU 로드, …
-  pages/ / locators/     ← Page Object
-  services/              ← trade-in, sc+, … 도메인 로직
+  helpers/                # context, device(adb), element, gesture, report, tc-filter …
+  locators/               # 셀렉터만
+  pages/                  # Page Object (화면 단위 동작)
+  services/               # Trade-In / SC+ / SIM / EUP / Trade-Up 등 도메인 로직
   specs/
-    regression/          ← Sanity + Phase3
-    flagship/            ← UAT / PostUnpack
-    sample/              ← 디버그·샘플
+    regression/           # Sanity + Phase3 (PROD_*)
+    flagship/             # Flagship UAT / PostUnpack
+    sample/               # 샘플·디버그
+
+wdio.conf.ts              # WDIO 진입점 (capabilities, Appium service, hooks)
 ```
 
-## Specs 구조
+### 레이어 역할
 
-```text
-test/specs/
-├── regression/                 ← Sanity + Phase3
-│   ├── home/prod-home-01.spec.ts
-│   ├── buy/prod-buy-01.spec.ts
-│   └── ...
-├── flagship/                   ← Flagship (UAT / PostUnpack)
-│   ├── uat-app-01.spec.ts
-│   └── ...
-└── sample/
-    └── sample-pf-bc-cart.spec.ts
+| 레이어 | 역할 |
+|--------|------|
+| **Spec** | TC 시나리오 순서만. `runOrSkip`으로 사이트/feature 스킵 |
+| **Page** | 화면 단위 동작 (검색, PF 카드, 장바구니 …) |
+| **Service** | BC/PD/Cart에 붙는 부가 서비스 (Trade-In, SIM …) |
+| **Locator** | 셀렉터 정의 (로직 최소화) |
+| **Helper** | 공통 (Native↔WebView, adb, 리포트, 제스처) |
+| **sites-data** | 국가별 테스트 데이터 |
+
+---
+
+## 사이트 데이터 (`data/sites-data`)
+
+파일명 = 사이트 코드 (예: `AU.json`, `SA_EN.json`).
+
+`product` / `search` 예시:
+
+```json
+{
+  "product": {
+    "haSku": "…",
+    "vdSku": "…",
+    "imSku": "SM-…",
+    "deviceName": "Galaxy …",
+    "color": "…",
+    "storage": "…"
+  },
+  "search": {
+    "localKeyword": "watch"
+  }
+}
 ```
+
+- `imSku` + `deviceName` / `color` / `storage` → 모바일(IM) 기본 상품·옵션  
+- `haSku` / `vdSku` → HA/VD 검색·검증용 (사이트에 따라 생략 가능)  
+- `localKeyword` → 현지 검색어 (예: SEARCH_05)  
+- 실행 시 API로 유효 SKU가 해석되면 `site.product`에 오버레이됩니다 (`CALL_API` → `api.helper` 캐시)
+
+Feature on/off: `config/site-features.json` (+ `DEFAULT_SITE_FEATURES` in `site.ts`)  
+TC 제외: `config/tc-exclusions.json`
+
+---
 
 ## 실행 설정
 
-`config/run.config.ts` (우선순위: CLI > env > defaults)
+우선순위: **CLI > 환경변수 > `config/run.config.ts` defaults**
 
-| 필드 | 설명 |
-|------|------|
-| `siteCode` | 대상 사이트 (DE, US, AT, …). CLI는 `--site` |
-| `testType` | sanity / phase3 / flagship |
-| `environment` | `stg` (Flagship UAT) / `prod` (PostUnpack·Sanity) |
-| `releaseName` | DB releaseName |
-| `reportDb` | 결과 DB 업로드 on/off |
-| `udid` | 대상 기기. 같은 PC에서 여러 대면 **필수** |
-| `appiumPort` | Appium 서버 포트. 기본 `4723` |
-| `systemPort` | UiAutomator2 `systemPort`. 기본 `8200` |
-| `chromedriverPort` | WebView Chromedriver 포트. 기본 `8000` |
+| 항목 | CLI / env | 설명 |
+|------|-----------|------|
+| 사이트 | `--site` / `SITE` | `AU`, `DE`, `US`, … |
+| 스위트 | npm script → `TEST_TYPE` | `sanity` / `phase3` / `flagship` |
+| 환경 | `--env` / `APP_ENV` | `stg` (Flagship UAT) / `prod` |
+| 릴리즈 | `--release` / `RELEASE_NAME` | DB 업로드 시 필수에 가깝게 사용 |
+| 결과 DB | `--report-db` / `REPORT_DB` | `true`면 afterTest에서 업로드 |
+| 기기 | `--udid` / `UDID` | 여러 대 연결 시 **필수** |
+| 포트 | `--appium-port` / `--system-port` / `--chromedriver-port` | 병렬 시 기기마다 다르게 |
 
-APK: 기본 global 패키지+activity. CN / IN / US만 `appBySite`에서 오버라이드 (`activity` 생략 시 기본 activity).
-
-## 실행
+### npm scripts
 
 ```bash
-npm install
-
-npm run test:sanity
-npm run test:phase3
-
-# Flagship UAT (STG) — WDS 로그인 가능
-npm run test:flagship:uat -- --site DE --release R26
-
-# Flagship PostUnpack (PROD)
-npm run test:flagship:postunpack -- --site DE --release R26
-
-# env만 바꿀 때
-npm run test:flagship:uat -- --site US --env prod
-
-# 단일 파일
-npm run test:spec -- test/specs/sample/sample-pf-bc-cart.spec.ts --site AU
-
-# 기기 1대 (포트 생략 = 4723 / 8200 / 8000)
-npm run test:sanity -- --site DE --udid R5CTxxxx
-
-# 같은 PC에서 여러 대 동시 실행 — 터미널을 기기마다 열고, udid·포트를 모두 다르게
-npm run test:sanity -- --site DE --udid DEVICE_A --appium-port 4723 --system-port 8200 --chromedriver-port 8000
-npm run test:sanity -- --site FR --udid DEVICE_B --appium-port 4725 --system-port 8201 --chromedriver-port 8001
+npm run test:sanity              # TEST_TYPE=sanity, APP_ENV=prod
+npm run test:phase3              # TEST_TYPE=phase3, APP_ENV=prod
+npm run test:flagship:uat        # flagship + stg
+npm run test:flagship:postunpack # flagship + prod
+npm run test:spec -- <path>      # 특정 spec만
+npm run build                    # tsc --noEmit
 ```
 
-한 WDIO 프로세스는 기기 1대입니다 (`maxInstances: 1`). 병렬은 **프로세스(터미널)를 여러 개** 띄우는 방식입니다. 각 프로세스마다 Appium을 따로 띄우므로 `appium-port` / `system-port` / `chromedriver-port` / `udid`가 겹치면 안 됩니다.
+### 실행 예시
 
-### STG (WDS) 로그인
+```bash
+# Sanity — AU
+npm run test:sanity -- --site AU
 
-- `environment=stg`일 때만 `LoginPage.wdsLoginIfNeeded()` 동작
-- 계정: `test/pages/login.page.ts`의 `WDS_CREDENTIALS` (공유 시 계정 취급 주의)
+# Flagship UAT
+npm run test:flagship:uat -- --site DE --release 30RC1_SENH
 
-### DB 결과 업로드
+# 단일 TC 파일
+npm run test:spec -- test/specs/regression/buy/prod-buy-01.spec.ts --site UK
 
-1. `test/helpers/db.helper.ts`의 `REPORT_DB` 설정 (비밀번호 등 커밋/공유 주의)
-2. `reportDb: true` 또는 `--report-db`
+# 기기 지정
+npm run test:sanity -- --site DE --udid R5CTxxxx
+
+# 같은 PC에서 기기 2대 (터미널 2개, 포트·udid 분리)
+npm run test:sanity -- --site DE --udid DEVICE_A --appium-port 4723 --system-port 8200 --chromedriver-port 9515
+npm run test:sanity -- --site FR --udid DEVICE_B --appium-port 4725 --system-port 8201 --chromedriver-port 9516
+```
+
+한 WDIO 프로세스는 기기 **1대** (`maxInstances: 1`). 병렬은 프로세스(터미널)를 여러 개 띄웁니다.
+
+### Spec이 고르는 방식
+
+- `testType=sanity|phase3` → `test-case.catalog.ts`에 등록된 TC만, catalog 순서  
+- 파일명 규칙: `PROD_HOME_01` → `prod-home-01.spec.ts`  
+- `flagship` → `test/specs/flagship/**/*.ts`  
+- Spec 안에서 `runOrSkip('PROD_…')` → feature 미지원·exclusion이면 skip (리포트 N/A)
+
+---
+
+## 실행 Flow (한눈에)
+
+```text
+npm run test:* 
+  → cross-env TEST_TYPE / APP_ENV
+  → wdio run wdio.conf.ts
+       · getRunConfig()
+       · loadSite(siteCode)  ← sites-data + features + exclusions
+       · getSpecsForTestType()
+       · Appium service + UiAutomator2 session
+  → before: activateApp (+ 필요 시 앱 로딩 대기)
+  → Mocha specs (Page / Service / Locator)
+  → afterTest: reportDb 이면 DB 업로드
+```
+
+---
+
+## 테스트 작성 가이드
+
+### Spec 패턴
+
+```ts
+describe('PROD_SEARCH_01', () => {
+  const searchPage = new SearchPage();
+
+  it('…', async function () {
+    await runOrSkip.call(this, 'PROD_SEARCH_01', async (site) => {
+      await searchPage.searchByKeyword(site.search.localKeyword);
+      // …
+    });
+  });
+});
+```
+
+- 새 TC는 `config/test-case.catalog.ts`에 등록하고, 파일명을 catalog와 맞춥니다.  
+- 사이트 분기(`if (siteCode === 'XX')`)는 가능한 한 피하고, **locator/데이터/feature**로 흡수합니다.
+
+### Page / Locator / Service
+
+- UI 조작·검증 → `test/pages/*.page.ts`  
+- 셀렉터 → `test/locators/*.locator.ts`  
+- Trade-In, SC+, SIM 등 → `test/services/...`  
+- Cart Trade-In 팝업은 AEM 팝업과 **분리**되어 있습니다 (`cart-tradein-popup` vs `aem-tradein-popup`).
+
+### Native ↔ WebView
+
+Shop은 하이브리드입니다. `test/helpers/context.helper.ts` 사용:
+
+| API | 용도 |
+|-----|------|
+| `switchToNative` / `switchToWebView` | Context 전환 |
+| `prepareWebViewPage('cart' \| 'bc' \| …)` | WebView + URL 윈도우 + 레이아웃 대기 |
+| `getCurrentWebViewPage` | 현재 페이지 판별 (전환 없이) |
+
+### 리포트 / 실패 처리
+
+- `markFailedAndStop` — 치명적 실패, TC 중단  
+- `markFailed` — 기록 후 계속, suite 끝에서 실패로 모음  
+- DB status: Pass / Fail / N/A / Exception / Planned / OOS (`report.helper`)
+
+### 타입 체크
+
+```bash
+npm run build
+```
+
+---
+
+## STG (WDS) 로그인
+
+- `environment=stg`일 때 Flagship 등에서 WDS 로그인 경로 사용  
+- 계정은 `test/pages/login.page.ts` 쪽 상수 — **공유·커밋 시 계정 취급 주의**
+
+기기 계정 조회(SSO 등): `device.helper`의 `getGoogleAccountEmail` / `getAccountEmail`  
+(adb `dumpsys account`, serial은 `deviceUdid()`가 capabilities / runConfig에서 자동 해석)
+
+---
+
+## DB 결과 업로드
+
+1. `config/db.config.ts` 등 DB 접속 정보 준비 (비밀번호·키는 커밋하지 않음 — `.gitignore`의 `config/db.key` 등)  
+2. `reportDb` 켜기:
 
 ```bash
 npm run test:sanity -- --site DE --release R26 --report-db
 ```
 
-## Native ↔ WebView (context.helper)
+`releaseName`이 비어 있으면 `reportDb` 사용 시 `wdio.conf.ts`에서 에러로 막습니다.
 
-하이브리드 앱은 **Context**와 **Window**를 나눕니다.
+---
 
-| Layer | API | 역할 |
-|-------|-----|------|
-| Context | `switchToNative` / `switchToWebView` / `hasAppWebViewContext` | `NATIVE_APP` ↔ `WEBVIEW_<package>` |
-| Window | `getCurrentWindowUrl` / `switchToWindowByPage` | URL 패턴으로 WebView 안 page(탭) 포커스 |
-| Prepare | `prepareWebViewPage` | context + window + layout ready |
-| Detect | `getCurrentWebViewPage` / `isCurrentWebViewPage` | Hybris WebView 페이지 판별 (Native context OK, 전환 없음) |
+## 자주 하는 작업
 
-```text
-switchToWebView()                         → WEBVIEW_<package> context
-switchToWindowByPage('cart')              → cart URL window focus
-prepareWebViewPage('bc', layout)          → context + window + layout
-getCurrentWebViewPage({ waitMs: 5000 })   → 'bc' | 'pd' | … (PF card 직후 등)
-```
+| 목적 | 위치 |
+|------|------|
+| 국가 픽스처 수정 | `data/sites-data/{SITE}.json` |
+| Feature on/off | `config/site-features.json` |
+| TC 제외 | `config/tc-exclusions.json` |
+| TC suite 등록 | `config/test-case.catalog.ts` |
+| 검색/PF/카트 동작 | `test/pages/search|pf|cart.page.ts` |
+| Flagship SKU 생성 | `npm run flagship:skus` (`data/flagship-data/generator`) |
 
-- Context wait: Appium `getContexts({ waitForWebviewMs })`
-- Window wait/focus: detailed `getContexts`의 `url` + `webviewPageId`로 `switchToWindow`
-- Detect: focused URL 또는 detailed contexts URL (`matchPageByUrl`) — context 전환 없음
-- Native에서 URL만 볼 때: `device.helper`의 `getBrowserPageList` (Appium context 전환 없음)
+---
 
-## Helpers
+## 트러블슈팅
 
-| Helper | 용도 |
-|--------|------|
-| `context.helper` | Native ↔ WebView, window/URL, page detect |
-| `device.helper` | `getBrowserPageList`, adb, package version |
-| `env.helper` | stg/prod, shop/API base URL |
-| `db.helper` + `report.helper` | TC 결과 DB |
-| `element` / `gesture` / `validation` | 공통 UI 조작·검증 |
-| `LoginPage.wdsLoginIfNeeded` | STG WDS 로그인 |
+| 증상 | 확인 |
+|------|------|
+| `adb devices` empty | 케이블/드라이버, 디버깅 허용 |
+| 여러 기기인데 session 꼬임 | `--udid` + 포트 분리 |
+| PowerShell에서 npm 실패 | `npm.cmd` 사용 |
+| WebView 요소를 못 찾음 | Native에 있는지, `prepareWebViewPage` 했는지 |
+| TC가 통째로 skip | catalog / `requiresFeatures` / `tc-exclusions` |
+| SITE=ALL | 단일 사이트 코드로 실행 (ALL은 work-queue용) |
+
+---
+
+## 참고
+
+- 진입 설정: `config/run.config.ts`, `wdio.conf.ts`  
+- 사이트 로드: `config/site.ts`  
+- TC 게이트: `test/helpers/tc-filter.helper.ts` (`runOrSkip`)  
+- 샘플: `test/specs/sample/`
