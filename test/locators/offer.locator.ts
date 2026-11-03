@@ -4,8 +4,6 @@ export const ALL_OFFERS_TAB_LABELS = [
   'All offers',
   'Ausgewählt',
   'Alle Angebote',
-  'Présenté',
-  'Top Offres',
   'AI',
   'Todas las oferta',
   'Destacados',
@@ -13,19 +11,15 @@ export const ALL_OFFERS_TAB_LABELS = [
   'Todas as campanhas',
   'Doporučené',
   'Kiemelt',
-  'Unggulan',
   'In primo piano',
   'Alle deals',
   'Polecane',
   'Oferte',
   'Alla erbjudanden',
-  'Öne çıkanlar',
   'Nổi Bật',
-  'แนะนำ',
   '推荐',
   '精選優惠',
-  'المنتجات المميزة',
-  'כרטיסייה',
+  'All categories',
 ];
 
 export class OfferLocator {
@@ -96,7 +90,7 @@ export class OfferLocator {
         or @content-desc = 'Warunki i ograniczenia' or @content-desc = 'Notas Legais' or @content-desc = 'Termos e Condições'
         or @content-desc = 'Điều khoản và điều kiện' or @content-desc = 'Kampanya koşulları için buraya tıklayınız'
         or @content-desc = '條款和條件' or @content-desc = '條款及細則' or @content-desc = '条款声明'
-        or @content-desc = ' تطبق الشروط والأحكام.*' or @content-desc = 'בכפוף לתנאי השימוש'
+        or @content-desc = ' تطبق الشروط والأحكام.*' or @content-desc = 'בכפוף לתנאי השימוש' or @content-desc = 'Termini e Condizioni'
       ]`
     );
   }
