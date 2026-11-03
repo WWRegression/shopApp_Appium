@@ -179,19 +179,11 @@ export class PfLocator {
 
   /** Sort popup root, e.g. "Sort\nĐược khuyến nghị". "Sort By" does not match that title. */
   private get sortPopupLabel() {
-    const titles = [
-      'فرز بحسب', 'ترتيب حسب', 'Trier par', 'Ordenar por', '排序方式', 'Seřadit podle', 'Rendezés',
-      'Urut berdasarkan', 'Ordina per', 'Filtrează după', 'เรียงตาม', 'Sırala', '排序', 'Sắp xếp theo',
-      'מיון לפי', '並び替え',
-    ].map((text) => `contains(@content-desc, '${text}')`).join(' or ');
-    return `starts-with(@content-desc, 'Sort') or ${titles}`;
+    return `starts-with(@content-desc, 'Sort')`;
   }
 
   private get applyButtonLabel() {
-    return [
-      'Apply', 'تطبيق', 'Anwenden', 'Toepassen', 'Appliquer', 'Aplicar', '应用', 'Použít', '確認',
-      'Alkalmazás', 'Tetapkan', 'Applica', '適用する', 'Zastosuj', 'Aplică', 'Tillämpa', 'ใช้', 'Uygula', '送出', 'Áp dụng', 'החל',
-    ].map((text) => `contains(@content-desc, '${text}')`).join(' or ');
+    return `contains(@content-desc, 'Apply')`;
   }
 
   private get resultTotalLabel() {
@@ -260,10 +252,9 @@ export class PfLocator {
   /** Price high-to-low option in the sort popup. */
   get priceHighToLowOption() {
     const label = [
-      'High to Low', 'high to low', 'mayor a menor', 'الأعلى للأقل', 'Von hoch nach niedrig', 'élevé à bas',
-      '价格从高到低', 'nejvyšší po nejnižší', 'alto a bajo', 'décroissant', '由高至低', 'legmagasabbtól',
-      'Tinggi -> Rendah', 'alto a basso', 'hoog - laag', 'wysokiej do niskiej', 'descrescător', 'Högt till lågt',
-      'Azalan', 'Cao đến thấp', 'מהגבוה לנמוך', 'mais alto', '高い順', 'plus cher',
+      'High to Low', 'high to low', 'الأعلى للأقل','Von hoch nach niedrig', 'Prijs hoog - laag', 'Prix décroissant', 'Du plus cher au moins cher', 'mayor a menor', 
+      'Mayor a menor', 'Cena od nejvyšší po nejnižší', 'de alto a bajo', 'décroissant', '由高至低', 'legmagasabbtól', 'Harga: Tinggi -> Rendah', 
+      'da alto a basso', 'גבוה לנמוך', '価格が高い順', 'Od wysokiej do niskiej', 'mais alto', 'descrescător', 'Högt till lågt', 'Azalan Fiyat', 'Cao đến thấp',
     ].map((text) => `contains(@content-desc, '${text}')`).join(' or ');
     return $(`//android.view.View[${this.sortPopupLabel}]//android.view.View[${label}]`);
   }
@@ -314,17 +305,16 @@ export class PfLocator {
 
   private get priceFilterLabel() {
     const titles = [
-      'Price', 'Preis', 'Precio', 'Prix', 'Prijs', '价格', '價格', '價錢', 'Cenové', 'Árkategória', 'harga',
-      'prezzo', 'السعر', 'Prisklass', 'ราคา', 'Fiyat', 'giá', 'מחיר', '価格', 'Preço', 'Preț', 'Cena',
+      'Price', 'Prijs', 'Preis', 'precios', '價錢', 'מחיר', '価格で絞る', 'Cena', 'Preț', 'Preço', 'Pris', 'ราคา', '價格', 'Khoảng Giá', 'Prix',
     ].map((label) => `contains(@content-desc, '${label}')`).join(' or ');
     return `(${titles}) and not(contains(@content-desc, 'High to Low')) and not(contains(@content-desc, 'high to low'))`;
   }
 
   private get productFilterLabel() {
     return [
-      'Product Range', 'Produktsortiment', 'Gamme de produits', 'Gama de producto', '产品类型', 'Produktová',
-      '產品種類', 'Terméktípus', 'Ragam Produk', 'Gamma di prodotti', 'Productassortiment', 'Oferta produktów',
-      'Gama de produse', 'Ürün Çeşitleri', 'Phạm vi sản phẩm', 'סדרות', '製品カテゴリ', 'Serie', 'Clase', 'Formfaktor',
+      'مجموعة المنتجات','Product Range', 'Productgamma', 'Clase', 'Gamme de produits', '產品種類', 'Terméktípus', 'Ragam Produk', 'סדרות מוצרים', 
+      'Gamma di prodotti', '製品カテゴリ', 'Gama de productos', 'Productassortiment', 'Gama de producto', 'Oferta produktów', 'Gama de produse', 
+      'Produktsortiment', 'รุ่น', 'Ürün Çeşitleri', '類型', 'Phạm vi sản phẩm', 'Produktová řada', 'Serie',
     ].map((label) => `contains(@content-desc, '${label}')`).join(' or ');
   }
 
