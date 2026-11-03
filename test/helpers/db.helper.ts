@@ -64,7 +64,7 @@ export async function insertShopAppResult(payload: ShopAppResultPayload): Promis
   const run = getRunConfig();
   const site = run.siteCode.toUpperCase();
   try {
-    const apkVersion = await getPackageVersion(getAppPackage(run.siteCode), run.udid);
+    const apkVersion = await getPackageVersion(getAppPackage(run.siteCode));
     console.log(`[db] [${site}] ${payload.tcId} uploading: ${payload.status} - ${payload.reason ?? ''}`);
 
     const pool = await getPool();

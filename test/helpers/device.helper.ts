@@ -16,11 +16,8 @@ export interface BrowserPageInfo {
   title: string;
 }
 
-function deviceUdid(explicit?: string): string | undefined {
-  if (explicit) {
-    return explicit;
-  }
-
+/** Capabilities deviceUDID, else runConfig.udid. Undefined → adb picks the only/default device. */
+function deviceUdid(): string | undefined {
   let fromCapabilities: string | undefined;
   if (typeof browser !== 'undefined') {
     try {
@@ -34,20 +31,20 @@ function deviceUdid(explicit?: string): string | undefined {
   return fromCapabilities || getRunConfig().udid;
 }
 
-function adbArgv(args: string[], udid?: string): string[] {
-  const serial = deviceUdid(udid);
+function adbArgv(args: string[]): string[] {
+  const serial = deviceUdid();
   return serial ? ['-s', serial, ...args] : args;
 }
 
-function adbSync(args: string[], udid?: string): string {
-  return execFileSync('adb', adbArgv(args, udid), {
+function adbSync(args: string[]): string {
+  return execFileSync('adb', adbArgv(args), {
     encoding: 'utf8',
     timeout: ADB_TIMEOUT_MS,
   }).trim();
 }
 
-async function adbAsync(args: string[], udid?: string): Promise<string> {
-  const { stdout } = await execFileAsync('adb', adbArgv(args, udid), {
+async function adbAsync(args: string[]): Promise<string> {
+  const { stdout } = await execFileAsync('adb', adbArgv(args), {
     encoding: 'utf8',
     timeout: ADB_TIMEOUT_MS,
   });
@@ -142,16 +139,13 @@ async function fetchBrowserPages(port: string): Promise<BrowserPageInfo[] | unde
 }
 
 /** adb dumpsys package → versionName(versionCode) */
-export async function getPackageVersion(
-  appPackage: string,
-  udid?: string
-): Promise<string> {
+export async function getPackageVersion(appPackage: string): Promise<string> {
   if (!appPackage) {
     return '';
   }
 
   try {
-    const stdout = await adbAsync(['shell', 'dumpsys', 'package', appPackage], udid);
+    const stdout = await adbAsync(['shell', 'dumpsys', 'package', appPackage]);
 
     const versionName = extractDumpValue(stdout, 'versionName');
     const versionCode = extractDumpValue(stdout, 'versionCode');
@@ -171,9 +165,9 @@ function extractDumpValue(output: string, key: string): string {
 }
 
 /** First current device account email matching the filter (dumpsys account); ignores history lines. */
-function findDeviceAccountEmail(matches: (email: string, type: string) => boolean, udid?: string): string {
+function findDeviceAccountEmail(matches: (email: string, type: string) => boolean): string {
   try {
-    const stdout = adbSync(['shell', 'dumpsys', 'account'], udid);
+    const stdout = adbSync(['shell', 'dumpsys', 'account']);
     for (const raw of stdout.split(/\r?\n/)) {
       const m = raw.trim().match(/^Account \{name=([^,}]+), type=([^}]+)\}/);
       if (m && matches(m[1].trim(), m[2].trim())) {
@@ -181,22 +175,21 @@ function findDeviceAccountEmail(matches: (email: string, type: string) => boolea
       }
     }
   } catch {
-    // adb failure → treat as not found
+    console.log(`[findDeviceAccountEmail] adb dumpsys account failed`);
   }
   return '';
 }
 
 /** Google account email starting with wwautokr and ending with @gmail.com. */
-export function getGoogleAccountEmail(udid?: string): string {
+export function getGoogleAccountEmail(): string {
   return findDeviceAccountEmail(
-    (email, type) => type === 'com.google' && email.startsWith('wwautokr') && email.endsWith('@gmail.com'),
-    udid
+    (email, type) => type === 'com.google' && email.startsWith('wwautokr') && email.endsWith('@gmail.com')
   );
 }
 
 /** Current device account whose email contains the domain (non-Gmail login/logout). */
-export function getAccountEmail(domain = 'proton.me', udid?: string): string {
-  return findDeviceAccountEmail((email) => email.includes(domain), udid);
+export function getAccountEmail(domain = 'proton.me'): string {
+  return findDeviceAccountEmail((email) => email.includes(domain));
 }
 
 /**
