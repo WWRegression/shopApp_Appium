@@ -50,6 +50,7 @@ export class CheckoutPage extends BasePage {
     'app-customer-info': () => this.fillContactInfo('app-customer-info'),
     'app-customer-address-cn': () => this.fillAddressInfo('app-customer-address-cn'),
     'app-billing-address-cn': () => this.fillContactInfo('app-billing-address-cn'),
+    'app-delivery-info-cn': () => this.selectDeliveryCalendarDates(),
   };
 
   /** Switches to the checkout WebView. */
@@ -534,6 +535,25 @@ export class CheckoutPage extends BasePage {
     // PL shows a delivery date list once an option is selected
     const dateClicked = await clickIfDisplayed(this.locator.deliveryDateButton, optionClicked ? 3000 : 0);
     console.log(`[selectDeliveryOptionIfPresent] option clicked=${optionClicked} date clicked=${dateClicked}`);
+    await this.selectDeliveryCalendarDates();
+  }
+
+  /** Confirms the preselected date in each item's unset delivery/installation calendar once; Next stays disabled until all are set. */
+  private async selectDeliveryCalendarDates(): Promise<void> {
+    // The list is re-read each pass: the installation date field shows only after the delivery date is set
+    for (let i = 0; i < (await this.locator.deliveryCalendarOpeners.length); i++) {
+      const opener = (await this.locator.deliveryCalendarOpeners)[i];
+      const cls = (await opener.getAttribute('class').catch(() => '')) ?? '';
+      // Hidden ones belong to a delivery mode that is not selected
+      if (cls.includes('selected-date') || !(await isDisplayedOrFalse(opener))) {
+        continue;
+      }
+      const label = ((await opener.getText().catch(() => '')) ?? '').trim();
+      await scrollAndJsClick(opener);
+      const confirmed = await clickIfDisplayed(this.locator.deliveryCalendarContinueButton, 3000);
+      console.log(`[selectDeliveryCalendarDates] calendar #${i + 1} "${label}" confirmed=${confirmed}`);
+      await this.waitForPageStable();
+    }
   }
 
   /** Checks the required checkboxes (terms, save address) of the current step, re-reading the unchecked set each time. */
@@ -653,12 +673,14 @@ export class CheckoutPage extends BasePage {
     );
   }
 
-  /** Stops the TC when any of the first `total` payment method buttons is not clickable (CN). */
+  /** Stops the TC when any of the first `total` payment method buttons is not displayed and enabled (CN). */
   private async verifyPaymentMethodsClickable(total: number): Promise<void> {
     const titles = await this.locator.paymentMethodTitles;
     const failed: string[] = [];
     for (let i = 0; i < total; i++) {
-      if (!(await titles[i]?.isClickable().catch(() => false))) {
+      // isClickable is not used: it reports false for the first method's wrapper even though it can be tapped
+      const usable = (await titles[i]?.isDisplayed().catch(() => false)) && (await titles[i]?.isEnabled().catch(() => false));
+      if (!usable) {
         failed.push(`#${i + 1}`);
       }
     }

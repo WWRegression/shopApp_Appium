@@ -113,6 +113,14 @@ export class CheckoutLocator {
     return $('ul[class*="slot_list"]:not(:has(.selected-date)) .delivery-dates');
   }
 
+  get deliveryCalendarOpeners() {
+    return $$('ul.slot_list button.change-time-slot');
+  }
+
+  get deliveryCalendarContinueButton() {
+    return $('app-calendar button.continue-btn');
+  }
+
   get autoCheckCheckboxes() {
     return $$(AUTO_CHECK_CHECKBOX_SELECTOR);
   }
