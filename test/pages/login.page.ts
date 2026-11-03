@@ -35,9 +35,7 @@ export const SAMSUNG_ACCOUNT_SETTINGS_ACTIVITY = 'SettingMainPreference';
 const SAMSUNG_ACCOUNT_SETTINGS_ACTION = 'com.samsung.android.samsungaccount.action.OPEN_SASETTINGS';
 const SETTINGS_PACKAGE = 'com.android.settings';
 const KEYCODE_ENTER = 66;
-/** AES-256-GCM via config/db.key. */
-const ACCOUNT_PW_ENC = 'TEdLDUOy3zOCsL/L:RX6P/Uiaj7mThduqqQ2Hgw==:DSKEcJs4m/+d';
-const ACCOUNT_PW = decryptWithDbKey(ACCOUNT_PW_ENC);
+const ACCOUNT_Info = 'wise1004!';
 
 /** STG(WDS) sign-in account; fill in the team account. */
 const WDS_ACCOUNT = {
@@ -54,7 +52,7 @@ export class LoginPage extends BasePage {
   gmailAccount(): { email: string; pw: string } {
     return {
       email: getGoogleAccountEmail(),
-      pw: ACCOUNT_PW,
+      pw: ACCOUNT_Info,
     };
   }
 
@@ -62,7 +60,7 @@ export class LoginPage extends BasePage {
   emailAccount(): { email: string; pw: string } {
     return {
       email: getAccountEmail(),
-      pw: ACCOUNT_PW,
+      pw: ACCOUNT_Info,
     };
   }
 
@@ -105,7 +103,7 @@ export class LoginPage extends BasePage {
       await clickIfDisplayed(this.locator.verifyNumberConfirmButton, 5000);
 
       await markFailedAndStop(
-        () => setElementValue(this.locator.confirmPwInput, ACCOUNT_PW, { timeout: 5000 }),
+        () => setElementValue(this.locator.confirmPwInput, ACCOUNT_Info, { timeout: 5000 }),
         '[signOutOnDevice] pw confirm input not found'
       );
       // OK button overlaps the navigation bar, so submit with ENTER
