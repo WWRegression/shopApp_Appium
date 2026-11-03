@@ -4,8 +4,8 @@ import { parsePriceToNumber } from '../../helpers/data.helper';
 import { assertElementDisplayed } from '../../helpers/validation.helper';
 import { switchToWebView, switchToWindowByPage } from '../../helpers/context.helper';
 import { getRunConfig } from '../../../config/run.config';
-import { getElementLabel } from '../../helpers/element.helper';
-import { markFailed } from '../../helpers/report.helper';
+import { getElementLabel, isDisplayedOrFalse } from '../../helpers/element.helper';
+import { markFailed, markStepSkipped } from '../../helpers/report.helper';
 
 /** US SKU suffix → carrier display token (lowercase). */
 const US_SKU_CARRIER: Record<string, string> = {
@@ -59,7 +59,11 @@ export class CartSimService implements AddedService {
   }
 
   /** Records a failure when the SIM is still in the cart after 10s (its remove button must be gone). */
-  async verifyServiceRemoved(): Promise<void> {
+  async verifyServiceRemoved(sku: string): Promise<void> {
+    // No stepper means the quantity can't change, so the SIM stays
+    if (!(await isDisplayedOrFalse(this.locator.quantityIncreaseButton(sku)))) {
+      return;
+    }
     const removed = await this.locator.simAppliedLabel.waitForExist({ timeout: 10000, reverse: true }).then(() => true, () => false);
     console.log(`[CART.SIM.verifyServiceRemoved] expected SIM="removed" actual="${removed ? 'removed' : 'still in cart'}" result=${removed ? 'PASS' : 'FAIL'}`);
     markFailed([{ label: 'SIM removed from cart', pass: removed }], 'CART.SIM.verifyServiceRemoved');
