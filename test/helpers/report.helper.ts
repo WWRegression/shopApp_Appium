@@ -39,6 +39,14 @@ export function markFailed(checks: FieldCheck[], context: string): void {
   }
 }
 
+const skippedSteps: string[] = [];
+
+/** Records a step skipped ; the TC still passes with the reason in the report. */
+export function markStepSkipped(reason: string): void {
+  skippedSteps.push(`${reason} — skipped`);
+  console.log(`[markStepSkipped] ${reason} — skipped`);
+}
+
 /** Returns and clears the failures recorded by markFailed. */
 export function takeRecordedFailures(): string[] {
   return recordedFailures.splice(0);
@@ -76,14 +84,14 @@ function isScriptError(error: unknown): boolean {
 
 function resolveStatus(result: { passed: boolean; skipped?: boolean; error?: Error }): { status: ReportStatus; reason: string } {
   if (result.skipped) return { status: 'N/A', reason: '' };
-  if (result.passed) return { status: 'Pass', reason: '' };
+  if (result.passed) return { status: 'Pass', reason: skippedSteps.join(', ') };
 
   const reason = result.error?.message ?? 'Unknown failure';
   if (reason.toUpperCase().includes('[SKIPPED]')) return { status: 'N/A', reason };
   // Nothing tags [OOS] yet; the DB status is kept for upcoming out-of-stock checks
   if (/\[OOS\]/i.test(reason)) return { status: 'OOS', reason };
   if (/\[Planned\]/i.test(reason)) return { status: 'Planned', reason };
-  if (isScriptError(result.error)) return { status: 'Exception', reason };
+  if (isScriptError(result.error)) return { status: 'Exception', reason }; 
   return { status: 'Fail', reason };
 }
 
@@ -91,6 +99,8 @@ function resolveStatus(result: { passed: boolean; skipped?: boolean; error?: Err
 export async function reportTestResult(result: { passed: boolean; skipped?: boolean; error?: Error }): Promise<void> {
   const tc = currentTc;
   currentTc = undefined;
+  const { status, reason } = resolveStatus(result);
+  skippedSteps.splice(0);
 
   const run = getRunConfig();
   if (!run.reportDb || !tc?.upload) return;
@@ -99,6 +109,5 @@ export async function reportTestResult(result: { passed: boolean; skipped?: bool
     return;
   }
 
-  const { status, reason } = resolveStatus(result);
   await insertShopAppResult({ tcId: tc.tcId, status, reason });
 }

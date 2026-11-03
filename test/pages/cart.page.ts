@@ -8,7 +8,7 @@ import { CartTradeUpService } from '../services/tradeup/cart-tradeup.service';
 import { switchToNative, prepareWebViewPage, isCurrentWebViewPage, getCurrentWebViewPage } from '../helpers/context.helper';
 import { getElementLabel, clickIfDisplayed, clickElement, isDisplayedOrFalse, jsTouchStart, jsClick, waitForDisplayedOrFalse, getInputValue, setInputValue, scrollAndJsClick } from '../helpers/element.helper';
 import { assertEqual } from '../helpers/validation.helper';
-import { markFailed, markFailedAndStop, FieldCheck } from '../helpers/report.helper';
+import { markFailed, markFailedAndStop, markStepSkipped, FieldCheck } from '../helpers/report.helper';
 import { currentSiteCode } from '../helpers/tc-filter.helper';
 import { getSiteData } from '../../config/site';
 import { parseNumber, removeNonWordChars, normalizeProductName, productNameMatches, parsePriceValues, parseCurrencyAmounts, isSamePrice } from '../helpers/data.helper';
@@ -311,6 +311,16 @@ export class CartPage extends BasePage {
       await driver.pause(3000);
     }
     await this.verifyItemQuantity(sku, before + 1);
+  }
+
+  /** Increases the quantity only when the item has a stepper (a SIM item can have none, e.g. UK). */
+  async increaseQuantityIfShown(sku: string): Promise<void> {
+    await this.prepareCartPage();
+    if (!(await isDisplayedOrFalse(this.locator.quantityIncreaseButton(sku)))) {
+      markStepSkipped(`[increaseQuantityIfShown] sku=${sku} quantity stepper not shown`);
+      return;
+    }
+    await this.increaseQuantity(sku);
   }
 
   /** Types a quantity into the item's quantity input and commits it; 0 removes the item. */

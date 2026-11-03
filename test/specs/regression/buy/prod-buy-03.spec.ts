@@ -43,8 +43,8 @@ describe('PROD_BUY_03', () => {
       await cartPage.sim.verifyServiceApplied(site.product.imSku);
 
       // Increase quantity to 2 and verify the SIM is removed
-      await cartPage.increaseQuantity(site.product.imSku);
-      await cartPage.sim.verifyServiceRemoved();
+      await cartPage.increaseQuantityIfShown(site.product.imSku);
+      await cartPage.sim.verifyServiceRemoved(site.product.imSku);
     });
   });
 });

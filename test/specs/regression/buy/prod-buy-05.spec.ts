@@ -15,13 +15,15 @@ describe('PROD_BUY_05', () => {
 
   it('add Trade-Up on PD and verify Trade-Up in cart', async function () {
     await runOrSkip.call(this, 'PROD_BUY_05', async (site) => {
+      // Trade-Up is set on HA products in CO, ES, UK
+      const sku = (['CO', 'ES', 'UK'].includes(site.siteCode) ? site.product.haSku : site.product.vdSku) ?? '';
       await cartPage.clearCart();
 
-      await searchPage.searchByKeyword(site.product.vdSku ?? '');
+      await searchPage.searchByKeyword(sku);
       await pfPage.selectPfCard({ mode: 'first' });
 
       await pdPage.preparePdPage();
-      await pdPage.verifySku(site.product.vdSku ?? '');
+      await pdPage.verifySku(sku);
       if(['AE', 'AE_AR', 'VN'].includes(site.siteCode)) {
         await pdPage.tradeIn.addService(site.tradeIn);
       }else{
@@ -35,10 +37,10 @@ describe('PROD_BUY_05', () => {
       await cartPage.prepareCartPage();
       await cartPage.tradeUp.verifyServiceApplied();
       await cartPage.prepareCartPage();
-      await cartPage.verifySku(site.product.vdSku ?? '');
+      await cartPage.verifySku(sku);
 
       // Increase quantity to 2 and verify the Trade-Up error text is shown
-      await cartPage.increaseQuantity(site.product.vdSku ?? '');
+      await cartPage.increaseQuantity(sku);
       await cartPage.verifyServiceErrorText('tradeUp');
     });
   });
