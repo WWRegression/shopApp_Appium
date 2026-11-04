@@ -3,7 +3,6 @@ import { HomePage } from './home.page';
 import { LoginLocator } from '../locators/login.locator';
 import { isStgEnvironment } from '../helpers/env.helper';
 import { getRunConfig } from '../../config/run.config';
-import { decryptWithDbKey } from '../../config/db.config';
 import {
   switchToNative,
   switchToWebView,

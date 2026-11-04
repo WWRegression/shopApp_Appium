@@ -9,23 +9,9 @@ export class LoginLocator {
   get splashCountryButton() {
     return $(
       `//android.widget.ImageView[
-        contains(@content-desc, 'country')
-        or contains(@content-desc, 'Country')
-        or contains(@content-desc, 'البلد')
-        or contains(@content-desc, 'pays')
-        or contains(@content-desc, 'país')
-        or contains(@content-desc, 'paya')
-        or contains(@content-desc, 'negara')
-        or contains(@content-desc, 'paese')
-        or contains(@content-desc, 'land')
-        or contains(@content-desc, 'الدولة')
+        contains(@content-desc, 'Country')
         or contains(@content-desc, '國家')
-        or contains(@content-desc, 'quốc gia')
-        or contains(@content-desc, 'země')
-        or contains(@content-desc, 'ország')
-        or contains(@content-desc, 'tară')
-        or contains(@content-desc, '国')
-        or contains(@content-desc, 'țară')
+        or contains(@content-desc, 'país')
       ]`
     );
   }
