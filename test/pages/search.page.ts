@@ -40,6 +40,32 @@ export class SearchPage extends BasePage {
     await this.search(keyword, false);
   }
 
+  /**
+   * Taps the first Popular/Trending search chip and returns its label (used as the search keyword).
+   * Opens search first when the field is not already shown.
+   */
+  async tapTrendingSearch(): Promise<string> {
+    await switchToNative();
+    if (!(await this.isSearchOpen())) {
+      await this.openSearch();
+    }
+    await clickIfDisplayed(this.locator.searchInput, 3000);
+
+    const chip = this.locator.trendingKeyword;
+    const shown = await waitForDisplayedOrFalse(chip, { timeout: 10000 });
+    markFailedAndStop([{ label: 'trending/popular search keyword not shown', pass: shown }], 'tapTrendingSearch');
+
+    const keyword = ((await chip.getAttribute('content-desc').catch(() => '')) ?? '').trim();
+    markFailedAndStop(
+      [{ label: 'trending keyword content-desc empty', pass: Boolean(keyword) }],
+      'tapTrendingSearch'
+    );
+
+    await clickElement(chip, { timeout: 5000 });
+    console.log(`[tapTrendingSearch] keyword="${keyword}"`);
+    return keyword;
+  }
+
   async searchByKeyword(keyword: string): Promise<void> {
     await switchToNative();
     if (!(await this.isSearchOpen())) {
@@ -87,11 +113,21 @@ export class SearchPage extends BasePage {
     return actual.trim().toLowerCase() === expected.trim().toLowerCase();
   }
 
-  /** Deletes every recent search keyword left by earlier searches. */
+  /**
+   * Clears recent search history when present.
+   * Prefers Clear all (layout with "Recent searches\nClear all"); otherwise deletes row-by-row via X.
+   */
   async clearSearchHistoryIfShown(): Promise<void> {
     await switchToNative();
     // The search screen opens a moment after the header icon; the previous page is still up until then
     await waitForDisplayedOrFalse(this.locator.searchInput, { timeout: 500 });
+
+    if (await clickIfDisplayed(this.locator.recentSearchesClearAll, 2000)) {
+      console.log('[clearSearchHistoryIfShown] Clear all');
+      await driver.pause(500);
+      return;
+    }
+
     for (let deleted = 0; deleted < 10; deleted += 1) {
       // Counting the list returns at once when it is empty; indexing it ([0]) would wait for a missing element
       if ((await this.locator.recentKeywordDeleteButtons.length) === 0) {
@@ -120,16 +156,16 @@ export class SearchPage extends BasePage {
     );
   }
 
-  /** Clicks the X (delete) button next to the recent search keyword. */
-  async clickSearchHistoryDelete(keyword: string): Promise<void> {
+  /** Removes one keyword from recent search history (its X button). */
+  async deleteSearchHistoryKeyword(keyword: string): Promise<void> {
     // The X buttons are listed in the same order as the keywords
     const index = (await this.getSearchHistory()).findIndex((recent) => this.isSameKeyword(recent, keyword));
     if (index < 0) {
-      markFailed([{ label: 'No search history delete button found', pass: false, detail: keyword }], 'clickSearchHistoryDelete');
+      markFailed([{ label: 'No search history delete button found', pass: false, detail: keyword }], 'deleteSearchHistoryKeyword');
       return;
     }
     await clickElement(this.locator.recentKeywordDeleteButtons[index]);
-    console.log(`[clickSearchHistoryDelete] deleted "${keyword}"`);
+    console.log(`[deleteSearchHistoryKeyword] deleted "${keyword}"`);
   }
 
   /** Verifies the keyword is no longer in the recent searches. */

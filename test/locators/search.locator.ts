@@ -35,20 +35,94 @@ export class SearchLocator {
     return $('//android.widget.ScrollView | //androidx.recyclerview.widget.RecyclerView');
   }
 
+  /**
+   * Recent-searches section (both layouts):
+   * - content-desc="Recent searches" (keywords + per-row X only)
+   * - content-desc="Recent searches\nClear all" (section itself is Clear all)
+   */
+  private get recentSearchesSection() {
+    const headings = [
+      'Recent searches',
+      'Recent Searches',
+      'Nedávná vyhledávání',
+      '最近の検索',
+      'عمليات البحث الأخيرة',
+      'Aktuelle Suchanfragen',
+      'Recente zoekopdrachten',
+      'Recherches récentes',
+      'Búsquedas recientes',
+      'Suchverlauf',
+      '最近搜尋',
+      '最近搜索',
+      'Legutóbbi keresések',
+      'Pencarian Terbaru',
+      'חיפושים אחרונים',
+      'Ricerche recenti',
+      'Ostatnie wyszukiwania',
+      'Pesquisas recentes',
+      'Căutări recente',
+      'Senaste sökningar',
+      'การค้นหาล่าสุด',
+      'Arama geçmişi',
+      'Tìm kiếm gần đây',
+    ]
+      .map((heading) => `contains(@content-desc, '${heading}')`)
+      .join(' or ');
+    return `//android.view.View[${headings}]`;
+  }
+
+  /** Keyword chip under Recent searches (View + empty-desc X ImageView siblings). */
   get recentKeywords() {
     return $$(
-      `//android.view.View[@content-desc != '' and @clickable='true'][
-        following-sibling::*[1][self::android.widget.ImageView][@clickable='true'][not(@content-desc) or @content-desc='']
+      `(${this.recentSearchesSection})//android.view.View[@content-desc != '' and @clickable='true'][
+        following-sibling::*[1][self::android.widget.ImageView][@clickable='true' and (not(@content-desc) or @content-desc='')]
       ]`
     );
   }
 
+  /** Per-row X under Recent searches (not Related Searches rows). */
   get recentKeywordDeleteButtons() {
     return $$(
-      `//android.widget.ImageView[@clickable='true'][not(@content-desc) or @content-desc=''][
+      `(${this.recentSearchesSection})//android.widget.ImageView[@clickable='true' and (not(@content-desc) or @content-desc='')][
         preceding-sibling::*[1][self::android.view.View][@content-desc != '' and @clickable='true']
       ]`
     );
+  }
+
+  /**
+   * Clear-all control when the section embeds it (e.g. "Recent searches\nClear all")
+   * or a dedicated Clear-all label on a clickable View.
+   */
+  get recentSearchesClearAll() {
+    const clearHints = [
+      'Clear all',
+      'Clear All',
+      '全部清除',
+      '全て削除',
+      'Supprimer',
+      'Vymazat',
+      'Borrar',
+      'Limpiar',
+      'effacer',
+      '削除',
+      'hapus',
+      'Cancella',
+      'Törlés',
+      'wissen',
+      'Wyczyść',
+      'Șterge',
+      'مسح',
+      'Rensa',
+      'ล้างข้อมูล',
+      'temizle',
+      'حذف',
+      'Xóa',
+      'Limpar',
+      'נקה הכול',
+    ]
+      .map((hint) => `contains(@content-desc, '${hint}')`)
+      .join(' or ');
+    return $(`(${this.recentSearchesSection})[@clickable='true' and (${clearHints})]`);
   }
 
   /** Empty-result message on the search screen. */
@@ -84,6 +158,56 @@ export class SearchLocator {
       'Try a new search or the below suggestions',
     ].map((phrase) => `contains(@content-desc, "${phrase}")`).join(' or ');
     return $(`//android.view.View[${phrases}]`);
+  }
+
+  /**
+   * First Popular/Trending/Recommended chip under the section heading.
+   * - Popular Searches: clickable android.view.View children
+   * - Recommended Search: clickable android.widget.ImageView children
+   */
+  get trendingKeyword() {
+    return $(
+      `(${this.popularSearchesHeading})/*[
+        (self::android.view.View or self::android.widget.ImageView)
+        and @clickable='true' and @content-desc != ''
+      ][1]`
+    );
+  }
+
+  /** Locale section title that wraps the popular/trending/recommended keyword chips. */
+  private get popularSearchesHeading() {
+    const headings = [
+      'Popular Searches',
+      'Trending Searches',
+      'Recommended Search',
+      'Recommended Searches',
+      'Oblíbená vyhledávání',
+      '検索で人気の製品',
+      'Beliebte Suchanfragen',
+      'Beliebte Suchbegriffe',
+      'عمليات البحث الشائعة',
+      'Populaire zoekopdrachten',
+      'Recherches populaires',
+      'Búsquedas populares',
+      '熱門搜尋',
+      'Gyakori keresések',
+      'Pencarian Populer',
+      ' חיפושים פופולריים',
+      'Ricerche popolari',
+      'Popularne wyszukiwania',
+      'Pesquisas mais populares',
+      'Căutări populare',
+      'Populära sökningar',
+      'การค้นหายอดนิยม',
+      'Popüler aramalar',
+      'Tìm kiếm phổ biến',
+      '热门搜索',
+      'חיפושים מומלצים',
+      'Produtos sugeridos',
+    ]
+      .map((heading) => `@content-desc='${heading}'`)
+      .join(' or ');
+    return `//android.view.View[${headings}]`;
   }
 
   /** Clickable rows under Suggested Searches. Related products is not clickable. */
