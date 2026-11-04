@@ -171,7 +171,7 @@ export class HomeLocator {
   }
 
   /** Home footer Terms and Conditions row. Exact content-desc, clickable. */
-  get tncButton() {
+  get tncSection() {
     const label = [
       'Terms & Conditions',
       'T&C',
@@ -203,7 +203,7 @@ export class HomeLocator {
   }
 
   /** A child under the T&C row. Visible only when the section is expanded. */
-  get tncExpandedChild() {
+  get tncContent() {
     const label = [
       'Terms and Conditions',
       'Terms and Condition',
@@ -219,6 +219,7 @@ export class HomeLocator {
       'Villkor',
       '條款和條件',
       '條款及細則',
+      '條款與條件',
       '条款声明',
       'Điều khoản và điều kiện',
       'Warunki i ograniczenia',
@@ -233,7 +234,7 @@ export class HomeLocator {
   }
 
   /** Links inside the expanded T&C. A country with none is a pass. */
-  get tncHyperlinks() {
+  get tncLinks() {
     const label = [
       'https',
       'Samsung',

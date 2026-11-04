@@ -51,6 +51,9 @@ export class CheckoutPage extends BasePage {
     'app-customer-address-cn': () => this.fillAddressInfo('app-customer-address-cn'),
     'app-billing-address-cn': () => this.fillContactInfo('app-billing-address-cn'),
     'app-delivery-info-cn': () => this.selectDeliveryCalendarDates(),
+    'app-checkout-identification': () => this.fillIdentificationInfo(),
+    'app-delivery-info-additional-location-info': () =>
+      this.fillFormFields('app-delivery-info-additional-location-info', [[getSite().shipping.floor, ['floor']]]),
   };
 
   /** Switches to the checkout WebView. */
@@ -425,14 +428,28 @@ export class CheckoutPage extends BasePage {
     await this.waitForFormFields(formId);
     const data = { ...getSite().customer, ...overrides };
     await this.fillFormFields(formId, [
-      // CN has a single full-name field
-      [data.firstName, ['firstname', 'fullname']],
-      [data.lastName, ['lastname']],
+      // CN has a single full-name field, TW names the purchaser fields
+      [data.firstName, ['firstname', 'fullname', 'purchaserfirstname']],
+      [data.lastName, ['lastname', 'purchaserlastname']],
       [data.email, ['email']],
       [data.mobile, ['phone']],
-      // CL requires the RUT tax ID here
-      [data.documentNumber, ['vatnumber']],
+      // CL requires the RUT tax ID here, ZA the TV licence number for TVs
+      [data.documentNumber, ['vatnumber', 'tvlicensenumber']],
     ]);
+  }
+
+  /** Selects the site document type and types the fiscal code in the identification form. */
+  private async fillIdentificationInfo(): Promise<void> {
+    const formId: CheckoutFormId = 'app-checkout-identification';
+    const site = getSite();
+    await this.waitForFormFields(formId);
+    // The type select starts with a default (ES "NIF/NIE"), so fillFormFields would skip it
+    const typeField = (await this.getFieldDescriptors(formId)).find((d) => d.key === 'identificationtype' && d.visible);
+    if (typeField && site.customer.documentType) {
+      await this.fillSelectField(this.locator.fieldsIn(formId)[typeField.index], site.customer.documentType);
+    }
+    await this.fillFormFields(formId, [[site.checkout?.fiscalCode, ['fiscalcode']]]);
+    console.log(`[fillIdentificationInfo] type=${site.customer.documentType} fiscalCode=${site.checkout?.fiscalCode}`);
   }
 
   /** Fills the delivery address fields with the site shipping data; a preselected saved address is used as it is. */
@@ -526,6 +543,7 @@ export class CheckoutPage extends BasePage {
 
   /** Selects the delivery method, option card and date when the step offers them and none is selected yet. */
   private async selectDeliveryOptionIfPresent(): Promise<void> {
+    await this.searchDeliveryOptionsByPostcode();
     // isExisting: the method icon reports as not displayed
     if (await this.locator.deliveryMethodButton.isExisting().catch(() => false)) {
       await scrollAndJsClick(this.locator.deliveryMethodButton).catch(() => undefined);
@@ -535,7 +553,41 @@ export class CheckoutPage extends BasePage {
     // PL shows a delivery date list once an option is selected
     const dateClicked = await clickIfDisplayed(this.locator.deliveryDateButton, optionClicked ? 3000 : 0);
     console.log(`[selectDeliveryOptionIfPresent] option clicked=${optionClicked} date clicked=${dateClicked}`);
+    await this.selectDeliveryServices();
     await this.selectDeliveryCalendarDates();
+  }
+
+  /** Types the site postal code and opens the delivery options, when the step asks for the postcode first (SE). */
+  private async searchDeliveryOptionsByPostcode(): Promise<void> {
+    const formId: CheckoutFormId = 'app-delivery-info-delivery-first';
+    const postcode = (await this.getFieldDescriptors(formId)).find((d) => d.key === 'postcode');
+    // Options already listed: the postcode was searched (a kept postcode can show without options)
+    if (!postcode || (await this.locator.deliveryModeLists.length) > 0) {
+      return;
+    }
+    if (!postcode.hasValue) {
+      await this.setInputValue(this.locator.fieldsIn(formId)[postcode.index], getSite().shipping.postalCode ?? '', false);
+    }
+    const enabled = await this.locator.searchDeliveryOptionsButton.waitForEnabled({ timeout: 3000 }).then(() => true, () => false);
+    if (enabled) {
+      await scrollAndJsClick(this.locator.searchDeliveryOptionsButton);
+    }
+    console.log(`[searchDeliveryOptionsByPostcode] postcode=${getSite().shipping.postalCode} options button clicked=${enabled}`);
+    await this.waitForPageStable();
+  }
+
+  /** Selects the first service in each item's delivery service list that has none selected; Next does not move on until each has one. */
+  private async selectDeliveryServices(): Promise<void> {
+    const total = await this.locator.deliveryServiceLists.length;
+    for (let i = 0; i < total; i++) {
+      // Re-queried each time: selecting a service re-renders the lists
+      if (!(await this.locator.unselectedDeliveryServiceOption.isExisting().catch(() => false))) {
+        return;
+      }
+      await scrollAndJsClick(this.locator.unselectedDeliveryServiceOption);
+      console.log(`[selectDeliveryServices] service #${i + 1} selected`);
+      await this.waitForPageStable();
+    }
   }
 
   /** Confirms the preselected date in each item's unset delivery/installation calendar once; Next stays disabled until all are set. */
@@ -543,9 +595,12 @@ export class CheckoutPage extends BasePage {
     // The list is re-read each pass: the installation date field shows only after the delivery date is set
     for (let i = 0; i < (await this.locator.deliveryCalendarOpeners.length); i++) {
       const opener = (await this.locator.deliveryCalendarOpeners)[i];
-      const cls = (await opener.getAttribute('class').catch(() => '')) ?? '';
+      // A list with a selected date is done; its other buttons (SE "see more times") are skipped
+      const dateSet = await driver
+        .execute((el: HTMLElement) => Boolean(el.closest('ul')?.querySelector('.selected-date')), opener as unknown as HTMLElement)
+        .catch(() => false);
       // Hidden ones belong to a delivery mode that is not selected
-      if (cls.includes('selected-date') || !(await isDisplayedOrFalse(opener))) {
+      if (dateSet || !(await isDisplayedOrFalse(opener))) {
         continue;
       }
       const label = ((await opener.getText().catch(() => '')) ?? '').trim();
@@ -630,7 +685,7 @@ export class CheckoutPage extends BasePage {
     // Payment methods render after a skeleton loader; stops as soon as they show
     let found = 0;
     await driver
-      .waitUntil(async () => (found = await this.locator.paymentMethodTitles.length) > 0, { timeout: 5000, interval: 500 })
+      .waitUntil(async () => (found = await this.locator.paymentMethodTitles.length) > 0, { timeout: 15000, interval: 500 })
       .catch(() => undefined);
     const total = checkAll ? found : Math.min(found, 1);
     console.log(`[checkPaymentMethod] payment methods found=${found} to check=${total}`);
@@ -862,6 +917,15 @@ export class CheckoutPage extends BasePage {
     }
   }
 
+  /** Clicks "I Understand" on the Notification modal that covers checkout on entry (ZA). */
+  private async clickInfoModalConfirmIfShown(): Promise<void> {
+    // DOM click: the modal's fade-in intercepts a WebDriver click for ~15s
+    if (await isDisplayedOrFalse(this.locator.infoModalConfirmButton)) {
+      await scrollAndJsClick(this.locator.infoModalConfirmButton);
+      console.log('[clickInfoModalConfirmIfShown] Notification modal "I Understand" clicked');
+    }
+  }
+
   /** Fills each checkout step and clicks Next until the payment step; returns the active steps passed in order. */
   async proceedToPayment(
     options: { verifyRewardOptIn?: boolean; verifyNoSavedAddress?: boolean } = {},
@@ -872,6 +936,7 @@ export class CheckoutPage extends BasePage {
     const steps: string[] = [];
 
     for (let i = 0; i < maxIterations; i++) {
+      await this.clickInfoModalConfirmIfShown();
       const visible = await this.getVisibleForms();
       const step = await this.getCurrentCheckoutStep();
       if (step && steps.at(-1) !== step) {

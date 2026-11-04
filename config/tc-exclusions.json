@@ -3,7 +3,6 @@
   "AE": [
     "PROD_BACKWARD_02",
     "PROD_BUY_06",
-    "PROD_HOME_04",
     "PROD_LOGIN_06",
     "PROD_LOGIN_07",
     "UAT_APP_07"
@@ -11,7 +10,6 @@
   "AE_AR": [
     "PROD_BACKWARD_02",
     "PROD_BUY_06",
-    "PROD_HOME_04",
     "PROD_LOGIN_06",
     "PROD_LOGIN_07",
     "UAT_APP_07"
@@ -141,7 +139,6 @@
   ],
   "ID": [
     "PROD_BUY_06",
-    "PROD_HOME_04",
     "PROD_LOGIN_06",
     "PROD_LOGIN_07",
     "UAT_APP_07"
@@ -163,7 +160,6 @@
   ],
   "IT": [
     "PROD_BUY_06",
-    "PROD_HOME_04",
     "PROD_LOGIN_06",
     "PROD_LOGIN_07",
     "UAT_APP_07"
@@ -179,14 +175,12 @@
   "MX": [
     "PROD_BUY_05",
     "PROD_BUY_06",
-    "PROD_HOME_04",
     "PROD_LOGIN_06",
     "PROD_LOGIN_07",
     "UAT_APP_07"
   ],
   "MY": [
     "PROD_BUY_06",
-    "PROD_HOME_04",
     "PROD_LOGIN_06",
     "PROD_LOGIN_07",
     "UAT_APP_07"
@@ -220,7 +214,6 @@
   "PL": [
     "PROD_BUY_05",
     "PROD_BUY_06",
-    "PROD_HOME_04",
     "PROD_LOGIN_06",
     "PROD_LOGIN_07",
     "UAT_APP_07"
@@ -243,7 +236,6 @@
   "SA": [
     "PROD_BACKWARD_02",
     "PROD_BUY_06",
-    "PROD_HOME_04",
     "PROD_LOGIN_06",
     "PROD_LOGIN_07",
     "UAT_APP_07"
@@ -251,7 +243,6 @@
   "SA_EN": [
     "PROD_BACKWARD_02",
     "PROD_BUY_06",
-    "PROD_HOME_04",
     "PROD_LOGIN_06",
     "PROD_LOGIN_07",
     "UAT_APP_07"
@@ -265,14 +256,12 @@
   ],
   "SG": [
     "PROD_BUY_06",
-    "PROD_HOME_04",
     "PROD_LOGIN_06",
     "PROD_LOGIN_07",
     "UAT_APP_07"
   ],
   "TH": [
     "PROD_BUY_06",
-    "PROD_HOME_04",
     "PROD_LOGIN_06",
     "PROD_LOGIN_07",
     "UAT_APP_07"

@@ -15,7 +15,8 @@
   "shipping": {
     "address1": "1 SQUARE DU VERT GALANT",
     "postalCode": "75001",
-    "town": "PARIS"
+    "town": "PARIS",
+    "floor": "1"
   },
   "product": {
     "haSku": "BRB80F30ADS0EF",

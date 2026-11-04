@@ -113,12 +113,32 @@ export class CheckoutLocator {
     return $('ul[class*="slot_list"]:not(:has(.selected-date)) .delivery-dates');
   }
 
+  get deliveryModeLists() {
+    return $$('ul[class*="delivery_list"]');
+  }
+
+  get searchDeliveryOptionsButton() {
+    return $('button.search-delivery-options-btn');
+  }
+
+  get deliveryServiceLists() {
+    return $$('ul.service_list');
+  }
+
+  get unselectedDeliveryServiceOption() {
+    return $('ul.service_list:not(:has(input:checked)) input[type="radio"]');
+  }
+
   get deliveryCalendarOpeners() {
     return $$('ul.slot_list button.change-time-slot');
   }
 
   get deliveryCalendarContinueButton() {
     return $('app-calendar button.continue-btn');
+  }
+
+  get infoModalConfirmButton() {
+    return $('app-info-modal.show button.pill-btn--blue');
   }
 
   get autoCheckCheckboxes() {

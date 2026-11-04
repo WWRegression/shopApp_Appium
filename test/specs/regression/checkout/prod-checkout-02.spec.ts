@@ -13,10 +13,6 @@ describe('PROD_CHECKOUT_02', () => {
 
   it('multi products (IM, VD, HA) to cart then payment', async function () {
     await runOrSkip.call(this, 'PROD_CHECKOUT_02', async (site) => {
-      // Precondition: logged in with the device account, so Continue to checkout opens the checkout and not the login page
-      await loginPage.preconditionSignedInOnDevice();
-      await mypagePage.ensureLoggedIn();
-
       await cartPage.clearCart();
 
       const skus = [site.product.imSku, site.product.haSku, site.product.vdSku].filter(

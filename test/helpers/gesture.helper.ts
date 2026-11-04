@@ -249,6 +249,19 @@ export async function scrollElementToCenter(
 // ── Tap ──────────────────────────────────────────────────────────────────
 
 /**
+ * Quick one-page swipe down through adb (mobile: shell, needs relaxedSecurity).
+ * For pages that snap one item per swipe (Offers KVs); call it inside withoutIdleWait, as moving KVs never go idle.
+ */
+export async function quickSwipeDown(): Promise<void> {
+  const { width, height } = await driver.getWindowSize();
+  const x = String(Math.floor(width / 2));
+  await driver.execute('mobile: shell', {
+    command: 'input',
+    args: ['swipe', x, String(Math.floor(height * 0.75)), x, String(Math.floor(height * 0.2)), '300'],
+  });
+}
+
+/**
  * Tap a raw screen coordinate (when the hit target is not the element bbox center).
  */
 export async function tapAtCoordinates(x: number, y: number): Promise<void> {

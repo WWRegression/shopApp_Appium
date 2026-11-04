@@ -53,6 +53,7 @@ export class BasePage {
 			'Strona główna',
 			'الرئيسية',
 			'Startsida',
+      'Startsida123',
 			'หน้าหลัก',
 			'首頁',
 			'Trang chủ',
@@ -243,7 +244,7 @@ export class BasePage {
       return true;
     }
     // The Insider web banner sits over the welcome promo — close it first so the promo X does not tap the banner
-    if (await clickIfDisplayed(this.popupLocator.insiderBannerCloseButton)) {
+    if (await this.closeInsiderBannerIfShown()) {
       return true;
     }
     // The interest / purpose pages can open again after login completes (IN, UK) — "Skip" closes one page
@@ -256,6 +257,19 @@ export class BasePage {
       return !options.keepCookie && (await clickIfDisplayed(this.popupLocator.cookieAcceptButton));
     }
     return clickIfDisplayed(this.popupLocator.promoCloseButton);
+  }
+
+  /** Closes the Insider web banner; a coupon banner opens again unless its code is copied first (SE). */
+  private async closeInsiderBannerIfShown(): Promise<boolean> {
+    if (!(await isDisplayedOrFalse(this.popupLocator.insiderBannerCloseButton))) {
+      return false;
+    }
+    if (await clickIfDisplayed(this.popupLocator.insiderBannerCopyCodeButton)) {
+      console.log('[closeInsiderBannerIfShown] coupon code copied');
+    }
+    await clickIfDisplayed(this.popupLocator.insiderBannerCloseButton);
+    console.log('[closeInsiderBannerIfShown] Insider banner closed');
+    return true;
   }
 
   async dismissPopupIfShown(): Promise<void> {
@@ -629,7 +643,7 @@ export class BasePage {
 
   private async ensureBnbVisible(menu: BnbMenu): Promise<void> {
     // The Insider banner sits over the BNB while the BNB still reads as displayed, so a tap would hit the banner (CL)
-    await clickIfDisplayed(this.popupLocator.insiderBannerCloseButton);
+    await this.closeInsiderBannerIfShown();
 
     // prepareHeaderBnb() already performs one scrollUp(). If BNB is still hidden,
     // try to recover it by tapping a visible header icon.

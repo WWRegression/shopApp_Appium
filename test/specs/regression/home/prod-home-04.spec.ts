@@ -8,9 +8,8 @@ describe('PROD_HOME_04', () => {
   it('T&C folded by default and hyperlinks redirect correctly', async function () {
     await runOrSkip.call(this, 'PROD_HOME_04', async () => {
       await homePage.prepareHomePage();
-      if (!(await homePage.isTermsShown())) {
-        return;
-      }
+      
+      await homePage.verifyTermsShown();
       await homePage.verifyTermsFolded();
       await homePage.verifyTermsLinks();
     });

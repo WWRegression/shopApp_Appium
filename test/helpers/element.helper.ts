@@ -11,7 +11,7 @@
  *   - raw swipe/scroll/tap motion → gesture.helper.ts
  */
 
-import { scrollElementToCenter, scrollWebViewDown, scrollDown } from './gesture.helper';
+import { quickSwipeDown, scrollElementToCenter, scrollWebViewDown, scrollDown } from './gesture.helper';
 import { currentSiteCode } from './tc-filter.helper';
 import type { WaitForOptions } from 'webdriverio';
 
@@ -172,6 +172,22 @@ export async function scrollUntilVisible(
     await scrollDown();
   }
   return false;
+}
+
+/**
+ * Quick adb swipes down until the locator is displayed, without the idle wait.
+ * For long pages with moving KVs (Home, Offers): they never go idle, and they snap one KV per swipe.
+ */
+export async function quickSwipeUntilVisible(locator: ChainablePromiseElement, maxSwipes = 40): Promise<boolean> {
+  let shown = await isDisplayedOrFalse(locator);
+  await withoutIdleWait(async () => {
+    for (let swipes = 0; swipes < maxSwipes && !shown; swipes += 2) {
+      await quickSwipeDown();
+      await quickSwipeDown();
+      shown = await isDisplayedOrFalse(locator);
+    }
+  });
+  return shown;
 }
 
 export async function clickElement(

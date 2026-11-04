@@ -52,24 +52,28 @@ export class OfferLocator {
     );
   }
 
-  /** Horizontal row of category tabs (text only, e.g. "All offers", "Smartphones") */
+  /** Row of category tabs: a HorizontalScrollView, or a plain row when the tabs fit the screen (3 tabs, SG) — found by its first "all products" tab */
   get categoryTabBar() {
-    return $(`//android.widget.HorizontalScrollView`);
+    const firstTab = ALL_OFFERS_TAB_LABELS.map((label) => `starts-with(@content-desc, '${label}')`).join(' or ');
+    return $(
+      `(//android.widget.HorizontalScrollView
+      | //android.view.View[android.view.View[@clickable = 'true' and contains(@content-desc, '\n') and (${firstTab})]])[1]`
+    );
   }
 
   /** Category tabs currently in the row; content-desc = "<name>\\nTab N of M" */
   get categoryTabs() {
-    return $$(`//android.widget.HorizontalScrollView//android.view.View[@clickable = 'true']`);
+    return this.categoryTabBar.$$(`.//android.view.View[@clickable = 'true']`);
   }
 
   /** Category tab by its name */
   categoryTab(name: string) {
-    return $(`//android.widget.HorizontalScrollView//android.view.View[@clickable = 'true' and starts-with(@content-desc, '${name}')]`);
+    return this.categoryTabBar.$(`.//android.view.View[@clickable = 'true' and starts-with(@content-desc, '${name}')]`);
   }
 
   /** The category tab that is selected now */
   get selectedCategoryTab() {
-    return $(`//android.widget.HorizontalScrollView//android.view.View[@selected = 'true']`);
+    return this.categoryTabBar.$(`.//android.view.View[@selected = 'true']`);
   }
 
   /** Offer shown in the content block below the category tabs */
@@ -77,22 +81,27 @@ export class OfferLocator {
     return $(`//android.widget.ScrollView/android.view.View[last()]//*[@clickable = 'true']`);
   }
 
-  /** Terms and Conditions shown when a category has no offer content */
-  get tncArea() {
+  /** T&C at the bottom of Offers; when opened, header and content are one view whose content-desc starts with the header */
+  get tncSection() {
     return $(
       `//android.view.View[
-        @content-desc = 'Terms and Conditions' or @content-desc = 'Terms and Condition'
-        or @content-desc = 'Termes et conditions' or @content-desc = 'Conditions générales'
-        or @content-desc = 'Términos y Condiciones' or @content-desc = 'Términos y condiciones'
-        or @content-desc = 'Aktionsbedingungen' or @content-desc = 'Algemene voorwaarden' or @content-desc = 'Actievoorwaarden'
-        or @content-desc = 'Pravidla a Podmínky' or @content-desc = 'Podmínky & Pravidla'
-        or @content-desc = 'Általános szerződési feltételek' or @content-desc = 'Termeni și condiții' or @content-desc = 'Villkor'
-        or @content-desc = 'Warunki i ograniczenia' or @content-desc = 'Notas Legais' or @content-desc = 'Termos e Condições'
-        or @content-desc = 'Điều khoản và điều kiện' or @content-desc = 'Kampanya koşulları için buraya tıklayınız'
-        or @content-desc = '條款和條件' or @content-desc = '條款及細則' or @content-desc = '条款声明'
-        or @content-desc = ' تطبق الشروط والأحكام.*' or @content-desc = 'בכפוף לתנאי השימוש' or @content-desc = 'Termini e Condizioni'
+        starts-with(@content-desc, 'Terms and Conditions') or starts-with(@content-desc, 'Terms and Condition')
+        or starts-with(@content-desc, 'Termes et conditions') or starts-with(@content-desc, 'Conditions générales')
+        or starts-with(@content-desc, 'Términos y Condiciones') or starts-with(@content-desc, 'Términos y condiciones')
+        or starts-with(@content-desc, 'Aktionsbedingungen') or starts-with(@content-desc, 'Algemene voorwaarden') or starts-with(@content-desc, 'Actievoorwaarden')
+        or starts-with(@content-desc, 'Pravidla a Podmínky') or starts-with(@content-desc, 'Podmínky & Pravidla')
+        or starts-with(@content-desc, 'Általános szerződési feltételek') or starts-with(@content-desc, 'Termeni și condiții') or starts-with(@content-desc, 'Villkor')
+        or starts-with(@content-desc, 'Warunki i ograniczenia') or starts-with(@content-desc, 'Notas Legais') or starts-with(@content-desc, 'Termos e Condições')
+        or starts-with(@content-desc, 'Điều khoản và điều kiện') or starts-with(@content-desc, 'Kampanya koşulları için buraya tıklayınız')
+        or starts-with(@content-desc, '條款和條件') or starts-with(@content-desc, '條款及細則') or starts-with(@content-desc, '条款声明') or starts-with(@content-desc, '商城公告')
+        or starts-with(@content-desc, ' تطبق الشروط والأحكام') or starts-with(@content-desc, 'בכפוף לתנאי השימוש') or starts-with(@content-desc, 'Termini e Condizioni')
       ]`
     );
+  }
+
+  /** First content node under the T&C header; exists only while the T&C is open */
+  get tncContent() {
+    return this.tncSection.$('./*');
   }
 
   /** "no ongoing offers" image */

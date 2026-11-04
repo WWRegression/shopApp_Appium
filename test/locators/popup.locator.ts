@@ -22,7 +22,14 @@ export class PopupLocator {
   }
 
   get insiderBannerCloseButton() {
-    return $(`//*[@resource-id = 'ins-responsive-banner']//android.widget.Button[contains(@resource-id, 'close-button')]`);
+    return $(
+      `(//*[@resource-id = 'ins-responsive-banner']//android.widget.Button[contains(@resource-id, 'close-button')]
+      | //*[@resource-id = 'ins-responsive-banner']//*[starts-with(@resource-id, 'link-button') and (@content-desc = 'Stäng' or @content-desc = 'Close')])[last()]`
+    );
+  }
+
+  get insiderBannerCopyCodeButton() {
+    return $(`//*[@resource-id = 'ins-responsive-banner']//*[contains(@resource-id, 'wrap-thanks-button')]//android.widget.Button`);
   }
 
   /** Promotion / welcome popup X — also matches the cookie popup's X, so use it only when the cookie popup is not shown */

@@ -9,10 +9,11 @@ import {
   clickIfDisplayed,
   getElementLabel,
   isDisplayedOrFalse,
+  quickSwipeUntilVisible,
   scrollUntilVisible,
   waitForDisplayedOrFalse,
 } from '../helpers/element.helper';
-import { longPressElement, scrollDown, swipeByBoundary, tapAtCoordinates } from '../helpers/gesture.helper';
+import { longPressElement, scrollDown, tapAtCoordinates } from '../helpers/gesture.helper';
 import { markFailed, markFailedAndStop, type FieldCheck } from '../helpers/report.helper';
 
 export class HomePage extends BasePage {
@@ -223,35 +224,33 @@ export class HomePage extends BasePage {
     await markFailedAndStop(() => clickElement(this.locator.mainKv, { timeout: 5000 }), '[clickMainKv] main KV not found on Home');
   }
 
-  /** Scrolls Home until the T&C row is shown. False means the later T&C steps are skipped. */
-  async isTermsShown(): Promise<boolean> {
+  /** Scrolls Home until the T&C row is shown; a site without T&C on Home ends the TC as N/A. */
+  async verifyTermsShown(): Promise<void> {
     await switchToNative();
-    const tnc = this.locator.tncButton;
-    for (let attempt = 0; attempt < 8; attempt += 1) {
-      if (await isDisplayedOrFalse(tnc)) {
-        console.log('[isTermsShown] T&C shown');
-        return true;
-      }
-      await swipeByBoundary('up', 1);
-    }
-    console.log('[isTermsShown] T&C not found — remaining steps skipped');
-    return false;
+    const shown = await quickSwipeUntilVisible(this.locator.tncSection);
+    console.log(`[verifyTermsShown] T&C ${shown ? 'shown' : 'not shown'}`);
+    markFailedAndStop([{ label: '[SKIPPED] No T&C on Home for this site', pass: shown }], 'verifyTermsShown');
   }
 
-  /** T&C is folded when its child is hidden. A folded row is opened so the links can be checked. */
+  /** T&C is folded when its child is hidden, and tapping it must show its content (opened for the link checks). */
   async verifyTermsFolded(): Promise<void> {
-    const folded = !(await isDisplayedOrFalse(this.locator.tncExpandedChild));
-    console.log(`[verifyTermsFolded] folded=${folded ? 'PASS' : 'FAIL'}`);
+    const folded = !(await isDisplayedOrFalse(this.locator.tncContent));
+    console.log(`[verifyTermsFolded] expected T&C="folded" actual="${folded ? 'folded' : 'open'}" result=${folded ? 'PASS' : 'FAIL'}`);
     markFailed([{ label: 'T&C is not folded by default', pass: folded }], 'verifyTermsFolded');
-    if (folded) {
-      await clickElement(this.locator.tncButton, { timeout: 5000 });
-      console.log('[verifyTermsFolded] opened T&C');
+    if (!folded) {
+      return;
     }
+
+    await clickElement(this.locator.tncSection, { timeout: 5000 });
+    // Existence, not display: the opened content can start behind BNB
+    const opened = await this.locator.tncContent.waitForExist({ timeout: 3000 }).then(() => true, () => false);
+    console.log(`[verifyTermsFolded] expected T&C content="shown" actual="${opened ? 'shown' : 'not shown'}" result=${opened ? 'PASS' : 'FAIL'}`);
+    markFailed([{ label: 'T&C content is not shown after tapping it', pass: opened }], 'verifyTermsFolded');
   }
 
   /** Each T&C link opens its URL or a PDF. No link is a pass. */
   async verifyTermsLinks(): Promise<void> {
-    const links = await this.locator.tncHyperlinks.getElements();
+    const links = await this.locator.tncLinks.getElements();
     if (links.length === 0) {
       console.log('[verifyTermsLinks] no hyperlink in T&C — passed');
       return;
@@ -260,7 +259,7 @@ export class HomePage extends BasePage {
 
     const failures: FieldCheck[] = [];
     for (let index = 0; index < links.length; index += 1) {
-      const current = (await this.locator.tncHyperlinks.getElements())[index];
+      const current = (await this.locator.tncLinks.getElements())[index];
       if (!current) {
         failures.push({ label: `T&C link ${index + 1} not found after returning`, pass: false });
         continue;
