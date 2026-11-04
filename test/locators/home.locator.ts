@@ -173,33 +173,29 @@ export class HomeLocator {
   /** Home footer Terms and Conditions row. Exact content-desc, clickable. */
   get tncButton() {
     const label = [
-      'Terms and Conditions',
       'Terms & Conditions',
-      'Terms & Conditions:',
       'T&C',
       'Terms and Condition',
-      'Termes et conditions',
+      'Terms and Conditions',
       'Conditions générales',
       'Mentions légales',
       'Términos y Condiciones',
       'Términos y condiciones',
       'Terminos y condiciones',
       'Termos e Condições',
-      'Pravidla a Podmínky',
-      'Podmínky & pravidla',
       'Aktionsbedingungen',
-      'Algemene voorwaarden',
-      'Általános szerződési feltételek',
-      'Termeni și condiții',
+      'Általános Szerződési Feltételek',
       'Villkor',
-      'Şartlar ve Koşullar',
-      '條款和條件',
       '條款及細則',
       '條款與條件',
       '条款声明',
-      'Điều khoản và điều kiện',
       'Warunki i ograniczenia',
       'תנאים והגבלות',
+      'الشروط والأحكام',
+      'Syarat dan ketentuan',
+      'Termini e Condizioni',
+      '利用規約',
+      'Şart ve Koşullar',
     ]
       .map((text) => `normalize-space(@content-desc)='${text}'`)
       .join(' or ');
@@ -238,12 +234,16 @@ export class HomeLocator {
 
   /** Links inside the expanded T&C. A country with none is a pass. */
   get tncHyperlinks() {
-    return $$(
-      `//android.widget.ScrollView//android.view.View[contains(@content-desc, 'https')]` +
-        ` | //android.widget.ScrollView//android.view.View[contains(@content-desc, 'Les conditions générales')]` +
-        ` | //android.widget.ScrollView//android.view.View[contains(@content-desc, 'actievoorwaarden')]` +
-        ` | (//android.widget.ScrollView//android.view.View[contains(@content-desc, 'Samsung.com') and @clickable='true'])[1]`
-    );
+    const label = [
+      'https',
+      'Samsung',
+      'Terms & Condition',
+      'aqui',
+      'شروط وأحكام الطلب المسبق',
+    ]
+      .map((text) => `contains(@content-desc, '${text}')`)
+      .join(' or ');
+    return $$(`//android.widget.Button[${label}]`);
   }
 
   /** Native PDF viewer title after a T&C link opens a PDF. */
