@@ -3,6 +3,7 @@ import { HomePage } from './home.page';
 import { LoginLocator } from '../locators/login.locator';
 import { isStgEnvironment } from '../helpers/env.helper';
 import { getRunConfig } from '../../config/run.config';
+import { decryptWithDbKey } from '../../config/db.config';
 import {
   switchToNative,
   switchToWebView,
@@ -34,8 +35,7 @@ export const SAMSUNG_ACCOUNT_SETTINGS_ACTIVITY = 'SettingMainPreference';
 const SAMSUNG_ACCOUNT_SETTINGS_ACTION = 'com.samsung.android.samsungaccount.action.OPEN_SASETTINGS';
 const SETTINGS_PACKAGE = 'com.android.settings';
 const KEYCODE_ENTER = 66;
-/** Shared sign-in key for the device test accounts (Gmail / proton.me). */
-const ACCOUNT_PW = 'wise1004!';
+const ACCOUNT_Info = 'wise1004!';
 
 /** STG(WDS) sign-in account; fill in the team account. */
 const WDS_ACCOUNT = {
@@ -52,7 +52,7 @@ export class LoginPage extends BasePage {
   gmailAccount(): { email: string; pw: string } {
     return {
       email: getGoogleAccountEmail(),
-      pw: ACCOUNT_PW,
+      pw: ACCOUNT_Info,
     };
   }
 
@@ -60,7 +60,7 @@ export class LoginPage extends BasePage {
   emailAccount(): { email: string; pw: string } {
     return {
       email: getAccountEmail(),
-      pw: ACCOUNT_PW,
+      pw: ACCOUNT_Info,
     };
   }
 
@@ -103,7 +103,7 @@ export class LoginPage extends BasePage {
       await clickIfDisplayed(this.locator.verifyNumberConfirmButton, 5000);
 
       await markFailedAndStop(
-        () => setElementValue(this.locator.confirmPwInput, ACCOUNT_PW, { timeout: 5000 }),
+        () => setElementValue(this.locator.confirmPwInput, ACCOUNT_Info, { timeout: 5000 }),
         '[signOutOnDevice] pw confirm input not found'
       );
       // OK button overlaps the navigation bar, so submit with ENTER

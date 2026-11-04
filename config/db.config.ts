@@ -23,8 +23,8 @@ function readDbKey(): Buffer {
   return Buffer.from(key, 'base64');
 }
 
-/** Decrypts an AES-256-GCM "iv:tag:data" value with the DB key. */
-function decryptWithDbKey(encrypted: string): string {
+/** Decrypts an AES-256-GCM "iv:tag:data" value with the DB key (REPORT_DB / account pwEnc). */
+export function decryptWithDbKey(encrypted: string): string {
   const [iv, tag, data] = encrypted.split(':').map((part) => Buffer.from(part, 'base64'));
   const decipher = crypto.createDecipheriv('aes-256-gcm', readDbKey(), iv);
   decipher.setAuthTag(tag);

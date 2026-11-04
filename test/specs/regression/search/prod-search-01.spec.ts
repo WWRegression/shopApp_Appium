@@ -25,7 +25,7 @@ describe('PROD_SEARCH_01', () => {
       await shopPage.prepareShopPage();
       await searchPage.openSearch();
       await searchPage.verifySearchHistoryExists(keyword);
-      await searchPage.clickSearchHistoryDelete(keyword);
+      await searchPage.deleteSearchHistoryKeyword(keyword);
       await searchPage.verifySearchHistoryDeleted(keyword);
     });
   });
