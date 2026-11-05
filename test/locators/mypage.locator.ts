@@ -608,11 +608,9 @@ export class MypageLocator {
         or @content-desc = 'Produits enregistrés'
         or @content-desc = 'Prodotti registrati'
         or @content-desc = 'Productos registrados'
-        or @content-desc = 'Produtos Registados'
         or @content-desc = 'Sản phẩm đã đăng ký'
         or @content-desc = 'Daftarkan produk saya'
         or @content-desc = 'สินค้าที่ลงทะเบียน'
-        or @content-desc = 'Registrerade produkter'
         or @content-desc = 'المنتجات المسجّلة'
         or @content-desc = 'Geregistreerde producten'
         or @content-desc = 'Zarejestrowane produkty'
@@ -621,8 +619,6 @@ export class MypageLocator {
         or @content-desc = '已註冊產品'
         or @content-desc = '已登記的產品'
         or @content-desc = 'Regisztrált termékeim'
-        or @content-desc = 'Kayıtlı Ürünler'
-        or @content-desc = '登録済みの製品'
         or @content-desc = '登録済み製品'
       )]`
     );
