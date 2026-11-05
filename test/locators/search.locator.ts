@@ -21,7 +21,7 @@ export class SearchLocator {
       // CN search screen: the field itself is "Search  " and is not inside a Button
       "//android.view.View[normalize-space(@content-desc)='Search' or normalize-space(@content-desc)='搜索']",
       // IN shows the newer search bar (with a microphone) whose input is a real EditText
-      '//android.widget.EditText',
+      '//android.widget.EditText[not(ancestor::android.webkit.WebView)]',
     ].join(' | ');
   }
 

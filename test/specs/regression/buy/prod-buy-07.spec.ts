@@ -1,4 +1,5 @@
 import { runOrSkip } from '../../../helpers/tc-filter.helper';
+import { HomePage } from '../../../pages/home.page';
 import { SearchPage } from '../../../pages/search.page';
 import { PfPage } from '../../../pages/pf.page';
 import { PdPage } from '../../../pages/pd.page';
@@ -8,12 +9,14 @@ import { PdPage } from '../../../pages/pd.page';
  * Verify AR function on TV/Monitor (VD) PD
  */
 describe('PROD_BUY_07', () => {
+  const homePage = new HomePage();
   const searchPage = new SearchPage();
   const pfPage = new PfPage();
   const pdPage = new PdPage();
   
   it('AR function on TV/Monitor PD', async function () {
     await runOrSkip.call(this, 'PROD_BUY_07', async (site) => {
+      await homePage.prepareHomePage();
       await searchPage.searchByKeyword(site.product.vdSku ?? '');
       await pfPage.selectPfCard({ mode: 'first' });
 
