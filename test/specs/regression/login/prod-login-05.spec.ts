@@ -26,7 +26,7 @@ describe('PROD_LOGIN_05', () => {
       // Guest checkout opens the login page; its login button logs in with the device account, or with Gmail when it was signed out (IN)
       await loginPage.verifyLoginPage();
       await loginPage.clickLoginBtnOnLoginPage();
-      await loginPage.loginWithGmailOnSsoIfShown();
+      await loginPage.ssoLoginWithGmailIfShown();
       await loginPage.skipPurpose();
 
       await checkoutPage.prepareCheckoutPage();

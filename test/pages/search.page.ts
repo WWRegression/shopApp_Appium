@@ -122,7 +122,7 @@ export class SearchPage extends BasePage {
     // The search screen opens a moment after the header icon; the previous page is still up until then
     await waitForDisplayedOrFalse(this.locator.searchInput, { timeout: 500 });
 
-    if (await clickIfDisplayed(this.locator.recentSearchesClearAll, 2000)) {
+    if (await clickIfDisplayed(this.locator.recentSearchesClearAll, 1000)) {
       console.log('[clearSearchHistoryIfShown] Clear all');
       await driver.pause(500);
       return;

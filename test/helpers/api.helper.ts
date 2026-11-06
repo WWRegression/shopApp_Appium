@@ -1,16 +1,22 @@
 /// <reference lib="dom" />
 
-import fs from 'node:fs';
-import path from 'node:path';
 import { AppEnvironment, getRunConfig } from '../../config/run.config';
 import { LoadedSite, SiteFeatureName } from '../../config/site';
+import {
+  getResolvedSkuCache,
+  writeResolvedSkuEntry,
+  type ProductType,
+  type ResolvedProduct,
+} from '../../config/sku-cache';
 import { testCaseCatalog } from '../../config/test-case.catalog';
 import { switchToNative, switchToWebView, getCurrentWindowUrl } from './context.helper';
 import { markFailed } from './report.helper';
 
 /** Samsung shop API calls: product/sku resolution (Node-side) + cart/address ops (WebView, needs session cookies). */
 
-export type ProductType = 'IM' | 'VD' | 'HA';
+export type { ProductType, ResolvedProduct };
+export type { ResolvedSkuCache } from '../../config/sku-cache';
+export { getResolvedSkuCache, writeResolvedSkuEntry };
 
 // === 1) Per-type config ===
 
@@ -88,14 +94,6 @@ interface ProductCardChipOption {
 interface ProductCard {
   fmyEngName?: string;
   chipOptions?: ProductCardChipOption[];
-}
-
-/** IM includes color/name/storage; VD/HA only need a sku. */
-export interface ResolvedProduct {
-  sku: string;
-  color?: string;
-  name?: string;
-  storage?: string;
 }
 
 /** From the SIMPLE_INFO endpoint — no name/color/storage, see fetchImInfo. */
@@ -337,7 +335,7 @@ export async function resolveProduct(site: LoadedSite, type: ProductType): Promi
 }
 
 /** JP only ever searches IM. */
-export function getTypesForSite(siteCode: string): ProductType[] {
+export function getProductTypes(siteCode: string): ProductType[] {
   return siteCode.toUpperCase() === 'JP' ? ['IM'] : ['IM', 'VD', 'HA'];
 }
 
@@ -347,42 +345,7 @@ export async function isSkuInStock(site: LoadedSite, sku: string): Promise<boole
   return status.stockLevel >= 1 && status.salesStatus !== 'ARCHIVED';
 }
 
-// === 6) Local cache (config/cache/resolved-sku.json) ===
-
-/** Local cache of resolved products (config/cache, gitignored) — falls back to data/sites-data/{SITE}.json. */
-const CACHE_FILE = path.join(__dirname, '..', '..', 'config', 'cache', 'resolved-sku.json');
-
-export type ResolvedSkuCache = Partial<Record<ProductType, ResolvedProduct>>;
-type CacheFile = Record<string, ResolvedSkuCache>;
-
-function readCacheFile(): CacheFile {
-  if (!fs.existsSync(CACHE_FILE)) {
-    return {};
-  }
-  try {
-    return JSON.parse(fs.readFileSync(CACHE_FILE, 'utf8')) as CacheFile;
-  } catch {
-    return {};
-  }
-}
-
-function writeCacheFile(data: CacheFile): void {
-  fs.mkdirSync(path.dirname(CACHE_FILE), { recursive: true });
-  fs.writeFileSync(CACHE_FILE, JSON.stringify(data, null, 2), 'utf8');
-}
-
-export function getResolvedSkuCache(siteCode: string): ResolvedSkuCache {
-  return readCacheFile()[siteCode.toUpperCase()] ?? {};
-}
-
-export function writeResolvedSkuEntry(siteCode: string, type: ProductType, product: ResolvedProduct): void {
-  const all = readCacheFile();
-  const code = siteCode.toUpperCase();
-  all[code] = { ...all[code], [type]: product };
-  writeCacheFile(all);
-}
-
-// === 7) Saved-address clearing (OCC API via WebView) ===
+// === 6) Saved-address clearing (OCC API via WebView) ===
 
 export interface FailedAddress {
   id: string;

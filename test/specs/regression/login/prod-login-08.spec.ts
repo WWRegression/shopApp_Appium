@@ -26,7 +26,7 @@ describe('PROD_LOGIN_08', () => {
       // Login for next TC execution
       await mypagePage.clickLoginOnMypage();
       await loginPage.clickLoginBtnOnLoginPage();
-      await loginPage.loginWithGmailOnSso();
+      await loginPage.ssoLoginWithGmail();
     });
   });
 });

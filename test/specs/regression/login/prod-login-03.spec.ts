@@ -13,7 +13,6 @@ describe('PROD_LOGIN_03', () => {
   it('Guest - SSO Gmail login on empty cart page', async function () {
     await runOrSkip.call(this, 'PROD_LOGIN_03', async () => {
       await loginPage.signOutOnDevice();
-      await loginPage.clearAppDataForIn();
       await restartApp();
       await mypagePage.dismissOverlays();
       await loginPage.continueAsGuestIfShown();
@@ -27,7 +26,7 @@ describe('PROD_LOGIN_03', () => {
       // Login on the empty cart page
       await cartPage.clickLoginOnCart();
       await loginPage.clickLoginBtnOnLoginPage();
-      await loginPage.loginWithGmailOnSso();
+      await loginPage.ssoLoginWithGmail();
       await loginPage.skipPurpose();
 
       await cartPage.verifyLoggedInOnCart();

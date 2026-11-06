@@ -1,9 +1,8 @@
-const SAMSUNG_ACCOUNT_ID = 'com.osp.app.signin:id';
+const SAMSUNG_ACCOUNT_PACKAGE = '@package="com.osp.app.signin"';
+const SETTINGS_PACKAGE = '@package="com.android.settings"';
 
 export class LoginLocator {
-  get samsungAccountName() {
-    return $(`//android.widget.TextView[@resource-id = '${SAMSUNG_ACCOUNT_ID}/user_name']`);
-  }
+  
 
   /** Country row on the login boarding page. Tapping it opens the country list. */
   get splashCountryButton() {
@@ -108,13 +107,9 @@ export class LoginLocator {
     return $(`//android.view.View[@content-desc = '其它登录方式']/following-sibling::android.widget.ImageView[2]`);
   }
 
-  get emailSsoButton() {
-    return $(`//*[@resource-id = '${SAMSUNG_ACCOUNT_ID}/idSignInButtonLayout']`);
-  }
 
-  get gmailSsoButton() {
-    return $(`//android.widget.Button[@resource-id = '${SAMSUNG_ACCOUNT_ID}/simpleSignInButton']`);
-  }
+
+
 
   googleAccountItem(email: string) {
     return $(
@@ -122,58 +117,10 @@ export class LoginLocator {
     );
   }
 
-  get emailInput() {
-    return $(
-      `//android.widget.AutoCompleteTextView
-      | //android.widget.EditText[@resource-id = 'iptLgnPlnID']`
-    );
-  }
 
-  get addAccountLogoArea() {
-    return $(
-      `//*[(@class = 'android.widget.LinearLayout' and @resource-id = '${SAMSUNG_ACCOUNT_ID}/app_logo_parent')
-        or @resource-id = '${SAMSUNG_ACCOUNT_ID}/idNextButton']`
-    );
-  }
 
-  get emailNextButton() {
-    return $('//android.widget.Button');
-  }
 
-  get pwInput() {
-    return $(
-      `//android.widget.EditText[@resource-id = '${SAMSUNG_ACCOUNT_ID}/etSignInPassword']
-      | //android.widget.EditText[@resource-id = 'iptLgnPlnPD']`
-    );
-  }
 
-  get allAgreeCheckbox() {
-    return $(
-      `//android.widget.ImageView[@resource-id = '${SAMSUNG_ACCOUNT_ID}/dotted_line']
-      /following-sibling::android.widget.LinearLayout[1]//android.widget.CheckBox`
-    );
-  }
-
-  get agreeButton() {
-    return $(
-      `//android.widget.Button[@resource-id = '${SAMSUNG_ACCOUNT_ID}/center_text']
-      | //android.widget.Button[@resource-id = '${SAMSUNG_ACCOUNT_ID}/primary_button' and @text = 'Agree']
-      | //android.widget.Button[@text = 'Agree']`
-    );
-  }
-
-  get ssoScreenElement() {
-    return $(
-      `//*[starts-with(@resource-id, '${SAMSUNG_ACCOUNT_ID}/') or starts-with(@resource-id, 'com.google.android.gms:id/')]`
-    );
-  }
-
-  get simpleLoginCancelButton() {
-    return $(
-      `//android.widget.FrameLayout[@resource-id = '${SAMSUNG_ACCOUNT_ID}/action_bar_root']
-      //android.widget.Button[@resource-id = 'android:id/button2']`
-    );
-  }
 
   get purposeNextButton() {
     return $(
@@ -211,42 +158,98 @@ export class LoginLocator {
     );
   }
 
+/* settings package -------------------------------------------------------------*/
+  get settingAddedSamsungAccount() {
+    return $(`//android.widget.TextView[${SETTINGS_PACKAGE} and @resource-id="android:id/summary" and @text="Samsung account"]`);
+  }
+
   get settingsAddAccount() {
-    return $(`//android.widget.TextView[@resource-id = 'android:id/title' and @text = 'Add account']`);
+    return $(`//android.widget.TextView[${SETTINGS_PACKAGE} and @resource-id="android:id/title" and @text="Add account"]`);
   }
 
-  get samsungAccountItem() {
-    return $(`//android.widget.TextView[@text = 'Samsung account']`);
+  get settingAddSamsungAccount() {
+    return $(`//android.widget.TextView[${SETTINGS_PACKAGE} and @resource-id="android:id/title" and @text="Samsung account"]`);
   }
 
-  get removeAccountButton() {
+  get settingRemoveAccountButton() {
+    return $(`//android.widget.Button[${SETTINGS_PACKAGE} and @text = 'Remove account']`);
+  }
+
+  get settingRemoveConfirmButton() {
+    return $(`//android.widget.Button[${SETTINGS_PACKAGE} and @text = 'Remove']`);
+  }
+/* end of settings package -------------------------------------------------------------*/
+
+/* sso package -------------------------------------------------------------*/
+  get ssoAccountUserName() {
+    return $(`//android.widget.TextView[${SAMSUNG_ACCOUNT_PACKAGE} and contains(@resource-id, 'user_name')]`);
+  }
+
+  get ssoWithGmailButton() {
+    return $(`//android.widget.Button[${SAMSUNG_ACCOUNT_PACKAGE} and contains(@resource-id,'simpleSignInButton')]`);
+  }
+
+  get ssoWithEmailButton() {
+    return $(`//android.widget.Button[${SAMSUNG_ACCOUNT_PACKAGE} and contains(@resource-id,'idSignInButton')]`);
+  }
+
+  get ssoAllAgreeCheckbox() {
+    return $(`//android.widget.ImageView[${SAMSUNG_ACCOUNT_PACKAGE} and contains(@resource-id,"dotted_line") ]
+      /following-sibling::*[1]//android.widget.CheckBox`);
+  }
+
+  get ssoTermsScrollDownButton() {
+      return $(`//android.widget.Button['${SAMSUNG_ACCOUNT_PACKAGE}' and @content-desc="Scroll down"]`);
+  }
+
+  get ssoAgreeButton() {
+    return $(`//android.widget.Button['${SAMSUNG_ACCOUNT_PACKAGE}' and @text = 'Agree']`);
+  }
+
+  get ssoSamsungPassCancelButton() {
+    return $(`//android.widget.Button['${SAMSUNG_ACCOUNT_PACKAGE}' and @text = 'Cancel']`);
+  }
+
+  get ssoSignOutButton() {
+    return $(`//android.widget.Button[${SAMSUNG_ACCOUNT_PACKAGE} and @text = 'Sign out']`);
+  }
+
+  get ssoConfirmVerifyNumberButton() {
+    return $(`//android.widget.Button[${SAMSUNG_ACCOUNT_PACKAGE} and @text = 'Confirm']`);
+  }
+
+  get ssoConfirmPasswordInput() {
+    return $(`//android.widget.EditText[${SAMSUNG_ACCOUNT_PACKAGE} and contains(@resource-id,'confirm_password')]`);
+  }
+
+  get ssoEmailInput() {
     return $(
-      `//android.widget.Button[@resource-id = 'com.android.settings:id/button' and @text = 'Remove account']`
+      `//android.widget.AutoCompleteTextView[${SAMSUNG_ACCOUNT_PACKAGE}]
+      | //android.widget.EditText[@resource-id = 'iptLgnPlnID']`
     );
   }
 
-  get removeAccountConfirmButton() {
+  get ssoAddAccountLogoArea() {
+    return $(`//android.widget.LinearLayout[${SAMSUNG_ACCOUNT_PACKAGE} and contains(@resource-id,"app_logo_parent")]`);
+  }
+
+  get ssoIdNextButton() {
+    return $(`//android.widget.Button[${SAMSUNG_ACCOUNT_PACKAGE} and contains(@resource-id,"idNextButton")]`);
+  }
+
+  get ssoPasswordInput() {
     return $(
-      `//android.widget.LinearLayout[@resource-id = 'com.android.settings:id/parentPanel']
-      //android.widget.Button[@text = 'Remove account' or @text = 'Remove']`
+      `//android.widget.EditText[${SAMSUNG_ACCOUNT_PACKAGE} and contains(@resource-id,"etSignInPassword")]
+      | //android.widget.EditText[@resource-id = 'iptLgnPlnPD']`
     );
   }
 
-  get signOutButton() {
-    return $(
-      `//android.widget.Button[@resource-id = '${SAMSUNG_ACCOUNT_ID}/sign_out_button' and @text = 'Sign out']
-      | //android.widget.TextView[@content-desc = 'Sign out, Button']`
-    );
+  get ssoPwNextButton() {
+    return $(`//android.widget.Button[${SAMSUNG_ACCOUNT_PACKAGE} and contains(@resource-id,"pwNextButton")]`);
   }
+/* end of sso package -------------------------------------------------------------*/
 
-  get verifyNumberConfirmButton() {
-    return $(`//android.widget.Button[@text = 'Confirm']`);
-  }
-
-  get confirmPwInput() {
-    return $(`//android.widget.EditText[@resource-id = '${SAMSUNG_ACCOUNT_ID}/confirm_password']`);
-  }
-
+//wds login
   get wdsLoginPage() {
     return $(
       "//*[@class='android.webkit.WebView' and (@text='WMC' or @text='Sign In' or .='WMC' or .='Sign In')] | //*[@content-desc='Sign-in']"

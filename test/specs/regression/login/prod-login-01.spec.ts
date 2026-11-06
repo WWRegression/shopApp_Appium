@@ -11,7 +11,6 @@ describe('PROD_LOGIN_01', () => {
   it('Guest - SSO Email login on Account page', async function () {
     await runOrSkip.call(this, 'PROD_LOGIN_01', async () => {
       await loginPage.signOutOnDevice();
-      await loginPage.clearAppDataForIn();
       await restartApp();
       await mypagePage.dismissOverlays();
       await loginPage.continueAsGuestIfShown();
@@ -22,7 +21,7 @@ describe('PROD_LOGIN_01', () => {
 
       await mypagePage.clickLoginOnMypage();
       await loginPage.clickLoginBtnOnLoginPage();
-      await loginPage.loginWithEmailOnSso();
+      await loginPage.ssoLoginWithEmail();
       await loginPage.skipPurpose();
 
       await mypagePage.verifyLoggedIn();

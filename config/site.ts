@@ -3,8 +3,7 @@ import path from 'node:path';
 import tcExclusionsFile from './tc-exclusions.json';
 import siteFeaturesFile from './site-features.json';
 import { getRunConfig } from './run.config';
-import { getResolvedSkuCache } from '../test/helpers/api.helper';
-import type { ProductMenu, SettingsMenu } from '../test/locators/mypage.locator';
+import { getResolvedSkuCache } from './sku-cache';
 
 export interface AppIdentity {
   packageName: string;
@@ -109,7 +108,24 @@ export interface Site {
     eupImei?: string;
   };
   /** My Page menus shown on the site — product menus (myProducts ~ myAddresses) and bottom menus (support ~ logout) vary by country */
-  mypageMenuList?: Partial<Record<ProductMenu | SettingsMenu, boolean>>;
+  mypageMenuList?: {
+    myProducts?: boolean;
+    myOrders?: boolean;
+    myRepairs?: boolean;
+    myReferrals?: boolean;
+    myQRCode?: boolean;
+    inbox?: boolean;
+    legalNotice?: boolean;
+    mySmartThings?: boolean;
+    orderSupport?: boolean;
+    myAddresses?: boolean;
+    support?: boolean;
+    policy?: boolean;
+    smartThings?: boolean;
+    settings?: boolean;
+    accountManagement?: boolean;
+    logout?: boolean;
+  };
   /** Shop main menus shown on the site; customerSupport = has the expandable Customer Support (any sub_ menu) — its items are counted at runtime */
   shopMenuList?: {
     studentStore?: boolean;

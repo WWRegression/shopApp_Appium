@@ -30,7 +30,7 @@ describe('PROD_SHOP_05', () => {
     }
     await pfPage.clickContinueOnLoginPopup();
     await loginPage.clickLoginBtnOnLoginPage();
-    await loginPage.loginWithEmailOnSsoIfShown();
+    await loginPage.ssoLoginWithEmailIfShown();
     await loginPage.skipPurpose();
   });
 });

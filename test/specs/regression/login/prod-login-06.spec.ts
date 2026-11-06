@@ -22,7 +22,7 @@ describe('PROD_LOGIN_06', () => {
       // Cart Sign in opens the login page; its login button logs in with the device account, or with Gmail when it was signed out (IN)
       await cartPage.clickLoginOnCart();
       await loginPage.clickLoginBtnOnLoginPage();
-      await loginPage.loginWithGmailOnSsoIfShown();
+      await loginPage.ssoLoginWithGmailIfShown();
 
       // Redirected back to the cart; the WebView reconnects slowly after login
       await cartPage.prepareCartPage(25000);
