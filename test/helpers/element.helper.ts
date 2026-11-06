@@ -11,8 +11,12 @@
  *   - raw swipe/scroll/tap motion → gesture.helper.ts
  */
 
-import { quickSwipeDown, scrollElementToCenter, scrollWebViewDown, scrollDown } from './gesture.helper';
+import { dragInsideElement, quickSwipeDown, scrollElementToCenter, scrollListDown, scrollWebViewDown, scrollDown, tapAtCoordinates } from './gesture.helper';
 import { currentSiteCode } from './tc-filter.helper';
+import { switchToNative, targetPackage } from './context.helper';
+import { getBrowserPages } from './device.helper';
+import { HeaderLocator } from '../locators/header.locator';
+import { HomeLocator } from '../locators/home.locator';
 import type { WaitForOptions } from 'webdriverio';
 
 const DEFAULT_TIMEOUT_MS = 3000;
@@ -324,4 +328,198 @@ export function matchesText(actual: string, expected: string | RegExp): boolean 
     return expected.test(actual);
   }
   return actual.localeCompare(expected.trim(), undefined, { sensitivity: 'accent' }) === 0;
+}
+
+// ── Hyperlinks ──────────────────────────────────────────────────────────
+
+/** A link on screen; `id` = text right before it | name | order, `cutOff` = cut by the area bottom. */
+export type ScreenLink = { name: string; textBefore: string; id: string; tapX: number; tapY: number; cutOff: boolean };
+/** A link tap result; `opened` = something opened, so a Back is needed. */
+export type LinkResult = { name: string; pass: boolean; opened: boolean; expected: string; actual: string };
+type Box = { left: number; top: number; right: number; bottom: number };
+type ScreenNode = Box & { isButton: boolean; desc: string };
+
+async function getBox(element: ChainablePromiseElement): Promise<Box> {
+  const { x, y } = await element.getLocation();
+  const { width, height } = await element.getSize();
+  return { left: x, top: y, right: x + width, bottom: y + height };
+}
+
+/** The container's own scroll area (a long T&C); not existing when it has none. */
+function getScrollArea(getContainer: () => ChainablePromiseElement): ChainablePromiseElement {
+  return getContainer().$('.//android.widget.ScrollView');
+}
+
+/** The scroll area if there is one, else the container. */
+async function getLinkArea(getContainer: () => ChainablePromiseElement): Promise<ChainablePromiseElement> {
+  return (await getScrollArea(getContainer).isExisting()) ? getScrollArea(getContainer) : getContainer();
+}
+
+/** App screen a link opened: PDF viewer title or 'app page with Back'; '' when none. */
+async function getAppPageName(): Promise<string> {
+  const pdfTitle = new HomeLocator().pdfTitle;
+  if (await pdfTitle.isExisting()) {
+    return getElementLabel(pdfTitle);
+  }
+  return (await new HeaderLocator().backButton.isExisting()) ? 'app page with Back' : '';
+}
+
+/** Every node of the page source: button or not, text and bounds. */
+async function getScreenNodes(): Promise<ScreenNode[]> {
+  const nodes: ScreenNode[] = [];
+  for (const node of (await driver.getPageSource()).match(/<android\.[^>]*>/g) ?? []) {
+    const bounds = node.match(/bounds="\[(\d+),(\d+)\]\[(\d+),(\d+)\]"/);
+    if (!bounds) {
+      continue;
+    }
+    const [left, top, right, bottom] = bounds.slice(1).map(Number);
+    // A text holding " is quoted with '
+    const desc = (node.match(/content-desc=(["'])(.*?)\1/)?.[2] ?? '').trim();
+    nodes.push({ isButton: node.startsWith('<android.widget.Button '), desc, left, top, right, bottom });
+  }
+  return nodes;
+}
+
+/** Links inside the area, top to bottom, and a snapshot of its texts to tell whether it scrolled. */
+async function getLinksInArea(area: ChainablePromiseElement): Promise<{ links: ScreenLink[]; snapshot: string }> {
+  const box = await getBox(area);
+  const links: ScreenLink[] = [];
+  const texts: string[] = [];
+  let textBefore = '';
+  for (const node of await getScreenNodes()) {
+    if (!node.isButton) {
+      // A long paragraph runs past the area; the row around the area is not a text
+      const overlaps = node.left < box.right && node.right > box.left && node.top < box.bottom && node.bottom > box.top;
+      const surrounds = node.left <= box.left && node.right >= box.right && node.top <= box.top && node.bottom >= box.bottom;
+      if (node.desc && overlaps && !surrounds) {
+        textBefore = node.desc.slice(0, 40);
+        texts.push(`${textBefore}@${node.top - box.top}`);
+      }
+      continue;
+    }
+    const inside = node.left >= box.left && node.right <= box.right && node.top >= box.top && node.bottom <= box.bottom;
+    // No text before it: still being drawn
+    if (!inside || !textBefore) {
+      continue;
+    }
+    const order = links.filter((link) => link.textBefore === textBefore && link.name === node.desc).length + 1;
+    // A wrapped link has an empty center: tap the start of its last line
+    const tapY = node.top + Math.round((node.bottom - node.top) * 0.75);
+    const id = `${textBefore}|${node.desc}|${order}`;
+    links.push({ name: node.desc, textBefore, id, tapX: node.left + 20, tapY, cutOff: node.bottom >= box.bottom });
+  }
+  return { links, snapshot: texts.join(' | ') };
+}
+
+/**
+ * Scrolls inside the container's own scroll area; returns whether it moved.
+ * Without one, only scrolls the page on to show the rest (PT T&C opened near the bottom), from mid-screen:
+ * a drag next to the BNB opens the Home notification panel. Never back up, which moves the container away.
+ */
+async function scrollInsideArea(getContainer: () => ChainablePromiseElement, distance: number): Promise<boolean> {
+  if (!(await getScrollArea(getContainer).isExisting())) {
+    if (distance < 0) {
+      return false;
+    }
+    const topBefore = (await getBox(getContainer())).top;
+    await scrollListDown();
+    return (await getBox(getContainer())).top !== topBefore;
+  }
+  const before = (await getLinksInArea(getScrollArea(getContainer))).snapshot;
+  await dragInsideElement(getScrollArea(getContainer), distance);
+  return (await getLinksInArea(getScrollArea(getContainer))).snapshot !== before;
+}
+
+/** WebView pages opened since `pageIdsBefore`, or the package of another app in front. */
+async function getNewPages(pageIdsBefore: Set<string>): Promise<string[]> {
+  const newPages = (await getBrowserPages()).filter((page) => !pageIdsBefore.has(page.id));
+  const pages = newPages.map((page) => `${page.title} ${page.url.split('?')[0]}`);
+  const currentPackage = await driver.getCurrentPackage().catch(() => '');
+  if (currentPackage && currentPackage !== targetPackage()) {
+    pages.push(currentPackage);
+  }
+  return pages;
+}
+
+/** Taps the link and waits up to 8s: a URL link must open that URL, a text link anything. */
+async function clickLinkAndCheckRedirect(link: ScreenLink): Promise<LinkResult> {
+  const isUrl = /^(https?:\/\/)?[\w-]+(\.[\w-]+)+\//i.test(link.name);
+  const expected = isUrl ? link.name.replace(/^https?:\/\//i, '').replace(/[?#].*$/, '').replace(/\/$/, '').toLowerCase() : 'new page';
+  const urlOpened = (pages: string[]) => pages.some((page) => page.toLowerCase().includes(expected));
+  const pageIdsBefore = new Set((await getBrowserPages()).map((page) => page.id));
+  await tapAtCoordinates(link.tapX, link.tapY);
+
+  let pages: string[] = [];
+  let appPage = '';
+  const deadline = Date.now() + 8000;
+  while (Date.now() < deadline) {
+    pages = await getNewPages(pageIdsBefore);
+    // A WebView shows Back before its URL, so a URL link waits for the URL
+    if (isUrl ? urlOpened(pages) : pages.length > 0) {
+      break;
+    }
+    if (!isUrl) {
+      appPage = await getAppPageName();
+      if (appPage) {
+        break;
+      }
+    }
+    await driver.pause(500);
+  }
+  if (pages.length === 0 && !appPage) {
+    appPage = await getAppPageName();
+  }
+
+  const actual = pages.join(' | ') || appPage || 'nothing opened';
+  const opened = actual !== 'nothing opened';
+  return { name: link.name, pass: isUrl ? urlOpened(pages) : opened, opened, expected, actual };
+}
+
+/**
+ * Taps every link in the container once, top to bottom, and returns whether each opened its page.
+ * Same-named links are told apart by the text before them. `getContainer` finds the container again on each use.
+ */
+export async function verifyHyperlinkRedirects(getContainer: () => ChainablePromiseElement): Promise<LinkResult[]> {
+  const results: LinkResult[] = [];
+  const clickedIds = new Set<string>();
+  // A scroll area keeps its position from an earlier visit: start from its top
+  await withoutIdleWait(async () => {
+    for (let up = 0; up < 15 && (await scrollInsideArea(getContainer, -250)); up++);
+  });
+
+  for (let step = 0; step < 40; step++) {
+    if (!(await getContainer().isExisting())) {
+      break;
+    }
+    const { links } = await withoutIdleWait(async () => getLinksInArea(await getLinkArea(getContainer)));
+    const unclicked = links.filter((item) => !clickedIds.has(item.id));
+    let link = unclicked.find((item) => !item.cutOff);
+    if (!link) {
+      // Small step near a cut link, bigger one through a stretch without links
+      if (await withoutIdleWait(() => scrollInsideArea(getContainer, unclicked.length > 0 ? 250 : 550))) {
+        continue;
+      }
+      // Area end: the last link sits on the bottom edge
+      link = unclicked[0];
+      if (!link) {
+        break;
+      }
+    }
+
+    clickedIds.add(link.id);
+    const result = await withoutIdleWait(() => clickLinkAndCheckRedirect(link));
+    console.log(
+      `[verifyHyperlinkRedirects] ${results.length + 1}. link="${link.name}" after "${link.textBefore}" expected=${result.expected} actual=${result.actual} result=${result.pass ? 'PASS' : 'FAIL'}`
+    );
+    results.push(result);
+    // Back only when something opened, then let an app page over the container close
+    if (result.opened) {
+      await switchToNative();
+      await driver.back();
+      await driver.waitUntil(async () => !(await getAppPageName()), { timeout: 5000, interval: 500 }).catch(() => undefined);
+      await driver.pause(1000);
+    }
+  }
+  console.log(results.length === 0 ? '[verifyHyperlinkRedirects] no link — passed' : `[verifyHyperlinkRedirects] clicked ${results.length} links`);
+  return results;
 }

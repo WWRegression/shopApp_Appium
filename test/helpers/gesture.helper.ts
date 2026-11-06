@@ -268,6 +268,29 @@ export async function tapAtCoordinates(x: number, y: number): Promise<void> {
   await driver.execute('mobile: clickGesture', { x, y });
 }
 
+/**
+ * Drags inside the element by `distance` px, starting 30px in from its edge
+ * (positive: from the bottom edge up, to see lower content; negative: from the top edge down).
+ * Starting at the edge scrolls a scroll area inside a page instead of the page itself.
+ */
+export async function dragInsideElement(element: ChainablePromiseElement, distance: number): Promise<void> {
+  const { x, y } = await element.getLocation();
+  const { width, height } = await element.getSize();
+  const dragX = x + Math.round(width / 2);
+  const startY = distance > 0 ? y + height - 30 : y + 30;
+  await driver
+    .action('pointer', { parameters: { pointerType: 'touch' } })
+    .move({ x: dragX, y: startY, duration: 0 })
+    .down()
+    .pause(100)
+    .move({ x: dragX, y: startY - distance, duration: 400 })
+    // Holding before release stops a fling
+    .pause(150)
+    .up()
+    .perform();
+  await driver.pause(300);
+}
+
 /** Long press on an element (mobile: longClickGesture). */
 export async function longPressElement(element: ChainablePromiseElement, durationMs = 2000): Promise<void> {
   await driver.execute('mobile: longClickGesture', { elementId: await element.elementId, duration: durationMs });

@@ -2,15 +2,12 @@ import { BasePage } from './base.page';
 import { OfferLocator, ALL_OFFERS_TAB_LABELS } from '../locators/offer.locator';
 import { switchToNative, targetPackage } from '../helpers/context.helper';
 import { forceStopPackage } from '../helpers/device.helper';
-import { clickElement, isDisplayedOrFalse, quickSwipeUntilVisible, waitForDisplayedOrFalse, withoutIdleWait } from '../helpers/element.helper';
-import { quickSwipeDown, scrollByElement, tapAtCoordinates } from '../helpers/gesture.helper';
-import { HomePage } from './home.page';
+import { clickElement, isDisplayedOrFalse, quickSwipeUntilVisible, verifyHyperlinkRedirects, waitForDisplayedOrFalse } from '../helpers/element.helper';
+import { scrollByElement, tapAtCoordinates } from '../helpers/gesture.helper';
 import { markFailed, markFailedAndStop, markStepSkipped, FieldCheck } from '../helpers/report.helper';
 
 export class OfferPage extends BasePage {
   private readonly locator = new OfferLocator();
-  // The T&C folded / link checks are the same as on Home
-  private readonly homePage = new HomePage();
 
   /** True when the header title matches the Offers title texts (BasePage.titleTexts.OFFERS). */
   async isOnOffer(): Promise<boolean> {
@@ -53,11 +50,13 @@ export class OfferPage extends BasePage {
   /** After an RTB or link tap: a new page (WebView URL, another app, or another app screen) must open, Offers must be left, and no error page shown. */
   private async verifyLinkedPageOpened(title: string): Promise<void> {
     let opened = '';
+    let webPageFound = false;
     const start = Date.now();
     await driver
       .waitUntil(
         async () => {
           opened = (await this.getOpenedPageNames()).filter(Boolean).join(' | ');
+          webPageFound = opened !== '';
           // A WebView page shows Back before its URL loads, so app screens are judged after 3s
           if (opened || Date.now() - start < 3000) {
             return opened !== '';
@@ -73,8 +72,8 @@ export class OfferPage extends BasePage {
         { timeout: 10000, interval: 500 }
       )
       .catch(() => undefined);
-    // An error page within 3s means the link is broken
-    const errorShown = await waitForDisplayedOrFalse(this.locator.errorPage, { timeout: 3000 });
+    // The error image is an app screen: it cannot show over a WebView page
+    const errorShown = !webPageFound && (await waitForDisplayedOrFalse(this.locator.errorPage, { timeout: 3000 }));
     const onOffers = await this.isOnOffer();
     const pass = opened !== '' && !onOffers && !errorShown;
     const actual = errorShown ? 'error page' : onOffers ? 'still on Offers' : opened ? `page "${opened}"` : 'no new page opened';
@@ -263,8 +262,7 @@ export class OfferPage extends BasePage {
       return;
     }
     await this.verifyTermsFolded();
-    await this.homePage.verifyTermsLinks();
-    await this.verifyTermsLinkButtons();
+    await this.verifyTermsLinks();
     await this.verifyTermsCollapse();
   }
 
@@ -284,23 +282,13 @@ export class OfferPage extends BasePage {
     markFailed([{ label: 'T&C content is not shown after tapping it', pass: opened }], 'verifyTermsFolded');
   }
 
-  /** Link buttons in the opened T&C (TW "※ 請參考三星商城常見問題") have no URL text, so each must just open a page. */
-  private async verifyTermsLinkButtons(): Promise<void> {
-    const count = await this.locator.tncSection.$$('.//android.widget.Button').length;
-    console.log(`[verifyTermsLinkButtons] link buttons in T&C: ${count}`);
-    for (let index = 0; index < count; index++) {
-      if (index > 0) {
-        await this.reopenTerms();
-        // The opened content starts below the header, behind BNB
-        await withoutIdleWait(() => quickSwipeDown());
-      }
-      const button = this.locator.tncSection.$$('.//android.widget.Button')[index];
-      const label = ((await button.getAttribute('content-desc').catch(() => '')) ?? '').trim();
-      await this.saveWebViewBaseline();
-      await clickElement(button);
-      await this.verifyLinkedPageOpened(label);
-      await this.returnToOffers(label);
-    }
+  /** Every T&C link opens its page. No link is a pass. */
+  private async verifyTermsLinks(): Promise<void> {
+    const results = await verifyHyperlinkRedirects(() => this.locator.tncSection);
+    markFailed(
+      results.map((result) => ({ label: `T&C link did not open its page: ${result.name}`, pass: result.pass, detail: result.actual })),
+      'verifyTermsLinks'
+    );
   }
 
   /** Swipes down to the T&C at the bottom of Offers; a site without one skips the T&C steps (reason kept in the report). */

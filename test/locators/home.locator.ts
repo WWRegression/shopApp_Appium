@@ -170,13 +170,12 @@ export class HomeLocator {
       ]`);
   }
 
-  /** Home footer Terms and Conditions row. Exact content-desc, clickable. */
+  /** Home footer Terms and Conditions row. Its content-desc starts with the label, clickable. */
   get tncSection() {
     const label = [
       'Terms & Conditions',
       'T&C',
       'Terms and Condition',
-      'Terms and Conditions',
       'Conditions générales',
       'Mentions légales',
       'Términos y Condiciones',
@@ -197,55 +196,16 @@ export class HomeLocator {
       '利用規約',
       'Şart ve Koşullar',
     ]
-      .map((text) => `normalize-space(@content-desc)='${text}'`)
+      .map((text) => `starts-with(@content-desc, '${text}')`)
       .join(' or ');
     return $(`//android.view.View[@clickable='true' and (${label})]`);
   }
 
-  /** A child under the T&C row. Visible only when the section is expanded. */
+  /** Content of the opened T&C; two levels down, as a scoped XPath starts at the row itself. */
   get tncContent() {
-    const label = [
-      'Terms and Conditions',
-      'Terms and Condition',
-      'Terms & Conditions',
-      'Termes et conditions',
-      'Términos y Condiciones',
-      'Términos y condiciones',
-      'Pravidla a Podmínky',
-      'Aktionsbedingungen',
-      'Általános szerződési feltételek',
-      'Algemene voorwaarden',
-      'Termeni și condiții',
-      'Villkor',
-      '條款和條件',
-      '條款及細則',
-      '條款與條件',
-      '条款声明',
-      'Điều khoản và điều kiện',
-      'Warunki i ograniczenia',
-    ]
-      .map((text) => `contains(@content-desc,'${text}')`)
-      .join(' or ');
-    return $(
-      `//android.view.View[(${label})]//android.widget.ScrollView` +
-        ` | //android.view.View[(${label})]//android.view.View` +
-        ` | //android.view.View[@content-desc='תנאים והגבלות']/android.view.View/android.view.View`
-    );
+    return this.tncSection.$('./*/*');
   }
 
-  /** Links inside the expanded T&C. A country with none is a pass. */
-  get tncLinks() {
-    const label = [
-      'https',
-      'Samsung',
-      'Terms & Condition',
-      'aqui',
-      'شروط وأحكام الطلب المسبق',
-    ]
-      .map((text) => `contains(@content-desc, '${text}')`)
-      .join(' or ');
-    return $$(`//android.widget.Button[${label}]`);
-  }
 
   /** Native PDF viewer title after a T&C link opens a PDF. */
   get pdfTitle() {

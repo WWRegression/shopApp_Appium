@@ -27,6 +27,7 @@ export class SplashLocator {
         '.addon-continue-btn[an-la="add-on:go to cart"]',
         'div[class*="nav__bottom"] [an-la="anchor navi:buy now"]',
         'button[id="primaryInfoGoCartAddOn" i]',
+        'a[id="primaryInfoGoCartAddOn" i]',
         '#nextBtn[aria-label="Next"]',
         '[class*="AddOn_footerButton"][an-la="add-on:continue"]',
       ].join(', ')

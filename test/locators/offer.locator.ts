@@ -83,26 +83,43 @@ export class OfferLocator {
 
   /** T&C at the bottom of Offers; when opened, header and content are one view whose content-desc starts with the header */
   get tncSection() {
-    return $(
-      `//android.view.View[
-        starts-with(@content-desc, 'Terms and Conditions') or starts-with(@content-desc, 'Terms and Condition')
-        or starts-with(@content-desc, 'Termes et conditions') or starts-with(@content-desc, 'Conditions générales')
-        or starts-with(@content-desc, 'Términos y Condiciones') or starts-with(@content-desc, 'Términos y condiciones')
-        or starts-with(@content-desc, 'Aktionsbedingungen') or starts-with(@content-desc, 'Algemene voorwaarden') or starts-with(@content-desc, 'Actievoorwaarden')
-        or starts-with(@content-desc, 'Pravidla a Podmínky') or starts-with(@content-desc, 'Podmínky & Pravidla')
-        or starts-with(@content-desc, 'Általános szerződési feltételek') or starts-with(@content-desc, 'Termeni și condiții') or starts-with(@content-desc, 'Villkor')
-        or starts-with(@content-desc, 'Warunki i ograniczenia') or starts-with(@content-desc, 'Notas Legais') or starts-with(@content-desc, 'Termos e Condições')
-        or starts-with(@content-desc, 'Điều khoản và điều kiện') or starts-with(@content-desc, 'Kampanya koşulları için buraya tıklayınız')
-        or starts-with(@content-desc, '條款和條件') or starts-with(@content-desc, '條款及細則') or starts-with(@content-desc, '条款声明') or starts-with(@content-desc, '商城公告')
-        or starts-with(@content-desc, ' تطبق الشروط والأحكام') or starts-with(@content-desc, 'בכפוף לתנאי השימוש') or starts-with(@content-desc, 'Termini e Condizioni')
-      ]`
-    );
+    const label = [
+      'Terms and Condition',
+      'Termes et conditions',
+      'Conditions générales',
+      'Términos y Condiciones',
+      'Términos y condiciones',
+      'Aktionsbedingungen',
+      'Algemene voorwaarden',
+      'Actievoorwaarden',
+      'Pravidla a Podmínky',
+      'Podmínky & Pravidla',
+      'Általános szerződési feltételek',
+      'Termeni și condiții',
+      'Villkor',
+      'Warunki i ograniczenia',
+      'Notas Legais',
+      'Termos e Condições',
+      'Điều khoản và điều kiện',
+      'Kampanya koşulları için buraya tıklayınız',
+      '條款和條件',
+      '條款及細則',
+      '条款声明',
+      '商城公告',
+      ' تطبق الشروط والأحكام',
+      'בכפוף לתנאי השימוש',
+      'Termini e Condizioni',
+    ]
+      .map((text) => `starts-with(@content-desc, '${text}')`)
+      .join(' or ');
+    return $(`//android.view.View[${label}]`);
   }
 
-  /** First content node under the T&C header; exists only while the T&C is open */
+  /** Content of the opened T&C; two levels down, as a scoped XPath starts at the row itself. */
   get tncContent() {
-    return this.tncSection.$('./*');
+    return this.tncSection.$('./*/*');
   }
+
 
   /** "no ongoing offers" image */
   get noOngoingOffers() {

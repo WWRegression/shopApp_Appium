@@ -2,6 +2,8 @@ import { runOrSkip } from '../../../helpers/tc-filter.helper';
 import { ShopPage } from '../../../pages/shop.page';
 import { PfPage } from '../../../pages/pf.page';
 import { BcPage } from '../../../pages/bc.page';
+import { PdPage } from '../../../pages/pd.page';
+import { getCurrentWebViewPage } from '../../../helpers/context.helper';
 import { SplashPage } from '../../../pages/splash.page';
 import { CartPage } from '../../../pages/cart.page';
 import { CheckoutPage } from '../../../pages/checkout.page';
@@ -14,6 +16,7 @@ describe('PROD_BACKWARD_01', function () {
   const shopPage = new ShopPage();
   const pfPage = new PfPage();
   const bcPage = new BcPage();
+  const pdPage = new PdPage();
   const splashPage = new SplashPage();
   const cartPage = new CartPage();
   const checkoutPage = new CheckoutPage();
@@ -25,12 +28,20 @@ describe('PROD_BACKWARD_01', function () {
       await shopPage.openCategory('mobile');
       const pfProductName = await pfPage.selectFirstPfCard(true);
 
-      await bcPage.verifyProductName(pfProductName);
-      await bcPage.verifyBnbDisplayed('BC');
-      await bcPage.galaxyClub.selectNoForService();
-      await bcPage.tradeIn.selectNoForService();
-      await bcPage.scPlus.selectNoForService();
-      await bcPage.clickAddToCart();
+      // The first PF card opens BC on most sites, PD on some (CZ)
+      const onPd = (await getCurrentWebViewPage({ waitMs: 10000 })).page === 'pd';
+      if (onPd) {
+        await pdPage.verifyProductName(pfProductName);
+        await pdPage.verifyBnbDisplayed('PD');
+        await pdPage.clickAddToCart();
+      } else {
+        await bcPage.verifyProductName(pfProductName);
+        await bcPage.verifyBnbDisplayed('BC');
+        await bcPage.galaxyClub.selectNoForService();
+        await bcPage.tradeIn.selectNoForService();
+        await bcPage.scPlus.selectNoForService();
+        await bcPage.clickAddToCart();
+      }
       await splashPage.clickSplashContinue();
 
       await cartPage.prepareCartPage();
@@ -54,10 +65,15 @@ describe('PROD_BACKWARD_01', function () {
       await cartPage.verifyCartPage();
       await cartPage.prepareCartPage();
       await cartPage.verifyProductName(pfProductName);
-      await cartPage.pressDeviceBack();
+      await cartPage.pressBackUntil(() => (onPd ? pdPage.isPdPage() : bcPage.isBcPage()), 2);
 
-      await bcPage.verifyBcPage();
-      await bcPage.verifyProductName(pfProductName);
+      if (onPd) {
+        await pdPage.verifyPdPage();
+        await pdPage.verifyProductName(pfProductName);
+      } else {
+        await bcPage.verifyBcPage();
+        await bcPage.verifyProductName(pfProductName);
+      }
       await bcPage.pressDeviceBack();
 
       await pfPage.verifyPfPage();

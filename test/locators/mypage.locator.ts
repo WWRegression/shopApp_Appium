@@ -615,6 +615,7 @@ export class MypageLocator {
         or @content-desc = 'Geregistreerde producten'
         or @content-desc = 'Zarejestrowane produkty'
         or @content-desc = 'Produse înregistrate'
+        or @content-desc = 'Produtos Registados'
         or @content-desc = 'Registrované produkty'
         or @content-desc = '已註冊產品'
         or @content-desc = '已登記的產品'
@@ -971,7 +972,7 @@ export class MypageLocator {
   }
 
   get supportTopMenu() {
-    return $(`//android.view.View[contains(@content-desc, 'カスタマーサポート') and contains(@content-desc, 'トップ')]`);
+    return $(`//android.view.View[(contains(@content-desc, 'カスタマーサポート') and contains(@content-desc, 'トップ')) or @content-desc = 'Home do Apoio']`);
   }
 
   get appTermsMenu() {

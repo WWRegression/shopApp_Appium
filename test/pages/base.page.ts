@@ -8,7 +8,7 @@ import { switchToNative, getCurrentContext, targetPackage } from '../helpers/con
 import { getBrowserPages } from '../helpers/device.helper';
 import { getRunConfig } from '../../config/run.config';
 import { flingToStart, scrollUp } from '../helpers/gesture.helper';
-import { markFailed, markFailedAndStop } from '../helpers/report.helper';
+import { markFailed, markFailedAndStop, markStepSkipped } from '../helpers/report.helper';
 import {
   clickElement,
   clickIfDisplayed,
@@ -450,6 +450,21 @@ export class BasePage {
     await driver.pressKeyCode(4);
   }
 
+  /** Presses Back until `isArrived` is true, up to `maxPresses` times; returns whether it arrived. */
+  async pressBackUntil(isArrived: () => Promise<boolean>, maxPresses: number): Promise<boolean> {
+    // Arrival is read from native context: the page's window can close with the Back
+    await switchToNative();
+    for (let press = 1; press <= maxPresses; press++) {
+      await this.pressDeviceBack();
+      // BE_FR, CL: a Back right after returning to Cart from Checkout can be ignored
+      if (await driver.waitUntil(isArrived, { timeout: 5000, interval: 1000 }).then(() => true, () => false)) {
+        return true;
+      }
+      console.log(`[pressBackUntil] not arrived after Back ${press}/${maxPresses}`);
+    }
+    return false;
+  }
+
   // Sub-menu page check (menu → sub-menu list → detail page)
   /** Remembers the WebView pages open now, so the next page check only reads what the next click opens. */
   protected async saveWebViewBaseline(): Promise<void> {
@@ -545,6 +560,7 @@ export class BasePage {
     }
     return names;
   }
+
   // BNB
   /** Reads the item count from the BNB cart tab's content-desc (leading number). */
   async getBNBCartCount(): Promise<number> {
@@ -562,6 +578,12 @@ export class BasePage {
 
   /** Records a failure when the BNB is not shown on `pageName`. */
   async verifyBnbDisplayed(pageName: string): Promise<void> {
+    // US, IN: Cart has no BNB
+    const siteCode = getRunConfig().siteCode;
+    if ((siteCode === 'US' || siteCode === 'IN') && pageName === 'Cart') {
+      markStepSkipped(`[verifyBnbDisplayed] page=${pageName} ${siteCode} Cart has no BNB`);
+      return;
+    }
     const shown = await this.isBnbHomeShown(5000);
     console.log(`[verifyBnbDisplayed] page=${pageName} expected BNB="shown" actual="${shown ? 'shown' : 'hidden'}" result=${shown ? 'PASS' : 'FAIL'}`);
     markFailed([{ label: `${pageName} BNB shown`, pass: shown }], 'verifyBnbDisplayed');

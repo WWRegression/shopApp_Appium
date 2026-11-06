@@ -1,8 +1,7 @@
 import { BasePage } from './base.page';
 import { HomeLocator } from '../locators/home.locator';
-import { getDetailedWebViewWindows, switchToNative } from '../helpers/context.helper';
+import { switchToNative } from '../helpers/context.helper';
 import { parsePoints } from '../helpers/data.helper';
-import { getRunConfig } from '../../config/run.config';
 import { getSiteData } from '../../config/site';
 import {
   clickElement,
@@ -12,9 +11,10 @@ import {
   quickSwipeUntilVisible,
   scrollUntilVisible,
   waitForDisplayedOrFalse,
+  verifyHyperlinkRedirects,
 } from '../helpers/element.helper';
-import { longPressElement, scrollDown, tapAtCoordinates } from '../helpers/gesture.helper';
-import { markFailed, markFailedAndStop, type FieldCheck } from '../helpers/report.helper';
+import { longPressElement, scrollListDown } from '../helpers/gesture.helper';
+import { markFailed, markFailedAndStop } from '../helpers/report.helper';
 
 export class HomePage extends BasePage {
   private readonly locator = new HomeLocator();
@@ -228,13 +228,19 @@ export class HomePage extends BasePage {
   async verifyTermsShown(): Promise<void> {
     await switchToNative();
     const shown = await quickSwipeUntilVisible(this.locator.tncSection);
+    if (shown) {
+      // The swipe bounces at the page end and brings up the notification panel over the T&C;
+      // a scroll down from mid-screen hides it (one starting next to the BNB opens the panel)
+      await scrollListDown();
+    }
     console.log(`[verifyTermsShown] T&C ${shown ? 'shown' : 'not shown'}`);
     markFailedAndStop([{ label: '[SKIPPED] No T&C on Home for this site', pass: shown }], 'verifyTermsShown');
   }
 
-  /** T&C is folded when its child is hidden, and tapping it must show its content (opened for the link checks). */
+  /** T&C is folded by default, and tapping it shows its content (opened for the link checks). */
   async verifyTermsFolded(): Promise<void> {
-    const folded = !(await isDisplayedOrFalse(this.locator.tncContent));
+    // Existence, not display: the opened content can start behind BNB
+    const folded = !(await this.locator.tncContent.isExisting());
     console.log(`[verifyTermsFolded] expected T&C="folded" actual="${folded ? 'folded' : 'open'}" result=${folded ? 'PASS' : 'FAIL'}`);
     markFailed([{ label: 'T&C is not folded by default', pass: folded }], 'verifyTermsFolded');
     if (!folded) {
@@ -242,68 +248,18 @@ export class HomePage extends BasePage {
     }
 
     await clickElement(this.locator.tncSection, { timeout: 5000 });
-    // Existence, not display: the opened content can start behind BNB
     const opened = await this.locator.tncContent.waitForExist({ timeout: 3000 }).then(() => true, () => false);
     console.log(`[verifyTermsFolded] expected T&C content="shown" actual="${opened ? 'shown' : 'not shown'}" result=${opened ? 'PASS' : 'FAIL'}`);
     markFailed([{ label: 'T&C content is not shown after tapping it', pass: opened }], 'verifyTermsFolded');
   }
 
-  /** Each T&C link opens its URL or a PDF. No link is a pass. */
+  /** Every T&C link opens its page. No link is a pass. */
   async verifyTermsLinks(): Promise<void> {
-    const links = await this.locator.tncLinks.getElements();
-    if (links.length === 0) {
-      console.log('[verifyTermsLinks] no hyperlink in T&C — passed');
-      return;
-    }
-    console.log(`[verifyTermsLinks] ${links.length} hyperlink(s)`);
-
-    const failures: FieldCheck[] = [];
-    for (let index = 0; index < links.length; index += 1) {
-      const current = (await this.locator.tncLinks.getElements())[index];
-      if (!current) {
-        failures.push({ label: `T&C link ${index + 1} not found after returning`, pass: false });
-        continue;
-      }
-      const label = ((await current.getAttribute('content-desc').catch(() => '')) ?? '').trim();
-      const opened = await this.openTncHyperlink(current, label);
-      console.log(`[verifyTermsLinks] link="${label}" result=${opened ? 'PASS' : 'FAIL'}`);
-      if (!opened) {
-        failures.push({ label: `T&C link opened the wrong page: ${label}`, pass: false });
-      }
-      await switchToNative();
-      await this.pressDeviceBack();
-      await driver.pause(1000);
-      if (links.length > 1) {
-        await scrollDown();
-      }
-    }
-    markFailed(failures, 'verifyTermsLinks');
-  }
-
-  /** Tap the lower part of the link, where the URL text sits, then match a WebView URL or a PDF title. */
-  private async openTncHyperlink(link: WebdriverIO.Element, label: string): Promise<boolean> {
-    const location = await link.getLocation();
-    const size = await link.getSize();
-    await tapAtCoordinates(location.x + 20, location.y + Math.round(size.height * 0.75));
-    await driver.pause(1000);
-
-    const expected = this.normalizeTncLink(label);
-    const windows = await getDetailedWebViewWindows().catch(() => []);
-    const urlMatched = windows.some((window) => {
-      const url = getRunConfig().siteCode === 'UK' ? window.url.toLowerCase() : window.url;
-      return url.includes(expected);
-    });
-    if (urlMatched) {
-      return true;
-    }
-    const pdf = await getElementLabel(this.locator.pdfTitle).catch(() => '');
-    return pdf.includes('.pdf');
-  }
-
-  /** Drop the query and a trailing slash. UK compares the link in lower case. */
-  private normalizeTncLink(label: string): string {
-    const base = label.replace(/[?#].*$/, '').replace(/\/$/, '');
-    return getRunConfig().siteCode === 'UK' ? base.toLowerCase() : base;
+    const results = await verifyHyperlinkRedirects(() => this.locator.tncSection);
+    markFailed(
+      results.map((result) => ({ label: `T&C link did not open its page: ${result.name}`, pass: result.pass, detail: result.actual })),
+      'verifyTermsLinks'
+    );
   }
 
   /** Rewards points shown on Home; fails when the account has not joined Rewards. */

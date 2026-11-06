@@ -675,8 +675,9 @@ export class MypagePage extends BasePage {
       [this.locator.cookiePreferencesMenu, ['trustarc']],
       // Marketing Preferences opens the profile page in the app or the Samsung account
       [this.locator.marketingPreferencesMenu, ['profile-setting', 'account.samsung.com', SAMSUNG_ACCOUNT_PACKAGE]],
+      // JP, PT: the support home page has a different title than the menu name
+      [this.locator.supportTopMenu, ['サポート', '/support']],
       // JP: these pages use a different title than the menu name
-      [this.locator.supportTopMenu, ['サポート']],
       [this.locator.appTermsMenu, ['利用規約']],
       [this.locator.privacyPolicyMenu, ['プライバシーポリシー']],
       [this.locator.legalInfoMenu, ['法務関連']],

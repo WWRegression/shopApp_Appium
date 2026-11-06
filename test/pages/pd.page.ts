@@ -4,10 +4,10 @@ import { PdScPlusService } from '../services/scplus/pd-scplus.service';
 import { PdEupService } from '../services/eup/pd-eup.service';
 import { PdSimService } from '../services/sim/pd-sim.service';
 import { FlagshipWatchProduct } from '../helpers/flagship-sku.helper';
-import { normalizeText, resolveDisplayColor } from '../helpers/data.helper';
+import { normalizeProductName, normalizeText, productNameMatches, resolveDisplayColor } from '../helpers/data.helper';
 import { markFailedAndStop, FieldCheck } from '../helpers/report.helper';
 import { getElementLabel, scrollAndJsClick, clickIfDisplayed, scrollUntilVisible, isDisplayedOrFalse, waitForDisplayedOrFalse } from '../helpers/element.helper';
-import { prepareWebViewPage, switchToNative, switchToWebView } from '../helpers/context.helper';
+import { getCurrentWebViewPage, isCurrentWebViewPage, prepareWebViewPage, switchToNative, switchToWebView } from '../helpers/context.helper';
 import { forceStopPackage } from '../helpers/device.helper';
 import { ProductOptionFields } from './bc.page';
 import { BasePage } from './base.page';
@@ -76,6 +76,34 @@ export class PdPage extends BasePage {
 
   async getProductName(): Promise<string> {
     return await this.locator.productName.getText();
+  }
+
+  async isPdPage(): Promise<boolean> {
+    return isCurrentWebViewPage('pd');
+  }
+
+  /** Verifies the PD page is shown (checked from native context so a closed window cannot hold the check). */
+  async verifyPdPage(): Promise<void> {
+    await switchToNative();
+    const onPd = await driver
+      .waitUntil(() => this.isPdPage(), { timeout: 8000, interval: 1000 })
+      .then(() => true, () => false);
+    const actual = onPd ? 'pd' : (await getCurrentWebViewPage()).page;
+    console.log(`[verifyPdPage] expected=pd actual=${actual} result=${onPd ? 'PASS' : 'FAIL'}`);
+    markFailedAndStop([{ label: 'PD page not shown', pass: onPd, detail: `actual ${actual}` }], 'verifyPdPage');
+  }
+
+  /** Verifies the PD summary product name matches the expected (PF) product name. */
+  async verifyProductName(expected: string | null): Promise<void> {
+    await this.preparePdPage();
+    // textContent: the summary can sit off screen when PD comes back scrolled
+    const element = this.locator.summaryProductName;
+    await element.waitForExist({ timeout: 5000 }).catch(() => undefined);
+    const raw = String((await element.getProperty('textContent').catch(() => '')) ?? '').trim();
+    const actual = normalizeProductName(raw);
+    const pass = productNameMatches(expected, actual);
+    console.log(`[PD.verifyProductName] expected="${expected}" actual="${actual}" (raw="${raw}") result=${pass ? 'PASS' : 'FAIL'}`);
+    markFailedAndStop([{ label: 'PD product name mismatch', pass, detail: `expected "${expected}", actual "${raw}"` }], 'PD.verifyProductName');
   }
 
   async clickAddToCart(): Promise<void> {
