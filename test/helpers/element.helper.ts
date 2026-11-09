@@ -184,14 +184,36 @@ export async function scrollUntilVisible(
  */
 export async function quickSwipeUntilVisible(locator: ChainablePromiseElement, maxSwipes = 40): Promise<boolean> {
   let shown = await isDisplayedOrFalse(locator);
+  let swipes = 0;
   await withoutIdleWait(async () => {
-    for (let swipes = 0; swipes < maxSwipes && !shown; swipes += 2) {
+    for (; swipes < maxSwipes && !shown; swipes += 2) {
+      const before = await lastScrollContentFingerprint();
       await quickSwipeDown();
       await quickSwipeDown();
       shown = await isDisplayedOrFalse(locator);
+      const after = await lastScrollContentFingerprint();
+      // The page did not move — already at the bottom, no point swiping further
+      if (before && before === after) {
+        console.log(`[quickSwipeUntilVisible] stopped at bottom after ${swipes + 2} swipes`);
+        break;
+      }
     }
   });
+  if (!shown) {
+    console.log(`[quickSwipeUntilVisible] not found after ${swipes} swipes`);
+  }
   return shown;
+}
+
+/** Last labelled node in the page ScrollView — used to tell whether a swipe still moved the page. */
+async function lastScrollContentFingerprint(): Promise<string> {
+  const last = await $('(//android.widget.ScrollView//*[@content-desc != ""])[last()]');
+  if (!(await last.isExisting().catch(() => false))) {
+    return '';
+  }
+  const desc = ((await last.getAttribute('content-desc').catch(() => '')) ?? '').slice(0, 80);
+  const y = await last.getLocation().then((point) => Math.round(point.y)).catch(() => -1);
+  return `${desc}|${y}`;
 }
 
 export async function clickElement(

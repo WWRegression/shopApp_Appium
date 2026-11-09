@@ -9,7 +9,7 @@ import {
   hasAppWebViewContext,
   targetPackage,
 } from '../helpers/context.helper';
-import { closeExternalBrowserIfOpen, forceStopPackage } from '../helpers/device.helper';
+import { closeExternalBrowserIfOpen, forceStopPackage, getBrowserPages } from '../helpers/device.helper';
 import { currentSiteCode } from '../helpers/tc-filter.helper';
 import {
   clickElement,
@@ -142,8 +142,117 @@ function normalizeCategoryTitle(text: string): string {
   return text.split('\n').map((line) => line.trim()).filter(Boolean).at(-1) ?? '';
 }
 
+/** Sites swap these between the menu and its page (Inbox ↔ Notification, Interests ↔ category, Cookies ↔ privacy). Add a country's word to the matching group. */
+export const SAME_MENU_WORDS = [
+  ['inbox', 'notification', 'notificações', 'notificação', 'הודעות', 'התראות'],
+  ['interest', 'category', 'like', 'intérêt', 'catégorie'],
+  ['cookie', 'privacy', 'témoin', 'خصوصية', 'datenschutz', 'donnée'],
+  ['contact', 'اتصل'],
+  ['legal', 'قانونية', 'rechtlich', 'utilisation'],
+  ['license', 'licence', 'رخصة'],
+];
+
+/** Words taken from a menu name, plus SAME_MENU_WORDS aliases. Apostrophes split tokens; Arabic ال / لل prefixes are dropped. */
+export function getMenuWords(menuName: string): string[] {
+  const fillers = ['and', 'for', 'the', 'you', 'your', 'mes'];
+  const words: string[] = [];
+  for (const raw of menuName.toLowerCase().split(/[^\p{L}\p{N}]+/u)) {
+    const word = raw.replace(/^(وال|لل|بال|كال|فال|ال)/, '');
+    if (word.length > 2 && !fillers.includes(word)) {
+      words.push(word.length > 4 ? word.replace(/e?s$/, '') : word);
+    }
+  }
+  const core = words.length > 0 ? words : [menuName.toLowerCase().replace(/[\s'"]/g, '')];
+  const aliases: string[] = [];
+  for (const word of core) {
+    const group = SAME_MENU_WORDS.find((names) =>
+      names.some((name) => name === word || name.startsWith(word) || word.startsWith(name))
+    );
+    if (group) {
+      aliases.push(...group);
+    }
+  }
+  return aliases.length > 0 ? [...core, ...aliases] : core;
+}
+
 export class ShopPage extends BasePage {
   private readonly shoplocator = new ShopLocator();
+  /** WebView pages open before the last menu click — page checks only read pages opened after it. */
+  protected readonly knownPageIds = new Set<string>();
+  private readonly knownPageUrls = new Map<string, string>();
+
+  /** Remembers the WebView pages open now, so the next page check only reads what the next click opens. */
+  protected async saveWebViewBaseline(): Promise<void> {
+    this.knownPageIds.clear();
+    this.knownPageUrls.clear();
+    for (const page of await getBrowserPages()) {
+      this.knownPageIds.add(page.id);
+      this.knownPageUrls.set(page.id, page.url.split('?')[0]);
+    }
+  }
+
+  /**
+   * Polls up to 10s until the opened page contains one of the words.
+   * A newly opened WebView page (or another app) is judged by its title / URL only; otherwise the native screen elements are searched.
+   */
+  protected async waitForPageContaining(words: readonly string[]): Promise<{ pass: boolean; actual: string }> {
+    let actual = '';
+    const pass = await driver
+      .waitUntil(
+        async () => {
+          const pageNames = await this.getOpenedPageNames();
+          if (pageNames.length === 0) {
+            actual = await this.findElementContaining(words);
+            return actual !== '';
+          }
+          const matched = pageNames.find((name) => words.some((word) => name.toLowerCase().includes(word)));
+          actual = `page "${matched ?? pageNames.join(' | ')}"`;
+          return matched !== undefined;
+        },
+        { timeout: 10000, interval: 500 }
+      )
+      .then(() => true, () => false);
+    return { pass, actual: actual || 'no element contains the words' };
+  }
+
+  /** Label of the first screen element containing one of the words; BNB tabs are skipped since they show on every page. */
+  private async findElementContaining(words: readonly string[]): Promise<string> {
+    const bnbHome = this.bnbLocator.menu('home');
+    const bnbTop = (await bnbHome.isExisting()) ? (await bnbHome.getLocation()).y : Infinity;
+    for (const element of await this.headerLocator.elementsContaining(words)) {
+      const { y } = await element.getLocation().catch(() => ({ y: Infinity }));
+      if (y < bnbTop) {
+        const label = (await element.getText().catch(() => '')) || (await element.getAttribute('content-desc').catch(() => '')) || '';
+        return `element "${label.replace(/\n/g, ' / ').trim()}"`;
+      }
+    }
+    return '';
+  }
+
+  /** Title and URL of each WebView page opened since the click, plus the package (and Chrome URL) of another app in front; empty for a native page. */
+  protected async getOpenedPageNames(): Promise<string[]> {
+    const names: string[] = [];
+    for (const page of await getBrowserPages()) {
+      const url = page.url.split('?')[0];
+      if (!this.knownPageIds.has(page.id) || this.knownPageUrls.get(page.id) !== url) {
+        names.push(page.title, url);
+      }
+    }
+    const currentPackage = await driver.getCurrentPackage().catch(() => '');
+    if (currentPackage !== targetPackage()) {
+      names.push(currentPackage);
+      const urlBar = this.headerLocator.browserUrlBar;
+      const browserUrl =
+        ((await urlBar.getText().catch(() => '')) ||
+          (await urlBar.getAttribute('text').catch(() => '')) ||
+          (await getElementLabel(urlBar))) ??
+        '';
+      if (browserUrl.trim()) {
+        names.push(browserUrl.trim().split('?')[0]);
+      }
+    }
+    return names;
+  }
 
   /** Shop tab -> L0 category -> L1 subcategory, down to the PF list. */
   async openCategory(category: ShopCategory): Promise<void> {
@@ -475,6 +584,21 @@ export class ShopPage extends BasePage {
     const { width, height } = await item.getSize();
     await tapAtCoordinates(Math.round(x + width * 0.2), Math.round(y + height / 2));
     return true;
+  }
+
+  /** After a sub-menu click: the list must be gone and the page must contain a word of the menu name. */
+  protected async verifyDetailPageOpened(
+    menuName: string,
+    isListGone: () => Promise<boolean>,
+    acceptedNames: readonly string[] = []
+  ): Promise<void> {
+    const words = [...getMenuWords(menuName), ...acceptedNames.map((name) => name.toLowerCase())];
+    const listGone = await isListGone();
+    const { pass, actual } = listGone
+      ? await this.waitForPageContaining(words)
+      : { pass: false, actual: 'still on the sub-menu list' };
+    console.log(`[verifyDetailPageOpened] menu="${menuName}" expected=page containing "${words.join('" or "')}" actual=${actual} result=${pass ? 'PASS' : 'FAIL'}`);
+    markFailed([{ label: `sub-menu page not opened: ${menuName}`, pass, detail: actual }], 'verifyDetailPageOpened');
   }
 
   /** The page opened from a Customer Support item: its sub-menu page locator, or a page containing its name for other items (IN Online Support icons). */

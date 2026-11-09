@@ -1,4 +1,4 @@
-import { BasePage } from './base.page';
+import { ShopPage } from './shop.page';
 import { OfferLocator, ALL_OFFERS_TAB_LABELS } from '../locators/offer.locator';
 import { switchToNative, targetPackage } from '../helpers/context.helper';
 import { forceStopPackage } from '../helpers/device.helper';
@@ -6,7 +6,7 @@ import { clickElement, isDisplayedOrFalse, quickSwipeUntilVisible, verifyHyperli
 import { scrollByElement, tapAtCoordinates } from '../helpers/gesture.helper';
 import { markFailed, markFailedAndStop, markStepSkipped, FieldCheck } from '../helpers/report.helper';
 
-export class OfferPage extends BasePage {
+export class OfferPage extends ShopPage {
   private readonly locator = new OfferLocator();
 
   /** True when the header title matches the Offers title texts (BasePage.titleTexts.OFFERS). */
@@ -304,7 +304,7 @@ export class OfferPage extends BasePage {
   /** Swipes down until the T&C at the bottom of Offers is shown. */
   private async swipeToTerms(): Promise<boolean> {
     await switchToNative();
-    return quickSwipeUntilVisible(this.locator.tncSection);
+    return quickSwipeUntilVisible(this.locator.tncSection, 12);
   }
 
   /** Back from a link leaves Offers above the T&C, which may be folded again: swipe down to it and open it. */

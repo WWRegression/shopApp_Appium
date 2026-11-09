@@ -36,7 +36,7 @@ export class MypageLocator {
   }
   
   get subMenuItems() {
-    return $$('//android.view.View[@content-desc and .//android.widget.ImageView]');
+    return $$('//android.view.View[@clickable = "true" and @content-desc and .//android.widget.ImageView]');
   }
 
   /** English, DE; CN '登录' matched exactly since the CN logout button '退出登录' contains it */

@@ -163,14 +163,6 @@ export class LoginLocator {
     return $(`//android.widget.TextView[${SETTINGS_PACKAGE} and @resource-id="android:id/summary" and @text="Samsung account"]`);
   }
 
-  /** Manage accounts row of this email as a Samsung account (the same email can also be listed as Google) */
-  settingSamsungAccountRow(email: string) {
-    return $(
-      `//android.widget.TextView[${SETTINGS_PACKAGE} and @resource-id="android:id/title" and @text="${email}"]
-      [following-sibling::*//android.widget.TextView[@resource-id="android:id/summary" and @text="Samsung account"]]`
-    );
-  }
-
   get settingsAddAccount() {
     return $(`//android.widget.TextView[${SETTINGS_PACKAGE} and @resource-id="android:id/title" and @text="Add account"]`);
   }

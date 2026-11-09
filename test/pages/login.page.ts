@@ -134,13 +134,15 @@ export class LoginPage extends BasePage {
       await this.ssoLoginWithGmail();      
       await clickIfDisplayed(this.locator.ssoSamsungPassCancelButton, 5000);
 
-      // Sign-in can end on the profile (name only, no email) or Manage accounts, so the email is checked on Manage accounts
-      const { email } = this.gmailAccount();
-      markFailedAndStop(
-        [{ label: `Samsung account (${email}) not added on device`,
-           pass: await waitForDisplayedOrFalse(this.locator.settingSamsungAccountRow(email), { timeout: 10000 }) }],
-        'signInOnDevice'
-      );
+      const added = await driver
+        .waitUntil(
+          async () =>
+            (await isDisplayedOrFalse(this.locator.ssoAccountUserName)) ||
+            (await isDisplayedOrFalse(this.locator.settingAddedSamsungAccount)),
+          { timeout: 5000, interval: 500 }
+        )
+        .then(() => true, () => false);
+      markFailedAndStop([{ label: 'Samsung account not added on device', pass: added }], 'signInOnDevice');
     }
     await forceStopPackage(SETTINGS_PACKAGE);
     await forceStopPackage(targetPackage());

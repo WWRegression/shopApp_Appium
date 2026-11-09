@@ -1,4 +1,4 @@
-import { BasePage } from './base.page';
+import { ShopPage, getMenuWords } from './shop.page';
 import {
   DASHBOARD_MENUS,
   MypageLocator,
@@ -37,10 +37,15 @@ const LOGIN_TAP_OFFSET = { x: 350, y: 150 };
 const PROFILE_TAP_OFFSET = { x: 350, y: 230, yForClPe: 260 };
 /** The name line is on the right side of the profile card. */
 const RTL_SITES = ['AE_AR', 'SA', 'IL'];
-/** Words that name the same menu — sites swap them between the menu and its page (US menu "Inbox" opens "Notification", IN the reverse). */
-const SAME_MENU_WORDS = [['inbox', 'notification', 'notificações', 'notificação', 'הודעות', 'התראות']];
 
-export class MypagePage extends BasePage {
+/** A row whose opened page does not contain the menu name — extra URL/title words, or a native element. */
+type ExtraPageCheck = {
+  row: ChainablePromiseElement;
+  accept?: string[];
+  nativeShown?: () => Promise<boolean>;
+};
+
+export class MypagePage extends ShopPage {
   private readonly locator = new MypageLocator();
   private readonly loginPage = new LoginPage();
   private readonly pfPage = new PfPage();
@@ -59,13 +64,14 @@ export class MypagePage extends BasePage {
     }
   }
 
-  /** Sub-menu rows on the open list; rows without a label (loading placeholders) are left out. */
+  /** Sub-menu rows on the open list; placeholders and action buttons (Save) are left out. */
   private async getValidSubMenuItems() {
     const items = this.locator.subMenuItems;
     await items[0].waitForExist({ timeout: 3000 }).catch(() => undefined);
     const valid = [];
     for (const item of await items) {
-      if (((await item.getAttribute('content-desc').catch(() => '')) || '').trim()) {
+      const label = ((await item.getAttribute('content-desc').catch(() => '')) || '').trim();
+      if (label && !/^(save|حفظ|ok|done)$/i.test(label)) {
         valid.push(item);
       }
     }
@@ -73,39 +79,39 @@ export class MypagePage extends BasePage {
   }
 
   /** Number of sub-menus on the open list — read from the screen since it varies by country. */
-  async getSubMenuCount(): Promise<number> {
+  private async getSubMenuCount(): Promise<number> {
     await switchToNative();
     const count = (await this.getValidSubMenuItems()).length;
     console.log(`[getSubMenuCount] count=${count}`);
     return count;
   }
 
-  /** Clicks the sub-menu at index and returns its label ('' when the row is gone). */
-  async clickItemAt(index: number): Promise<string> {
+  /** Clicks the sub-menu at index and returns its on-screen name ('' when the row is gone). */
+  private async clickSubMenu(index: number): Promise<string> {
     await switchToNative();
     const item = (await this.getValidSubMenuItems())[index];
-    const itemLabel = item ? ((await item.getAttribute('content-desc').catch(() => '')) || '').trim() : '';
-    if (!itemLabel) {
-      console.log(`[clickItemAt] index=${index} not found`);
+    const menuName = item ? ((await item.getAttribute('content-desc').catch(() => '')) || '').trim() : '';
+    if (!menuName) {
+      console.log(`[clickSubMenu] index=${index} not found`);
       return '';
     }
-    console.log(`[clickItemAt] index=${index} label="${itemLabel}"`);
+    console.log(`[clickSubMenu] index=${index} "${menuName}"`);
     await this.saveWebViewBaseline();
-    await clickElement(this.locator.subMenuRow(itemLabel), { timeout: 3000 }).catch(() =>
-      console.log(`[clickItemAt] could not click "${itemLabel}"`)
+    await clickElement(this.locator.subMenuRow(menuName), { timeout: 3000 }).catch(() =>
+      console.log(`[clickSubMenu] could not click "${menuName}"`)
     );
-    return itemLabel;
+    return menuName;
   }
 
-  /** The clicked sub-menu must leave the list and open a page containing its name (or one of acceptedNames). */
-  async verifyRedirected(itemLabel: string, acceptedNames: readonly string[] = []): Promise<void> {
-    await this.verifyDetailPageOpened(itemLabel, () => this.waitForSubMenuListLeft(itemLabel), acceptedNames);
+  /** The clicked row must be gone and the opened page must contain the menu name (or `alsoAccept`). */
+  private async verifyRedirected(menuName: string, alsoAccept: readonly string[] = []): Promise<void> {
+    await this.verifyDetailPageOpened(menuName, () => this.menuRowGone(menuName), alsoAccept);
   }
 
-  /** True once the clicked row is gone, i.e. the next screen replaced the list. */
-  private async waitForSubMenuListLeft(itemLabel: string): Promise<boolean> {
+  /** True once the clicked row has left the screen. */
+  private async menuRowGone(menuName: string): Promise<boolean> {
     return this.locator
-      .subMenuRow(itemLabel)
+      .subMenuRow(menuName)
       .waitForDisplayed({ timeout: 10000, reverse: true })
       .then(() => true, () => false);
   }
@@ -125,16 +131,10 @@ export class MypagePage extends BasePage {
     return { pass, actual };
   }
 
-  /** Checks whether any key word of the label appears in text — both values come from the same screen, so no per-language data is needed. */
-  private matchesLabel(text: string, itemLabel: string): boolean {
+  /** True when any word of the menu name (or its alias) appears in the opened page text. */
+  private matchesLabel(text: string, menuName: string): boolean {
     const target = text.toLowerCase();
-    const words = itemLabel.toLowerCase().split(/\s+/).filter((w) => w.length > 2);
-    return (words.length ? words : [itemLabel.toLowerCase()]).some((word) => {
-      // Singular / plural: "My Addresses" opens "Address"
-      const stem = word.replace(/e?s$/, '');
-      const sameMenu = SAME_MENU_WORDS.find((group) => group.includes(stem) || group.includes(word)) ?? [stem];
-      return sameMenu.some((name) => target.includes(name));
-    });
+    return getMenuWords(menuName).some((word) => target.includes(word));
   }
 
   /** Same title ignoring spaces and case — the list title repeats its menu's name ("  Support" for "Support"). */
@@ -602,63 +602,74 @@ export class MypagePage extends BasePage {
     }
   }
 
-  /** Clicks each sub-menu on the list and checks the detail page it opens; a sub-menu opening another list is checked the same way. */
-  private async verifySubMenus(listLabel: string): Promise<void> {
-    // Waits for the list to load before counting its rows
-    await this.isSubMenuListShown(listLabel, 5000);
+  /** Click each row → verify the opened page → Back. Nested lists (e.g. Personal Data) run the same loop. */
+  private async verifySubMenus(listTitle: string): Promise<void> {
+    await this.listIsOpen(listTitle, 5000);
     await this.verifyGiveFeedbackHidden();
-    const acceptedNames = await this.getAcceptedPageNames();
 
+    const extraByMenu = await this.extrasOnThisList();
     const count = await this.getSubMenuCount();
-    markFailed([{ label: `no sub-menu shown: ${listLabel}`, pass: count > 0 }], 'verifySubMenus');
-    for (let index = 0; index < count; index++) {
-      const itemLabel = await this.clickItemAt(index);
-      if (!itemLabel) {
-        markFailed([{ label: `sub-menu ${index + 1} of ${count} not found on the list: ${listLabel}`, pass: false }], 'verifySubMenus');
+    markFailed([{ label: `no sub-menu shown: ${listTitle}`, pass: count > 0 }], 'verifySubMenus');
+
+    for (let i = 0; i < count; i++) {
+      const menuName = await this.clickSubMenu(i);
+      if (!menuName) {
+        markFailed([{ label: `sub-menu ${i + 1} of ${count} not found on the list: ${listTitle}`, pass: false }], 'verifySubMenus');
         continue;
       }
-      if (await this.isSubMenuListOpened(itemLabel)) {
-        await this.verifySubMenus(itemLabel);
-      } else {
-        await this.verifyRedirected(itemLabel, acceptedNames.get(itemLabel));
-      }
-      if (!(await this.returnToSubMenuList(listLabel))) {
-        markFailed([{ label: `could not return to the sub-menu list, rest not checked: ${listLabel}`, pass: false }], 'verifySubMenus');
+      await this.verifyOpenedPage(menuName, extraByMenu.get(menuName.replace(/\s+/g, '').toLowerCase()));
+      if (!(await this.goBackToList(listTitle))) {
+        markFailed([{ label: `could not return to the sub-menu list, rest not checked: ${listTitle}`, pass: false }], 'verifySubMenus');
         return;
       }
     }
   }
 
-  /** Closes the opened sub-menu page until its list is back — an external app is closed, TrustArc needs Back twice. */
-  private async returnToSubMenuList(listLabel: string): Promise<boolean> {
+  /** Nested list, native screen (Push switch), or a page whose title/URL contains the menu name. */
+  private async verifyOpenedPage(menuName: string, extra?: ExtraPageCheck): Promise<void> {
+    const leftList = await this.menuRowGone(menuName);
+    if (leftList && (await this.listIsOpen(menuName, 0))) {
+      await this.verifySubMenus(menuName);
+      return;
+    }
+    if (extra?.nativeShown) {
+      const shown = leftList && (await extra.nativeShown());
+      console.log(`[verifyOpenedPage] "${menuName}" expected=native page actual=${shown ? 'shown' : 'not shown'} result=${shown ? 'PASS' : 'FAIL'}`);
+      markFailed([{ label: `sub-menu page not opened: ${menuName}`, pass: Boolean(shown) }], 'verifyOpenedPage');
+      return;
+    }
+    await this.verifyRedirected(menuName, extra?.accept ?? []);
+  }
+
+  /** Closes the opened page until this list is back — an external app is closed, TrustArc needs Back twice. */
+  private async goBackToList(listTitle: string): Promise<boolean> {
     await switchToNative();
-    // A sub-menu that opened nothing is still on the list — Back would leave it
-    if (await this.isSubMenuListShown(listLabel, 0)) {
+    if (await this.listIsOpen(listTitle, 0)) {
       return true;
     }
     if ((await driver.getCurrentPackage().catch(() => '')) !== targetPackage()) {
       await closeExternalBrowserIfOpen();
-      if (await this.isSubMenuListShown(listLabel, 3000)) {
+      if (await this.listIsOpen(listTitle, 3000)) {
         return true;
       }
     }
     for (let attempt = 1; attempt <= 3; attempt++) {
       await driver.back();
-      if (await this.isSubMenuListShown(listLabel, 2000)) {
+      if (await this.listIsOpen(listTitle, 2000)) {
         return true;
       }
     }
-    console.log(`[returnToSubMenuList] list "${listLabel}" not shown after Back`);
+    console.log(`[goBackToList] list "${listTitle}" not shown after Back`);
     return false;
   }
 
-  /** True when the open sub-menu list's title equals listLabel (checked once when timeoutMs is 0). */
-  private async isSubMenuListShown(listLabel: string, timeoutMs: number): Promise<boolean> {
-    const isShown = async () => this.isSameTitle(await getElementLabel(this.locator.subMenuListTitle), listLabel);
+  /** True when the open list's title equals `listTitle` (checked once when timeoutMs is 0). */
+  private async listIsOpen(listTitle: string, timeoutMs: number): Promise<boolean> {
+    const isOpen = async () => this.isSameTitle(await getElementLabel(this.locator.subMenuListTitle), listTitle);
     if (timeoutMs === 0) {
-      return isShown();
+      return isOpen();
     }
-    return driver.waitUntil(isShown, { timeout: timeoutMs, interval: 300 }).then(() => true, () => false);
+    return driver.waitUntil(isOpen, { timeout: timeoutMs, interval: 300 }).then(() => true, () => false);
   }
 
   /** Give Feedback must not be offered on the sub-menu list. */
@@ -668,34 +679,32 @@ export class MypagePage extends BasePage {
     markFailed([{ label: 'Give Feedback is shown on the sub-menu list', pass: !shown }], 'verifyGiveFeedbackHidden');
   }
 
-  /** Sub-menus on the open list whose page does not show their name, with the page names accepted instead. */
-  private async getAcceptedPageNames(): Promise<Map<string, string[]>> {
-    const rules: [ChainablePromiseElement, string[]][] = [
-      // Cookie Preferences opens the TrustArc consent
-      [this.locator.cookiePreferencesMenu, ['trustarc']],
-      // Marketing Preferences opens the profile page in the app or the Samsung account
-      [this.locator.marketingPreferencesMenu, ['profile-setting', 'account.samsung.com', SAMSUNG_ACCOUNT_PACKAGE]],
-      // JP, PT: the support home page has a different title than the menu name
-      [this.locator.supportTopMenu, ['サポート', '/support']],
-      // JP: these pages use a different title than the menu name
-      [this.locator.appTermsMenu, ['利用規約']],
-      [this.locator.privacyPolicyMenu, ['プライバシーポリシー']],
-      [this.locator.legalInfoMenu, ['法務関連']],
+  /** Extra checks for rows on this list whose page does not contain the menu name. Keyed by the on-screen name. */
+  private async extrasOnThisList(): Promise<Map<string, ExtraPageCheck>> {
+    const checks: ExtraPageCheck[] = [
+      { row: this.locator.cookiePreferencesMenu, accept: ['trustarc', 'privacy', 'cookie'] },
+      { row: this.locator.marketingPreferencesMenu, accept: ['profile-setting', 'account.samsung.com', SAMSUNG_ACCOUNT_PACKAGE] },
+      { row: this.locator.supportTopMenu, accept: ['サポート', '/support'] },
+      { row: this.locator.appTermsMenu, accept: ['利用規約'] },
+      { row: this.locator.privacyPolicyMenu, accept: ['プライバシーポリシー'] },
+      { row: this.locator.legalInfoMenu, accept: ['法務関連'] },
+      {
+        row: this.locator.pushNotificationMenu,
+        nativeShown: () => waitForDisplayedOrFalse(this.locator.pushNotificationSwitch, { timeout: 5000 }),
+      },
+      {
+        row: this.locator.selectCountryMenu,
+        nativeShown: () => waitForDisplayedOrFalse(this.homeLocator.countryContinueButton, { timeout: 5000 }),
+      },
     ];
-    const accepted = new Map<string, string[]>();
-    for (const [row, names] of rules) {
-      const label = await getElementLabel(row);
+    const found = new Map<string, ExtraPageCheck>();
+    for (const extra of checks) {
+      const label = await getElementLabel(extra.row);
       if (label) {
-        accepted.set(label, names);
+        found.set(label.replace(/\s+/g, '').toLowerCase(), extra);
       }
     }
-    return accepted;
-  }
-
-  /** True when the clicked sub-menu opened another sub-menu list (e.g. Personal Data Management). */
-  private async isSubMenuListOpened(itemLabel: string): Promise<boolean> {
-    // The next screen is already drawn once the clicked row is gone, so the title is checked once
-    return (await this.waitForSubMenuListLeft(itemLabel)) && (await this.isSubMenuListShown(itemLabel, 0));
+    return found;
   }
 
   /** Account Management must open the Samsung account settings (CN: its own account page with "退出登录"). */
