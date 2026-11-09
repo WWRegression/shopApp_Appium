@@ -11,7 +11,7 @@
  *   - raw swipe/scroll/tap motion → gesture.helper.ts
  */
 
-import { dragInsideElement, quickSwipeDown, scrollElementToCenter, scrollListDown, scrollWebViewDown, scrollDown, tapAtCoordinates } from './gesture.helper';
+import { quickSwipeDown, scrollElementToCenter, scrollListDown, scrollWebViewDown, scrollDown, scrollWithinElement, tapAtCoordinates } from './gesture.helper';
 import { currentSiteCode } from './tc-filter.helper';
 import { switchToNative, targetPackage } from './context.helper';
 import { getBrowserPages } from './device.helper';
@@ -426,7 +426,7 @@ async function scrollInsideArea(getContainer: () => ChainablePromiseElement, dis
     return (await getBox(getContainer())).top !== topBefore;
   }
   const before = (await getLinksInArea(getScrollArea(getContainer))).snapshot;
-  await dragInsideElement(getScrollArea(getContainer), distance);
+  await scrollWithinElement(getScrollArea(getContainer), distance);
   return (await getLinksInArea(getScrollArea(getContainer))).snapshot !== before;
 }
 
@@ -482,6 +482,15 @@ async function clickLinkAndCheckRedirect(link: ScreenLink): Promise<LinkResult> 
 export async function verifyHyperlinkRedirects(getContainer: () => ChainablePromiseElement): Promise<LinkResult[]> {
   const results: LinkResult[] = [];
   const clickedIds = new Set<string>();
+  // UiAutomator2 leaves offscreen nodes out by default, so show them to find a link anywhere in the container
+  const { allowInvisibleElements } = (await driver.getSettings()) as { allowInvisibleElements: boolean };
+  await driver.updateSettings({ allowInvisibleElements: true });
+  const hasLink = await getContainer().$('.//android.widget.Button').isExisting();
+  await driver.updateSettings({ allowInvisibleElements });
+  if (!hasLink) {
+    console.log('[verifyHyperlinkRedirects] no link — passed');
+    return results;
+  }
   // A scroll area keeps its position from an earlier visit: start from its top
   await withoutIdleWait(async () => {
     for (let up = 0; up < 15 && (await scrollInsideArea(getContainer, -250)); up++);

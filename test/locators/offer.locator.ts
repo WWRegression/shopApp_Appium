@@ -1,4 +1,4 @@
-/** Names of the default "all products" category tab per language */
+/* category tab labels: default "all products" tab name per language -------------------------------------------------------------*/
 export const ALL_OFFERS_TAB_LABELS = [
   'Featured',
   'All offers',
@@ -21,9 +21,10 @@ export const ALL_OFFERS_TAB_LABELS = [
   '精選優惠',
   'All categories',
 ];
+/* end of category tab labels -------------------------------------------------------------*/
 
 export class OfferLocator {
-  /** RTB banner currently shown at the top of Offers */
+/* rtb banner: shown at the top of Offers -------------------------------------------------------------*/
   get rtbItem() {
     return $(
       `(//android.widget.ScrollView//android.view.View[@scrollable = 'true']/android.view.View[@clickable = 'true']
@@ -31,28 +32,13 @@ export class OfferLocator {
     );
   }
 
-  /** Indicators under the RTB banner — one Button per RTB, content-desc = RTB title */
+  /** One Button per RTB under the banner; content-desc = RTB title */
   get rtbIndicators() {
     return $$(`//android.widget.ScrollView//android.view.View[@scrollable = 'true']/../following-sibling::android.widget.Button`);
   }
+/* end of rtb banner -------------------------------------------------------------*/
 
-  /** Error / empty page shown when a redirect fails */
-  get errorPage() {
-    return $(
-      `//android.widget.ImageView[
-        @content-desc = 'There are no ongoing offers at the moment. Return tomorrow to see what we have in store for you!'
-        or @content-desc = 'There are no ongoing offers at the moment'
-        or @content-desc = 'Il n’y a pas d’offre en cours'
-        or @content-desc = 'No hay ofertas disponibles en este momento'
-        or @content-desc = 'Saat ini tidak ada penawaran yang sedang berlangsung'
-        or @content-desc = 'Al momento non sono presenti offerte in corso'
-      ]
-      | //android.widget.TextView[@text = 'Sidan hittades inte…']
-      | //android.view.View[@content-desc = 'Tenemos algunos inconvenientes. Puedes intentar nuevamente en unos segundos.']`
-    );
-  }
-
-  /** Row of category tabs: a HorizontalScrollView, or a plain row when the tabs fit the screen (3 tabs, SG) — found by its first "all products" tab */
+/* category tabs: HorizontalScrollView, or a plain row when the tabs fit the screen (3 tabs, SG) -------------------------------------------------------------*/
   get categoryTabBar() {
     const firstTab = ALL_OFFERS_TAB_LABELS.map((label) => `starts-with(@content-desc, '${label}')`).join(' or ');
     return $(
@@ -61,27 +47,27 @@ export class OfferLocator {
     );
   }
 
-  /** Category tabs currently in the row; content-desc = "<name>\\nTab N of M" */
+  /** content-desc = "<name>\\nTab N of M" */
   get categoryTabs() {
     return this.categoryTabBar.$$(`.//android.view.View[@clickable = 'true']`);
   }
 
-  /** Category tab by its name */
   categoryTab(name: string) {
     return this.categoryTabBar.$(`.//android.view.View[@clickable = 'true' and starts-with(@content-desc, '${name}')]`);
   }
 
-  /** The category tab that is selected now */
   get selectedCategoryTab() {
     return this.categoryTabBar.$(`.//android.view.View[@selected = 'true']`);
   }
+/* end of category tabs -------------------------------------------------------------*/
 
-  /** Offer shown in the content block below the category tabs */
+/* offer contents: content block below the category tabs -------------------------------------------------------------*/
   get offerContents() {
     return $(`//android.widget.ScrollView/android.view.View[last()]//*[@clickable = 'true']`);
   }
+/* end of offer contents -------------------------------------------------------------*/
 
-  /** T&C at the bottom of Offers; when opened, header and content are one view whose content-desc starts with the header */
+/* t&c: when opened, header and content are one view whose content-desc starts with the header -------------------------------------------------------------*/
   get tncSection() {
     const label = [
       'Terms and Condition',
@@ -115,13 +101,28 @@ export class OfferLocator {
     return $(`//android.view.View[${label}]`);
   }
 
-  /** Content of the opened T&C; two levels down, as a scoped XPath starts at the row itself. */
+  /** Two levels down, as a scoped XPath starts at the row itself */
   get tncContent() {
     return this.tncSection.$('./*/*');
   }
+/* end of t&c -------------------------------------------------------------*/
 
+/* empty / error page: shown when there is no offer or a redirect fails -------------------------------------------------------------*/
+  get errorPage() {
+    return $(
+      `//android.widget.ImageView[
+        @content-desc = 'There are no ongoing offers at the moment. Return tomorrow to see what we have in store for you!'
+        or @content-desc = 'There are no ongoing offers at the moment'
+        or @content-desc = 'Il n’y a pas d’offre en cours'
+        or @content-desc = 'No hay ofertas disponibles en este momento'
+        or @content-desc = 'Saat ini tidak ada penawaran yang sedang berlangsung'
+        or @content-desc = 'Al momento non sono presenti offerte in corso'
+      ]
+      | //android.widget.TextView[@text = 'Sidan hittades inte…']
+      | //android.view.View[@content-desc = 'Tenemos algunos inconvenientes. Puedes intentar nuevamente en unos segundos.']`
+    );
+  }
 
-  /** "no ongoing offers" image */
   get noOngoingOffers() {
     return $(
       `//android.widget.ScrollView//android.widget.ImageView[@clickable = 'false' and (
@@ -135,4 +136,5 @@ export class OfferLocator {
       )]`
     );
   }
+/* end of empty / error page -------------------------------------------------------------*/
 }

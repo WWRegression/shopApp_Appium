@@ -118,7 +118,7 @@ export class LoginPage extends BasePage {
     console.log('[signOutOnDevice] end');
   }
 
-  /** Adds the Samsung account (this.emailAccount()) in device Settings if missing, then force-stops the app. */
+  /** Adds the Samsung account (this.gmailAccount()) in device Settings if missing, then force-stops the app. */
   async signInOnDevice(): Promise<void> {
     console.log('[signInOnDevice] start');
     await forceStopPackage(SAMSUNG_ACCOUNT_PACKAGE);
@@ -131,9 +131,16 @@ export class LoginPage extends BasePage {
       console.log('[signInOnDevice] adding Samsung account');
       await clickIfDisplayed(this.locator.settingsAddAccount, 5000);
       await clickIfDisplayed(this.locator.settingAddSamsungAccount, 5000);
-      await this.ssoLoginWithGmail();
-      markFailedAndStop([{ label: 'Samsung account not added on device', 
-        pass: await waitForDisplayedOrFalse(this.locator.ssoAccountUserName, {timeout: 5000 }) }], 'signInOnDevice');
+      await this.ssoLoginWithGmail();      
+      await clickIfDisplayed(this.locator.ssoSamsungPassCancelButton, 5000);
+
+      // Sign-in can end on the profile (name only, no email) or Manage accounts, so the email is checked on Manage accounts
+      const { email } = this.gmailAccount();
+      markFailedAndStop(
+        [{ label: `Samsung account (${email}) not added on device`,
+           pass: await waitForDisplayedOrFalse(this.locator.settingSamsungAccountRow(email), { timeout: 10000 }) }],
+        'signInOnDevice'
+      );
     }
     await forceStopPackage(SETTINGS_PACKAGE);
     await forceStopPackage(targetPackage());

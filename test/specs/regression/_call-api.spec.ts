@@ -1,5 +1,5 @@
 import { runOrSkip } from '../../helpers/tc-filter.helper';
-import { resolveProduct, getProductType, writeResolvedSkuEntry } from '../../helpers/api.helper';
+import { resolveProduct, getProductTypes, writeResolvedSkuEntry } from '../../helpers/api.helper';
 
 /**
  * Resolves a valid IM/VD/HA sku per site via API and caches it, so every other TC's
@@ -8,7 +8,7 @@ import { resolveProduct, getProductType, writeResolvedSkuEntry } from '../../hel
 describe('CALL_API', () => {
   it('resolve a valid sku per product type via API', async function () {
     await runOrSkip.call(this, 'CALL_API', async (site) => {
-      for (const type of getProductType(site.siteCode)) {
+      for (const type of getProductTypes(site.siteCode)) {
         const product = await resolveProduct(site, type);
         if (!product) {
           console.warn(`[${site.siteCode}][${type}] no valid sku found — keeping static value`);

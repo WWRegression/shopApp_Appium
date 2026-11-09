@@ -273,7 +273,7 @@ export async function tapAtCoordinates(x: number, y: number): Promise<void> {
  * (positive: from the bottom edge up, to see lower content; negative: from the top edge down).
  * Starting at the edge scrolls a scroll area inside a page instead of the page itself.
  */
-export async function dragInsideElement(element: ChainablePromiseElement, distance: number): Promise<void> {
+export async function scrollWithinElement(element: ChainablePromiseElement, distance: number): Promise<void> {
   const { x, y } = await element.getLocation();
   const { width, height } = await element.getSize();
   const dragX = x + Math.round(width / 2);
