@@ -2,16 +2,18 @@ import { runOrSkip } from '../../../helpers/tc-filter.helper';
 import { targetPackage } from '../../../helpers/context.helper';
 import { clearPackage, restartApp } from '../../../helpers/device.helper';
 import { HomePage } from '../../../pages/home.page';
+import { OnboardingPage } from '../../../pages/onboarding.page';
 import { LoginPage } from '../../../pages/login.page';
 import { MypagePage } from '../../../pages/mypage.page';
 import { ShopPage } from '../../../pages/shop.page';
 
 /** (Registered user) Verify the initial app setup, auto-login, TrustArc cookie, and that the TrustArc cookie data is saved. */
 describe('PROD_HOME_02', () => {
-  const homePage = new HomePage();
+  const onboardingPage = new OnboardingPage();
   const loginPage = new LoginPage();
-  const mypagePage = new MypagePage();
+  const homePage = new HomePage();
   const shopPage = new ShopPage();
+  const mypagePage = new MypagePage();
 
   it('Registered User - initial setup, auto-login, TrustArc cookie', async function () {
     await runOrSkip.call(this, 'PROD_HOME_02', async (site) => {
@@ -19,15 +21,15 @@ describe('PROD_HOME_02', () => {
       await clearPackage(targetPackage());
       await loginPage.signInOnDevice();
       await restartApp();
-      await homePage.allowLocationPermissionIfShown();
-      await homePage.selectCountry(site.countryName);
-      
-      await homePage.clickAssuranceCancelIfShown();
+      await onboardingPage.allowLocationPermissionIfShown();
+      await onboardingPage.selectCountry(site.countryName);
 
-      await homePage.clickTrustArcCookie('accept');
-      await homePage.clickTncCheckbox();
-      await homePage.selectNotification('no');
-      await homePage.clickGetStarted();
+      await onboardingPage.clickAssuranceCancelIfShown();
+
+      await onboardingPage.selectTrustArcCookie('accept');
+      await onboardingPage.agreeToPrivacyAndTerms();
+      await onboardingPage.selectNotification('no');
+      await onboardingPage.clickGetStarted();
 
       await loginPage.clickLoginBtnOnLoginPageForCnIn();
       await loginPage.skipPurpose();
@@ -36,7 +38,7 @@ describe('PROD_HOME_02', () => {
 
       await shopPage.verifyCountry(site.countryName);
       await homePage.applyBuildSetup();
-      await homePage.clickTrustArcCookieIfShown('accept');
+      await onboardingPage.selectTrustArcCookieIfShown('accept');
       await loginPage.loginOnSelectProfileIfShown();
       await loginPage.skipPurpose();
 

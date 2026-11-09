@@ -50,7 +50,7 @@ export interface Site {
   countryName?: string;
   phoneCountryCode?: string;
   initialSetup?: {
-    trustArcCookie?: boolean;
+    trustArcCookie?: boolean; //AT, BE, CA, CZ, DE, ES, FR, HU, IT, NL, PL, PT, RO, SE, TR, UK, US
     cookiePopup?: boolean;
   };
   excludedTcs?: string[];

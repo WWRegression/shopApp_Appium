@@ -1,4 +1,5 @@
 import { BasePage } from './base.page';
+import { OnboardingPage } from './onboarding.page';
 import { ShopLocator, ShopCategory, type ShopMenu, type ShopMenuPage, type ShopSubMenu } from '../locators/shop.locator';
 import type { LoadedSite } from '../../config/site';
 import { gestureByBoundary, swipeByBoundary, scrollByBoundary, tapAtCoordinates } from '../helpers/gesture.helper'
@@ -737,7 +738,7 @@ export class ShopPage extends BasePage {
       `[changeCountry] Country menu not found`
     );
 
-    await this.selectCountry(countryName);
+    await new OnboardingPage().selectCountry(countryName);
   }
 
   /** Shop footer country row must show the country name (text before the language parenthesis). */

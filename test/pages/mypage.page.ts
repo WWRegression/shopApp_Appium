@@ -12,6 +12,7 @@ import {
   type StoreOption,
 } from '../locators/mypage.locator';
 import { LoginPage, SAMSUNG_ACCOUNT_PACKAGE, SAMSUNG_ACCOUNT_SETTINGS_ACTIVITY } from './login.page';
+import { OnboardingPage } from './onboarding.page';
 import { PdPage } from './pd.page';
 import { PfPage } from './pf.page';
 import { getRunConfig } from '../../config/run.config';
@@ -854,7 +855,7 @@ export class MypagePage extends ShopPage {
   /** My Page > Settings > Select Country, then selects the given country. */
   async changeCountryInSettings(countryName?: string): Promise<void> {
     await this.selectSettingsMenus([this.locator.selectCountryMenu], 'changeCountryInSettings');
-    await this.selectCountry(countryName);
+    await new OnboardingPage().selectCountry(countryName);
   }
 
   /** My Page > Settings > Push Notification, then verifies the notification switch is shown. */

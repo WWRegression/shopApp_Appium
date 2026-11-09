@@ -2,14 +2,17 @@ import { runOrSkip } from '../../../helpers/tc-filter.helper';
 import { targetPackage } from '../../../helpers/context.helper';
 import { clearPackage, restartApp } from '../../../helpers/device.helper';
 import { HomePage } from '../../../pages/home.page';
+import { OnboardingPage } from '../../../pages/onboarding.page';
 import { LoginPage } from '../../../pages/login.page';
 import { MypagePage } from '../../../pages/mypage.page';
 import { ShopPage } from '../../../pages/shop.page';
 
 /** (Guest user) Verify the initial app setup, continue as guest, TrustArc cookie, and that the TrustArc cookie data is saved. */
 describe('PROD_HOME_01', () => {
-  const homePage = new HomePage();
+  const onboardingPage = new OnboardingPage();
   const loginPage = new LoginPage();
+  const homePage = new HomePage();
+  
   const mypagePage = new MypagePage();
   const shopPage = new ShopPage();
 
@@ -19,17 +22,17 @@ describe('PROD_HOME_01', () => {
       await clearPackage(targetPackage());
       await loginPage.signOutOnDevice();
       await restartApp();
-      await homePage.allowLocationPermissionIfShown();
-      await homePage.selectCountry(site.countryName);
+      await onboardingPage.allowLocationPermissionIfShown();
+      await onboardingPage.selectCountry(site.countryName);
 
-      await homePage.clickAssuranceCancelIfShown();
+      await onboardingPage.clickAssuranceCancelIfShown();
 
-      await homePage.clickTrustArcCookie('decline');
-      await homePage.clickTncCheckbox();
-      await homePage.selectNotification('yes');
-      await homePage.clickGetStarted();
-      
-      await homePage.allowNotificationPermissionIfShown();
+      await onboardingPage.selectTrustArcCookie('decline');
+      await onboardingPage.agreeToPrivacyAndTerms();
+      await onboardingPage.selectNotification('yes');
+      await onboardingPage.clickGetStarted();
+
+      await onboardingPage.allowNotificationPermissionIfShown();
 
       await loginPage.continueAsGuestIfShown();
       await homePage.verifyCookiePopup();
@@ -37,7 +40,7 @@ describe('PROD_HOME_01', () => {
 
       await shopPage.verifyCountry(site.countryName);
       await homePage.applyBuildSetup();
-      await homePage.clickTrustArcCookieIfShown('decline');
+      await onboardingPage.selectTrustArcCookieIfShown('decline');
       await loginPage.continueAsGuestIfShown();
 
       await mypagePage.prepareNotificationPage();

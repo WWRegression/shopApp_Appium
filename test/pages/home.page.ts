@@ -37,13 +37,6 @@ export class HomePage extends BasePage {
     markFailedAndStop([{ label: 'Home not shown (header title does not match)', pass: ready }], 'prepareHomePage');
   }
 
-  /** Allows location ("While using the app") when the permission popup shows. */
-  async allowLocationPermissionIfShown(timeoutMs = 10000): Promise<void> {
-    await switchToNative();
-    const allowed = await clickIfDisplayed(this.popupLocator.locationAllowButton, timeoutMs);
-    console.log(`[allowLocationPermissionIfShown] ${allowed ? 'location permission allowed' : 'no location permission popup'}`);
-  }
-
   /** The cookie popup must show after the initial setup (TrustArc sites already answered it). */
   async verifyCookiePopup(): Promise<void> {
     // Only the sites marked in site data (initialSetup.cookiePopup) must show it
@@ -63,100 +56,6 @@ export class HomePage extends BasePage {
     }
     console.log(`[verifyCookiePopup] expected=cookie popup shown actual=${shown ? 'shown' : 'not shown'} result=${shown ? 'PASS' : 'FAIL'}`);
     markFailed([{ label: 'Cookie popup not found on site', pass: shown }], 'verifyCookiePopup');
-  }
-
-  /** Clicks Accept all (registered user) or Decline all (guest user) on the TrustArc consent. */
-  async clickTrustArcCookie(choice: 'accept' | 'decline'): Promise<void> {
-    // Only the sites marked in site data (initialSetup.trustArcCookie) show the consent
-    if (!getSiteData().initialSetup?.trustArcCookie) {
-      console.log('[clickTrustArcCookie] TrustArc cookie is not required for this site — skipped');
-      return;
-    }
-    await switchToNative();
-    // The consent WebView opens a moment after the country is confirmed
-    await waitForDisplayedOrFalse(this.locator.trustArcWebView, { timeout: 3000 });
-    const button = choice === 'accept' ? this.locator.trustArcAcceptButton : this.locator.trustArcDeclineButton;
-    const shown = await waitForDisplayedOrFalse(button, { timeout: 30000 });
-    console.log(`[clickTrustArcCookie] expected=TrustArc cookie shown actual=${shown ? 'shown' : 'not shown'} result=${shown ? 'PASS' : 'FAIL'}`);
-    // The next step stops the TC if the consent is still in the way
-    markFailed([{ label: 'TrustArc cookie not found on site', pass: shown }], 'clickTrustArcCookie');
-    if (!shown) {
-      return;
-    }
-    await clickElement(button, { timeout: 5000 });
-    console.log(`[clickTrustArcCookie] clicked "${choice} all"`);
-  }
-
-  /** Clicks the TrustArc consent when it shows again after the build setup restart (e.g. AT, BE, CA, CZ, HU, PT, RO, TR). */
-  async clickTrustArcCookieIfShown(choice: 'accept' | 'decline'): Promise<void> {
-    if (!getSiteData().initialSetup?.trustArcCookie) {
-      return;
-    }
-    await switchToNative();
-    const button = choice === 'accept' ? this.locator.trustArcAcceptButton : this.locator.trustArcDeclineButton;
-    const clicked = await clickIfDisplayed(button, 10000);
-    console.log(`[clickTrustArcCookieIfShown] ${clicked ? `clicked "${choice} all"` : 'TrustArc cookie not shown — skipped'}`);
-  }
-
-  /** Checks the first-launch T&C checkbox when the screen has one (CN: then "同意"). */
-  async clickTncCheckbox(): Promise<void> {
-    await switchToNative();
-    const checkbox = this.locator.tncCheckbox;
-    // The checkbox, where there is one, comes before the notification options
-    await driver
-      .waitUntil(async () => (await isDisplayedOrFalse(checkbox)) || (await this.isNotificationOptionShown()), { timeout: 10000, interval: 500 })
-      .catch(() => undefined);
-    if (!(await clickIfDisplayed(checkbox))) {
-      console.log('[clickTncCheckbox] no T&C checkbox on this screen');
-      return;
-    }
-    const agreed = await clickIfDisplayed(this.locator.tncAgreeButton, 3000);
-    console.log(`[clickTncCheckbox] checkbox clicked${agreed ? ', agree clicked' : ''}`);
-  }
-
-  /** True when the notification choice is on screen: the in-app Yes/No options, or the Android permission popup (IN). */
-  private async isNotificationOptionShown(): Promise<boolean> {
-    return (await isDisplayedOrFalse(this.locator.notificationRadio('no'))) || (await isDisplayedOrFalse(this.popupLocator.notificationDenyButton));
-  }
-
-  /** Set by selectNotification when the choice was made on the Android permission popup (IN) — there is no Get Started screen then. */
-  private notificationOnPermissionPopup = false;
-
-  /** Selects "Yes" or "No" for notifications (IN: Allow / Don't allow on the Android permission popup). */
-  async selectNotification(option: 'yes' | 'no'): Promise<void> {
-    await switchToNative();
-    const radio = this.locator.notificationRadio(option);
-    const permissionButton = option === 'yes' ? this.popupLocator.notificationAllowButton : this.popupLocator.notificationDenyButton;
-    await driver
-      .waitUntil(async () => this.isNotificationOptionShown(), { timeout: 20000, interval: 500 })
-      .catch(() => undefined);
-    this.notificationOnPermissionPopup = await isDisplayedOrFalse(permissionButton);
-    const target = this.notificationOnPermissionPopup ? permissionButton : radio;
-    // Longer screens (e.g. AU, SA_EN) keep the options below the fold
-    const shown = this.notificationOnPermissionPopup || (await isDisplayedOrFalse(radio)) || (await scrollUntilVisible(radio, 3));
-    markFailedAndStop([{ label: `notification "${option}" option not found`, pass: shown }], 'selectNotification');
-    await clickElement(target, { timeout: 5000 });
-    console.log(`[selectNotification] selected "${option}"`);
-  }
-
-  /** "Get Started" closes the initial setup. */
-  async clickGetStarted(): Promise<void> {
-    if (this.notificationOnPermissionPopup) {
-      console.log('[clickGetStarted] notification was answered on the permission popup, no Get Started screen — skipped');
-      return;
-    }
-    await switchToNative();
-    const button = this.locator.getStartedButton;
-    await scrollUntilVisible(button, 3);
-    await markFailedAndStop(() => clickElement(button, { timeout: 5000 }), '[clickGetStarted] Get Started button not found');
-    console.log('[clickGetStarted] clicked');
-  }
-
-  /** After "Yes", Android asks for the notification permission; allows it. */
-  async allowNotificationPermissionIfShown(): Promise<void> {
-    await switchToNative();
-    const allowed = await clickIfDisplayed(this.popupLocator.notificationAllowButton, 5000);
-    console.log(`[allowNotificationPermissionIfShown] ${allowed ? 'notification permission allowed' : 'no notification permission popup'}`);
   }
 
   /** Long-presses the Home header title to open the setup screen, sets the fixed build options (Mobile Backend = P1, Webview Debugging = Yes) and applies. */

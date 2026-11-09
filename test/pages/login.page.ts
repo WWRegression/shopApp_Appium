@@ -1,5 +1,6 @@
 import { BasePage } from './base.page';
 import { HomePage } from './home.page';
+import { OnboardingPage } from './onboarding.page';
 import { LoginLocator } from '../locators/login.locator';
 import { isStgEnvironment } from '../helpers/env.helper';
 import { getRunConfig } from '../../config/run.config';
@@ -229,7 +230,7 @@ export class LoginPage extends BasePage {
         .waitUntil(
           async () => {
             // Adobe Assurance can open over the login page a few seconds after a fresh launch (IN)
-            await this.clickAssuranceCancelIfShown(0);
+            await new OnboardingPage().clickAssuranceCancelIfShown(0);
             return (
               (await isDisplayedOrFalse(this.locator.loginPageLoginButton)) ||
               (await isDisplayedOrFalse(this.locator.samsungAccountLogoButton)) ||
@@ -497,7 +498,7 @@ export class LoginPage extends BasePage {
     const shown = await waitForDisplayedOrFalse(splash, { timeout: 30000 });
     markFailedAndStop([{ label: 'login splash country menu not found', pass: shown }], 'changeCountryOnLoginSplash');
     await clickElement(splash, { timeout: 5000 });
-    await this.selectCountry(countryName);
+    await new OnboardingPage().selectCountry(countryName);
     const changed = await driver
       .waitUntil(async () => (await getElementLabel(splash)).includes(countryName), { timeout: 10000, interval: 500 })
       .then(() => true, () => false);

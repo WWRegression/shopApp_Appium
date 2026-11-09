@@ -2,11 +2,10 @@ import { PopupLocator } from '../locators/popup.locator';
 import { HeaderLocator, type HeaderIcon } from '../locators/header.locator';
 import { BnbLocator, BNB_MENUS, type BnbMenu } from '../locators/bnb.locator';
 import { LoginLocator } from '../locators/login.locator';
-import { HomeLocator } from '../locators/home.locator';
 import { SearchLocator } from '../locators/search.locator';
 import { switchToNative, getCurrentContext } from '../helpers/context.helper';
 import { getRunConfig } from '../../config/run.config';
-import { flingToStart, scrollUp } from '../helpers/gesture.helper';
+import { scrollUp } from '../helpers/gesture.helper';
 import { markFailed, markFailedAndStop, markStepSkipped } from '../helpers/report.helper';
 import {
   clickElement,
@@ -34,7 +33,6 @@ export class BasePage {
   protected readonly headerLocator = new HeaderLocator();
   protected readonly searchLocator = new SearchLocator();
   protected readonly bnbLocator = new BnbLocator();
-  protected readonly homeLocator = new HomeLocator();
   /** App entry screens (guest splash, profile select) — used to tell when the app is up without a permission popup */
   private readonly appEntryLocator = new LoginLocator();
 
@@ -234,7 +232,9 @@ export class BasePage {
       return true;
     }
     // Adobe Assurance is a separate screen over the app and can open on any restart
-    if (await this.clickAssuranceCancelIfShown(0)) {
+    if (await clickIfDisplayed(this.popupLocator.assuranceCancelButton, 0)) {
+      // A second Assurance screen can follow the first Cancel
+      await clickIfDisplayed(this.popupLocator.assuranceCancelButton, 1000);
       return true;
     }
     if ((await clickIfDisplayed(this.popupLocator.adSkipButton)) || (await clickIfDisplayed(this.popupLocator.adCloseButton))) {
@@ -307,47 +307,11 @@ export class BasePage {
     }
   }
 
-  /** Clicks Cancel on the Adobe Assurance PIN screen when it is shown; true when it was closed. */
-  async clickAssuranceCancelIfShown(timeoutMs = 3000): Promise<boolean> {
-    await switchToNative();
-    let closed = 0;
-    // The app opens the Assurance screen twice in a row, so a second one can be left after the first Cancel
-    while (closed < 2 && (await clickIfDisplayed(this.popupLocator.assuranceCancelButton, closed === 0 ? timeoutMs : 1000))) {
-      closed += 1;
-      console.log('[clickAssuranceCancelIfShown] clicked Cancel');
-    }
-    return closed > 0;
-  }
-
   async dismissOverlays(): Promise<void> {
     await this.dismissPopupIfShown();
     await this.dismissCookieIfShown();
     // Promotion bottom sheet (first launch on US, CN) — after the cookie popup, whose X the same locator matches
     await clickIfDisplayed(this.popupLocator.promoCloseButton);
-  }
-
-  /** On the country list (first launch or Shop > Country), selects `countryName` and confirms. */
-  async selectCountry(countryName?: string): Promise<void> {
-    // Single-country apps (no countryName in site data) have no country list
-    if (!countryName) {
-      console.log('[selectCountry] no countryName for this site — skipped');
-      return;
-    }
-    await switchToNative();
-    const item = this.homeLocator.countryListItem(countryName);
-    await waitForDisplayedOrFalse(this.homeLocator.countryContinueButton, { timeout: 10000 });
-
-    let found = await scrollUntilVisible(item, 15);
-    if (!found) {
-      // The list can open scrolled past the target
-      await flingToStart();
-      found = await scrollUntilVisible(item, 15);
-    }
-    markFailedAndStop([{ label: 'target country not found in the list', pass: found, detail: countryName }], 'selectCountry');
-
-    await clickElement(item, { timeout: 5000 });
-    await clickElement(this.homeLocator.countryContinueButton, { timeout: 8000 });
-    console.log(`[selectCountry] selected "${countryName}"`);
   }
 
   /** Waits for the first app screen (Home, login page or "Select profile"), closing the popups that open on top of it. */
