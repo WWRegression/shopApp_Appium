@@ -67,21 +67,18 @@ export class MypageLocator {
     );
   }
 
-  /** English, DE, CN ('退出登录') */
   get logoutButton() {
     return $(
       `//*[contains(@content-desc, 'Logout')
       or contains(@content-desc, 'Log out')
       or contains(@content-desc, 'Abmelden')
       or contains(@content-desc, 'Ausloggen')
-      or contains(@content-desc, 'Abmeldung')
-      or contains(@content-desc, '退出')
       or contains(@content-desc, 'تسجيل الخروج')
       or contains(@content-desc, 'Afmelden')
       or contains(@content-desc, 'Se déconnecter')
-      or @content-desc='Déconnexion'
+      or contains(@content-desc, 'Déconnexion')
       or contains(@content-desc, 'Cerrar sesión')
-      or @content-desc='退出登录'
+      or contains(@content-desc, '退出登录')
       or contains(@content-desc, 'Odhlášení')
       or contains(@content-desc, '登出')
       or contains(@content-desc, 'Kijelentkezés')
@@ -621,6 +618,7 @@ export class MypageLocator {
         or @content-desc = '已登記的產品'
         or @content-desc = 'Regisztrált termékeim'
         or @content-desc = '登録済み製品'
+        or @content-desc = 'Produtos Registados'
       )]`
     );
   }
@@ -680,28 +678,25 @@ export class MypageLocator {
     return $(
       `//android.widget.ImageView[
         @content-desc = 'Support' or
+        @content-desc = 'Customer Support' or
         @content-desc = 'الدعم' or
         @content-desc = 'Destek' or
         @content-desc = 'Aide' or
+        @content-desc = 'Assistance' or
+        @content-desc = 'Guide et solutions' or
         @content-desc = 'Soporte' or
         @content-desc = 'Suporte' or
-        @content-desc = 'Guide et solutions' or
         @content-desc = 'Supporto' or
         @content-desc = 'Asistencia técnica' or
         @content-desc = 'Pomoc' or
         @content-desc = 'Podpora' or
         @content-desc = 'Asistenţă' or
         @content-desc = 'Támogatás' or
-        @content-desc = '售后服务' or
         @content-desc = '支援' or
         @content-desc = 'Dukungan' or
         @content-desc = 'สนับสนุน' or
         @content-desc = 'שירות לקוחות' or
         @content-desc = 'Hỗ trợ' or
-        @content-desc = 'サポート' or
-        @content-desc = 'Assistance' or
-        @content-desc = 'Customer Support' or
-        @content-desc = 'お問い合わせ' or
         @content-desc = 'カスタマーサポート'
       ]`
     );
@@ -745,7 +740,6 @@ export class MypageLocator {
       `//android.widget.ImageView[
         @content-desc = 'Account Management' or
         @content-desc = 'Gestion des comptes' or
-        @content-desc = 'حذف الحساب' or
         @content-desc = 'Gestión de cuentas' or
         @content-desc = 'Gestión de cuenta' or
         @content-desc = 'Mon compte' or
@@ -765,7 +759,8 @@ export class MypageLocator {
         @content-desc = 'Gestionare cont' or
         @content-desc = 'Hesabım' or
         @content-desc = 'Gestão de conta' or
-        @content-desc = 'アカウント設定'
+        @content-desc = 'アカウント設定' or
+        @content-desc = 'ניהול חשבון'
       ]`
     );
   }
@@ -909,11 +904,8 @@ export class MypageLocator {
         @content-desc = 'Beállítások' or
         @content-desc = 'Setări' or
         @content-desc = 'Ayarlar' or
-        @content-desc = 'Réglages' or
         @content-desc = 'Definições' or
-        @content-desc = 'Einstellung' or
-        @content-desc = 'הגדרות' or
-        @content-desc = '通知をオンにする'
+        @content-desc = 'הגדרות'
       ]`
     );
   }
