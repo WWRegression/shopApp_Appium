@@ -201,27 +201,27 @@ export class ShopLocator {
   get studentStore() {
     return $(
       `//android.view.View[
-	@content-desc = 'student store' or
-	@content-desc = 'education shop' or
-	@content-desc = 'education store' or
-	@content-desc = 'samsung education store' or
-	@content-desc = 'magasin étudiant' or
-	@content-desc = 'beneficios estudiantes' or
-	@content-desc = 'tienda estudiantes' or
-	@content-desc = 'tienda para estudiantes' or
-	@content-desc = 'samsung 教育商店' or
-	@content-desc = 'pelajar' or
-	@content-desc = 'tienda samsung para estudiantes' or
-	@content-desc = 'student' or
-	@content-desc = 'tienda oficial para estudiantes' or
-	@content-desc = 'sklep samsung dla edukacji' or
-	@content-desc = 'loja educação' or
-	@content-desc = 'متجر الطالب' or
-	@content-desc = 'ร้านค้าสำหรับนักเรียน-นักศึกษา' or
-	@content-desc = 'eğitim indirim programı mağazası' or
-	@content-desc = '進入教育優惠商店' or
-	@content-desc = 'cửa hàng giáo dục'
-]`
+        @content-desc = 'student store' or
+        @content-desc = 'education shop' or
+        @content-desc = 'education store' or
+        @content-desc = 'samsung education store' or
+        @content-desc = 'magasin étudiant' or
+        @content-desc = 'beneficios estudiantes' or
+        @content-desc = 'tienda estudiantes' or
+        @content-desc = 'tienda para estudiantes' or
+        @content-desc = 'samsung 教育商店' or
+        @content-desc = 'pelajar' or
+        @content-desc = 'tienda samsung para estudiantes' or
+        @content-desc = 'student' or
+        @content-desc = 'tienda oficial para estudiantes' or
+        @content-desc = 'sklep samsung dla edukacji' or
+        @content-desc = 'loja educação' or
+        @content-desc = 'متجر الطالب' or
+        @content-desc = 'ร้านค้าสำหรับนักเรียน-นักศึกษา' or
+        @content-desc = 'eğitim indirim programı mağazası' or
+        @content-desc = '進入教育優惠商店' or
+        @content-desc = 'cửa hàng giáo dục'
+      ]`
     );
   }
 
@@ -457,68 +457,50 @@ export class ShopLocator {
   get studentStorePage() {
     return $(
       `${BACK_BUTTON_XPATH}/following-sibling::android.view.View[
-	@content-desc = 'Education Offers' or 
-	@content-desc = 'Student Store' or 
-	@content-desc = 'Student store' or 
-	@content-desc = 'Samsung Education Shop' or
-	@content-desc = 'Samsung Student Store' or
-	@content-desc = 'Promotion' or
-	@content-desc = 'Sklep Samsung dla Edukacji' or
-	@content-desc = '教育優惠商店' or
-	@content-desc = 'متجر الطالب'
-] |
-${BACK_BUTTON_XPATH}/following-sibling::android.view.View/android.widget.Button[contains(@content-desc, 'Education Offers') or contains(@content-desc, 'Student Store')] |
-//android.view.View[
-	@content-desc = 'EPPLoginEDU' or
-	@content-desc = 'Vérifiez votre courriel d’étudiant' or
-	@content-desc = 'Prepárate para la vida en el campus' or
-	@content-desc = 'Club Samsung Estudiantes' or
-	@content-desc = 'Gear up for  school life' or
-	@content-desc = 'Verifikasi email pelajar kamu' or
-	@content-desc = 'preparate para la vida en el campus' or
-	@content-desc = 'epp_educationMKV' or
-	@content-desc = 'EDU EPP MKV' or
-	@content-desc = 'Prepárate para la vida académica' or
-	@content-desc = 'Verifique o seu email de estudante' or
-	@content-desc = 'Education site' or
-	@content-desc = 'ยืนยันอีเมลนักเรียนของคุณ' or
-	@content-desc = 'Welcome to Samsung for Education Store' or
-	@content-desc = 'Confirma o teu email de estudante' or
-	@content-desc = 'Verify your student email address' or
-	@content-desc = 'Verifica tu correo electrónico de estudiante' or
-	@content-desc = 'Verify your Student email' or
-	@content-desc = 'تحقق من البريد الإلكتروني للطالب' or
-	@content-desc = 'Verifica tu correo estudiantil' or
-	@content-desc = 'Xác nhận email của bạn' or
-	@content-desc = 'Verifica tu correo' or
-	@content-desc = 'Verify your student email' or
-	@content-desc = 'قم بتأكيد بريدك الإلكتروني ' or
-	@content-desc= '教職員優惠7折起' or
-	contains(@content-desc, 'Login to access student')
-] |
-//android.widget.TextView[contains(@text, "Eğitim İndirim Programı’na kaydolmak")]`
+        @content-desc = 'Education Offers' or 
+        @content-desc = 'Student Store' or 
+        @content-desc = 'Student store' or 
+        @content-desc = 'Samsung Education Shop' or
+        @content-desc = 'Samsung Student Store' or
+        @content-desc = 'Promotion' or
+        @content-desc = 'Sklep Samsung dla Edukacji' or
+        @content-desc = '教育優惠7折起'
+      ]
+      |
+      //android.view.View[
+        @content-desc = 'Vérifiez votre courriel d’étudiant' or
+        @content-desc = 'Prepárate para la vida en el campus' or
+        @content-desc = 'Club Samsung Estudiantes' or
+        @content-desc = 'Gear up for  school life' or
+        @content-desc = 'Verifikasi email pelajar kamu' or
+        @content-desc = 'epp_educationMKV' or
+        @content-desc = 'EDU EPP MKV' or
+        @content-desc = 'Prepárate para la vida académica' or
+        @content-desc = 'Education site' or
+        @content-desc = 'ยืนยันอีเมลนักเรียนของคุณ' or
+        @content-desc = 'Welcome to Samsung for Education Store' or
+        @content-desc = 'Confirma o teu email de estudante' or
+        @content-desc = 'Xác nhận email của bạn'
+      ] |
+      //android.widget.TextView[contains(@text, "Eğitim İndirim Programı’na kaydolmak")]`
     );
   }
 
   get corporateStorePage() {
     return $(
       `${BACK_BUTTON_XPATH}/following-sibling::android.view.View[
-	@content-desc='Corporate Store' or 
-	@content-desc='Corporate offer' or 
-	@content-desc='Samsung Corporate Shop' or
-    @content-desc= 'التحقق من البريد الإلكتروني لشركتك' or
-	@content-desc='İş Ortaklarına Özel Mağaza'
-] |
-${BACK_BUTTON_XPATH}/following-sibling::android.view.View/android.widget.Button[contains(@content-desc, 'Corporate offer') or contains(@content-desc, 'Corporate Store')] |
-//android.view.View[
-	@content-desc = 'Verify your Corporate email' or
-	@content-desc = 'GOVLoginEDU' or
-	@content-desc = 'Potencia tu trabajo con Samsung' or
-	@content-desc = '驗證您的企業電郵' or
-	@content-desc= 'Verifica tu correo corporativo' or
-	@content-desc='Xác nhận email của bạn' or
-	@content-desc='Hesabınızı doğrulayın'
-]`
+        @content-desc='Corporate Store' or 
+        @content-desc='Corporate offer' or 
+        @content-desc='Samsung Corporate Shop' or
+        @content-desc='İş Ortaklarına Özel Mağaza'
+      ] 
+      |
+      //android.view.View[
+        @content-desc = 'GOVLoginEDU' or
+        @content-desc = 'Potencia tu trabajo con Samsung' or
+        @content-desc = '驗證您的企業電郵' or
+        @content-desc='Xác nhận email của bạn'
+      ]`
     );
   }
 
@@ -531,10 +513,10 @@ ${BACK_BUTTON_XPATH}/following-sibling::android.view.View/android.widget.Button[
   get inStoreModePage() {
     return $(
       `//android.view.View[(
-	contains(@content-desc, 'In-Store Mode!') or
-	contains(@content-desc, 'โหลด In-Store!') or
-	contains(@content-desc, 'Chế độ cửa hàng!')
-) and .//android.widget.Button ]`
+        contains(@content-desc, 'In-Store Mode!') or
+        contains(@content-desc, 'โหลด In-Store!') or
+        contains(@content-desc, 'Chế độ cửa hàng!')
+      ) and .//android.widget.Button ]`
     );
   }
 

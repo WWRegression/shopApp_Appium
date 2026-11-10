@@ -619,6 +619,8 @@ export class MypageLocator {
         or @content-desc = 'Regisztrált termékeim'
         or @content-desc = '登録済み製品'
         or @content-desc = 'Produtos Registados'
+        or @content-desc = 'Registrerade produkter'
+        or @content-desc = 'Kayıtlı Ürünler'
       )]`
     );
   }
@@ -1140,23 +1142,17 @@ export class MypageLocator {
         ${desc} = 'studente' or
         ${desc} = 'education shop' or
         ${desc} = 'education store' or
-        ${desc} = 'samsung education' or
         ${desc} = 'samsung education store' or
         ${desc} = 'magasin étudiant' or
         ${desc} = 'beneficios estudiantes' or
         ${desc} = 'tienda estudiantes' or
-        ${desc} = 'tienda para estudiantes' or
         ${desc} = 'samsung 教育商店' or
         ${desc} = 'pelajar' or
-        ${desc} = 'tienda samsung para estudiantes' or
         ${desc} = 'student' or
-        ${desc} = 'tienda oficial para estudiantes' or
         ${desc} = 'sklep samsung dla edukacji' or
-        ${desc} = 'loja educação' or
         ${desc} = 'متجر الطالب' or
         ${desc} = 'ร้านค้าสำหรับนักเรียน-นักศึกษา' or
         contains(@content-desc, 'Eğitim İndirim Programı mağazası') or
-        ${desc} = '進入教育優惠商店' or
         contains(@content-desc, 'Cửa hàng Giáo dục')
       ]`
     );
@@ -1171,7 +1167,6 @@ export class MypageLocator {
         ${desc} = 'corporate employee' or
         ${desc} = 'corporate shop' or
         ${desc} = 'samsung government store' or
-        ${desc} = 'متجر موظفي الشركات' or
         ${desc} = 'tienda para alianzas corporativas' or
         ${desc} = 'samsung 合作夥伴商店' or
         ${desc} = 'samsung partnership store' or

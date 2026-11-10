@@ -60,7 +60,7 @@
     "logout": true
   },
   "shopMenuList": {
-    "studentStore": false,
+    "studentStore": true,
     "corporateStore": false,
     "inStoreMode": false,
     "samsungPlus": false,
