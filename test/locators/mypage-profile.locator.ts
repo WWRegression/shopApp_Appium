@@ -31,13 +31,11 @@ export class MypageProfileLocator {
         or contains(@content-desc, 'Předvolby marketingu')
         or contains(@content-desc, 'Präferenzen bearbeiten')
         or contains(@content-desc, 'Marketingmegkeresésekkel kapcsolatos beállítások')
-        or contains(@content-desc, 'Editați preferințele')
         or contains(@content-desc, 'Pazarlama Tercihleri')
         or contains(@content-desc, '編輯偏好')
         or contains(@content-desc, 'マーケティング通信')
         or contains(@content-desc, 'Os meus pedidos')
         or contains(@content-desc, 'העדפות שיווקיות')
-        or contains(@content-desc, 'Address Management')
         or contains(@content-desc, 'Manage Preferences')
         or contains(@content-desc, 'Edit Preferences')
       ]`
@@ -76,7 +74,7 @@ export class MypageProfileLocator {
   }
 
   get saveAddressButton() {
-    return $('button[data-an-la^="address:"][data-an-la$=":save"]');
+    return $('button[data-an-la^="address:"][data-an-la$=":save"], button[data-an-la^="addresses:"][data-an-la$=":save"]');
   }
 
   get editAddressButton() {

@@ -15,7 +15,11 @@
   "shipping": {
     "address1": "1 King",
     "address2": "99",
-    "landmark": "CALLAO"
+    "town": "BAGUA",
+    "searchText": "AMAZONAS",
+    "district": "ARAMANGO",
+    "companyName": "ANDES DIGITAL SOLUTIONS S.A.C.",
+    "taxNumber": "20987654321"
   },
   "product": {
     "haSku": "RS57DG4000M9PE",

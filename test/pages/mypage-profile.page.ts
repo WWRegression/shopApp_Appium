@@ -141,7 +141,9 @@ export class MypageProfilePage extends BasePage {
     );
     const shown = await this.locator.addressForm.waitForExist({ timeout: 10000 }).then(() => true, () => false);
     markFailedAndStop([{ label: 'address edit form not shown', pass: shown }], 'editAddressPhone');
-    await this.checkoutPage.fillFormFields(this.locator.addressFormSelector, [[phone, ['phone']]]);
+    await this.checkoutPage.fillFormFields(this.locator.addressFormSelector, [
+      [phone, ['phone', 'telephoneInput', 'recipientNumber']],
+    ]);
     await this.clickSaveAddress();
   }
 
@@ -157,16 +159,22 @@ export class MypageProfilePage extends BasePage {
     await this.checkoutPage.fillFormFields(
       form,
       [
-        [customer.firstName, ['firstname', 'fullname']],
+        [customer.firstName, ['firstname', 'fullname', 'recipientName']],
         [customer.lastName, ['lastname']],
         [customer.email, ['email']],
-        [phone, ['phone']],
+        [customer.documentNumber, ['vatNumber', 'recipientNumber']],
+        [customer.documentType, ['identificationType']],
+        [phone, ['phone', 'telephoneInput']],
         [shipping.address1, ['line1']],
         [shipping.address2, ['line2', 'suburb', 'kecamatan', 'județ']],
-        [shipping.postalCode, ['postalcode']],
-        [shipping.town, ['town']],
+        [shipping.postalCode, ['postalcode', 'postcode', 'postalCode']],
+        [shipping.town, ['town', 'townCity', 'city']],
         [shipping.district, ['state', 'district']],
+        [shipping.apartment, ['apartment']],
+        [shipping.landmark, ['landmark']],
         [shipping.searchText, ['regioniso', 'searchaddress']],
+        [shipping.companyName, ['companyName']],
+        [shipping.taxNumber, ['companyTaxNumber', 'personalTaxNumber']],
       ],
       { onlyEmpty: picked }
     );

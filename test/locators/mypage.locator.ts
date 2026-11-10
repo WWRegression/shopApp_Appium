@@ -901,8 +901,6 @@ export class MypageLocator {
         @content-desc = 'การตั้งค่า' or
         @content-desc = 'Einstellungen' or
         @content-desc = 'Nastavení' or
-        @content-desc = 'Beállítások' or
-        @content-desc = 'Setări' or
         @content-desc = 'Ayarlar' or
         @content-desc = 'Definições' or
         @content-desc = 'הגדרות'
@@ -931,9 +929,7 @@ export class MypageLocator {
         @content-desc = 'Správa osobních údajů' or
         @content-desc = 'Personenbezogene Daten verwalten' or
         @content-desc = 'Személyes adatok kezelése' or
-        @content-desc = 'Gestionare date cu caracter personal' or
         @content-desc = 'Kişisel Verilerin Yönetimi' or
-        @content-desc = 'Persönliche Daten verwalten' or
         @content-desc = 'マーケティングに関する設定' or
         @content-desc = 'Gestão de dados pessoais' or
         contains(@content-desc, 'ניהול מידע אישי')

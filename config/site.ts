@@ -74,6 +74,8 @@ export interface Site {
     postalCode?: string;
     town?: string;
     searchText?: string;
+    companyName?: string;
+    taxNumber?: string;
   };
   product: {
     haSku?: string;

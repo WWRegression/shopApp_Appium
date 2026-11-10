@@ -238,7 +238,7 @@ export class CheckoutLocator {
   }
 
   get deliverySavedAddressLabel() {
-    return $('app-customer-address-v2 .address-box label');
+    return $('app-customer-address-v2 .address-box label, app-address-list-cn .address-box label');
   }
 
   get billingSameAsShippingCheckbox() {
@@ -250,7 +250,7 @@ export class CheckoutLocator {
   }
 
   get billingSavedAddressEditButton() {
-    return $('app-billing-address-v2 a.actions__edit');
+    return $('app-billing-address-v2 a.actions__edit, app-address-list-v2 a.actions__edit');
   }
 
   get billingPhoneInput() {

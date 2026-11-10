@@ -16,7 +16,8 @@
     "address1": "Samsung Tower",
     "district": "ADALAR",
     "town": "BURGAZADA MAH",
-    "searchText": "İSTANBUL"
+    "searchText": "İSTANBUL",
+    "taxNumber": "11111111110"
   },
   "product": {
     "haSku": "RT62K704RSL/TR",
