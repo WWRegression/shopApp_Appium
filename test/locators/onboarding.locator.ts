@@ -16,15 +16,23 @@ export class OnboardingLocator {
         @content-desc = 'ACEPTAR' or
         @content-desc = 'Weiter' or
         @content-desc = 'Continuar' or
+        @content-desc = 'Continuer' or
+        @content-desc = 'Continua' or
+        @content-desc = 'Kontynuuj' or
+        @content-desc = 'Pokračovat' or
+        @content-desc = 'Continuă' or
         @content-desc = 'Siguiente' or
         @content-desc = 'Next' or
         @content-desc = 'Következő' or
         @content-desc = 'موافق' or
         @content-desc = '繼續' or
+        @content-desc = '继续' or
         @content-desc = ' אישור' or
         @content-desc = 'はい' or
+        @content-desc = '次へ' or
         @content-desc = 'ตกลง' or
         @content-desc = '確認' or
+        @content-desc = 'Tiếp tục' or
         @content-desc = 'Onayla'
       ]`
     );

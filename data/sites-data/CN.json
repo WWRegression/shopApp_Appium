@@ -44,7 +44,7 @@
     "orderSupport": false,
     "myAddresses": false,
     "support": false,
-    "policy": false,
+    "policy": true,
     "smartThings": false,
     "settings": true,
     "accountManagement": true,

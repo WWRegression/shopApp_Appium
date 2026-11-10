@@ -118,8 +118,8 @@ const MORE_SAMSUNG_APPS = [
   },
 ] as const;
 
-/** URL path of menus that open inside the app WebView, where the native tree shows no page text (e.g. UK). */
-const SHOP_MENU_URL_PATHS: Partial<Record<ShopMenuPage, string>> = {
+/** URL path of menus that open inside the app WebView, where the native tree shows no page text (e.g. UK). Same English paths in every country. */
+export const SHOP_MENU_URL_PATHS: Partial<Record<ShopMenuPage, string>> = {
   samsungCarePlus: '/samsung-care-plus',
   samsungLive: '/samsung-live',
   supportHome: '/support/',
@@ -143,41 +143,64 @@ function normalizeCategoryTitle(text: string): string {
   return text.split('\n').map((line) => line.trim()).filter(Boolean).at(-1) ?? '';
 }
 
-/** Sites swap these between the menu and its page (Inbox ↔ Notification, Interests ↔ category, Cookies ↔ privacy). Add a country's word to the matching group. */
+/** Same-meaning words between a menu and its page. Landing URLs stay English (`/shop-faq`, `/support/contact`) — do not add per-country labels here. */
 export const SAME_MENU_WORDS = [
   ['inbox', 'notification', 'notificações', 'notificação', 'הודעות', 'התראות'],
-  ['interest', 'category', 'like', 'intérêt', 'catégorie'],
-  ['cookie', 'privacy', 'témoin', 'خصوصية', 'datenschutz', 'donnée'],
-  ['contact', 'اتصل'],
-  ['legal', 'قانونية', 'rechtlich', 'utilisation'],
-  ['license', 'licence', 'رخصة'],
+  ['interest', 'category', 'like', 'intérêt', 'catégorie', 'zajm', 'thich', '兴趣', '興趣', 'erdeklod', 'zainteres', 'interes', 'สนใจ'],
+  ['cookie', 'privacy', 'témoin', 'خصوصية', 'datenschutz', 'donnée', 'privasi', 'soukrom', 'confidential', 'rieng', '隐私', '隱私', '私隱', 'adatved', 'suti', 'prywatn', 'คุกกี้', 'ส่วนตัว'],
+  ['contact', 'اتصل', 'hubungi', 'kontakt', 'lien', '联系', '聯絡', 'ติดต่อ'],
+  ['legal', 'قانونية', 'rechtlich', 'utilisation', 'pravni', 'phap', '法律', 'jogi', 'prawn', 'juridic', 'utilizare', 'กฎหมาย', 'กฏหมาย', '服务条款'],
+  ['term', 'condition', 'podmink', 'bedingung', 'khoan', '条款', '條款', 'feltetel', 'warunk', 'regulamin', 'conditii', 'ข้อกำหนด', 'เงื่อนไข', 'tnc'],
+  ['license', 'licence', 'رخصة', 'licenc', 'ใบอนุญาต'],
+  ['version', 'verze', 'phien', '版本', 'verzio', 'wersja', 'versiun', 'เวอร์ชัน', 'เวอร์ชั่น'],
 ];
+
+/** Strips combining marks so é/á match e/a. */
+export function foldAccents(text: string): string {
+  return text.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase();
+}
+
+/** True when `pageName` (title or URL) contains `word`, or a URL token shares a 4-letter stem (Términos → terms-and-conditions). */
+export function pageHasWord(pageName: string, word: string): boolean {
+  const folded = foldAccents(pageName);
+  if (folded.includes(word)) {
+    return true;
+  }
+  if (word.length < 4) {
+    return false;
+  }
+  const stem = word.slice(0, 4);
+  return folded.split(/[^a-z0-9]+/).some((token) => token.length >= 4 && (token.startsWith(stem) || word.startsWith(token.slice(0, 4))));
+}
 
 /** Words taken from a menu name, plus SAME_MENU_WORDS aliases. Apostrophes split tokens; Arabic ال / لل prefixes are dropped. */
 export function getMenuWords(menuName: string): string[] {
   const fillers = ['and', 'for', 'the', 'you', 'your', 'mes'];
   const words: string[] = [];
-  for (const raw of menuName.toLowerCase().split(/[^\p{L}\p{N}]+/u)) {
+  for (const raw of foldAccents(menuName).split(/[^\p{L}\p{N}]+/u)) {
     const word = raw.replace(/^(وال|لل|بال|كال|فال|ال)/, '');
     if (word.length > 2 && !fillers.includes(word)) {
       words.push(word.length > 4 ? word.replace(/e?s$/, '') : word);
     }
   }
-  const core = words.length > 0 ? words : [menuName.toLowerCase().replace(/[\s'"]/g, '')];
+  const core = words.length > 0 ? words : [foldAccents(menuName).replace(/[\s'"]/g, '')];
   const aliases: string[] = [];
   for (const word of core) {
     const group = SAME_MENU_WORDS.find((names) =>
-      names.some((name) => name === word || name.startsWith(word) || word.startsWith(name))
+      names.some((name) => {
+        const n = foldAccents(name);
+        return n === word || n.startsWith(word) || word.startsWith(n) || (n.length >= 2 && word.includes(n));
+      })
     );
     if (group) {
-      aliases.push(...group);
+      aliases.push(...group.map(foldAccents));
     }
   }
   return aliases.length > 0 ? [...core, ...aliases] : core;
 }
 
 export class ShopPage extends BasePage {
-  private readonly shoplocator = new ShopLocator();
+  protected readonly shoplocator = new ShopLocator();
   /** WebView pages open before the last menu click — page checks only read pages opened after it. */
   protected readonly knownPageIds = new Set<string>();
   private readonly knownPageUrls = new Map<string, string>();
@@ -206,7 +229,7 @@ export class ShopPage extends BasePage {
             actual = await this.findElementContaining(words);
             return actual !== '';
           }
-          const matched = pageNames.find((name) => words.some((word) => name.toLowerCase().includes(word)));
+          const matched = pageNames.find((name) => words.some((word) => pageHasWord(name, word)));
           actual = `page "${matched ?? pageNames.join(' | ')}"`;
           return matched !== undefined;
         },
@@ -216,15 +239,32 @@ export class ShopPage extends BasePage {
     return { pass, actual: actual || 'no element contains the words' };
   }
 
-  /** Label of the first screen element containing one of the words; BNB tabs are skipped since they show on every page. */
+  /** Label of the first screen element containing one of the words; BNB tabs are skipped since they show on every page. Accents are folded so Versión matches version. */
   private async findElementContaining(words: readonly string[]): Promise<string> {
     const bnbHome = this.bnbLocator.menu('home');
     const bnbTop = (await bnbHome.isExisting()) ? (await bnbHome.getLocation()).y : Infinity;
-    for (const element of await this.headerLocator.elementsContaining(words)) {
+    const match = async (element: WebdriverIO.Element): Promise<string> => {
       const { y } = await element.getLocation().catch(() => ({ y: Infinity }));
-      if (y < bnbTop) {
-        const label = (await element.getText().catch(() => '')) || (await element.getAttribute('content-desc').catch(() => '')) || '';
-        return `element "${label.replace(/\n/g, ' / ').trim()}"`;
+      if (y >= bnbTop) {
+        return '';
+      }
+      const label = ((await element.getText().catch(() => '')) || (await element.getAttribute('content-desc').catch(() => '')) || '').trim();
+      return label && words.some((word) => pageHasWord(label, word)) ? `element "${label.replace(/\n/g, ' / ').trim()}"` : '';
+    };
+    for (const element of await this.headerLocator.elementsContaining(words)) {
+      const found = await match(element);
+      if (found) {
+        return found;
+      }
+    }
+    let checked = 0;
+    for (const element of await $$('//android.view.View[string-length(@content-desc) > 2] | //android.widget.TextView[string-length(@text) > 2]')) {
+      if (++checked > 40) {
+        break;
+      }
+      const found = await match(element);
+      if (found) {
+        return found;
       }
     }
     return '';

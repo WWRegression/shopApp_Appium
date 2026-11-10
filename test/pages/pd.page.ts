@@ -9,9 +9,13 @@ import { markFailedAndStop, FieldCheck } from '../helpers/report.helper';
 import { getElementLabel, scrollAndJsClick, clickIfDisplayed, scrollUntilVisible, isDisplayedOrFalse, waitForDisplayedOrFalse } from '../helpers/element.helper';
 import { getCurrentWebViewPage, isCurrentWebViewPage, prepareWebViewPage, switchToNative, switchToWebView } from '../helpers/context.helper';
 import { forceStopPackage } from '../helpers/device.helper';
+import { getSiteData } from '../../config/site';
 import { ProductOptionFields } from './bc.page';
 import { BasePage } from './base.page';
 import { PdLocator } from '../locators/pd.locator';
+
+/** IN auto-fills a located pincode; wait so typing is not overwritten. */
+const DELIVERY_ZIP_SETTLE_MS = 1500;
 
 export class PdPage extends BasePage {
   private readonly locator = new PdLocator();
@@ -107,16 +111,86 @@ export class PdPage extends BasePage {
   }
 
   async clickAddToCart(): Promise<void> {
-    const btn = $(
-      [
-        '[an-la*="add to cart" i]',
-        '[an-la*="buy now" i]',
-        '.hubble-price-bar__price-cta button',
-        '.pdd39-anchor-nav__cta button',
-      ].join(', ')
-    );
+    await this.fillDeliveryZipIfShown();
+    const sticky = this.locator.addToCartButton;
+    const btn = (await sticky.isExisting().catch(() => false)) ? sticky : this.locator.addToCartButtonFallback;
     await btn.waitForExist({ timeout: 15000 });
     await scrollAndJsClick(btn);
+  }
+
+  /** IN Delivery details on PD — located pincode (e.g. 04780) is often invalid; replace then Apply. */
+  private async fillDeliveryZipIfShown(): Promise<void> {
+    if (!(await this.deliveryZipExists())) {
+      return;
+    }
+    const postalCode = getSiteData().shipping?.postalCode ?? getSiteData().tradeUp?.postalCode ?? '';
+    if (!postalCode) {
+      return;
+    }
+    await driver.pause(DELIVERY_ZIP_SETTLE_MS);
+    const before = await this.readDeliveryZip();
+    if (before && before !== postalCode) {
+      console.warn(`[PD.fillDeliveryZip] replacing auto-filled "${before}"`);
+    }
+    let entered = await this.writeDeliveryZip(postalCode);
+    await driver.pause(DELIVERY_ZIP_SETTLE_MS);
+    if ((await this.readDeliveryZip()) !== postalCode) {
+      entered = await this.writeDeliveryZip(postalCode);
+    }
+    await this.clickDeliveryZipApply();
+    console.warn(`[PD.fillDeliveryZip] entered: ${entered || postalCode}`);
+  }
+
+  /** querySelector in-page so geo re-renders cannot stale a held WebElement. */
+  private async deliveryZipExists(): Promise<boolean> {
+    return Boolean(
+      await driver.execute(
+        (selector: string) => Boolean(document.querySelector(selector)),
+        PdLocator.deliveryZipInputCss
+      ).catch(() => false)
+    );
+  }
+
+  private async readDeliveryZip(): Promise<string> {
+    const value = await driver.execute(
+      (selector: string) => {
+        const input = document.querySelector(selector) as HTMLInputElement | null;
+        return input?.value ?? '';
+      },
+      PdLocator.deliveryZipInputCss
+    ).catch(() => '');
+    return String(value ?? '').trim();
+  }
+
+  private async writeDeliveryZip(postalCode: string): Promise<string> {
+    const value = await driver.execute(
+      (selector: string, text: string) => {
+        const input = document.querySelector(selector) as HTMLInputElement | null;
+        if (!input) {
+          return '';
+        }
+        const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
+        if (setter) {
+          setter.call(input, text);
+        } else {
+          input.value = text;
+        }
+        for (const type of ['input', 'keyup', 'change']) {
+          input.dispatchEvent(new Event(type, { bubbles: true }));
+        }
+        return input.value ?? '';
+      },
+      PdLocator.deliveryZipInputCss,
+      postalCode
+    );
+    return String(value ?? '').trim();
+  }
+
+  private async clickDeliveryZipApply(): Promise<void> {
+    await driver.execute((selector: string) => {
+      const btn = document.querySelector(selector) as HTMLElement | null;
+      btn?.click();
+    }, PdLocator.deliveryZipCheckCss).catch(() => undefined);
   }
 
   async openArAndVerify(timeoutMs = 20000): Promise<void> {

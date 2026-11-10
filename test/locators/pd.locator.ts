@@ -139,11 +139,22 @@ export class PdLocator {
     ]`);
   }
 
+  /**
+   * Sticky bar CTA. Same an-la exists twice (hidden clone + sticky); [last()] keeps one.
+   * Hubble/pdd39: other-country sticky (cannot be comma-joined with xpath).
+   */
   get addToCartButton() {
+    return $('xpath:(//*[@an-la="anchor navi:add to cart" or @an-la="anchor navi:buy now"])[last()]');
+  }
+
+  get addToCartButtonFallback() {
     return $(
       [
-        '#anchorNavigationPriceBarMobile [an-la*="anchor navi"]',
-      ].join(', ') 
+        '.hubble-price-bar__price-cta a',
+        '.hubble-price-bar__price-cta button',
+        '.pdd39-anchor-nav__cta a',
+        '.pdd39-anchor-nav__cta button',
+      ].join(', ')
     );
   }
   
@@ -326,5 +337,29 @@ export class PdLocator {
   }
 
   // ---- End of Trade-Up ----
+
+  /** IN/US Delivery details pincode on the PD page (not the Trade-Up popup). */
+  static readonly deliveryZipInputCss = [
+    '#delivery-zipcode',
+    'input[class*="ZipCodeModal_input"]',
+    '#delivery input',
+    'input[id*="zipcode" i]',
+    'input[placeholder*="Pincode" i]',
+    'input[aria-label*="Pincode" i]',
+  ].join(', ');
+
+  static readonly deliveryZipCheckCss = [
+    '#delivery [class*="CheckZipCode"] button',
+    '#delivery button',
+    '[data-testid="go-button"]',
+  ].join(', ');
+
+  get deliveryZipInput() {
+    return $(PdLocator.deliveryZipInputCss);
+  }
+
+  get deliveryZipCheckButton() {
+    return $(PdLocator.deliveryZipCheckCss);
+  }
   
 }

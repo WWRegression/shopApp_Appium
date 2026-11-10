@@ -1,4 +1,4 @@
-import { ShopPage, getMenuWords } from './shop.page';
+import { SHOP_MENU_URL_PATHS, ShopPage, getMenuWords, pageHasWord } from './shop.page';
 import {
   DASHBOARD_MENUS,
   MypageLocator,
@@ -12,6 +12,7 @@ import {
   type StoreOption,
 } from '../locators/mypage.locator';
 import { LoginPage, SAMSUNG_ACCOUNT_PACKAGE, SAMSUNG_ACCOUNT_SETTINGS_ACTIVITY } from './login.page';
+import { OnboardingLocator } from '../locators/onboarding.locator';
 import { OnboardingPage } from './onboarding.page';
 import { PdPage } from './pd.page';
 import { PfPage } from './pf.page';
@@ -38,6 +39,8 @@ const LOGIN_TAP_OFFSET = { x: 350, y: 150 };
 const PROFILE_TAP_OFFSET = { x: 350, y: 230, yForClPe: 260 };
 /** The name line is on the right side of the profile card. */
 const RTL_SITES = ['AE_AR', 'SA', 'IL'];
+/** Support-below-products layout is not checked on these sites (Katalon: CN/IN; IL same). */
+const SKIP_SUPPORT_BELOW_SITES = ['CN', 'IN', 'IL'];
 
 /** A row whose opened page does not contain the menu name — extra URL/title words, or a native element. */
 type ExtraPageCheck = {
@@ -48,6 +51,7 @@ type ExtraPageCheck = {
 
 export class MypagePage extends ShopPage {
   private readonly locator = new MypageLocator();
+  private readonly onboardingLocator = new OnboardingLocator();
   private readonly loginPage = new LoginPage();
   private readonly pfPage = new PfPage();
   private readonly pdPage = new PdPage();
@@ -134,8 +138,7 @@ export class MypagePage extends ShopPage {
 
   /** True when any word of the menu name (or its alias) appears in the opened page text. */
   private matchesLabel(text: string, menuName: string): boolean {
-    const target = text.toLowerCase();
-    return getMenuWords(menuName).some((word) => target.includes(word));
+    return getMenuWords(menuName).some((word) => pageHasWord(text, word));
   }
 
   /** Same title ignoring spaces and case — the list title repeats its menu's name ("  Support" for "Support"). */
@@ -523,23 +526,31 @@ export class MypagePage extends ShopPage {
     );
   }
 
-  /** Support must sit right below the recommended area, or right below Registered Products on sites without one. */
+  /**
+   * Support sits right below recommended (if shown) or Registered Products.
+   * CN/IN/IL: this check only is skipped; the TC still runs Support~Logout.
+   * Other sites: Registered Products area must be shown (devices optional); missing → markFailed and continue.
+   */
   async verifySupportBelowProductsArea(): Promise<void> {
-    if (!getSiteData().mypageMenuList?.support) {
-      console.log('[verifySupportBelowProductsArea] no Support menu on this site — skipped');
+    const siteCode = getRunConfig().siteCode;
+    if (SKIP_SUPPORT_BELOW_SITES.includes(siteCode)) {
+      console.log(`[verifySupportBelowProductsArea] skipped for ${siteCode}`);
       return;
     }
     await switchToNative();
     await flingToStart();
-    await scrollUntilVisible(this.locator.supportMenu, 5);
+    await scrollUntilVisible(this.locator.registeredProductsArea, 3);
+    const registeredShown = await waitForDisplayedOrFalse(this.locator.registeredProductsArea, { timeout: 5000 });
+    console.log(`[verifySupportBelowProductsArea] expected Registered Products shown actual=${registeredShown ? 'shown' : 'not shown'} result=${registeredShown ? 'PASS' : 'FAIL'}`);
+    markFailed([{ label: 'Registered Products area not shown on My Page', pass: registeredShown }], 'verifySupportBelowProductsArea');
+    if (!registeredShown) {
+      return;
+    }
 
+    await scrollUntilVisible(this.locator.supportMenu, 5);
     const hasRecommended = await isDisplayedOrFalse(this.locator.recommendedArea);
     const upperName = hasRecommended ? 'recommended area' : 'Registered Products';
     const upper = hasRecommended ? this.locator.recommendedArea : this.locator.registeredProductsArea;
-    if (!hasRecommended) {
-      const shown = await isDisplayedOrFalse(upper);
-      markFailedAndStop([{ label: 'neither the recommended area nor Registered Products is shown above Support', pass: shown }], 'verifySupportBelowProductsArea');
-    }
 
     const maxGap = this.getMaxGapBelow();
     const gap = await this.getVerticalGap(upper, this.locator.supportMenu);
@@ -683,10 +694,13 @@ export class MypagePage extends ShopPage {
   /** Extra checks for rows on this list whose page does not contain the menu name. Keyed by the on-screen name. */
   private async extrasOnThisList(): Promise<Map<string, ExtraPageCheck>> {
     const checks: ExtraPageCheck[] = [
+      { row: this.shoplocator.shopQnA, accept: [SHOP_MENU_URL_PATHS.shopQnA!] },
+      { row: this.shoplocator.contact, accept: [SHOP_MENU_URL_PATHS.contact!, '#contact', SHOP_MENU_URL_PATHS.supportHome!] },
+      { row: this.shoplocator.supportHome, accept: [SHOP_MENU_URL_PATHS.supportHome!] },
       { row: this.locator.cookiePreferencesMenu, accept: ['trustarc', 'privacy', 'cookie'] },
       { row: this.locator.marketingPreferencesMenu, accept: ['profile-setting', 'account.samsung.com', SAMSUNG_ACCOUNT_PACKAGE] },
       { row: this.locator.supportTopMenu, accept: ['サポート', '/support'] },
-      { row: this.locator.appTermsMenu, accept: ['利用規約'] },
+      { row: this.locator.appTermsMenu, accept: ['利用規約', 'terms-and-conditions'] },
       { row: this.locator.privacyPolicyMenu, accept: ['プライバシーポリシー'] },
       { row: this.locator.legalInfoMenu, accept: ['法務関連'] },
       {
@@ -695,7 +709,7 @@ export class MypagePage extends ShopPage {
       },
       {
         row: this.locator.selectCountryMenu,
-        nativeShown: () => waitForDisplayedOrFalse(this.homeLocator.countryContinueButton, { timeout: 5000 }),
+        nativeShown: () => waitForDisplayedOrFalse(this.onboardingLocator.countryContinueButton, { timeout: 5000 }),
       },
     ];
     const found = new Map<string, ExtraPageCheck>();

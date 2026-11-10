@@ -2,7 +2,7 @@ import { CartLocator } from "../../locators/cart.locator";
 import { AddedService } from "../added-service.interface";
 import { assertElementDisplayed } from "../../helpers/validation.helper";
 import { parsePriceToNumber } from "../../helpers/data.helper";
-import { clickIfDisplayed, isDisplayedOrFalse, scrollAndJsClick, scrollAndWdioClick, setInputValue } from "../../helpers/element.helper";
+import { clickIfDisplayed, getInputValue, isDisplayedOrFalse, scrollAndJsClick, scrollAndWdioClick, setInputValue } from "../../helpers/element.helper";
 import { scrollElementToCenter } from "../../helpers/gesture.helper";
 import { switchToWebView } from "../../helpers/context.helper";
 
@@ -11,6 +11,8 @@ const STEP_LEAVE_MS = 8000;
 const MAX_STEPS = 5;
 /** Postcode check is a server round-trip with no fixed duration. */
 const VALIDATE_MS = 30000;
+/** IN auto-fills the pincode after the popup opens; wait so typing is not overwritten. */
+const FILL_SETTLE_MS = 1500;
 
 /** Only the current step component is mounted. */
 type CartTradeUpStep = "selectDevice" | "checkCondition" | "applyDiscount";
@@ -257,7 +259,16 @@ export class CartTradeUpService implements AddedService {
     if (!postalCode) {
       throw new Error("[Cart.TRADEUP] postal code shown but site data has no tradeUp.postalCode");
     }
+    await driver.pause(FILL_SETTLE_MS);
+    if (await isDisplayedOrFalse(this.locator.tradeUpPostalSuccess)) {
+      console.warn("[Cart.TRADEUP] postal code already accepted");
+      return;
+    }
     await setInputValue(input, postalCode);
+    await driver.pause(FILL_SETTLE_MS);
+    if ((await getInputValue(input)).trim() !== postalCode) {
+      await setInputValue(input, postalCode);
+    }
     console.warn(`[Cart.TRADEUP] postal code entered: ${postalCode}`);
 
     const check = this.locator.tradeUpPostalCheckButton;

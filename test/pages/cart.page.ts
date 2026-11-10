@@ -298,17 +298,22 @@ export class CartPage extends BasePage {
   async increaseQuantity(sku: string): Promise<void> {
     await this.selectBnbMenu('cart');
     await this.prepareCartPage();
-    const before = Number(await getInputValue(this.locator.quantityInput(sku)));
+    const before = await this.getItemQuantity(sku);
     console.log(`[increaseQuantity] sku=${sku} quantity before=${before}`);
 
-    const increaseButton = await this.locator.quantityIncreaseButton(sku);
-    await jsTouchStart(increaseButton);
-    await jsClick(increaseButton);
-    await driver.pause(3000);
-    // With some services (SIM, EUP) a confirm popup opens and the quantity only changes after Yes
-    if (await clickIfDisplayed(this.locator.quantityChangeConfirmYesButton, 1000)) {
-      console.log('[increaseQuantity] quantity change confirm popup: Yes clicked');
+    const increaseButton = this.locator.quantityIncreaseButton(sku);
+    if (currentSiteCode() === 'IN') {
+      await scrollAndJsClick(increaseButton);
+      await driver.pause(5000);
+    } else {
+      await jsTouchStart(increaseButton);
+      await jsClick(increaseButton);
       await driver.pause(3000);
+      // With some services (SIM, EUP) a confirm popup opens and the quantity only changes after Yes
+      if (await clickIfDisplayed(this.locator.quantityChangeConfirmYesButton, 1000)) {
+        console.log('[increaseQuantity] quantity change confirm popup: Yes clicked');
+        await driver.pause(3000);
+      }
     }
     await this.verifyItemQuantity(sku, before + 1);
   }
@@ -377,19 +382,23 @@ export class CartPage extends BasePage {
       .catch(() => undefined);
   }
 
+  /** IN has no quantity input — quantity is the number of cart-item rows for the SKU. */
+  private async getItemQuantity(sku: string): Promise<number> {
+    if (currentSiteCode() === 'IN') {
+      return (await this.locator.cartItemRows(sku)).length;
+    }
+    return Number(await getInputValue(this.locator.quantityInput(sku))) || 0;
+  }
+
   /** Records a failure when the item's quantity input does not show `expected`, waiting up to 8s for the cart to update. */
   async verifyItemQuantity(sku: string, expected: number): Promise<void> {
-    // IN has no quantity input
-    if (currentSiteCode() === 'IN') {
-      return;
-    }
     await this.prepareCartPage();
-    let actual = '';
+    let actual = 0;
     const pass = await driver
       .waitUntil(
         async () => {
-          actual = await getInputValue(this.locator.quantityInput(sku));
-          return actual === String(expected);
+          actual = await this.getItemQuantity(sku);
+          return actual === expected;
         },
         { timeout: 8000, interval: 500 }
       )
@@ -413,13 +422,12 @@ export class CartPage extends BasePage {
   /** Records a failure when the service area shows no error text within 10s (e.g. after raising the quantity to 2). */
   async verifyServiceErrorText(service: 'tradeIn' | 'scPlus' | 'tradeUp' | 'eup'): Promise<void> {
     await this.prepareCartPage();
-    const errorText = this.locator.serviceErrorText(service);
     let text = '';
-    // The error span is always in the DOM, so it must also have text
+    // The error span is always in the DOM, so it must also have text. Read via JS so off-screen still counts.
     const shown = await driver
       .waitUntil(
         async () => {
-          text = (await errorText.isDisplayed().catch(() => false)) ? ((await errorText.getText().catch(() => '')) ?? '').trim() : '';
+          text = await this.readServiceErrorText(service);
           return Boolean(text);
         },
         { timeout: 10000, interval: 1000 }
@@ -427,6 +435,21 @@ export class CartPage extends BasePage {
       .then(() => true, () => false);
     console.log(`[verifyServiceErrorText] service=${service} expected error text="shown" actual="${text || 'none'}" result=${shown ? 'PASS' : 'FAIL'}`);
     markFailed([{ label: `${service} error text on cart`, pass: shown }], 'verifyServiceErrorText');
+  }
+
+  private async readServiceErrorText(service: 'tradeIn' | 'scPlus' | 'tradeUp' | 'eup'): Promise<string> {
+    const value = await driver
+      .execute((selector: string) => {
+        for (const node of document.querySelectorAll(selector)) {
+          const text = (node.textContent || '').replace(/\s+/g, ' ').trim();
+          if (text) {
+            return text;
+          }
+        }
+        return '';
+      }, this.locator.serviceErrorTextCss(service))
+      .catch(() => '');
+    return String(value ?? '').trim();
   }
 
   /** Records a failure when the cart still shows items after up to 10s. */

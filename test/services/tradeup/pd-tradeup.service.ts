@@ -2,6 +2,7 @@ import { PdLocator } from '../../locators/pd.locator';
 import {
   clickIfDisplayed,
   getEnabledElements,
+  getInputValue,
   isAnySelected,
   isDisplayedOrFalse,
   jsClick,
@@ -16,6 +17,8 @@ const STEP_LEAVE_MS = 8000;
 const MAX_STEPS = 5;
 /** Pincode check is a server round-trip with no fixed duration. */
 const VALIDATE_MS = 30000;
+/** IN auto-fills the pincode after the popup opens; wait so typing is not overwritten. */
+const FILL_SETTLE_MS = 1500;
 
 type TradeUpSteps = 'selectDevice' | 'checkCondition' | 'applyDiscount';
 /** PD Trade-Up popup. VD uses step panels; IN is one screen treated as selectDevice. */
@@ -161,30 +164,50 @@ export class PdTradeUpService {
     if (!postalCode) {
       throw new Error('[PD.TRADEUP] postal code shown but site data has no tradeUp.postalCode');
     }
-    await setInputValue(input, postalCode);
-    console.warn(`[PD.TRADEUP.setPostalCode] entered: ${postalCode}`);
-    if (!(await clickIfDisplayed(this.locator.tradeUpPostalCheckButton, WAIT_MS))) {
-      throw new Error('[PD.TRADEUP] postal code check button not clickable');
+    // IN auto-fills a located pincode; wait so typing does not overlap it.
+    await driver.pause(FILL_SETTLE_MS);
+    if (await isDisplayedOrFalse(this.locator.tradeUpPostalSuccessMessage)) {
+      console.warn('[PD.TRADEUP.setPostalCode] postal code already accepted');
+      return;
     }
+    await setInputValue(input, postalCode);
+    await driver.pause(FILL_SETTLE_MS);
+    if ((await getInputValue(input)).trim() !== postalCode) {
+      await setInputValue(input, postalCode);
+    }
+    console.warn(`[PD.TRADEUP.setPostalCode] entered: ${postalCode}`);
 
     const started = Date.now();
     let error = '';
-    const accepted = await driver
-      .waitUntil(
-        async () => {
-          if (await isDisplayedOrFalse(this.locator.tradeUpPostalSuccessMessage)) {
-            return true;
-          }
-          const errorEl = this.locator.tradeUpPostalErrorMessage;
-          if (await isDisplayedOrFalse(errorEl)) {
-            error = ((await errorEl.getText().catch(() => '')) ?? '').trim() || 'error shown';
-            return true;
-          }
-          return false;
-        },
-        { timeout: VALIDATE_MS, interval: 500 }
-      )
-      .catch(() => false);
+    let accepted = false;
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      if (!(await clickIfDisplayed(this.locator.tradeUpPostalCheckButton, WAIT_MS))) {
+        throw new Error('[PD.TRADEUP] postal code check button not clickable');
+      }
+      error = '';
+      accepted = await driver
+        .waitUntil(
+          async () => {
+            if (await isDisplayedOrFalse(this.locator.tradeUpPostalSuccessMessage)) {
+              return true;
+            }
+            const errorEl = this.locator.tradeUpPostalErrorMessage;
+            if (await isDisplayedOrFalse(errorEl)) {
+              error = ((await errorEl.getText().catch(() => '')) ?? '').trim() || 'error shown';
+              return true;
+            }
+            return false;
+          },
+          { timeout: VALIDATE_MS, interval: 500 }
+        )
+        .catch(() => false);
+      if (!error) {
+        break;
+      }
+      console.warn(`[PD.TRADEUP.setPostalCode] rejected "${error}", retry`);
+      await setInputValue(input, postalCode);
+      await driver.pause(FILL_SETTLE_MS);
+    }
     if (error) {
       throw new Error(`[PD.TRADEUP] postal code rejected: "${error}"`);
     }

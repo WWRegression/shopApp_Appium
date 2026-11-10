@@ -95,14 +95,22 @@ export class CartLocator {
     return $$(`.cart-item[data-modelcode="${sku}" i] .cart-item__options`);
   }
 
-  /** Quantity-increase button */
+  /** Quantity-increase button. IN puts data-modelcode on Buy One More itself, not only the cart-item parent. */
   quantityIncreaseButton(sku: string) {
     return $(
-      [        
-        `.cart-item[data-modelcode="${sku}"] button.btn-qty-plus`,
-        `.cart-item[data-modelcode="${sku}"] button.btn-buy-one-more`,
+      [
+        `button.btn-buy-one-more[data-modelcode="${sku}" i]`,
+        `button.btn-qty-plus[data-modelcode="${sku}" i]`,
+        `.cart-item[data-modelcode="${sku}" i] button.btn-buy-one-more`,
+        `.cart-item[data-modelcode="${sku}" i] button.btn-qty-plus`,
+        `.cart-item[data-modelcode="${sku}" i] button[data-an-la="plus button"]`,
       ].join(', ')
     );
+  }
+
+  /** IN/US row-per-unit cart: quantity = number of rows for this SKU. */
+  cartItemRows(sku: string) {
+    return $$(`div.cart-item-list div.cart-item[data-modelcode="${sku}" i], .cart-item[data-modelcode="${sku}" i]`);
   }
 
   quantityInput(sku: string) {
@@ -179,14 +187,24 @@ export class CartLocator {
     return $('[data-modelcode="TRADE-IN"] .price, [data-modelcode="TRADE-IN"] .action-text--mobile, .tradein-service .price, .trade-in-total-price, span.trade-in__item-discount, [data-modelcode="TRADE-IN"] .text-right');
   }
 
-  serviceErrorText(service: 'tradeIn' | 'scPlus' | 'tradeUp' | 'eup') {
-    const errorArea = {
-      tradeIn: '.service-item__error.trade-in-error',
-      scPlus: '.service-item__smc .service-item__error',
-      tradeUp: '[data-modelcode="TRADE-UP"] .service-item__error',
-      eup: '.service-item__smf .service-item__error',
+  serviceErrorTextCss(service: 'tradeIn' | 'scPlus' | 'tradeUp' | 'eup'): string {
+    return {
+      tradeIn: '.service-item__error.trade-in-error span.error-text, .trade-in-error .error-text',
+      scPlus: '.service-item__smc .service-item__error span.error-text',
+      tradeUp: [
+        '[data-modelcode="TRADE-UP"] .service-item__error span.error-text',
+        '[data-modelcode="TRADE-IN"] .service-item__error span.error-text',
+        '.service-item__trade-up .service-item__error span.error-text',
+        '.service-item__error span.error-text',
+        '.trade-in-error .error-text',
+        '[class*="error-text"]',
+      ].join(', '),
+      eup: '.service-item__smf .service-item__error span.error-text',
     }[service];
-    return $(`${errorArea} span.error-text`);
+  }
+
+  serviceErrorText(service: 'tradeIn' | 'scPlus' | 'tradeUp' | 'eup') {
+    return $(this.serviceErrorTextCss(service));
   }
 
   get quantityChangeConfirmYesButton() {

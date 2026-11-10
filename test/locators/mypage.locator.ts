@@ -1092,6 +1092,7 @@ export class MypageLocator {
         contains(@content-desc, '選取國家') or
         contains(@content-desc, '選擇語言／地區') or
         contains(@content-desc, 'Language / Region') or
+        contains(@content-desc, '国/') or
         contains(@content-desc, 'البلد') or
         contains(@content-desc, 'בחירת מדינה')
       ]`
