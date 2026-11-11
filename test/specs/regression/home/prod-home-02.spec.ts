@@ -21,11 +21,10 @@ describe('PROD_HOME_02', () => {
       await clearPackage(targetPackage());
       await loginPage.signInOnDevice();
       await restartApp();
-      await onboardingPage.allowLocationPermissionIfShown();
+
+      await onboardingPage.allowLocationPermission();
       await onboardingPage.selectCountry(site.countryName);
-
       await onboardingPage.clickAssuranceCancelIfShown();
-
       await onboardingPage.selectTrustArcCookie('accept');
       await onboardingPage.agreeToPrivacyAndTerms();
       await onboardingPage.selectNotification('no');
@@ -33,18 +32,19 @@ describe('PROD_HOME_02', () => {
 
       await loginPage.clickLoginBtnOnLoginPageForCnIn();
       await loginPage.skipPurpose();
-      await homePage.verifyCookiePopup();
-      await mypagePage.verifyLoggedIn({ continueOnFail: true });
 
+      await homePage.verifyAndCloseCookiePopup();
+      await mypagePage.verifyLoggedIn({ continueOnFail: true });
       await shopPage.verifyCountry(site.countryName);
-      await homePage.applyBuildSetup();
-      await onboardingPage.selectTrustArcCookieIfShown('accept');
+
+      await homePage.configureUniversalBuild();
+      await onboardingPage.selectTrustArcCookie('accept');
       await loginPage.loginOnSelectProfileIfShown();
       await loginPage.skipPurpose();
 
-      await mypagePage.prepareNotificationPage();
+      await mypagePage.openPushNotificationMenu();
       await mypagePage.verifyNotification('no');
-      await mypagePage.prepareCookiePreferencesPage();
+      await mypagePage.openCookiePreferencesMenu();
       await mypagePage.verifyTrustArcCookie('accept');
     });
   });

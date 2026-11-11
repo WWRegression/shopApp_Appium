@@ -43,13 +43,6 @@ export class OnboardingPage extends BasePage {
     console.log(`[selectCountry] selected "${countryName}"`);
   }
 
-  /** Allows location ("While using the app") when the permission popup shows. */
-  async allowLocationPermissionIfShown(timeoutMs = 10000): Promise<void> {
-    await switchToNative();
-    const allowed = await clickIfDisplayed(this.popupLocator.locationAllowButton, timeoutMs);
-    console.log(`[allowLocationPermissionIfShown] ${allowed ? 'location permission allowed' : 'no location permission popup'}`);
-  }
-
   /** Clicks Cancel on the Adobe Assurance PIN screen when it is shown; true when it was closed. */
   async clickAssuranceCancelIfShown(timeoutMs = 3000): Promise<boolean> {
     await switchToNative();
@@ -146,10 +139,32 @@ export class OnboardingPage extends BasePage {
     console.log('[clickGetStarted] clicked');
   }
 
-  /** After "Yes", Android asks for the notification permission; allows it. */
-  async allowNotificationPermissionIfShown(): Promise<void> {
+    /** Allows location ("While using the app") on the Android permission popup. */
+    async allowLocationPermission(timeoutMs = 10000): Promise<void> {
+      await switchToNative();
+      const button = this.popupLocator.locationAllowButton;
+      const shown = await waitForDisplayedOrFalse(button, { timeout: timeoutMs });
+      console.log(`[allowLocationPermission] expected=location permission popup actual=${shown ? 'shown' : 'not shown'} result=${shown ? 'PASS' : 'FAIL'}`);
+      markFailedAndStop([{ label: 'location permission popup not shown', pass: shown }], 'allowLocationPermission');
+      await clickElement(button, { timeout: 5000 });
+      console.log('[allowLocationPermission] location permission allowed');
+    }
+
+  /**
+   * After "Yes", Android asks for the notification permission; allows it.
+   * Skipped when selectNotification already answered on that popup (IN).
+   */
+  async allowNotificationPermission(timeoutMs = 5000): Promise<void> {
+    if (this.notificationOnPermissionPopup) {
+      console.log('[allowNotificationPermission] already answered on the permission popup — skipped');
+      return;
+    }
     await switchToNative();
-    const allowed = await clickIfDisplayed(this.popupLocator.notificationAllowButton, 5000);
-    console.log(`[allowNotificationPermissionIfShown] ${allowed ? 'notification permission allowed' : 'no notification permission popup'}`);
+    const button = this.popupLocator.notificationAllowButton;
+    const shown = await waitForDisplayedOrFalse(button, { timeout: timeoutMs });
+    console.log(`[allowNotificationPermission] expected=notification permission popup actual=${shown ? 'shown' : 'not shown'} result=${shown ? 'PASS' : 'FAIL'}`);
+    markFailedAndStop([{ label: 'notification permission popup not shown', pass: shown }], 'allowNotificationPermission');
+    await clickElement(button, { timeout: 5000 });
+    console.log('[allowNotificationPermission] notification permission allowed');
   }
 }

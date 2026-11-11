@@ -11,8 +11,7 @@ import { ShopPage } from '../../../pages/shop.page';
 describe('PROD_HOME_01', () => {
   const onboardingPage = new OnboardingPage();
   const loginPage = new LoginPage();
-  const homePage = new HomePage();
-  
+  const homePage = new HomePage();  
   const mypagePage = new MypagePage();
   const shopPage = new ShopPage();
 
@@ -22,30 +21,28 @@ describe('PROD_HOME_01', () => {
       await clearPackage(targetPackage());
       await loginPage.signOutOnDevice();
       await restartApp();
-      await onboardingPage.allowLocationPermissionIfShown();
+
+      await onboardingPage.allowLocationPermission();
       await onboardingPage.selectCountry(site.countryName);
-
       await onboardingPage.clickAssuranceCancelIfShown();
-
       await onboardingPage.selectTrustArcCookie('decline');
       await onboardingPage.agreeToPrivacyAndTerms();
       await onboardingPage.selectNotification('yes');
       await onboardingPage.clickGetStarted();
+      await onboardingPage.allowNotificationPermission();
+      await loginPage.continueAsGuest();
 
-      await onboardingPage.allowNotificationPermissionIfShown();
-
-      await loginPage.continueAsGuestIfShown();
-      await homePage.verifyCookiePopup();
+      await homePage.verifyAndCloseCookiePopup();
       await mypagePage.verifyLoggedOut();
-
       await shopPage.verifyCountry(site.countryName);
-      await homePage.applyBuildSetup();
-      await onboardingPage.selectTrustArcCookieIfShown('decline');
+
+      await homePage.configureUniversalBuild();
+      await onboardingPage.selectTrustArcCookie('decline');
       await loginPage.continueAsGuestIfShown();
 
-      await mypagePage.prepareNotificationPage();
+      await mypagePage.openPushNotificationMenu();
       await mypagePage.verifyNotification('yes');
-      await mypagePage.prepareCookiePreferencesPage();
+      await mypagePage.openCookiePreferencesMenu();
       await mypagePage.verifyTrustArcCookie('decline');
     });
   });

@@ -37,52 +37,61 @@ export class HomePage extends BasePage {
     markFailedAndStop([{ label: 'Home not shown (header title does not match)', pass: ready }], 'prepareHomePage');
   }
 
-  /** The cookie popup must show after the initial setup (TrustArc sites already answered it). */
-  async verifyCookiePopup(): Promise<void> {
+  /** The cookie popup must show after the initial setup (TrustArc sites already answered it); then closes it. */
+  async verifyAndCloseCookiePopup(): Promise<void> {
     // Only the sites marked in site data (initialSetup.cookiePopup) must show it
     if (!getSiteData().initialSetup?.cookiePopup) {
-      console.log('[verifyCookiePopup] cookie popup is not required for this site — skipped');
+      console.log('[verifyAndCloseCookiePopup] cookie popup is not required for this site — skipped');
       return;
     }
     await switchToNative();
-    let shown = await waitForDisplayedOrFalse(this.popupLocator.cookieAcceptButton, { timeout: 5000 });
+    const acceptButton = this.popupLocator.cookieAcceptButton;
+    let shown = await waitForDisplayedOrFalse(acceptButton, { timeout: 5000 });
     // Welcome and promotion popups can stack on top of the cookie popup — close them one by one until it shows
     for (let closed = 0; !shown && closed < 3; closed += 1) {
       if (!(await this.closeTopPopup({ keepCookie: true }))) {
         break;
       }
-      console.log(`[verifyCookiePopup] closed a popup covering the cookie popup (${closed + 1})`);
-      shown = await waitForDisplayedOrFalse(this.popupLocator.cookieAcceptButton, { timeout: 3000 });
+      console.log(`[verifyAndCloseCookiePopup] closed a popup covering the cookie popup (${closed + 1})`);
+      shown = await waitForDisplayedOrFalse(acceptButton, { timeout: 3000 });
     }
-    console.log(`[verifyCookiePopup] expected=cookie popup shown actual=${shown ? 'shown' : 'not shown'} result=${shown ? 'PASS' : 'FAIL'}`);
-    markFailed([{ label: 'Cookie popup not found on site', pass: shown }], 'verifyCookiePopup');
+    console.log(`[verifyAndCloseCookiePopup] expected=cookie popup shown actual=${shown ? 'shown' : 'not shown'} result=${shown ? 'PASS' : 'FAIL'}`);
+    markFailed([{ label: 'Cookie popup not found on site', pass: shown }], 'verifyAndCloseCookiePopup');
+    if (!shown) {
+      return;
+    }
+    await clickElement(acceptButton, { timeout: 5000 });
+    console.log('[verifyAndCloseCookiePopup] cookie popup closed');
   }
 
-  /** Long-presses the Home header title to open the setup screen, sets the fixed build options (Mobile Backend = P1, Webview Debugging = Yes) and applies. */
-  async applyBuildSetup(): Promise<void> {
+  /** Opens Universal Build Config from the Home title, sets Mobile Backend = P1 and Webview Debugging = Yes, then applies. */
+  async configureUniversalBuild(): Promise<void> {
+    console.log('[configureUniversalBuild] start');
     await this.prepareHomePage();
     await this.dismissOverlays();
     await longPressElement(this.headerLocator.title);
 
     const opened = await waitForDisplayedOrFalse(this.locator.setupMobileBackendP1Option, { timeout: 10000 });
-    markFailedAndStop([{ label: 'setup screen not opened (Universal Build Config not found)', pass: opened }], 'applyBuildSetup');
+    markFailedAndStop([{ label: 'setup screen not opened (Universal Build Config not found)', pass: opened }], 'configureUniversalBuild');
 
     // The options are fixed for every run, so all of them are set here and applied once (Apply restarts the app)
     await this.selectSetupOption(this.locator.setupMobileBackendP1Option, 'Mobile Backend = P1');
+    await this.selectSetupOption(this.locator.setupHybrisP1Option, 'Hybris = P1');
+    await this.selectSetupOption(this.locator.setupAEMP1Option, 'AEM = P1');
     await this.selectSetupOption(this.locator.setupWebviewYesOption, 'Webview Debugging = Yes');
 
     const applyButton = this.locator.setupApplyButton;
     await scrollUntilVisible(applyButton, 15);
-    await markFailedAndStop(() => clickElement(applyButton, { timeout: 5000 }), '[applyBuildSetup] Apply button not found');
-    console.log('[applyBuildSetup] build setup applied');
+    await markFailedAndStop(() => clickElement(applyButton, { timeout: 5000 }), '[configureUniversalBuild] Apply button not found');
+    
     await this.waitForAppLoaded(30000);
   }
 
   /** Scrolls to one option on the setup screen and selects it. */
   private async selectSetupOption(option: ChainablePromiseElement, label: string): Promise<void> {
     await scrollUntilVisible(option, 10);
-    await markFailedAndStop(() => clickElement(option, { timeout: 5000 }), `[applyBuildSetup] ${label} option not found`);
-    console.log(`[applyBuildSetup] selected ${label}`);
+    await markFailedAndStop(() => clickElement(option, { timeout: 5000 }), `[configureUniversalBuild] ${label} option not found`);
+    console.log(`[configureUniversalBuild] selected ${label}`);
   }
 
   /** Opens chat: the floating chat button when shown (UK has no header chat icon), else the header chat icon. */

@@ -848,7 +848,7 @@ export class MypagePage extends ShopPage {
   }
 
   /** My Page > Settings, then the given rows in order; My Page and Settings are skipped when the Settings page is already open. */
-  private async selectSettingsMenus(menus: ChainablePromiseElement[], step: string): Promise<void> {
+  private async openSettingsMenus(menus: ChainablePromiseElement[], step: string): Promise<void> {
     await switchToNative();
     // Already in Settings only on a sub page — My Page itself can show a same-named menu (PE "Notificaciones" inbox)
     const inSettings = (await isDisplayedOrFalse(menus[0])) && (await isDisplayedOrFalse(this.locator.subPageBackButton));
@@ -868,15 +868,15 @@ export class MypagePage extends ShopPage {
 
   /** My Page > Settings > Select Country, then selects the given country. */
   async changeCountryInSettings(countryName?: string): Promise<void> {
-    await this.selectSettingsMenus([this.locator.selectCountryMenu], 'changeCountryInSettings');
+    await this.openSettingsMenus([this.locator.selectCountryMenu], 'changeCountryInSettings');
     await new OnboardingPage().selectCountry(countryName);
   }
 
   /** My Page > Settings > Push Notification, then verifies the notification switch is shown. */
-  async prepareNotificationPage(): Promise<void> {
-    await this.selectSettingsMenus([this.locator.pushNotificationMenu], 'prepareNotificationPage');
+  async openPushNotificationMenu(): Promise<void> {
+    await this.openSettingsMenus([this.locator.pushNotificationMenu], 'openPushNotificationMenu');
     const ready = await waitForDisplayedOrFalse(this.locator.pushNotificationSwitch, { timeout: 5000 });
-    markFailedAndStop([{ label: 'Push Notification page not shown (switch not found)', pass: ready }], 'prepareNotificationPage');
+    markFailedAndStop([{ label: 'Push Notification page not shown (switch not found)', pass: ready }], 'openPushNotificationMenu');
   }
 
   /** The switch must match the option chosen at first launch ('yes' = on); then goes back to Settings. */
@@ -894,13 +894,13 @@ export class MypagePage extends ShopPage {
   }
 
   /** My Page > Settings > Personal Data Management > Cookie Preferences, then verifies the TrustArc choices are shown. */
-  async prepareCookiePreferencesPage(): Promise<void> {
+  async openCookiePreferencesMenu(): Promise<void> {
     // Only the sites marked in site data (initialSetup.trustArcCookie) have cookie preferences to check
     if (!getSiteData().initialSetup?.trustArcCookie) {
-      console.log('[prepareCookiePreferencesPage] TrustArc cookie is not required for this site — skipped');
+      console.log('[openCookiePreferencesMenu] TrustArc cookie is not required for this site — skipped');
       return;
     }
-    await this.selectSettingsMenus([this.locator.personalDataManagementMenu, this.locator.cookiePreferencesMenu], 'prepareCookiePreferencesPage');
+    await this.openSettingsMenus([this.locator.personalDataManagementMenu, this.locator.cookiePreferencesMenu], 'openCookiePreferencesMenu');
     // The consent can open on its summary first — "More info" (US: "Continue") shows the per-category choices
     if (!(await waitForDisplayedOrFalse(this.locator.trustArcSaveButton, { timeout: 15000 }))) {
       await clickIfDisplayed(this.locator.trustArcMoreInfoButton, 3000);
@@ -910,7 +910,7 @@ export class MypagePage extends ShopPage {
       }
     }
     const ready = await waitForDisplayedOrFalse(this.locator.trustArcSaveButton, { timeout: 10000 });
-    markFailedAndStop([{ label: 'Cookie Preferences not shown (TrustArc choices not found)', pass: ready }], 'prepareCookiePreferencesPage');
+    markFailedAndStop([{ label: 'Cookie Preferences not shown (TrustArc choices not found)', pass: ready }], 'openCookiePreferencesMenu');
   }
 
   /** Every cookie category must still hold the choice made at first launch ('decline' = NO, 'accept' = YES); then closes with Save. */

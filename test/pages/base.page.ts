@@ -250,7 +250,7 @@ export class BasePage {
     }
     // Before the welcome / promotion X — the same locator matches the cookie popup's X
     if (await isDisplayedOrFalse(this.popupLocator.cookieAcceptButton)) {
-      // The cookie popup stays up until verifyCookiePopup has checked it
+      // The cookie popup stays up until verifyAndCloseCookiePopup has checked it
       return !options.keepCookie && (await clickIfDisplayed(this.popupLocator.cookieAcceptButton));
     }
     return clickIfDisplayed(this.popupLocator.promoCloseButton);
@@ -319,7 +319,7 @@ export class BasePage {
     await driver
       .waitUntil(
         async () => {
-          // The first-launch cookie popup covers Home and stays up for verifyCookiePopup, so it counts as loaded
+          // The first-launch cookie popup covers Home and stays up for verifyAndCloseCookiePopup, so it counts as loaded
           if ((await this.isAppScreenShown()) || (await isDisplayedOrFalse(this.popupLocator.cookieAcceptButton))) {
             return true;
           }
@@ -538,12 +538,10 @@ export class BasePage {
       return;
     }
 
-    // The search screen has no BNB. Its header Back, e.g. "Kembali", returns to the page that has one.
-    if (await this.isSearchScreenOpen()) {
-      console.warn('[ensureBnbVisible] search screen open');
-      await clickElement(this.headerLocator.backButton);
+    // The search screen has no BNB. Closing it with header Back returns to a page that has one.
+    if (await this.closeSearchIfOpen()) {
       if (await waitForDisplayedOrFalse(this.bnbLocator.menu(menu), { timeout: 3000 })) {
-        console.warn('[ensureBnbVisible] BNB shown after leaving search');
+        console.log('[ensureBnbVisible] BNB shown after leaving search');
         return;
       }
     }
@@ -593,13 +591,23 @@ export class BasePage {
   }
 
   /** The search field is up. `$$` returns at once when this is not the search screen. */
-  private async isSearchScreenOpen(): Promise<boolean> {
+  protected async isSearchScreenOpen(): Promise<boolean> {
     for (const input of await this.searchLocator.searchInputs) {
       if (await input.isDisplayed().catch(() => false)) {
         return true;
       }
     }
     return false;
+  }
+
+  /** Closes search when open — that screen hides BNB. True when Back was tapped. */
+  protected async closeSearchIfOpen(): Promise<boolean> {
+    if (!(await this.isSearchScreenOpen())) {
+      return false;
+    }
+    console.log('[closeSearchIfOpen] search screen open — closing with header Back');
+    await clickElement(this.headerLocator.backButton);
+    return true;
   }
 
   private async getFirstVisibleHeaderIcon(

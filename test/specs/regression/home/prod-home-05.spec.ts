@@ -24,14 +24,15 @@ describe('PROD_HOME_05', () => {
       await clearPackage(targetPackage());
       await loginPage.signOutOnDevice();
       await restartApp();
-      await onboardingPage.allowLocationPermissionIfShown();
+
+      await onboardingPage.allowLocationPermission();
       await onboardingPage.selectCountry(site.countryName);
       await onboardingPage.clickAssuranceCancelIfShown();
       await onboardingPage.selectTrustArcCookie('decline');
       await onboardingPage.agreeToPrivacyAndTerms();
       await onboardingPage.selectNotification('yes');
       await onboardingPage.clickGetStarted();
-      await onboardingPage.allowNotificationPermissionIfShown();
+      await onboardingPage.allowNotificationPermission();
 
       await loginPage.changeCountryOnLoginSplash(target);
       await loginPage.continueAsGuest();

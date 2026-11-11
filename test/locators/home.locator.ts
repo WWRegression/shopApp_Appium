@@ -12,6 +12,18 @@ export class HomeLocator {
     );
   }
 
+  get setupHybrisP1Option() {
+    return $(
+      `//android.view.View[@content-desc = 'Hybris']/following-sibling::android.view.View[@content-desc = 'P1'][1]`
+    );
+  }
+
+  get setupAEMP1Option() {
+    return $(
+      `//android.view.View[@content-desc = 'AEM']/following-sibling::android.view.View[@content-desc = 'prod'][1]`
+    );
+  }
+
   /** "Apply" at the bottom of the setup screen */
   get setupApplyButton() {
     return $(`//android.widget.Button[@content-desc = 'Apply' 
