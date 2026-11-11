@@ -15,6 +15,7 @@ import { currentSiteCode } from '../helpers/tc-filter.helper';
 import {
   clickElement,
   clickIfDisplayed,
+  elementsContaining,
   getElementLabel,
   isDisplayedOrFalse,
   waitForDisplayedOrFalse,
@@ -251,7 +252,7 @@ export class ShopPage extends BasePage {
       const label = ((await element.getText().catch(() => '')) || (await element.getAttribute('content-desc').catch(() => '')) || '').trim();
       return label && words.some((word) => pageHasWord(label, word)) ? `element "${label.replace(/\n/g, ' / ').trim()}"` : '';
     };
-    for (const element of await this.headerLocator.elementsContaining(words)) {
+    for (const element of await elementsContaining(words)) {
       const found = await match(element);
       if (found) {
         return found;
@@ -421,7 +422,7 @@ export class ShopPage extends BasePage {
     timeout: number = 1000
   ): Promise<'L0' | 'L1' | 'pf' | 'unknown'> {
     if (!targetPage || targetPage === 'L0') {
-      const headerTitle = this.headerLocator.title;
+      const headerTitle = this.headerLocator.headerTitle;
       if (await waitForDisplayedOrFalse(headerTitle, { timeout })) {
         const headerTitleContentDesc = await headerTitle.getAttribute('content-desc');
         if (headerTitleContentDesc && BasePage.titleTexts['SHOP'].includes(headerTitleContentDesc)) {

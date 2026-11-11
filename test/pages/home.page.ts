@@ -69,7 +69,7 @@ export class HomePage extends BasePage {
     console.log('[configureUniversalBuild] start');
     await this.prepareHomePage();
     await this.dismissOverlays();
-    await longPressElement(this.headerLocator.title);
+    await longPressElement(this.headerLocator.headerTitle);
 
     const opened = await waitForDisplayedOrFalse(this.locator.setupMobileBackendP1Option, { timeout: 10000 });
     markFailedAndStop([{ label: 'setup screen not opened (Universal Build Config not found)', pass: opened }], 'configureUniversalBuild');
@@ -103,17 +103,17 @@ export class HomePage extends BasePage {
     await this.selectHeaderIcon('chat');
   }
 
-  /** Chat must open: the Samsung Chat title, or a screen without the Home header (UK shows a cookie notice instead of the chat). */
+  /** Chat must open: header title becomes Chat, or a screen without the Home header (UK shows a cookie notice instead of the chat). */
   async verifyChatOpened(): Promise<void> {
     let actual = 'still on Home';
     const opened = await driver
       .waitUntil(
         async () => {
-          if (await isDisplayedOrFalse(this.headerLocator.chatTitle)) {
+          if (await this.matchesHeaderTitle('CHAT')) {
             actual = 'chat page';
             return true;
           }
-          if (!(await isDisplayedOrFalse(this.headerLocator.title))) {
+          if (!(await isDisplayedOrFalse(this.headerLocator.headerTitle))) {
             actual = 'screen over Home (no header)';
             return true;
           }

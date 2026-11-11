@@ -354,22 +354,42 @@ export class BasePage {
     await scrollUp();
   }
 
-  /** Header */
+  /** Header *************************************************************************************/
+  protected async getHeaderTitle(): Promise<string> {
+    await this.prepareHeaderBnb();
+    return getElementLabel(this.headerLocator.headerTitle);
+  }
+
+  async matchesHeaderTitle(expected: keyof typeof BasePage.titleTexts ): Promise<boolean> {
+    const title = (await this.getHeaderTitle()).trim().replace(/\s+/g, ' ');
+    if (!title) {
+      return false;
+    }
+    console.warn('[matchesHeaderTitle] title:', title, 'expected:', expected);
+    // includes: "Samsung Chat", "Samsung My Page" still match Chat / My Page
+    return BasePage.titleTexts[expected].some((text) => {
+      const expectedText = text.trim();
+      return matchesText(title, expectedText) || title.includes(expectedText);
+    });
+  }
+
   async selectHeaderIcon(icon: HeaderIcon): Promise<void> {
     await this.prepareHeaderBnb();
     await clickElement(this.headerLocator.icon(icon));
   }
 
-  /** Chat icon opens the chat page. The title button "Samsung Chat" must be shown. UK has no header chat icon. */
+  /** Chat icon opens the chat page. Header title must change to Chat. UK has no header chat icon. */
   async verifyChat(): Promise<void> {
     if (getRunConfig().siteCode === 'UK') {
       console.log('[verifyChat] UK — skipped');
       return;
     }
     await this.selectHeaderIcon('chat');
-    const shown = await waitForDisplayedOrFalse(this.headerLocator.chatTitle, { timeout: 5000 });
-    console.log(`[verifyChat] Samsung Chat=${shown ? 'PASS' : 'FAIL'}`);
-    markFailedAndStop([{ label: 'Failed to navigate Chat page', pass: shown }], 'verifyChat');
+    const pass = await driver
+      .waitUntil(() => this.matchesHeaderTitle('CHAT'), { timeout: 5000, interval: 500 })
+      .then(() => true, () => false);
+    console.log(`[verifyChat] header title Chat=${pass ? 'PASS' : 'FAIL'}`);
+    markFailedAndStop([{ label: 'Failed to navigate Chat page', pass }], 'verifyChat');
   }
 
   /** Search icon opens the search box. A missing box is recorded, then Back returns to the previous page. */
@@ -380,21 +400,6 @@ export class BasePage {
     console.log(`[verifySearch] search box=${shown ? 'PASS' : 'FAIL'}`);
     markFailed([{ label: 'Failed to navigate to Search page', pass: shown }], 'verifySearch');
     await this.pressDeviceBack();
-  }
-
-  async matchesHeaderTitle(expected: keyof typeof BasePage.titleTexts ): Promise<boolean> {
-    console.warn('[matchesHeaderTitle] start');
-    const title = (await this.getHeaderTitle()).trim();
-    if (!title) {
-      return false;
-    }
-    console.warn('[matchesHeaderTitle] title:', title, 'expected:', expected);
-    return BasePage.titleTexts[expected].some((text) => matchesText(title, text));
-  }
-
-  protected async getHeaderTitle(): Promise<string> {
-    await this.prepareHeaderBnb();
-    return getElementLabel(this.headerLocator.title);
   }
 
   /** A tapped link/KV must open another page — one with a Back button in the header (BNB pages have none). */
@@ -425,7 +430,7 @@ export class BasePage {
     return false;
   }
 
-  // BNB
+  /** BNB *************************************************************************************/
   /** Reads the item count from the BNB cart tab's content-desc (leading number). */
   async getBNBCartCount(): Promise<number> {
     await switchToNative();
@@ -528,19 +533,16 @@ export class BasePage {
   }
 
   private async ensureBnbVisible(menu: BnbMenu): Promise<void> {
-    // The Insider banner sits over the BNB while the BNB still reads as displayed, so a tap would hit the banner (CL)
-    await this.closeInsiderBannerIfShown();
-
-    // prepareHeaderBnb() already performs one scrollUp(). If BNB is still hidden,
-    // try to recover it by tapping a visible header icon.
     if (await isDisplayedOrFalse(this.bnbLocator.menu(menu))) {
       return;
     }
 
+    // The Insider banner sits over the BNB while the BNB still reads as displayed, so a tap would hit the banner (CL)
+    await this.closeInsiderBannerIfShown();
+
     // The search screen has no BNB. Closing it with header Back returns to a page that has one.
     if (await this.closeSearchIfOpen()) {
       if (await waitForDisplayedOrFalse(this.bnbLocator.menu(menu), { timeout: 3000 })) {
-        console.log('[ensureBnbVisible] BNB shown after leaving search');
         return;
       }
     }
@@ -554,19 +556,10 @@ export class BasePage {
     }
 
     // Some pages (e.g., checkout) don't show BNB at all. Recover BNB via a header icon.
-    const recoverIcon = await this.getFirstVisibleHeaderIcon([
-      'search',
-      'back',
-      'chat',
-    ]);
-    if (!recoverIcon) {
-      throw new Error(`No header icon available to recover BNB: ${menu}`);
-    }
-
-    await this.selectHeaderIcon(recoverIcon);
-
-    if (await isDisplayedOrFalse(this.bnbLocator.menu(menu))) {
-      return;
+    for (const icon of ['search', 'back', 'chat'] as const) {
+      if (!(await isDisplayedOrFalse(this.headerLocator.icon(icon)))) continue;
+      await this.selectHeaderIcon(icon);
+      if (await isDisplayedOrFalse(this.bnbLocator.menu(menu))) return;
     }
 
     // Search (e.g. from checkout) focuses its input, and the keyboard covers BNB
@@ -577,13 +570,9 @@ export class BasePage {
       }
     }
 
-    // Some sites show no BNB on search either (e.g. US); its header Back leads Home
-    if (await isDisplayedOrFalse(this.headerLocator.backButton)) {
-      await clickElement(this.headerLocator.backButton);
-      if (await waitForDisplayedOrFalse(this.bnbLocator.menu(menu), { timeout: 3000 })) {
-        console.log('[ensureBnbVisible] BNB shown after header Back');
-        return;
-      }
+    await this.selectHeaderIcon('back');
+    if (await isDisplayedOrFalse(this.bnbLocator.menu(menu))) {
+      return;
     }
 
     throw new Error(`BNB is not visible: ${menu}`);
@@ -609,15 +598,4 @@ export class BasePage {
     return true;
   }
 
-  private async getFirstVisibleHeaderIcon(
-    candidates: HeaderIcon[]
-  ): Promise<HeaderIcon | null> {
-    for (const icon of candidates) {
-      const element = this.headerLocator.icon(icon);
-      if (await isDisplayedOrFalse(element)) {
-        return icon;
-      }
-    }
-    return null;
-  }
 }

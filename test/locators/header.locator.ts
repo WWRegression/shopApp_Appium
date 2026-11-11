@@ -1,29 +1,78 @@
 export type HeaderIcon = 'search' | 'back' | 'chat';
 
-/** Back button in the header, by its content-desc in each language (CN '返回') */
-export const BACK_BUTTON_XPATH = `//android.widget.Button[
-  contains(@content-desc, 'Back')
-  or contains(@content-desc, 'رجوع')
-  or contains(@content-desc, 'Zurück')
-  or contains(@content-desc, 'Terug')
-  or contains(@content-desc, 'Retour')
-  or contains(@content-desc, 'Arrière')
-  or contains(@content-desc, 'Atrás')
-  or contains(@content-desc, '返回')
-  or contains(@content-desc, 'Retroceder')
-  or contains(@content-desc, 'Zpět')
-  or contains(@content-desc, '上一頁')
-  or contains(@content-desc, 'Vissza')
-  or contains(@content-desc, 'Kembali')
-  or contains(@content-desc, 'Indietro')
-  or contains(@content-desc, 'Wstecz')
-  or contains(@content-desc, 'Voltar')
-  or contains(@content-desc, 'Înapoi')
-  or contains(@content-desc, 'กลับ')
-  or contains(@content-desc, 'Geri')
-  or contains(@content-desc, 'Tillbaka')
-  or contains(@content-desc, 'Quay lại')
-]`;
+const contentDescContainsAny = (labels: readonly string[]) =>
+  labels.map((label) => `@content-desc='${label}'`).join(' or ');
+
+/** Back button labels (CN '返回') */
+const BACK_LABELS = [
+  'Back',
+  'رجوع',
+  'Zurück',
+  'Terug',
+  'Retour',
+  'Arrière',
+  'Atrás',
+  '返回',
+  'Retroceder',
+  'Zpět',
+  '上一頁',
+  'Vissza',
+  'Kembali',
+  'Indietro',
+  'Wstecz',
+  'Voltar',
+  'Înapoi',
+  'กลับ',
+  'Geri',
+  'Tillbaka',
+  'Quay lại',
+] as const;
+
+const SEARCH_LABELS = [
+  'Search',
+  'بحث',
+  'Suche',
+  'Zoeken',
+  'Chercher',
+  'Buscar',
+  '搜索',
+  'Hledat',
+  'Rechercher',
+  'Keresés',
+  'Cari',
+  'Cerca',
+  'Szukaj',
+  'Pesquisar',
+  'ค้นหา',
+  'Ara',
+  'Sök',
+  'Tìm kiếm',
+] as const;
+
+const CHAT_LABELS = [
+  'Chat',
+  'محادثة مع الدعم',
+  'Chatten',
+  'Clavarder',
+  '客服',
+  '實時對話',
+  'Obrolan',
+  'แชท',
+  'Canlı destek',
+  '聊天',
+  'Chatta',
+  'Trò chuyện',
+] as const;
+
+const BACK_BUTTON_PREDICATE = contentDescContainsAny(BACK_LABELS);
+const SEARCH_BUTTON_PREDICATE = contentDescContainsAny(SEARCH_LABELS);
+const CHAT_BUTTON_PREDICATE = contentDescContainsAny(CHAT_LABELS);
+
+/**
+ * First View under content FrameLayout with no content-desc and at least one direct Button.
+ * Native header strip (Back / title / Search / Chat).
+ */
+export const HEADER_REGION_XPATH = `(//android.widget.FrameLayout[@resource-id='android:id/content']//android.view.View[(not(@content-desc) or @content-desc='') and ./android.widget.Button])[1]`;
 
 /**
  * Native app header.
@@ -31,101 +80,40 @@ export const BACK_BUTTON_XPATH = `//android.widget.Button[
  * Extend per-site if needed.
  */
 export class HeaderLocator {
-  /** Title button shown after the header chat icon opens the chat page. */
-  get chatTitle() {
-    return $(
-      `${BACK_BUTTON_XPATH}/following-sibling::*[(self::android.view.View and (
-      contains(@content-desc, 'Chat') 
-      or contains(@content-desc, 'Live Chat')
-      or contains(@content-desc, 'دردشة')
-      or contains(@content-desc, 'Clavardage')
-      or contains(@content-desc, '客服')
-      or contains(@content-desc, 'Live-Chat')
-      or contains(@content-desc, '實時對話')
-      or contains(@content-desc, 'Élő beszélgetés')
-      or contains(@content-desc, 'צ׳אט')
-      or contains(@content-desc, 'Czat na żywo z doradcą')
-      or contains(@content-desc, 'الدردشة')
-      or contains(@content-desc, 'แชท')
-      or contains(@content-desc, 'Canlı destek')
-      or contains(@content-desc, '線上顧問'))
-      )]`
-    );
+  get headerRegion() {
+    return $(HEADER_REGION_XPATH);
   }
 
-  get title() {
+  /**
+   * Page title in the header, under a content-desc-less View:
+   * 1) Button / View[@content-desc]  (e.g. My Page)
+   * 2) Button[@content-desc] without a titled child View  (e.g. Settings "Samsung\\nMy Page")
+   * Also: header-direct View[@content-desc]  (e.g. Cart)
+   */
+  get headerTitle() {
     return $(
-        `${BACK_BUTTON_XPATH}
-        /following-sibling::android.view.View
-        |
-        //android.widget.FrameLayout[1]
-        //android.view.View[1]
-        //android.view.View[1]
-        //android.view.View[1]
-        //android.view.View[1]
-        //android.view.View[1][@content-desc
-          and ( ../android.widget.Button or ../android.widget.ImageView)
-        ]`
-    );
-  }
-
-  get searchButton() {
-    return $(
-      `//android.widget.Button[
-      contains(@content-desc, 'Search')
-      or contains(@content-desc, 'بحث')
-      or contains(@content-desc, 'Suche')
-      or contains(@content-desc, 'Zoeken')
-      or contains(@content-desc, 'Chercher')
-      or contains(@content-desc, 'Buscar')
-      or contains(@content-desc, '搜索')
-      or contains(@content-desc, 'Hledat')
-      or (contains(@content-desc, 'Búsqueda') and not(contains(@content-desc, 'por voz')))
-      or contains(@content-desc, 'Rechercher')
-      or (contains(@content-desc, '搜尋') and not(contains(@content-desc, '語音')))
-      or contains(@content-desc, 'Keresés')
-      or contains(@content-desc, 'Cari')
-      or contains(@content-desc, 'Cerca')
-      or contains(@content-desc, 'Szukaj')
-      or contains(@content-desc, 'Pesquisar')
-      or (contains(@content-desc, 'Căutare') and not(contains(@content-desc, 'vocală')))
-      or contains(@content-desc, 'ค้นหา')
-      or contains(@content-desc, 'Ara')
-      or contains(@content-desc, 'Sök')
-      or contains(@content-desc, 'Tìm kiếm')
-     ]`
+      `(
+        ${HEADER_REGION_XPATH}/android.view.View[@content-desc]
+        | ${HEADER_REGION_XPATH}/android.view.View/android.widget.Button/android.view.View[@content-desc]
+        | ${HEADER_REGION_XPATH}/android.view.View/android.widget.Button[@content-desc and not(.//android.view.View[@content-desc])]
+      )[1]`
     );
   }
 
   get backButton() {
-    return $(
-      `${BACK_BUTTON_XPATH}
-      |
-      //android.widget.FrameLayout[1]/android.view.View[1]/android.view.View[1]/android.view.View[1]/android.view.View[1]/android.widget.Button[1]`
-    );
+    return $(`${HEADER_REGION_XPATH}/android.widget.Button[${BACK_BUTTON_PREDICATE}]`);
+  }
+
+  get searchButton() {
+    return $(`${HEADER_REGION_XPATH}/android.widget.Button[${SEARCH_BUTTON_PREDICATE}]`);
+  }
+
+  get chatButton() {
+    return $(`${HEADER_REGION_XPATH}/android.widget.Button[${CHAT_BUTTON_PREDICATE}]`);
   }
 
   get browserUrlBar() {
     return $(`//android.widget.EditText[@resource-id = 'com.android.chrome:id/url_bar']`);
-  }
-
-  get chatButton() {
-    return $(
-      `//android.widget.Button[
-        contains(@content-desc, 'Chat')
-        or contains(@content-desc, 'محادثة مع الدعم')
-        or contains(@content-desc, 'Chatten')
-        or contains(@content-desc, 'Clavarder')
-        or contains(@content-desc, '客服')
-        or contains(@content-desc, '實時對話')
-        or contains(@content-desc, 'Obrolan')
-        or contains(@content-desc, 'แชท')
-        or contains(@content-desc, 'Canlı destek')
-        or contains(@content-desc, '聊天')
-        or contains(@content-desc, 'Chatta')
-        or contains(@content-desc, 'Trò chuyện')
-      ]`
-    );
   }
 
   icon(icon: HeaderIcon) {
@@ -137,15 +125,5 @@ export class HeaderLocator {
       case 'chat':
         return this.chatButton;
     }
-  }
-
-  elementsContaining(words: readonly string[]) {
-    const conditions = words
-      .flatMap((word) => [
-        `contains(translate(@text, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), '${word}')`,
-        `contains(translate(@content-desc, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), '${word}')`,
-      ])
-      .join(' or ');
-    return $$(`//*[${conditions || 'false()'}]`);
   }
 }

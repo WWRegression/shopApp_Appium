@@ -352,6 +352,17 @@ export function matchesText(actual: string, expected: string | RegExp): boolean 
   return actual.localeCompare(expected.trim(), undefined, { sensitivity: 'accent' }) === 0;
 }
 
+/** Elements whose @text or @content-desc contains any of `words` (case-insensitive). */
+export function elementsContaining(words: readonly string[]) {
+  const conditions = words
+    .flatMap((word) => [
+      `contains(translate(@text, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), '${word}')`,
+      `contains(translate(@content-desc, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), '${word}')`,
+    ])
+    .join(' or ');
+  return $$(`//*[${conditions || 'false()'}]`);
+}
+
 // ── Hyperlinks ──────────────────────────────────────────────────────────
 
 /** A link on screen; `id` = text right before it | name | order, `cutOff` = cut by the area bottom. */
