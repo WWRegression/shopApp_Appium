@@ -42,7 +42,7 @@ export class SplashPage extends BasePage {
       console.log('[prepareAddonPage] free gift Continue clicked');
     }
     const shown = await driver
-      .waitUntil(async () => Boolean(await this.findAddItemButton()), { timeout: 10000, interval: 500 })
+      .waitUntil(async () => Boolean(await this.findAddItemButton()), { timeout: 50000, interval: 500 })
       .then(() => true, () => false);
     console.log(`[prepareAddonPage] add-on page shown=${shown}`);
     markFailedAndStop([{ label: '[SKIPPED] No add-on page on this site', pass: shown }], 'prepareAddonPage');

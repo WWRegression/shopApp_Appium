@@ -33,7 +33,7 @@ export class CartPage extends BasePage {
   /**
    * Wait up to 20s for the cart layout. Throws on timeout so the TC fails fast.
    */
-  async prepareCartPage(timeoutMs = 20000): Promise<void> {
+  async prepareCartPage(timeoutMs = 30000): Promise<void> {
     console.warn('prepareCartPage: start');
     const ready = await prepareWebViewPage('cart', () => this.locator.cartLayout, timeoutMs);
     if (!ready) {

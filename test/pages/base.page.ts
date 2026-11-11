@@ -13,7 +13,6 @@ import {
   isDisplayedOrFalse,
   matchesText,
   getElementLabel,
-  scrollUntilVisible,
   waitForDisplayedOrFalse,
 } from '../helpers/element.helper';
 

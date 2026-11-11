@@ -13,7 +13,7 @@ export class SplashLocator {
         '[an-la="bridge:retention popup:continue to cart"]',
         '[data-event-type="redeem-skip"][an-la*="skip"]',
         '.addon-continue-btn[an-la="free gift:continue"]',
-        '#giftContinue',
+        '.addon-continue-btn[an-la*="continue"]',
       ].join(', ')
     );
   }
@@ -56,18 +56,18 @@ export class SplashLocator {
   get addonAddItemButtons() {
     return $$(
       [
-        'button[an-la="add-on:add item"]',
-        'button[an-la="evoucher:add item"]',
-        '.wearable-addon-page [an-la="add item"]',
         'button[an-la^="add-on:"][an-la$=":add item"]',
         'button[an-la="evoucher:推薦:add item"]',
         'button[an-la="evoucher:Recommended:add item"]',
-        'button[an-la="evoucher:Samsung Cases & Film:add item"]',
-        'button[an-la^="bridge:add-on:"][an-la$=":add item"]',
-        'button[an-tr="bridge-flagship pdp-add item-option_click"]',
-        'button[an-la^="bridge:evoucher:"][an-la$=":add item"]',
-        '[data-testid="productCard"][an-la="add-on:add item"]',
         'a[class*="AddOnProductItemMX_productCardTop"]',
+      ].join(', ')
+    );
+  }
+
+  get skipButton() {
+    return $(
+      [
+        '.confirm-popup__content [an-la*="continue"]',
       ].join(', ')
     );
   }

@@ -141,4 +141,9 @@ export class PopupLocator {
       ]`
     );
   }
+
+  get quebecResidentPopup() {
+    return $(`//android.widget.Button[@content-desc="Non" or @content-desc="No"]`);
+  }
+
 }

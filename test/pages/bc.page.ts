@@ -8,7 +8,7 @@ import { BcGalaxyClubService } from '../services/galaxyclub/bc-galaxyclub.servic
 import { prepareWebViewPage, isCurrentWebViewPage, getCurrentWebViewPage, switchToNative } from '../helpers/context.helper';
 import { getRunConfig } from '../../config/run.config';
 import { storageCapacityMatches, pickStorageLabel, normalizeProductName, productNameMatches, parsePriceValues, isSamePrice } from '../helpers/data.helper';
-import { clickIfDisplayed, scrollAndJsClick, scrollAndWdioClick, scrollUntilVisibleInWebView, readDisplayedText } from '../helpers/element.helper';
+import { clickIfDisplayed, isDisplayedOrFalse, scrollAndJsClick, scrollAndWdioClick, scrollUntilVisibleInWebView, readDisplayedText } from '../helpers/element.helper';
 import { markFailedAndStop } from '../helpers/report.helper';
 import type { CartItemOptions } from './cart.page';
 
@@ -62,9 +62,9 @@ export class BcPage extends BasePage {
     if (getRunConfig().siteCode === 'IN') {
       await clickIfDisplayed(this.popupLocator.locationAllowButton, 5000);
     }
-    const ready = await prepareWebViewPage('bc', () => this.locator.bcLayout, 20000);
+    const ready = await prepareWebViewPage('bc', () => this.locator.bcLayout, 30000);
     if (!ready) {
-      throw new Error('prepareBcPage: BC not ready within 20s');
+      throw new Error('prepareBcPage: BC not ready within 30s');
     }
   }
 
