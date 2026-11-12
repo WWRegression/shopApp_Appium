@@ -2,7 +2,6 @@ import { PopupLocator } from '../locators/popup.locator';
 import { HeaderLocator, type HeaderIcon } from '../locators/header.locator';
 import { BnbLocator, BNB_MENUS, type BnbMenu } from '../locators/bnb.locator';
 import { LoginLocator } from '../locators/login.locator';
-import { SearchLocator } from '../locators/search.locator';
 import { switchToNative, getCurrentContext } from '../helpers/context.helper';
 import { getRunConfig } from '../../config/run.config';
 import { scrollUp } from '../helpers/gesture.helper';
@@ -28,10 +27,9 @@ export type { HeaderIcon, BnbMenu };
  * Element primitives stay in element.helper.
  */
 export class BasePage {
-  protected readonly popupLocator = new PopupLocator();
   protected readonly headerLocator = new HeaderLocator();
-  protected readonly searchLocator = new SearchLocator();
   protected readonly bnbLocator = new BnbLocator();
+  protected readonly popupLocator = new PopupLocator();
   /** App entry screens (guest splash, profile select) — used to tell when the app is up without a permission popup */
   private readonly appEntryLocator = new LoginLocator();
 
@@ -378,28 +376,18 @@ export class BasePage {
     await clickElement(this.headerLocator.icon(icon));
   }
 
-  /** Chat icon opens the chat page. Header title must change to Chat. UK has no header chat icon. */
-  async verifyChat(): Promise<void> {
+  /** Taps header Chat, then checks the chat page opened (title Chat). UK has no header chat icon. */
+  async openAndVerifyHeaderChat(): Promise<void> {
     if (getRunConfig().siteCode === 'UK') {
-      console.log('[verifyChat] UK — skipped');
+      console.log('[openAndVerifyHeaderChat] UK — skipped');
       return;
     }
     await this.selectHeaderIcon('chat');
     const pass = await driver
       .waitUntil(() => this.matchesHeaderTitle('CHAT'), { timeout: 5000, interval: 500 })
       .then(() => true, () => false);
-    console.log(`[verifyChat] header title Chat=${pass ? 'PASS' : 'FAIL'}`);
-    markFailedAndStop([{ label: 'Failed to navigate Chat page', pass }], 'verifyChat');
-  }
-
-  /** Search icon opens the search box. A missing box is recorded, then Back returns to the previous page. */
-  async verifySearch(): Promise<void> {
-    await this.selectHeaderIcon('search');
-    await driver.pause(5000);
-    const shown = await waitForDisplayedOrFalse(this.searchLocator.searchInput, { timeout: 5000 });
-    console.log(`[verifySearch] search box=${shown ? 'PASS' : 'FAIL'}`);
-    markFailed([{ label: 'Failed to navigate to Search page', pass: shown }], 'verifySearch');
-    await this.pressDeviceBack();
+    console.log(`[openAndVerifyHeaderChat] header title Chat=${pass ? 'PASS' : 'FAIL'}`);
+    markFailedAndStop([{ label: 'Header Chat did not open chat page', pass }], 'openAndVerifyHeaderChat');
   }
 
   /** A tapped link/KV must open another page — one with a Back button in the header (BNB pages have none). */
@@ -540,8 +528,9 @@ export class BasePage {
     // The Insider banner sits over the BNB while the BNB still reads as displayed, so a tap would hit the banner (CL)
     await this.closeInsiderBannerIfShown();
 
-    // The search screen has no BNB. Closing it with header Back returns to a page that has one.
-    if (await this.closeSearchIfOpen()) {
+    // The search area has no BNB. Closing it with header Back returns to a page that has one.
+    const { SearchPage } = await import('./search.page');
+    if (await new SearchPage().closeSearchIfOpen()) {
       if (await waitForDisplayedOrFalse(this.bnbLocator.menu(menu), { timeout: 3000 })) {
         return;
       }
@@ -577,25 +566,4 @@ export class BasePage {
 
     throw new Error(`BNB is not visible: ${menu}`);
   }
-
-  /** The search field is up. `$$` returns at once when this is not the search screen. */
-  protected async isSearchScreenOpen(): Promise<boolean> {
-    for (const input of await this.searchLocator.searchInputs) {
-      if (await input.isDisplayed().catch(() => false)) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  /** Closes search when open — that screen hides BNB. True when Back was tapped. */
-  protected async closeSearchIfOpen(): Promise<boolean> {
-    if (!(await this.isSearchScreenOpen())) {
-      return false;
-    }
-    console.log('[closeSearchIfOpen] search screen open — closing with header Back');
-    await clickElement(this.headerLocator.backButton);
-    return true;
-  }
-
 }

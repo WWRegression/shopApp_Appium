@@ -47,6 +47,9 @@ const SEARCH_LABELS = [
   'Ara',
   'Sök',
   'Tìm kiếm',
+  'Búsqueda',
+  '搜尋',
+  'Căutare',
 ] as const;
 
 const CHAT_LABELS = [

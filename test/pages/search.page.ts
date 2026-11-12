@@ -40,13 +40,44 @@ export class SearchPage extends BasePage {
     await this.search(keyword, false);
   }
 
+  /** True when the search area (input field) is shown. */
+  async isSearchAreaOpen(): Promise<boolean> {
+    for (const input of await this.locator.searchInputs) {
+      if (await input.isDisplayed().catch(() => false)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /** Closes the search area with header Back when open. True when Back was tapped. */
+  async closeSearchIfOpen(): Promise<boolean> {
+    if (!(await this.isSearchAreaOpen())) {
+      return false;
+    }
+    console.log('[closeSearchIfOpen] search area open — closing with header Back');
+    await clickElement(this.headerLocator.backButton);
+    return true;
+  }
+
+  /** Taps header Search, checks the search area opened, then Back. */
+  async openAndVerifyHeaderSearch(): Promise<void> {
+    await this.openSearch();
+    const shown = await driver
+      .waitUntil(() => this.isSearchAreaOpen(), { timeout: 5000, interval: 300 })
+      .then(() => true, () => false);
+    console.log(`[openAndVerifyHeaderSearch] search area=${shown ? 'PASS' : 'FAIL'}`);
+    markFailed([{ label: 'Header Search did not open search area', pass: shown }], 'openAndVerifyHeaderSearch');
+    await this.pressDeviceBack();
+  }
+
   /**
    * Taps the first Popular/Trending search chip and returns its label (used as the search keyword).
    * Opens search first when the field is not already shown.
    */
   async tapTrendingSearch(): Promise<string> {
     await switchToNative();
-    if (!(await this.isSearchOpen())) {
+    if (!(await this.isSearchAreaOpen())) {
       await this.openSearch();
     }
     await clickIfDisplayed(this.locator.searchInput, 3000);
@@ -68,20 +99,10 @@ export class SearchPage extends BasePage {
 
   async searchByKeyword(keyword: string): Promise<void> {
     await switchToNative();
-    if (!(await this.isSearchOpen())) {
+    if (!(await this.isSearchAreaOpen())) {
       await this.openSearch();
     }
     await this.search(keyword);
-  }
-
-  /** The no-result page keeps the search field and has no header search icon. */
-  private async isSearchOpen(): Promise<boolean> {
-    for (const input of await this.locator.searchInputs) {
-      if (await input.isDisplayed().catch(() => false)) {
-        return true;
-      }
-    }
-    return false;
   }
 
   async openProductFromResults(skuOrName: string): Promise<void> {

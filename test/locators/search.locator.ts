@@ -1,28 +1,28 @@
+import { HEADER_REGION_XPATH } from './header.locator';
+
 export class SearchLocator {
   /**
-   * No real EditText on this screen — it's a synthetic accessibility node. Tapping the
-   * clickable Button parent opens the keyboard directly (confirmed on device).
-   * Only the leading word translates (e.g. "Buscar field Double tap to enter search term")
-   * — match the fixed English suffix instead of the full string.
+   * Search field in the header region (not the header Search icon Button).
+   * Often a synthetic a11y View whose clickable Button parent opens the keyboard
+   * (e.g. "Buscar field Double tap to enter search term"); IN uses a real EditText.
    */
   get searchInput() {
     return $(this.searchInputSelector);
   }
 
-  /** Immediate matches. `$().isDisplayed` waits `waitforTimeout` when the search screen is not open. */
+  /** Immediate matches. `$().isDisplayed` waits `waitforTimeout` when the search area is not open. */
   get searchInputs() {
     return $$(this.searchInputSelector);
   }
 
   private get searchInputSelector() {
-    return [
-      "//android.view.View[contains(@content-desc, 'field Double tap to enter search term')]/parent::android.widget.Button",
-      "//android.view.View[contains(@content-desc, '搜索')]/parent::android.widget.Button",
-      // CN search screen: the field itself is "Search  " and is not inside a Button
-      "//android.view.View[normalize-space(@content-desc)='Search' or normalize-space(@content-desc)='搜索']",
-      // IN shows the newer search bar (with a microphone) whose input is a real EditText
-      '//android.widget.EditText[not(ancestor::android.webkit.WebView)]',
-    ].join(' | ');
+    // Under header only: EditText (IN) or View whose desc contains search/搜索 (not the Search icon Button).
+    return (
+      `${HEADER_REGION_XPATH}//android.widget.EditText` +
+      ` | ${HEADER_REGION_XPATH}//android.view.View[` +
+      `contains(translate(@content-desc,'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'search')` +
+      ` or contains(@content-desc,'搜索')]`
+    );
   }
 
   get searchSubmitButton() {
