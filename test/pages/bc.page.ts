@@ -8,7 +8,7 @@ import { BcGalaxyClubService } from '../services/galaxyclub/bc-galaxyclub.servic
 import { prepareWebViewPage, isCurrentWebViewPage, getCurrentWebViewPage, switchToNative } from '../helpers/context.helper';
 import { getRunConfig } from '../../config/run.config';
 import { storageCapacityMatches, pickStorageLabel, normalizeProductName, productNameMatches, parsePriceValues, isSamePrice } from '../helpers/data.helper';
-import { clickIfDisplayed, isDisplayedOrFalse, scrollAndJsClick, scrollAndWdioClick, scrollUntilVisibleInWebView, readDisplayedText } from '../helpers/element.helper';
+import { clickIfDisplayed, scrollAndJsClick, scrollAndWdioClick, scrollUntilVisibleInWebView, readDisplayedText } from '../helpers/element.helper';
 import { markFailedAndStop } from '../helpers/report.helper';
 import type { CartItemOptions } from './cart.page';
 

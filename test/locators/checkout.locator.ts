@@ -206,7 +206,7 @@ export class CheckoutLocator {
   }
 
   get viewOrderSummaryToggle() {
-    return $('.RightContentCheckoutSlot mat-icon[data-an-la="view more"], .RightContentCheckoutSlot .view-order-container mat-icon[data-an-tr="indication"]');
+    return $('.RightContentCheckoutSlot mat-icon[data-an-la="view more"]');
   }
 
   get viewOrderExpanded() {

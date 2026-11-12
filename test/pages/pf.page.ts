@@ -874,7 +874,7 @@ export class PfPage extends BasePage {
 
   /** Card content-desc on this PF is the price, e.g. "52.990.000 VND", "Rp10.499.000", "R 27 499,00", or "2,499.00 ⃁". */
   private isPriceLabel(label: string): boolean {
-    return /\d/.test(label) && /vnd|usd|eur|krw|rp|\br\s*\d|\$|€|£|₩|¥|₫|﷼|⃁/i.test(label);
+    return /\d/.test(label) && /vnd|usd|eur|krw|rp|\br\s*\d|\$|€|£|₩|¥|₫|﷼|⃁|₪|円|₱|฿|₹/i.test(label);
   }
 
   /**

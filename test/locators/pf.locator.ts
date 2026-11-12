@@ -275,7 +275,7 @@ export class PfLocator {
 
   private get cardPriceSelector() {
     const money = [
-      '$', '€', '£', '¥', '₫', '⃁', 'NT$', 'HK$', 'AED', 'د.إ', 'ر.س', '﷼', 'Kč', 'Ft', 'lei', 'S/', 'zł', 'kr', 'Rp', 'RM', 'TL', '₹',
+      '$', '€', '£', '¥', '₫', '⃁', 'NT$', 'HK$', 'AED', 'د.إ', 'ر.س', '﷼', 'Kč', 'Ft', 'lei', 'S/', 'zł', 'kr', 'Rp', 'RM', 'TL', '₹', '₪', '円', '₱', '฿',
     ].map((mark) => `contains(@content-desc, '${mark}')`).join(' or ');
     return `.//android.view.View[${money}]`;
   }

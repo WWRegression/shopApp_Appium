@@ -155,7 +155,7 @@ export class CartLocator {
   }
 
   itemDiscount(sku: string) {
-    return $(`.cart-item[data-modelcode="${sku}" i] .price-container .price__discount`);
+    return $(`.cart-item[data-modelcode="${sku}" i] .price-container .price__discount, .cart-item[data-modelcode="${sku}" i] .cart-item__price .price-special__save`);
   }
 
   itemPrice(sku: string) {
@@ -163,7 +163,6 @@ export class CartLocator {
       [
         `.cart-item[data-modelcode="${sku}" i] .price-container .price__current`,
         `.cart-item[data-modelcode="${sku}" i] .price-special__current`,
-        `.cart-item[data-modelcode="${sku}" i] .price`,
       ].join(', ')
     );
   }
