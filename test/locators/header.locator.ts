@@ -72,7 +72,7 @@ const CHAT_BUTTON_PREDICATE = contentDescContainsAny(CHAT_LABELS);
  * First View under content FrameLayout with no content-desc and at least one direct Button.
  * Native header strip (Back / title / Search / Chat).
  */
-export const HEADER_REGION_XPATH = `(//android.widget.FrameLayout[@resource-id='android:id/content']//android.view.View[(not(@content-desc) or @content-desc='') and ./android.widget.Button])[1]`;
+export const HEADER_REGION_XPATH = `(//android.widget.FrameLayout[@resource-id='android:id/content']//android.view.View[(not(@content-desc) or @content-desc='') and ./android.widget.Button[@content-desc!="Open chat"]])[1]`;
 
 /**
  * Native app header.
