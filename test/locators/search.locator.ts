@@ -89,42 +89,6 @@ export class SearchLocator {
     );
   }
 
-  /**
-   * Clear-all control when the section embeds it (e.g. "Recent searches\nClear all")
-   * or a dedicated Clear-all label on a clickable View.
-   */
-  get recentSearchesClearAll() {
-    const clearHints = [
-      'Clear all',
-      'Clear All',
-      '全部清除',
-      '全て削除',
-      'Supprimer',
-      'Vymazat',
-      'Borrar',
-      'Limpiar',
-      'effacer',
-      '削除',
-      'hapus',
-      'Cancella',
-      'Törlés',
-      'wissen',
-      'Wyczyść',
-      'Șterge',
-      'مسح',
-      'Rensa',
-      'ล้างข้อมูล',
-      'temizle',
-      'حذف',
-      'Xóa',
-      'Limpar',
-      'נקה הכול',
-    ]
-      .map((hint) => `contains(@content-desc, '${hint}')`)
-      .join(' or ');
-    return $(`(${this.recentSearchesSection})[@clickable='true' and (${clearHints})]`);
-  }
-
   /** Empty-result message on the search screen. */
   get noResultMessage() {
     const phrases = [
@@ -179,8 +143,6 @@ export class SearchLocator {
     const headings = [
       'Popular Searches',
       'Trending Searches',
-      'Recommended Search',
-      'Recommended Searches',
       'Oblíbená vyhledávání',
       '検索で人気の製品',
       'Beliebte Suchanfragen',
@@ -202,8 +164,6 @@ export class SearchLocator {
       'Popüler aramalar',
       'Tìm kiếm phổ biến',
       '热门搜索',
-      'חיפושים מומלצים',
-      'Produtos sugeridos',
     ]
       .map((heading) => `@content-desc='${heading}'`)
       .join(' or ');

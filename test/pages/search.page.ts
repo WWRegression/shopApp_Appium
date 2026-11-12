@@ -122,12 +122,6 @@ export class SearchPage extends BasePage {
     // The search screen opens a moment after the header icon; the previous page is still up until then
     await waitForDisplayedOrFalse(this.locator.searchInput, { timeout: 500 });
 
-    if (await clickIfDisplayed(this.locator.recentSearchesClearAll, 1000)) {
-      console.log('[clearSearchHistoryIfShown] Clear all');
-      await driver.pause(500);
-      return;
-    }
-
     for (let deleted = 0; deleted < 10; deleted += 1) {
       // Counting the list returns at once when it is empty; indexing it ([0]) would wait for a missing element
       if ((await this.locator.recentKeywordDeleteButtons.length) === 0) {
