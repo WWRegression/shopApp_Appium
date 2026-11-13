@@ -280,20 +280,6 @@ export class PfLocator {
     return `.//android.view.View[${money}]`;
   }
 
-  /** Rating line inside a PF card, e.g. "4.9/5(9999+)". */
-  cardRating(card: WebdriverIO.Element) {
-    return card.$(this.cardRatingSelector);
-  }
-
-  /** Immediate matches. `$().getAttribute` waits `waitforTimeout` when the node is absent. */
-  cardRatings(card: WebdriverIO.Element) {
-    return card.$$(this.cardRatingSelector);
-  }
-
-  private get cardRatingSelector() {
-    return `.//android.widget.ImageView[contains(@content-desc, '/5') or contains(@content-desc, 'Rating')]`;
-  }
-
   private filterCheckbox(headerLabel: string) {
     return $(`(${this.filterCheckboxSelector(headerLabel)})[1]`);
   }
