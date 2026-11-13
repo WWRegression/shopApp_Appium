@@ -50,5 +50,15 @@
   },
   "search": {
     "localKeyword": "スマートウォッチ"
+  },
+  "shopMenuList": {
+    "studentStore": false,
+    "corporateStore": false,
+    "inStoreMode": false,
+    "samsungPlus": false,
+    "samsungCarePlus": false,
+    "samsungLive": false,
+    "moreSamsungApps": false,
+    "customerSupport": false
   }
 }

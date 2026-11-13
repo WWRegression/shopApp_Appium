@@ -5,7 +5,7 @@ import { MypageProfileLocator, AddressTab } from '../locators/mypage-profile.loc
 import { MypageLocator } from '../locators/mypage.locator';
 import { getSiteData } from '../../config/site';
 import { prepareWebViewPage, switchToNative } from '../helpers/context.helper';
-import { clickElement, isDisplayedOrFalse, jsClick, scrollUntilVisible } from '../helpers/element.helper';
+import { clickElement, isDisplayedOrFalse, jsClick, quickSwipeUntilVisible, scrollUntilVisible, waitForDisplayedOrFalse } from '../helpers/element.helper';
 import { markFailed, markFailedAndStop } from '../helpers/report.helper';
 import { currentSiteCode } from '../helpers/tc-filter.helper';
 import { clearSavedAddresses } from '../helpers/api.helper';
@@ -16,16 +16,21 @@ export class MypageProfilePage extends BasePage {
   private readonly mypageLocator = new MypageLocator();
   private readonly checkoutPage = new CheckoutPage();
 
-  /** BNB mypage tab, then direct Addresses entry, or Settings > Personal Data Management > Addresses. */
+  /** BNB mypage tab, then the main-menu Addresses (IN), or Settings > Personal Data Management > Addresses. */
   private async navigateToAddressManagement(): Promise<void> {
     await this.selectBnbMenu('mypage');
 
-    if (await scrollUntilVisible(this.locator.directAddressesMenuItem, 3)) {
+    // IN: Addresses is at the top of My Page
+    if (getSiteData().mypageMenuList?.myAddresses && (await waitForDisplayedOrFalse(this.locator.directAddressesMenuItem, { timeout: 1000 }))) {
       await clickElement(this.locator.directAddressesMenuItem);
       return;
     }
 
-    for (const menu of [this.mypageLocator.settingsMenu, this.mypageLocator.personalDataManagementMenu, this.locator.addressManagementMenuItem]) {
+    // Settings is at the bottom of My Page
+    if (await quickSwipeUntilVisible(this.mypageLocator.settingsMenu)) {
+      await clickElement(this.mypageLocator.settingsMenu);
+    }
+    for (const menu of [this.mypageLocator.personalDataManagementMenu, this.locator.addressManagementMenuItem]) {
       if (await scrollUntilVisible(menu)) {
         await clickElement(menu);
       }
@@ -166,9 +171,9 @@ export class MypageProfilePage extends BasePage {
         [customer.documentType, ['identificationType']],
         [phone, ['phone', 'telephoneInput']],
         [shipping.address1, ['line1']],
-        [shipping.address2, ['line2', 'suburb', 'kecamatan', 'județ']],
-        [shipping.postalCode, ['postalcode', 'postcode', 'postalCode']],
-        [shipping.town, ['town', 'townCity', 'city']],
+        [shipping.address2, ['line2', 'ward', 'suburb', 'kecamatan', 'județ']],
+        [shipping.postalCode, ['postalCode', 'postcode']],
+        [shipping.town, ['town', 'townCity', 'townCode', 'city']],
         [shipping.district, ['state', 'district']],
         [shipping.apartment, ['apartment']],
         [shipping.landmark, ['landmark']],

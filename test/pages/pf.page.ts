@@ -1074,12 +1074,12 @@ export class PfPage extends BasePage {
     return label.split(/\s+/).find((token) => /^[A-Z0-9]+-[A-Z0-9]+$/.test(token)) ?? '';
   }
 
-  /** A guest tapping the wishlist heart gets the login popup. */
+  /** A guest tapping the wishlist heart gets the login popup. Missing popup → Fail reason, continue. */
   async verifyLoginPopup(): Promise<void> {
     await switchToNative();
     const shown = await waitForDisplayedOrFalse(this.pflocator.loginConfirmModal, { timeout: 5000 });
     console.log(`${this.checkResult(shown)} [verifyLoginPopup] expected=login popup actual=${shown ? 'login popup' : 'not shown'}`);
-    markFailedAndStop([{ label: 'Login popup failed to appear on guest wishlist action', pass: shown }], 'verifyLoginPopup');
+    markFailed([{ label: 'Login popup failed to appear on guest wishlist action', pass: shown }], 'verifyLoginPopup');
   }
 
   /** Continue on the wishlist login popup; starts the login (auto login with a device account, else the login / SSO screens). */

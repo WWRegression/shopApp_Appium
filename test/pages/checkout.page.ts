@@ -6,7 +6,7 @@ import { prepareWebViewPage } from '../helpers/context.helper';
 import { getSiteData as getSite } from '../../config/site';
 import { scrollAndJsClick, getElementLabel, getInputValue, isDisplayedOrFalse, jsClick, clickElement, waitForDisplayedOrFalse, clickIfDisplayed } from '../helpers/element.helper';
 import { scrollElementToCenter } from '../helpers/gesture.helper';
-import { markFailed, markFailedAndStop } from '../helpers/report.helper';
+import { markFailed, markFailedAndStop, markStepSkipped } from '../helpers/report.helper';
 import { normalizeProductName, productNameMatches, removeNonWordChars, parsePriceValues, isSamePrice } from '../helpers/data.helper';
 import type { LoadedSite } from '../../config/site';
 import { currentSiteCode } from '../helpers/tc-filter.helper';
@@ -35,6 +35,7 @@ interface FieldDescriptor {
   key: string;
   required: boolean;
   hasValue: boolean;
+  selectedText: string;
   isAutocomplete: boolean;
   visible: boolean;
 }
@@ -303,27 +304,36 @@ export class CheckoutPage extends BasePage {
 
         const key = (el.getAttribute('name') || el.getAttribute('formcontrolname') || '').toLowerCase();
         const tagName = el.tagName.toLowerCase();
+        // Placeholder text is not a value
+        const selectedText =
+          tagName === 'mat-select'
+            ? el.querySelector('.mat-mdc-select-min-line:not(.mat-mdc-select-placeholder), .mat-mdc-select-value-text')?.textContent?.trim() || ''
+            : '';
         const hasValue =
           tagName === 'input'
             ? Boolean((el as HTMLInputElement).value)
             : tagName === 'select'
               ? Boolean((el as HTMLSelectElement).value)
-              : // A custom trigger (IT phone prefix "+39") shows the value outside min-line
-                Boolean(el.querySelector('.mat-mdc-select-min-line, .mat-mdc-select-value-text')?.textContent?.trim());
-        // Autocomplete fields: the address search box, the CN address line, and fields with a search icon (FR street)
+              : Boolean(selectedText);
+        // Inputs that need an option picked from a list
         const isAutocomplete =
           key === 'searchaddress' ||
+          el.getAttribute('role') === 'combobox' ||
           (key === 'line1' && tag === 'app-customer-address-cn') ||
           Boolean(el.closest('.mat-mdc-form-field-has-icon-prefix'));
 
         const type = tagName === 'input' ? (el as HTMLInputElement).type : '';
-        return { index, tag: tagName, type, key, required, hasValue, isAutocomplete, visible: el.offsetParent !== null };
+        return { index, tag: tagName, type, key, required, hasValue, selectedText, isAutocomplete, visible: el.offsetParent !== null };
       });
     }, formTag);
   }
 
   /** Sets an input through the native setter and events so the Angular form sees it; autocomplete picks the first suggestion. */
   private async setInputValue(field: ChainablePromiseElement, value: string, isAutocomplete: boolean): Promise<void> {
+    // A dependent list stays disabled while its options reload (ID)
+    if (isAutocomplete) {
+      await field.waitForEnabled({ timeout: 5000 }).catch(() => undefined);
+    }
     await jsClick(field).catch(() => undefined);
     await driver.execute(
       (el, val) => {
@@ -331,6 +341,8 @@ export class CheckoutPage extends BasePage {
         const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')!.set!;
         nativeSetter.call(input, val);
         input.dispatchEvent(new Event('input', { bubbles: true }));
+        // CZ runs the form check on keyup; Save stays disabled without it
+        input.dispatchEvent(new KeyboardEvent('keyup', { bubbles: true }));
         input.dispatchEvent(new Event('change', { bubbles: true }));
         input.dispatchEvent(new Event('blur', { bubbles: true }));
       },
@@ -344,6 +356,8 @@ export class CheckoutPage extends BasePage {
 
     // Waits for an option holding the typed value: a list left over from the previous field shows first (FR postal code → street)
     const wanted = removeNonWordChars(value);
+    // FR picks the street first, then the house number from a second list
+    const street = removeNonWordChars(value.replace(/^\d+\s*/, ''));
     let clicked = '';
     await driver
       .waitUntil(
@@ -351,10 +365,16 @@ export class CheckoutPage extends BasePage {
           for (const option of await $$('mat-option')) {
             // getText() returns "" for options in the overlay panel
             const text = String(await option.getProperty('textContent').catch(() => ''));
-            if (text && removeNonWordChars(text).includes(wanted)) {
+            const optionText = removeNonWordChars(text);
+            if (text && optionText.includes(wanted)) {
               await scrollAndJsClick(option);
               clicked = text.trim();
               return true;
+            }
+            if (text && !clicked && street !== wanted && optionText.includes(street)) {
+              await scrollAndJsClick(option);
+              clicked = text.trim();
+              return false;
             }
           }
           return false;
@@ -365,8 +385,8 @@ export class CheckoutPage extends BasePage {
     console.log(`[setInputValue] suggestion for "${value}" clicked="${clicked || 'none'}"`);
   }
 
-  /** Selects the option matching `value`, or the first enabled option when there is no match. */
-  private async fillSelectField(field: ChainablePromiseElement, value: string | undefined): Promise<void> {
+  /** Selects the option matching `value`, else the first enabled option (matchOnly: else closes the list). */
+  private async fillSelectField(field: ChainablePromiseElement, value: string | undefined, matchOnly = false): Promise<void> {
     // Dependent selects (CN province > city, AU suburb) load late, and a panel opened too early stays empty, so it is reopened
     for (let attempt = 0; attempt < 3; attempt++) {
       await scrollAndJsClick(field).catch(() => undefined);
@@ -377,13 +397,17 @@ export class CheckoutPage extends BasePage {
       await driver.keys('Escape').catch(() => undefined);
     }
     const match = value ? $(`//mat-option[contains(., "${value}")]`) : undefined;
+    const matched = Boolean(match && (await match.isExisting().catch(() => false)));
+    if (matchOnly && !matched) {
+      await driver.keys('Escape').catch(() => undefined);
+      return;
+    }
     // Skips a disabled placeholder option (IN "Select a Floor")
-    const target =
-      match && (await match.isExisting().catch(() => false)) ? match : $('(//mat-option[not(@aria-disabled="true")])[1]');
+    const target = matched ? match! : $('(//mat-option[not(@aria-disabled="true")])[1]');
     await scrollAndJsClick(target).catch(() => undefined);
   }
 
-  /** Fills the required fields of a form (a checkout step or any form selector, e.g. the address book form); each entry is a value and the field names (lowercase) that take it. onlyEmpty keeps inputs that already have a value. */
+  /** Fills the required fields of a form (a checkout step or any form selector, e.g. the address book form); each entry is a value and the field names (any case) that take it. onlyEmpty keeps inputs that already have a value. */
   async fillFormFields(
     formId: string,
     entries: [string | undefined, string[]][],
@@ -391,9 +415,9 @@ export class CheckoutPage extends BasePage {
   ): Promise<void> {
     const valueMap: Record<string, string | undefined> = {};
     for (const [value, keys] of entries) {
-      keys.forEach((key) => (valueMap[key] = value));
+      // Field keys are read in lowercase, so names match in any case (townCity = towncity)
+      keys.forEach((key) => (valueMap[key.toLowerCase()] = value));
     }
-    const fields = this.locator.fieldsIn(formId);
     const done = new Set<string>();
 
     // Some fields are enabled only after another is filled (FR street after the postal code), so they get another pass
@@ -404,6 +428,8 @@ export class CheckoutPage extends BasePage {
       if (pending.length === 0) {
         break;
       }
+      // Read with the descriptors: fields added later (AE Area) shift the indexes
+      const fields = await this.locator.fieldsIn(formId);
 
       for (const desc of pending) {
         done.add(desc.key || String(desc.index));
@@ -416,8 +442,12 @@ export class CheckoutPage extends BasePage {
           if (value && !(options.onlyEmpty && desc.hasValue)) {
             await this.setInputValue(field, value, desc.isAutocomplete);
           }
-        } else if (!desc.hasValue && desc.visible) {
-          await this.fillSelectField(field, value);
+        } else if (desc.visible) {
+          // Replaces a default that differs from the site data (HK)
+          const otherDefault = Boolean(value && desc.hasValue && !options.onlyEmpty && !desc.selectedText.includes(value));
+          if (!desc.hasValue || otherDefault) {
+            await this.fillSelectField(field, value, otherDefault);
+          }
         }
       }
     }
@@ -478,10 +508,10 @@ export class CheckoutPage extends BasePage {
       formId,
       [
         [data.address1, ['line1']],
-        [data.address2, ['line2', 'suburb', 'kecamatan', 'județ']],
+        [data.address2, ['line2', 'ward', 'suburb', 'kecamatan', 'județ']],
         [pincodeFirst ? undefined : data.postalCode, ['postalcode']],
-        [data.town, ['town']],
-        [data.district, ['state', 'district']],
+        [data.town, ['town', 'shippingcityname']],
+        [data.district, ['state', 'district', 'shippingdistrictname']],
         [data.floor, ['floor']],
         [data.searchText, ['regioniso', 'searchaddress']],
         [data.apartment, ['apartment']],
@@ -785,50 +815,149 @@ export class CheckoutPage extends BasePage {
     return this.normalizeAddress(await getElementLabel(this.locator.savedAddressInfo));
   }
 
-  /** The saved delivery address must be offered on checkout with the postal code (the contact phone is only logged). */
-  async verifySavedDeliveryAddress(postalCode: string): Promise<void> {
+  /** Contact phone read on the way to the delivery address (first screen on UK, AE, HK...); undefined until it shows. */
+  private contactPhone: string | undefined;
+
+  /**
+   * Moves to the step that shows the delivery address, keeping the contact phone when it shows on the way.
+   * No address yet: contact Edit while the phone is unread (DE), else Next (SE postcode/option steps, AE, HK, JP).
+   */
+  async openDeliveryAddressStep(): Promise<void> {
     await this.prepareCheckoutPage();
-    if (await this.locator.deliverySavedAddressOption.waitForExist({ timeout: 10000 }).then(() => true, () => false)) {
-      await jsClick(this.locator.deliverySavedAddressOption);
+    await this.waitForAnyFormToExist();
+    this.contactPhone = undefined;
+    for (let pass = 0; pass < 4; pass++) {
+      await this.waitForPageStable();
+      this.contactPhone ??= await this.readContactPhone();
+      if (await this.locator.deliveryAddressSection.isExisting().catch(() => false)) {
+        break;
+      }
+      const step = await this.getCurrentCheckoutStep();
+      if (this.contactPhone === undefined && (await this.locator.editCustomerDetailsButton.isExisting().catch(() => false))) {
+        await scrollAndJsClick(this.locator.editCustomerDetailsButton);
+      } else {
+        await this.selectDeliveryOptionIfPresent();
+        // An empty contact phone blocks Next (JP); the read value stays empty, so the phone check still fails
+        await this.fillFormFields('app-customer-info-v2', [[getSite().customer.mobile, ['phone']]], { onlyEmpty: true });
+        await this.clickMoveToNext();
+      }
+      await this.waitForStepChange(step);
+      // The address section renders a moment after the step changes (AE)
+      await this.locator.deliveryAddressSection.waitForExist({ timeout: 3000 }).catch(() => undefined);
     }
-    let actual = '';
-    const pass = await driver
-      .waitUntil(
-        async () => {
-          actual = await getElementLabel(this.locator.deliverySavedAddressLabel);
-          return actual.includes(postalCode);
-        },
-        { timeout: 10000, interval: 500 }
-      )
-      .then(() => true, () => false);
-    const contactPhone = await getInputValue(this.locator.contactPhoneInput);
-    console.log(`[verifySavedDeliveryAddress] expected saved address with "${postalCode}" actual="${actual}" (contact phone=${contactPhone}) result=${pass ? 'PASS' : 'FAIL'}`);
-    markFailed([{ label: 'saved delivery address not shown on checkout', pass, detail: `actual="${actual}"` }], 'verifySavedDeliveryAddress');
+    const shown = await this.locator.deliveryAddressSection.isExisting().catch(() => false);
+    console.log(`[openDeliveryAddressStep] step=${await this.getCurrentCheckoutStep()} delivery address shown=${shown}`);
+    markFailedAndStop([{ label: 'delivery address not shown on checkout', pass: shown }], 'openDeliveryAddressStep');
   }
 
-  /** The saved billing address must show the given phone on checkout: "Same as delivery address" off → Saved address → Edit. */
-  async verifySavedBillingAddressPhone(phone: string): Promise<void> {
+  /** The delivery address must show the added address line 1 (US: the address search field, CN: the saved address card). */
+  async verifyDeliveryAddressOnCheckout(address1: string): Promise<void> {
+    const actual = (await this.locator.deliveryAddressCardCn.isExisting().catch(() => false))
+      ? await getElementLabel(this.locator.deliveryAddressCardCn)
+      : await this.readAddressLine(
+          [this.locator.deliveryAddressLine, this.locator.deliveryAddressSearchInput],
+          this.locator.deliverySavedAddressOption,
+          this.locator.deliveryAddressEditButton
+        );
+    this.verifyAddressLine('delivery', address1, actual, 'verifyDeliveryAddressOnCheckout');
+  }
+
+  /** The billing address must show the added address line 1: "Same as delivery address" off, then its saved address. Skipped on sites without billing on Checkout. */
+  async verifyBillingAddressOnCheckout(address1: string): Promise<void> {
+    // Some sites have no billing section on Checkout (JP, CN, IN, US)
+    if (!(await this.locator.billingAddressSection.isExisting().catch(() => false))) {
+      markStepSkipped('[verifyBillingAddressOnCheckout] no billing section on Checkout');
+      return;
+    }
     const sameAsShipping = this.locator.billingSameAsShippingCheckbox;
     if (await sameAsShipping.isSelected().catch(() => false)) {
-      await jsClick(sameAsShipping);
+      // A real tap: a DOM click is ignored on CL
+      await scrollElementToCenter(sameAsShipping).catch(() => undefined);
+      await sameAsShipping.click().catch(() => undefined);
+      await this.waitForPageStable();
+      await this.locator.billingAddressEditButton.waitForExist({ timeout: 3000 }).catch(() => undefined);
     }
-    for (const step of [this.locator.billingSavedAddressOption, this.locator.billingSavedAddressEditButton]) {
-      if (await step.waitForExist({ timeout: 5000 }).then(() => true, () => false)) {
-        await jsClick(step);
+    const actual = await this.readAddressLine([this.locator.billingAddressLine], this.locator.billingSavedAddressOption, this.locator.billingAddressEditButton);
+    this.verifyAddressLine('billing', address1, actual, 'verifyBillingAddressOnCheckout');
+  }
+
+  /** The contact phone must be the edited one (digits only); opens the contact step with Edit when it has not shown yet (CA, CL). CN shows it on the address card. */
+  async verifyContactPhoneOnCheckout(phone: string): Promise<void> {
+    let actual = this.contactPhone ?? (await this.readContactPhone());
+    if (actual === undefined && (await this.locator.editCustomerDetailsButton.isExisting().catch(() => false))) {
+      await scrollAndJsClick(this.locator.editCustomerDetailsButton);
+      await this.waitForPageStable();
+      await this.locator.contactPhoneInputs[0].waitForExist({ timeout: 5000 }).catch(() => undefined);
+      actual = await this.readContactPhone();
+    }
+    if (actual === undefined && (await this.locator.deliveryAddressCardCn.isExisting().catch(() => false))) {
+      actual = await getElementLabel(this.locator.deliveryAddressCardCn);
+    }
+    // An empty field can still be loading: re-read for up to 5s (JP stays empty)
+    if (actual === '') {
+      await driver
+        .waitUntil(async () => Boolean((actual = (await this.readContactPhone()) ?? '')), { timeout: 5000, interval: 500 })
+        .catch(() => undefined);
+    }
+    const digits = (text: string) => text.replace(/\D/g, '');
+    const pass = Boolean(actual) && digits(actual ?? '').includes(digits(phone));
+    console.log(`[verifyContactPhoneOnCheckout] expected phone="${phone}" actual="${actual ?? 'no phone field'}" result=${pass ? 'PASS' : 'FAIL'}`);
+    markFailed([{ label: 'edited phone not shown on checkout', pass, detail: `expected ${phone}, actual ${actual ?? 'no phone field'}` }], 'verifyContactPhoneOnCheckout');
+  }
+
+  /** Value of the first contact phone field on screen (Customer info, or the delivery address on CZ/IN); undefined when none shows. */
+  private async readContactPhone(): Promise<string | undefined> {
+    const inputs = this.locator.contactPhoneInputs;
+    const count = await inputs.length;
+    for (let i = 0; i < count; i++) {
+      const input = inputs[i];
+      if (await input.isDisplayed().catch(() => false)) {
+        return (await getInputValue(input)).trim();
       }
     }
-    let actual = '';
-    const pass = await driver
+    return undefined;
+  }
+
+  /**
+   * Address line of a section: its visible Saved address is selected, Edit opens the address when the line is hidden,
+   * then the value is awaited (CZ fills it a few seconds late). A hidden Saved address radio is not touched: on CZ it clears the form.
+   */
+  private async readAddressLine(lines: ChainablePromiseElement[], savedOption: ChainablePromiseElement, editButton: ChainablePromiseElement): Promise<string> {
+    const shownLine = async () => {
+      for (const line of lines) {
+        if (await line.isDisplayed().catch(() => false)) {
+          return line;
+        }
+      }
+      return undefined;
+    };
+    if ((await savedOption.isDisplayed().catch(() => false)) && !(await savedOption.isSelected().catch(() => true))) {
+      await jsClick(savedOption);
+      await this.waitForPageStable();
+    }
+    if (!(await shownLine()) && (await editButton.isExisting().catch(() => false))) {
+      await scrollAndJsClick(editButton);
+      await this.waitForPageStable();
+    }
+    let value = '';
+    await driver
       .waitUntil(
         async () => {
-          actual = await getInputValue(this.locator.billingPhoneInput);
-          return actual !== '' && actual.replace(/\D/g, '').includes(phone.replace(/\D/g, ''));
+          const line = await shownLine();
+          value = line ? (await getInputValue(line)).trim() : '';
+          return value !== '';
         },
         { timeout: 10000, interval: 500 }
       )
-      .then(() => true, () => false);
-    console.log(`[verifySavedBillingAddressPhone] expected billing phone=${phone} actual=${actual || 'no phone field'} result=${pass ? 'PASS' : 'FAIL'}`);
-    markFailed([{ label: 'saved billing address phone not shown on checkout', pass, detail: `expected ${phone}, actual ${actual || 'no phone field'}` }], 'verifySavedBillingAddressPhone');
+      .catch(() => undefined);
+    return value;
+  }
+
+  /** Logs and records whether the address text contains the expected line 1 (case and outer spaces ignored). */
+  private verifyAddressLine(section: string, expected: string, actual: string, step: string): void {
+    const pass = actual !== '' && actual.toLowerCase().includes(expected.trim().toLowerCase());
+    console.log(`[${step}] expected ${section} address="${expected}" actual="${actual}" result=${pass ? 'PASS' : 'FAIL'}`);
+    markFailed([{ label: `added ${section} address not shown on checkout`, pass, detail: `expected "${expected}", actual "${actual}"` }], step);
   }
 
   /** Stops the TC when the saved address and the payment-step address do not match. */

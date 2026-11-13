@@ -36,6 +36,7 @@ const SEARCH_LABELS = [
   'Chercher',
   'Buscar',
   '搜索',
+  '搜尋',
   'Hledat',
   'Rechercher',
   'Keresés',

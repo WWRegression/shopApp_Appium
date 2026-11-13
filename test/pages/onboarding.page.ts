@@ -121,7 +121,8 @@ export class OnboardingPage extends BasePage {
     const target = this.notificationOnPermissionPopup ? permissionButton : radio;
     // Longer screens (e.g. AU, SA_EN) keep the options below the fold
     const shown = this.notificationOnPermissionPopup || (await isDisplayedOrFalse(radio)) || (await scrollUntilVisible(radio, 3));
-    markFailedAndStop([{ label: `notification "${option}" option not found`, pass: shown }], 'selectNotification');
+    markFailed([{ label: `notification "${option}" option not found`, pass: shown }], 'selectNotification');
+    if (!shown) return;
     await clickElement(target, { timeout: 5000 });
     console.log(`[selectNotification] selected "${option}"`);
   }
@@ -139,20 +140,22 @@ export class OnboardingPage extends BasePage {
     console.log('[clickGetStarted] clicked');
   }
 
-    /** Allows location ("While using the app") on the Android permission popup. */
-    async allowLocationPermission(timeoutMs = 10000): Promise<void> {
-      await switchToNative();
-      const button = this.popupLocator.locationAllowButton;
-      const shown = await waitForDisplayedOrFalse(button, { timeout: timeoutMs });
-      console.log(`[allowLocationPermission] expected=location permission popup actual=${shown ? 'shown' : 'not shown'} result=${shown ? 'PASS' : 'FAIL'}`);
-      markFailedAndStop([{ label: 'location permission popup not shown', pass: shown }], 'allowLocationPermission');
-      await clickElement(button, { timeout: 5000 });
-      console.log('[allowLocationPermission] location permission allowed');
-    }
+  /** Allows location ("While using the app") on the Android permission popup. Missing popup → Fail reason, continue. */
+  async allowLocationPermission(timeoutMs = 10000): Promise<void> {
+    await switchToNative();
+    const button = this.popupLocator.locationAllowButton;
+    const shown = await waitForDisplayedOrFalse(button, { timeout: timeoutMs });
+    console.log(`[allowLocationPermission] expected=location permission popup actual=${shown ? 'shown' : 'not shown'} result=${shown ? 'PASS' : 'FAIL'}`);
+    markFailed([{ label: 'location permission popup not shown', pass: shown }], 'allowLocationPermission');
+    if (!shown) return;
+    await clickElement(button, { timeout: 5000 });
+    console.log('[allowLocationPermission] location permission allowed');
+  }
 
   /**
    * After "Yes", Android asks for the notification permission; allows it.
    * Skipped when selectNotification already answered on that popup (IN).
+   * Missing popup → Fail reason, continue.
    */
   async allowNotificationPermission(timeoutMs = 5000): Promise<void> {
     if (this.notificationOnPermissionPopup) {
@@ -163,7 +166,8 @@ export class OnboardingPage extends BasePage {
     const button = this.popupLocator.notificationAllowButton;
     const shown = await waitForDisplayedOrFalse(button, { timeout: timeoutMs });
     console.log(`[allowNotificationPermission] expected=notification permission popup actual=${shown ? 'shown' : 'not shown'} result=${shown ? 'PASS' : 'FAIL'}`);
-    markFailedAndStop([{ label: 'notification permission popup not shown', pass: shown }], 'allowNotificationPermission');
+    markFailed([{ label: 'notification permission popup not shown', pass: shown }], 'allowNotificationPermission');
+    if (!shown) return;
     await clickElement(button, { timeout: 5000 });
     console.log('[allowNotificationPermission] notification permission allowed');
   }

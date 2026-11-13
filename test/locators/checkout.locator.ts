@@ -233,31 +233,59 @@ export class CheckoutLocator {
     return $('[data-an-la="leave the checkout page:yes"], .savings-modal button.resend-otp-btn');
   }
 
+  get deliveryAddressSection() {
+    return $('app-customer-address-v2, app-address-list-cn');
+  }
+
   get deliverySavedAddressOption() {
     return $('app-customer-address-v2 input[name="addressOptionShipping"][value="SAVED_ADDRESS"]');
   }
 
-  get deliverySavedAddressLabel() {
-    return $('app-customer-address-v2 .address-box label, app-address-list-cn .address-box label');
+  get deliveryAddressEditButton() {
+    return $('app-customer-address-v2 a.actions__edit');
+  }
+
+  get deliveryAddressLine() {
+    return $('app-customer-address-v2 input[name="line1"]');
+  }
+
+  get deliveryAddressSearchInput() {
+    return $('app-customer-address-v2 input[name="searchAddress"]');
+  }
+
+  get deliveryAddressCardCn() {
+    return $('app-address-list-cn .address-box');
   }
 
   get billingSameAsShippingCheckbox() {
-    return $('app-billing-address-v2 input[name="sameAsShipping"], app-billing-address-v2 mat-checkbox[formcontrolname="sameAsShipping"] input');
+    return $('app-billing-address-v2 input[name="sameAsShipping"]');
   }
 
   get billingSavedAddressOption() {
     return $('app-billing-address-v2 input[name="addressOptionBilling"][value="SAVED_ADDRESS"]');
   }
 
-  get billingSavedAddressEditButton() {
-    return $('app-billing-address-v2 a.actions__edit, app-address-list-v2 a.actions__edit');
+  get billingAddressEditButton() {
+    return $('app-billing-address-v2 a.actions__edit');
   }
 
-  get billingPhoneInput() {
-    return $('app-billing-address-v2 input[formcontrolname="phone"], app-billing-address-v2 input[name="phone"]');
+  get billingAddressLine() {
+    return $('app-billing-address-v2 input[name="line1"]');
   }
 
-  get contactPhoneInput() {
-    return $('app-customer-info-v2 input[formcontrolname="phone"], app-customer-info-v2 input[name="phone"]');
+  get billingAddressSection() {
+    return $('app-billing-address-v2');
+  }
+
+  get contactPhoneInputs() {
+    return $$(
+      [
+        ':is(app-customer-info-v2, app-customer-address-v2) input[name="phone"]',
+        ':is(app-customer-info-v2, app-customer-address-v2) input[name="telephone"]',
+        ':is(app-customer-info-v2, app-customer-address-v2) input[name="purchasernumber"]',
+        ':is(app-customer-info-v2, app-customer-address-v2) input[name="phonenumber2"]',
+        ':is(app-customer-info-v2, app-customer-address-v2) input[name="telephoneinput"]',
+      ].join(', ')
+    );
   }
 }

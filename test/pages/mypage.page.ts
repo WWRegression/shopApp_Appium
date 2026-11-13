@@ -872,21 +872,21 @@ export class MypagePage extends ShopPage {
     await new OnboardingPage().selectCountry(countryName);
   }
 
-  /** My Page > Settings > Push Notification, then verifies the notification switch is shown. */
+  /** My Page > Settings > Push Notification, then verifies the notification switch is shown. Missing page → Fail reason, continue. */
   async openPushNotificationMenu(): Promise<void> {
     await this.openSettingsMenus([this.locator.pushNotificationMenu], 'openPushNotificationMenu');
     const ready = await waitForDisplayedOrFalse(this.locator.pushNotificationSwitch, { timeout: 5000 });
-    markFailedAndStop([{ label: 'Push Notification page not shown (switch not found)', pass: ready }], 'openPushNotificationMenu');
+    markFailed([{ label: 'Push Notification page not shown (switch not found)', pass: ready }], 'openPushNotificationMenu');
   }
 
-  /** The switch must match the option chosen at first launch ('yes' = on); then goes back to Settings. */
+  /** The switch must match the option chosen at first launch ('yes' = on); then goes back to Settings. Mismatch → Fail reason, continue. */
   async verifyNotification(option: 'yes' | 'no'): Promise<void> {
     await switchToNative();
     const checked = (await this.locator.pushNotificationSwitch.getAttribute('checked').catch(() => '')) === 'true';
     const expected = option === 'yes';
     const pass = checked === expected;
     console.log(`[verifyNotification] expected=${expected ? 'on' : 'off'} actual=${checked ? 'on' : 'off'} result=${pass ? 'PASS' : 'FAIL'}`);
-    markFailedAndStop(
+    markFailed(
       [{ label: 'notification setting does not match the first-launch choice', pass, detail: `expected ${expected ? 'on' : 'off'}, actual ${checked ? 'on' : 'off'}` }],
       'verifyNotification'
     );
@@ -910,7 +910,7 @@ export class MypagePage extends ShopPage {
       }
     }
     const ready = await waitForDisplayedOrFalse(this.locator.trustArcSaveButton, { timeout: 10000 });
-    markFailedAndStop([{ label: 'Cookie Preferences not shown (TrustArc choices not found)', pass: ready }], 'openCookiePreferencesMenu');
+    markFailed([{ label: 'Cookie Preferences not shown (TrustArc choices not found)', pass: ready }], 'openCookiePreferencesMenu');
   }
 
   /** Every cookie category must still hold the choice made at first launch ('decline' = NO, 'accept' = YES); then closes with Save. */
@@ -937,8 +937,10 @@ export class MypagePage extends ShopPage {
       [{ label: 'TrustArc cookie does not match the first-launch choice', pass, detail: `expected every category ${expected ? 'NO' : 'YES'}, actual ${actual}` }],
       'verifyTrustArcCookie'
     );
-    // Close the TrustArc choices with "Save" after the check
-    await clickElement(this.locator.trustArcSaveButton, { timeout: 5000 });
+    // Close the TrustArc choices with "Save" after the check (missing Save → Fail reason, continue)
+    if (!(await clickIfDisplayed(this.locator.trustArcSaveButton, 5000))) {
+      markFailed([{ label: 'TrustArc Save button not found', pass: false }], 'verifyTrustArcCookie');
+    }
   }
 
   /** Store options the site shows in the Select Store sheet (data/sites-data shopMenuList). */

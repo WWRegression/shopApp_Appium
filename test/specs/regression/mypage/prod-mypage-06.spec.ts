@@ -5,7 +5,7 @@ import { CartPage } from '../../../pages/cart.page';
 import { CheckoutPage } from '../../../pages/checkout.page';
 import { MypageProfilePage } from '../../../pages/mypage-profile.page';
 
-/** Verify a delivery / billing address can be added, edited and deleted on the address book, and the change shows on Checkout. */
+/** Verify an address added / edited on the address book shows on Checkout, and the addresses can be deleted afterwards. */
 describe('PROD_MYPAGE_06', () => {
   const profilePage = new MypageProfilePage();
   const cartPage = new CartPage();
@@ -21,24 +21,30 @@ describe('PROD_MYPAGE_06', () => {
       await profilePage.prepareAddressPage();
       await profilePage.deleteAllAddressesByApi();
 
-      // Add
+      // Add: a card shows for each added address
       await profilePage.addAddress('shipping', phone);
       await profilePage.verifyAddressCard('shipping', phone);
       await profilePage.addAddress('billing', phone);
       await profilePage.verifyAddressCard('billing', phone);
 
-      // Edit: only billing, since checkout shows the billing phone (the delivery address shows no phone)
-      await profilePage.editAddressPhone('billing', editedPhone);
-      await profilePage.verifyAddressCard('billing', editedPhone);
+      // Edit: only the shipping phone
+      await profilePage.editAddressPhone('shipping', editedPhone);
+      await profilePage.verifyAddressCard('shipping', editedPhone);
 
-      // Checkout: the delivery address as added, the billing address as edited
+      // Checkout: the added address on delivery / billing, then the edited phone (its contact step can hide the addresses)
       await cartPage.clearCart();
       await addToCart(site.product.imSku);
       await cartPage.prepareCartPage();
       await cartPage.clickContinueToCheckout();
-      await checkoutPage.verifySavedDeliveryAddress(site.shipping.postalCode ?? '');
-      await checkoutPage.verifySavedBillingAddressPhone(editedPhone);
+      await checkoutPage.openDeliveryAddressStep();
+      await checkoutPage.verifyDeliveryAddressOnCheckout(site.shipping.address1);
+      await checkoutPage.verifyBillingAddressOnCheckout(site.shipping.address1);
+      await checkoutPage.verifyContactPhoneOnCheckout(editedPhone);
 
+      // Delete: Search leaves Checkout for a screen with BNB, then every shipping / billing address is deleted and checked
+      await checkoutPage.selectHeaderIcon('search');
+      await profilePage.prepareAddressPage();
+      await profilePage.clearAllAddresses();
     });
   });
 });
