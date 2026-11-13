@@ -512,10 +512,10 @@ export class CheckoutPage extends BasePage {
         [pincodeFirst ? undefined : data.postalCode, ['postalcode']],
         [data.town, ['town', 'shippingcityname']],
         [data.district, ['state', 'district', 'shippingdistrictname']],
-        [data.floor, ['floor']],
-        [data.searchText, ['regioniso', 'searchaddress']],
         [data.apartment, ['apartment']],
         [data.landmark, ['landmark']],
+        [data.searchText, ['regioniso', 'searchaddress']],
+        [data.floor, ['floor']],
         [getSite().customer.mobile, ['phone']],
       ],
       { onlyEmpty: picked }
