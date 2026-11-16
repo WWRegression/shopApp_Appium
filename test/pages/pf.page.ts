@@ -27,7 +27,7 @@ type PfProduct = { name: string; sku: string; price: number; rating: number; out
 type PfSourceNode = { cls: string; desc: string; top: number; children: PfSourceNode[] };
 
 /** A PF card as read from one screen. `labels` holds the child descs only when the title was missing. */
-type PfCardSight = PfProduct & { top: number; labels: string[] };
+type PfCardSight = PfProduct & { top: number; titleFrom: string; labels: string[] };
 
 /** SKU and title of the PF card whose wishlist heart was tapped. */
 export type PfWishlistItem = { sku: string; deviceName: string };
@@ -662,71 +662,130 @@ export class PfPage extends BasePage {
    * Cards merge by SKU: a title clipped on one scroll is filled from the next one.
    */
   async collectPfProducts(): Promise<PfProduct[]> {
+    const tag = '[collectPfProducts]';
     await switchToNative();
-    const products = new Map<string, PfProduct>();
+    const products: PfProduct[] = [];
     /** Last child labels of a card seen without a title; printed only if the title never shows. */
-    const untitledLabels = new Map<string, string[]>();
+    const untitledLabels = new Map<PfProduct, string[]>();
     let previousSight = '';
     let unchanged = 0;
-    for (let scroll = 1; scroll <= 40; scroll += 1) {
+    const maxScrolls = 40;
+    console.log(`${tag} start: read screen → parse cards → merge by SKU → scroll down, until the screen stops changing (max ${maxScrolls})`);
+    for (let scroll = 1; scroll <= maxScrolls; scroll += 1) {
+      // 1) One snapshot of the whole screen
       const cards = this.parsePfCards(await driver.getPageSource());
+      console.log(`${tag} ── scroll ${scroll}: ${cards.length} card(s) on screen`);
+
+      // 2) Merge each card into the list
       let added = 0;
-      for (const card of cards) {
-        const key = card.sku || (card.name ? `${card.name}|${card.price}` : '');
-        if (!key) {
-          console.log(`[collectPfProducts] scroll ${scroll}: skipped card without SKU and title (price=${card.price})`);
+      for (const [index, card] of cards.entries()) {
+        const at = `${tag}    card ${index + 1} (y=${card.top})`;
+        if (!card.sku && !card.name) {
+          console.log(`${at} SKIP no SKU and no title, price=${card.price}`);
           continue;
         }
-        if (!card.name) {
-          untitledLabels.set(key, card.labels);
-        }
-        const stored = products.get(key);
+        const seen = `sku=${card.sku || '-'} title="${card.name}" (${card.titleFrom}) price=${card.price} rating=${card.rating} stock=${card.outOfStock ? 'out' : 'in'}`;
+        const stored = this.findPfProduct(products, card);
         if (!stored) {
-          products.set(key, { name: card.name, sku: card.sku, price: card.price, rating: card.rating, outOfStock: card.outOfStock });
+          const product = { name: card.name, sku: card.sku, price: card.price, rating: card.rating, outOfStock: card.outOfStock };
+          products.push(product);
+          if (!card.name) {
+            untitledLabels.set(product, card.labels);
+          }
           added += 1;
+          console.log(`${at} NEW    ${seen}`);
           continue;
         }
-        // A clipped card can miss its title or rating; fill them from a later sight.
+        if (!stored.name && !card.name) {
+          untitledLabels.set(stored, card.labels);
+        }
+        // A clipped card can miss its title, SKU, price or rating; fill them from a later sight.
+        const filled: string[] = [];
         if (!stored.name && card.name) {
           stored.name = card.name;
+          filled.push(`title="${card.name}"`);
+        }
+        if (!stored.sku && card.sku) {
+          stored.sku = card.sku;
+          filled.push(`sku=${card.sku}`);
+        }
+        if (!stored.price && card.price) {
+          stored.price = card.price;
+          filled.push(`price=${card.price}`);
         }
         if (!stored.rating && card.rating) {
           stored.rating = card.rating;
+          filled.push(`rating=${card.rating}`);
         }
-        stored.outOfStock ||= card.outOfStock;
+        if (!stored.outOfStock && card.outOfStock) {
+          stored.outOfStock = true;
+          filled.push('stock=out');
+        }
+        const id = stored.sku || `"${stored.name}"`;
+        console.log(filled.length > 0 ? `${at} FILL   ${id} ${filled.join(' ')}` : `${at} SAME   ${id}`);
       }
-      console.log(`[collectPfProducts] scroll ${scroll}: visible=${cards.length} new=${added} total=${products.size}`);
+      console.log(`${tag}    → new=${added} total=${products.length}`);
 
+      // 3) End check: the same cards at the same positions mean the list did not move
       const sight = cards.map((card) => `${card.sku || card.name}@${card.top}`).join('|');
       if (sight === previousSight) {
         unchanged += 1;
+        console.log(`${tag}    screen unchanged after scroll (${unchanged}/2)`);
         if (unchanged >= 2) {
+          console.log(`${tag} end of list reached`);
           break;
         }
       } else {
         unchanged = 0;
         previousSight = sight;
       }
+
+      // 4) Next page
+      if (scroll === maxScrolls) {
+        console.log(`${tag} WARN stopped at max ${maxScrolls} scrolls`);
+        break;
+      }
       await scrollListDown();
     }
 
-    const list = [...products.values()];
+    const list = products;
+    console.log(`${tag} ── result`);
     list.forEach((product, index) => {
       console.log(
         `[collectPfProducts] [${index}] name="${product.name}" sku=${product.sku} price=${product.price} rating=${product.rating} stock=${product.outOfStock ? 'out' : 'in'}`
       );
     });
     for (const product of list.filter((item) => !item.name)) {
-      console.log(`[collectPfProducts] WARN title not found sku=${product.sku} children=${JSON.stringify(untitledLabels.get(product.sku) ?? [])}`);
+      console.log(`[collectPfProducts] WARN title not found sku=${product.sku} children=${JSON.stringify(untitledLabels.get(product) ?? [])}`);
     }
     console.log(`[collectPfProducts] done total=${list.length}`);
     return list;
   }
 
   /**
-   * PF cards in one page source.
-   * A card is a View with a content-desc ("$3,199.00\nSM-F966BDBEATS", or the title on CN) holding an image and a button.
-   * Children in order: wishlist button, image, title, rating image, color chips, storage chips, Buy.
+   * The stored product a card sight belongs to: same SKU, else same title.
+   * A list card shows its SKU only on the wishlist heart at the top, so a card clipped at the top is matched by title,
+   * as long as SKU and price do not contradict it.
+   */
+  private findPfProduct(products: PfProduct[], card: PfCardSight): PfProduct | undefined {
+    const bySku = card.sku ? products.find((product) => product.sku === card.sku) : undefined;
+    if (bySku || !card.name) {
+      return bySku;
+    }
+    return products.find(
+      (product) =>
+        product.name === card.name &&
+        (!product.sku || !card.sku) &&
+        (!product.price || !card.price || product.price === card.price)
+    );
+  }
+
+  /**
+   * PF cards in one page source. A card is a View with a content-desc holding an image and a button or wishlist heart.
+   * - Grid (2 per row): desc "$3,199.00\nSM-F966BDBEATS" (the title on CN).
+   *   Children: wishlist button, image, title, rating image, color chips, storage chips, Buy.
+   * - List (1 per row, IN): desc is the title. One ImageView wraps the wishlist View (no Button),
+   *   rating "4.7(895)", price "₹32999.00\nSave …" and color chips.
    */
   private parsePfCards(source: string): PfCardSight[] {
     const cards: PfCardSight[] = [];
@@ -736,7 +795,8 @@ export class PfPage extends BasePage {
         node.cls.endsWith('View') &&
         !node.cls.endsWith('ImageView') &&
         this.hasDescendant(node, (child) => child.cls.endsWith('ImageView')) &&
-        this.hasDescendant(node, (child) => child.cls.endsWith('Button'));
+        // Service cards (AE) have no wishlist, and their Buy may still be below the screen; a price desc marks them.
+        (this.isPriceLabel(node.desc) || this.hasDescendant(node, (child) => child.cls.endsWith('Button') || this.isWishlistLabel(child.desc)));
       if (!isCard) {
         node.children.forEach(visit);
         return;
@@ -757,23 +817,25 @@ export class PfPage extends BasePage {
     const nodes = this.descendants(card);
     const ownLines = card.desc.split('\n').map((line) => line.trim()).filter(Boolean);
     const wishlist = nodes.find((node) => this.isWishlistLabel(node.desc));
-    const sku = this.cardSku(card.desc) || this.cardSku(wishlist?.desc ?? '');
+    // Services carry a non-SM code on their own desc line, e.g. "P-GT-LCXOS2EW" (AE repair / battery replacement).
+    const ownSku = this.cardSku(card.desc) || (ownLines.find((line) => /^(?=.*\d)(?=.*[A-Z])[A-Z0-9]+(?:-[A-Z0-9]+)+$/.test(line)) ?? '');
+    const sku = ownSku || this.cardSku(wishlist?.desc ?? '');
     const priceText = ownLines.find((line) => this.isPriceLabel(line)) ?? nodes.find((node) => this.isPriceLabel(node.desc))?.desc ?? '';
     if (!sku && !priceText) {
       return undefined;
     }
 
-    const ratingIndex = nodes.findIndex((node) => node.cls.endsWith('ImageView') && /\/\s*5|rating/i.test(node.desc));
+    const ratingIndex = nodes.findIndex((node) => node.cls.endsWith('ImageView') && this.isRatingLabel(node.desc));
     const ratingText = ratingIndex >= 0 ? nodes[ratingIndex].desc : '';
     const ratingMatch = ratingText.match(/(\d+(?:[.,]\d+)?)\s*\/\s*5/) ?? ratingText.match(/(\d+(?:\.\d+)?)/);
 
-    // The title sits above the rating; color chips such as "Galaxy Silver" come after it.
-    const titleArea = ratingIndex >= 0 ? nodes.slice(0, ratingIndex) : nodes;
-    const isTitle = (text: string): boolean => this.isProductLabel(text) && this.isProductTitle(text);
-    const name =
-      ownLines.find(isTitle) ??
-      titleArea.find((node) => !node.cls.endsWith('ImageView') && !node.cls.endsWith('Button') && isTitle(node.desc))?.desc ??
-      '';
+    // A desc with neither price nor SKU is the title itself (list cards, CN), whatever its wording.
+    // A price/SKU desc never holds the title, only promos ("-10% met bf26"); its title is a child, or off screen until a later scroll.
+    const descIsTitle = !ownSku && !ownLines.some((line) => this.isPriceLabel(line));
+    const ownTitle = descIsTitle ? ownLines.find((line) => this.isProductLabel(line)) : undefined;
+    const childTitle = this.cardTitleChild(card);
+    const name = ownTitle ?? childTitle ?? '';
+    const titleFrom = ownTitle ? 'card desc' : childTitle ? 'child' : 'off screen';
 
     const imageLabels = nodes.filter((node) => node.cls.endsWith('ImageView')).map((node) => node.desc);
     return {
@@ -783,8 +845,34 @@ export class PfPage extends BasePage {
       rating: Number((ratingMatch?.[1] ?? '0').replace(',', '.')),
       outOfStock: this.isOutOfStock([card.desc, name, ...imageLabels].join('\n')),
       top: card.top,
+      titleFrom,
       labels: name ? [] : nodes.filter((node) => node.desc).map((node) => `${node.cls.split('.').pop()}:${node.desc.replace(/\n/g, ' / ')}`),
     };
+  }
+
+  /**
+   * Title by position, not by wording, so "The Frame" or "Bespoke AI Jet" count as titles too.
+   * Direct children of a card: [wishlist] [image] [TITLE] [rating] [color name] ... [Buy]. Chips sit deeper.
+   * The title slot is after the image and before the rating. Without either anchor in view, the slot is unknown and the
+   * title is left for a later scroll, so a lone color name ("Mint") on a clipped card is never taken.
+   */
+  private cardTitleChild(card: PfSourceNode): string | undefined {
+    const children = card.children;
+    const imageIndex = children.findIndex((node) => node.cls.endsWith('ImageView') && !this.isRatingLabel(node.desc));
+    const ratingIndex = children.findIndex((node) => node.cls.endsWith('ImageView') && this.isRatingLabel(node.desc));
+    if (imageIndex < 0 && ratingIndex < 0) {
+      return undefined;
+    }
+    const slot = children.slice(imageIndex + 1, ratingIndex >= 0 ? ratingIndex : undefined);
+    const labels = slot
+      .filter((node) => !node.cls.endsWith('ImageView') && !node.cls.endsWith('Button') && this.isProductLabel(node.desc))
+      .map((node) => node.desc);
+    return labels[0];
+  }
+
+  /** Grid: "Rating 4.8 out of 5 / 4.8/5(12)". List: "4.7(895)". */
+  private isRatingLabel(label: string): boolean {
+    return /\/\s*5|rating/i.test(label) || /^\d(?:[.,]\d+)?\s*\(\d[\d,.]*\)$/.test(label.trim());
   }
 
   /** Minimal tree of a UiAutomator2 page source: class, content-desc, top edge. */
@@ -960,7 +1048,15 @@ export class PfPage extends BasePage {
 
   /** Card content-desc on this PF is the price, e.g. "52.990.000 VND", "Rp10.499.000", "R 27 499,00", or "2,499.00 ⃁". */
   private isPriceLabel(label: string): boolean {
-    return /\d/.test(label) && /vnd|usd|eur|krw|rp|\br\s*\d|\$|€|£|₩|¥|₫|﷼|⃁|₪|円|₱|฿|₹/i.test(label);
+    // Codes need a word edge: "Enterprise" holds "rp", "Neuro" holds "eur".
+    // NL/BE write whole euros without a symbol: "1609,-", "1.609,-" (a line of its own)
+    const wholeEuros = /^\d{1,3}(?:[.\s]?\d{3})*,-$/m.test(label);
+    // Upper-case ISO codes only, so words such as "try" or "all" are not codes: "4,799.00 AED"
+    const isoCode = /\b(?:AED|SAR|QAR|KWD|BHD|OMR|EGP|JOD|MAD|TND|DZD|TRY|PLN|CZK|HUF|RON|BGN|SEK|NOK|DKK|CHF|GBP|UAH|KZT|MYR|SGD|HKD|TWD|CNY|JPY|INR|IDR|PHP|THB|AUD|NZD|CAD|MXN|BRL|ARS|CLP|COP|PEN|ZAR|ILS)\b/;
+    return (
+      wholeEuros ||
+      (/\d/.test(label) && (isoCode.test(label) || /\b(?:vnd|usd|eur|krw)\b|\brp\s*\d|\br\s*\d|\$|€|£|₩|¥|₫|﷼|⃁|₪|円|₱|฿|₹/i.test(label)))
+    );
   }
 
   /**
@@ -971,7 +1067,9 @@ export class PfPage extends BasePage {
     const priceLine = priceText
       .split(/\r?\n/)
       .map((line) => line.trim())
-      .find((line) => this.isPriceLabel(line)) ?? priceText;
+      .find((line) => this.isPriceLabel(line))
+      // "1609,-" → "1609"
+      ?.replace(/,-$/, '') ?? priceText;
     const compact = priceLine.replace(/[^\d.,]/g, '');
     if (/^\d{1,3}(\.\d{3})+$/.test(compact)) {
       return Number(compact.replace(/\./g, ''));
