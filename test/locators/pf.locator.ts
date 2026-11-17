@@ -130,16 +130,14 @@ export class PfLocator {
   /** Sort control beside the filter icon. */
   get sortIcon() {
     return $(
-      `//android.view.View[${this.resultTotalLabel}]/following-sibling::${this.pfToolbarControl}[2]` +
-        ` | //android.widget.ImageView[${this.filtersIconLabel}]/following-sibling::${this.pfToolbarControl}[1]`
+        `//android.widget.ImageView[${this.filtersIconLabel}]/following-sibling::${this.pfToolbarControl}[1]`
     );
   }
 
   /** Filter entry on PF: the control after the result total, or a Filters icon. */
   get filterIcon() {
     return $(
-      `//android.view.View[${this.resultTotalLabel}]/following-sibling::${this.pfToolbarControl}[1]` +
-        ` | //android.widget.ImageView[${this.filtersIconLabel}]`
+      `//android.widget.ImageView[${this.filtersIconLabel}]`
     );
   }
 
@@ -179,18 +177,11 @@ export class PfLocator {
 
   /** Sort popup root, e.g. "Sort\nĐược khuyến nghị". "Sort By" does not match that title. */
   private get sortPopupLabel() {
-    return `starts-with(@content-desc, 'Sort')`;
+    return `starts-with(@content-desc, 'Sort') or starts-with(@content-desc, '排序')`;
   }
 
   private get applyButtonLabel() {
-    return `contains(@content-desc, 'Apply')`;
-  }
-
-  private get resultTotalLabel() {
-    return [
-      'Total', 'الإجمالي', 'Gesamt', 'ทั้งหมด', '总计', 'Celkem', '總計', 'Összesen', 'Totale', 'Totaal',
-      'Razem', 'Totalt', 'Toplam', '總共', 'Tổng', 'תוצאות', '合計 ',
-    ].map((label) => `contains(@content-desc, '${label}')`).join(' or ');
+    return `contains(@content-desc, 'Apply') or contains(@content-desc, '送出')`;
   }
 
   private get filtersIconLabel() {
@@ -210,10 +201,6 @@ export class PfLocator {
     return $(`//android.widget.ScrollView//android.widget.ImageView[${this.productFilterLabel}]`);
   }
 
-  get resolutionFilter() {
-    return $(`//android.widget.ScrollView//android.widget.ImageView[${this.resolutionFilterLabel}]`);
-  }
-
   /** Unchecked checkboxes under the price section. */
   get priceOptions() {
     return $$(this.filterCheckboxSelector(this.priceFilterLabel));
@@ -224,11 +211,6 @@ export class PfLocator {
     return $$(this.filterCheckboxSelector(this.productFilterLabel));
   }
 
-  /** Unchecked checkboxes under the resolution section. */
-  get resolutionOptions() {
-    return $$(this.filterCheckboxSelector(this.resolutionFilterLabel));
-  }
-
   /** First enabled checkbox under that section. */
   get priceOption() {
     return this.filterCheckbox(this.priceFilterLabel);
@@ -236,10 +218,6 @@ export class PfLocator {
 
   get productOption() {
     return this.filterCheckbox(this.productFilterLabel);
-  }
-
-  get resolutionOption() {
-    return this.filterCheckbox(this.resolutionFilterLabel);
   }
 
   /** Chip above the list, e.g. "Galaxy Z", shown after a checkbox is selected. */
@@ -291,6 +269,7 @@ export class PfLocator {
   private get priceFilterLabel() {
     const titles = [
       'Price', 'Prijs', 'Preis', 'precios', '價錢', 'מחיר', '価格で絞る', 'Cena', 'Preț', 'Preço', 'Pris', 'ราคา', '價格', 'Khoảng Giá', 'Prix',
+      'prix', 'نطاق السعر', 'Precio', 'Cenové', 'Árkategória', 'harga', 'prezzo', '価格で絞る', 'Cenowy', 'preço', 'prețuri', 'Fiyat', 'giá', '价格范围',
     ].map((label) => `contains(@content-desc, '${label}')`).join(' or ');
     return `(${titles}) and not(contains(@content-desc, 'High to Low')) and not(contains(@content-desc, 'high to low'))`;
   }
@@ -300,13 +279,6 @@ export class PfLocator {
       'مجموعة المنتجات','Product Range', 'Productgamma', 'Clase', 'Gamme de produits', '產品種類', 'Terméktípus', 'Ragam Produk', 'סדרות מוצרים', 
       'Gamma di prodotti', '製品カテゴリ', 'Gama de productos', 'Productassortiment', 'Gama de producto', 'Oferta produktów', 'Gama de produse', 
       'Produktsortiment', 'รุ่น', 'Ürün Çeşitleri', '類型', 'Phạm vi sản phẩm', 'Produktová řada', 'Serie',
-    ].map((label) => `contains(@content-desc, '${label}')`).join(' or ');
-  }
-
-  private get resolutionFilterLabel() {
-    return [
-      'Resolution', 'Résolution', 'Rozlišení', 'Resolución', '解析度', 'Resolusi', 'Risoluzione', 'Felbontás',
-      'Auflösung', 'rozdzielczość', 'Rezoluție', 'دقة', 'ความละเอียด', 'Çözünürlük', '分辨率', 'Độ Phân Giải', '解像度',
     ].map((label) => `contains(@content-desc, '${label}')`).join(' or ');
   }
 

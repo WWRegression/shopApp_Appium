@@ -608,7 +608,6 @@ export class PfPage extends BasePage {
     const sections: { kind: PfFilterKind; options: ChainablePromiseArray }[] = [
       { kind: 'price', options: this.pflocator.priceOptions },
       { kind: 'product', options: this.pflocator.productOptions },
-      { kind: 'resolution', options: this.pflocator.resolutionOptions },
     ];
     for (let scroll = 0; scroll < 5; scroll += 1) {
       const shown: { kind: PfFilterKind; option: WebdriverIO.Element; top: number }[] = [];
