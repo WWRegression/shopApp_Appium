@@ -12,6 +12,7 @@ import {
   scrollUntilVisible,
   waitForDisplayedOrFalse,
   verifyHyperlinkRedirects,
+  withoutIdleWait,
 } from '../helpers/element.helper';
 import { longPressElement, scrollListDown } from '../helpers/gesture.helper';
 import { markFailed, markFailedAndStop } from '../helpers/report.helper';
@@ -135,12 +136,16 @@ export class HomePage extends BasePage {
   /** Scrolls Home until the T&C row is shown; a site without T&C on Home ends the TC as N/A. */
   async verifyTermsShown(): Promise<void> {
     await switchToNative();
-    const shown = await quickSwipeUntilVisible(this.locator.tncSection);
-    if (shown) {
-      // The swipe bounces at the page end and brings up the notification panel over the T&C;
-      // a scroll down from mid-screen hides it (one starting next to the BNB opens the panel)
-      await scrollListDown();
-    }
+    // A video playing above the T&C keeps the screen busy, so idle waits are skipped
+    const shown = await withoutIdleWait(async () => {
+      const found = await quickSwipeUntilVisible(this.locator.tncSection);
+      if (found) {
+        // The swipe bounces at the page end and brings up the notification panel over the T&C;
+        // a scroll down from mid-screen hides it (one starting next to the BNB opens the panel)
+        await scrollListDown();
+      }
+      return found;
+    });
     console.log(`[verifyTermsShown] T&C ${shown ? 'shown' : 'not shown'}`);
     markFailedAndStop([{ label: '[SKIPPED] No T&C on Home for this site', pass: shown }], 'verifyTermsShown');
   }
@@ -148,15 +153,17 @@ export class HomePage extends BasePage {
   /** T&C is folded by default, and tapping it shows its content (opened for the link checks). */
   async verifyTermsFolded(): Promise<void> {
     // Existence, not display: the opened content can start behind BNB
-    const folded = !(await this.locator.tncContent.isExisting());
+    const folded = await withoutIdleWait(async () => !(await this.locator.tncContent.isExisting()));
     console.log(`[verifyTermsFolded] expected T&C="folded" actual="${folded ? 'folded' : 'open'}" result=${folded ? 'PASS' : 'FAIL'}`);
     markFailed([{ label: 'T&C is not folded by default', pass: folded }], 'verifyTermsFolded');
     if (!folded) {
       return;
     }
 
-    await clickElement(this.locator.tncSection, { timeout: 5000 });
-    const opened = await this.locator.tncContent.waitForExist({ timeout: 3000 }).then(() => true, () => false);
+    const opened = await withoutIdleWait(async () => {
+      await clickElement(this.locator.tncSection, { timeout: 5000 });
+      return this.locator.tncContent.waitForExist({ timeout: 3000 }).then(() => true, () => false);
+    });
     console.log(`[verifyTermsFolded] expected T&C content="shown" actual="${opened ? 'shown' : 'not shown'}" result=${opened ? 'PASS' : 'FAIL'}`);
     markFailed([{ label: 'T&C content is not shown after tapping it', pass: opened }], 'verifyTermsFolded');
   }
