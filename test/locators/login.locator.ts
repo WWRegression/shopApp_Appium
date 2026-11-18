@@ -199,7 +199,10 @@ export class LoginLocator {
   }
 
   get ssoTermsScrollDownButton() {
-      return $(`//android.widget.Button['${SAMSUNG_ACCOUNT_PACKAGE}' and @content-desc="Scroll down"]`);
+    return $(
+      `//android.widget.Button[${SAMSUNG_ACCOUNT_PACKAGE} and @content-desc="Scroll down"]` +
+      ` | //android.widget.ImageButton[${SAMSUNG_ACCOUNT_PACKAGE} and @content-desc="More"]`
+    );
   }
 
   get ssoAgreeButton() {
