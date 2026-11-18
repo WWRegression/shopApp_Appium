@@ -10,7 +10,8 @@ const KEYCODE_DEL = 67;
 const BLACKLIST_WORDS = ['google', 'apple', 'iphone', '@'];
 
 /** Category line under a Suggested Searches row, e.g. "in Smartphones". */
-const SMARTPHONE_CATEGORY_WORDS = ['smartphone', 'smartphones', '스마트폰', '智能手机', 'teléfono', 'telefon'];
+const SMARTPHONE_CATEGORY_WORDS = ['smartphones', '智能手机', 'Điện Thoại Thông Minh', 'الهواتف الذكية', 'Téléphones Intelligents', 
+'Chytré telefony', 'Okostelefonok', 'סמארטפונים', 'スマートフォン', 'Celulares', 'Smartfony', 'Akıllı Telefonlar', 'Mobiltelefoner', 'สมาร์ทโฟน'];
 
 export class SearchPage extends BasePage {
   private readonly locator = new SearchLocator();
