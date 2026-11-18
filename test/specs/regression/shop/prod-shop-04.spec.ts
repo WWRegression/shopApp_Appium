@@ -14,13 +14,10 @@ describe('PROD_SHOP_04', () => {
       const target = site.countryName?.startsWith('Chile') ? 'Columbia (Español)' : 'Chile (Español)';
 
       await shopPage.changeCountry(target);
-      
       await loginPage.skipPurpose(30000);
       await shopPage.dismissOverlays();
-      
-      await mypagePage.verifyLoggedIn();
       await shopPage.verifyCountry(target);
-
+      await mypagePage.verifyLoggedIn();
       await mypagePage.changeCountryInSettings(site.countryName);
       await loginPage.skipPurpose(30000);
       await shopPage.dismissOverlays();
