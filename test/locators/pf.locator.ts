@@ -46,30 +46,31 @@ export class PfLocator {
    * Without `sku`, the first one on PF.
    */
   wishlistIcon(sku = '') {
-    return $(`(//*[(self::android.widget.Button or self::android.view.View) and (
-        (contains(@content-desc, 'Add') and contains(@content-desc, 'wishlist'))
-        or (contains(@content-desc, 'Ajouter') and contains(@content-desc, 'souhaits'))
-        or (contains(@content-desc, 'Agregar') and contains(@content-desc, 'favoritos'))
-        or (contains(@content-desc, 'Añadir') and contains(@content-desc, 'favoritos'))
-        or (contains(@content-desc, 'Tambahkan') and contains(@content-desc, 'keinginan'))
-        or (contains(@content-desc, 'Aggiungi') and contains(@content-desc, 'desideri'))
-        or (contains(@content-desc, '添加') and contains(@content-desc, '愿望清单'))
-        or (contains(@content-desc, 'hinzufügen') and contains(@content-desc, 'Wunschliste'))
-        or (contains(@content-desc, 'Agregar') and contains(@content-desc, 'deseos'))
-        or (contains(@content-desc, 'Voeg') and contains(@content-desc, 'verlanglijst'))
-        or (contains(@content-desc, 'Dodaj') and contains(@content-desc, 'życzeń'))
-        or (contains(@content-desc, 'Lägg till') and contains(@content-desc, 'önskelista'))
-        or (contains(@content-desc, 'เพิ่ม') and contains(@content-desc, 'รายการที่อยากได้'))
-        or (contains(@content-desc, 'Thêm') and contains(@content-desc, 'yêu thích'))
-        or (contains(@content-desc, 'Přidat') and contains(@content-desc, 'oblíbených'))
-        or (contains(@content-desc, '新增') and contains(@content-desc, '願望清單'))
-        or (contains(@content-desc, 'adása') and contains(@content-desc, 'kívánságlist'))
-        or (contains(@content-desc, 'Adaugă') and contains(@content-desc, 'dorințe'))
-        or (contains(@content-desc, 'ekle') and contains(@content-desc, 'favori'))
-        or (contains(@content-desc, '加入心') and contains(@content-desc, '愿单'))
-        or (contains(@content-desc, 'Adicionar') and contains(@content-desc, 'desejos'))
-        or (contains(@content-desc, '添加') and contains(@content-desc, '至我的收藏'))
-      ) and contains(@content-desc, '${sku}')])[1]`);
+    const label = [
+      ['Add', 'wishlist'],
+      ['Ajouter', 'souhaits'],
+      ['Agregar', 'favoritos'],
+      ['Añadir', 'favoritos'],
+      ['Tambahkan', 'keinginan'],
+      ['Aggiungi', 'desideri'],
+      ['hinzufügen', 'Wunschliste'],
+      ['Agregar', 'deseos'],
+      ['Voeg', 'verlanglijst'],
+      ['Dodaj', 'życzeń'],
+      ['Lägg till', 'önskelista'],
+      ['เพิ่ม', 'รายการที่อยากได้'],
+      ['Thêm', 'yêu thích'],
+      ['Přidat', 'oblíbených'],
+      ['新增', '願望清單'],
+      ['adása', 'kívánságlist'],
+      ['Adaugă', 'dorințe'],
+      ['ekle', 'favori'],
+      ['Adicionar', 'desejos'],
+      ['添加', '至我的收藏'],
+    ]
+      .map(([a, b]) => `(contains(@content-desc, '${a}') and contains(@content-desc, '${b}'))`)
+      .join(' or ');
+    return $(`(//*[(self::android.widget.Button or self::android.view.View) and (${label}) and contains(@content-desc, '${sku}')])[1]`);
   }
 
   /**
@@ -77,28 +78,30 @@ export class PfLocator {
    * Without `sku`, the first one on PF.
    */
   wishlistRemoveIcon(sku = '') {
-    return $(`(//*[(self::android.widget.Button or self::android.view.View) and (
-        (contains(@content-desc, 'Remove') and contains(@content-desc, 'wishlist'))
-        or (contains(@content-desc, 'Supprimer') and contains(@content-desc, 'souhaits'))
-        or (contains(@content-desc, 'Eliminar') and contains(@content-desc, 'favoritos'))
-        or (contains(@content-desc, 'Hapus') and contains(@content-desc, 'keinginan'))
-        or (contains(@content-desc, 'Rimuovi') and contains(@content-desc, 'desideri'))
-        or (contains(@content-desc, '删除') and contains(@content-desc, '愿望清单'))
-        or (contains(@content-desc, 'entfernen') and contains(@content-desc, 'Wunschliste'))
-        or (contains(@content-desc, 'Eliminar') and contains(@content-desc, 'deseos'))
-        or (contains(@content-desc, 'Verwijder') and contains(@content-desc, 'verlanglijst'))
-        or (contains(@content-desc, 'Usuń') and contains(@content-desc, 'życzeń'))
-        or (contains(@content-desc, 'Ta bort') and contains(@content-desc, 'önskelista'))
-        or (contains(@content-desc, 'ลบ') and contains(@content-desc, 'รายการที่อยากได้'))
-        or (contains(@content-desc, 'Xóa') and contains(@content-desc, 'yêu thích'))
-        or (contains(@content-desc, 'Odebrat') and contains(@content-desc, 'přání'))
-        or (contains(@content-desc, '移除') and contains(@content-desc, '願望清單'))
-        or (contains(@content-desc, 'eltávolítása') and contains(@content-desc, 'kívánságlist'))
-        or (contains(@content-desc, 'Elimină') and contains(@content-desc, 'dorințe'))
-        or (contains(@content-desc, 'kaldır') and contains(@content-desc, 'favori'))
-        or (contains(@content-desc, '移除心') and contains(@content-desc, '愿单'))
-        or (contains(@content-desc, 'Remover') and contains(@content-desc, 'desejos'))
-      ) and contains(@content-desc, '${sku}')])[1]`);
+    const label = [
+      ['Remove', 'wishlist'],
+      ['Supprimer', 'souhaits'],
+      ['Eliminar', 'favoritos'],
+      ['Hapus', 'keinginan'],
+      ['Rimuovi', 'desideri'],
+      ['entfernen', 'Wunschliste'],
+      ['Eliminar', 'deseos'],
+      ['Verwijder', 'verlanglijst'],
+      ['Usuń', 'życzeń'],
+      ['Ta bort', 'önskelista'],
+      ['ลบ', 'รายการที่อยากได้'],
+      ['Xóa', 'yêu thích'],
+      ['Odebrat', 'přání'],
+      ['移除', '願望清單'],
+      ['eltávolítása', 'kívánságlist'],
+      ['Elimină', 'dorințe'],
+      ['kaldır', 'favori'],
+      ['移除心', '愿单'],
+      ['Remover', 'desejos'],
+    ]
+      .map(([a, b]) => `(contains(@content-desc, '${a}') and contains(@content-desc, '${b}'))`)
+      .join(' or ');
+    return $(`(//*[(self::android.widget.Button or self::android.view.View) and (${label}) and contains(@content-desc, '${sku}')])[1]`);
   }
 
   /** Login popup shown to a guest who taps the wishlist heart. */
