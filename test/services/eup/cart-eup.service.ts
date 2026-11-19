@@ -17,6 +17,8 @@ export class CartEupService implements AddedService {
       throw new Error('EUP add button not found');
     }    
     await this.verifyServiceApplied();
+    // The cart re-renders after the add; a checkout tap right away gets no response
+    await driver.pause(2000);
 
     console.warn('[Cart.EUP.addService] =============Verified EUP applied to cart=============');
   }

@@ -821,7 +821,7 @@ export class PfPage extends BasePage {
     // Services carry a non-SM code on their own desc line, e.g. "P-GT-LCXOS2EW" (AE repair / battery replacement).
     const ownSku = this.cardSku(card.desc) || (ownLines.find((line) => /^(?=.*\d)(?=.*[A-Z])[A-Z0-9]+(?:-[A-Z0-9]+)+$/.test(line)) ?? '');
     const sku = ownSku || this.cardSku(wishlist?.desc ?? '');
-    const priceText = ownLines.find((line) => this.isPriceLabel(line)) ?? nodes.find((node) => this.isPriceLabel(node.desc))?.desc ?? '';
+    const priceText = this.pickPriceLine(ownLines) ?? nodes.find((node) => this.isPriceLabel(node.desc))?.desc ?? '';
     if (!sku && !priceText) {
       return undefined;
     }
@@ -1063,15 +1063,19 @@ export class PfPage extends BasePage {
     );
   }
 
+  /** First price line, preferring a bare price over a badge such as "Save £110" (UK: "Save £110 / £389.00 / £499.00"). */
+  private pickPriceLine(lines: string[]): string | undefined {
+    const priceLines = lines.filter((line) => this.isPriceLabel(line));
+    // Currency codes are at most 3 letters, so a 4+ letter word marks a badge
+    return priceLines.find((line) => !/\p{L}{4,}/u.test(line)) ?? priceLines[0];
+  }
+
   /**
    * "." groups thousands in "40.990.000 ₫". ZA uses spaces and a comma decimal, e.g. "R 27 499,00".
    * The card text also carries the SKU on a later line.
    */
   private parseCardPrice(priceText: string): number {
-    const priceLine = priceText
-      .split(/\r?\n/)
-      .map((line) => line.trim())
-      .find((line) => this.isPriceLabel(line))
+    const priceLine = this.pickPriceLine(priceText.split(/\r?\n/).map((line) => line.trim()))
       // "1609,-" → "1609"
       ?.replace(/,-$/, '') ?? priceText;
     const compact = priceLine.replace(/[^\d.,]/g, '');
