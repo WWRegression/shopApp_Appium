@@ -1,4 +1,4 @@
-import { BACK_BUTTON_XPATH } from './header.locator';
+import { HEADER_REGION_XPATH } from './header.locator';
 import { getRunConfig } from '../../config/run.config';
 import type { Site } from '../../config/site';
 
@@ -456,8 +456,8 @@ export class ShopLocator {
 
   get studentStorePage() {
     return $(
-      `${BACK_BUTTON_XPATH}/following-sibling::android.view.View[
-        @content-desc = 'Education Offers' or 
+      `${HEADER_REGION_XPATH}/android.view.View[
+        @content-desc = 'Education Offers' or
         @content-desc = 'Student Store' or 
         @content-desc = 'Student store' or 
         @content-desc = 'Samsung Education Shop' or
@@ -479,6 +479,8 @@ export class ShopLocator {
         @content-desc = 'Education site' or
         @content-desc = 'ยืนยันอีเมลนักเรียนของคุณ' or
         @content-desc = 'Welcome to Samsung for Education Store' or
+        @content-desc = "Welcome to Samsung's Education Store" or
+        @content-desc = 'EPPLoginEDU' or
         @content-desc = 'Confirma o teu email de estudante' or
         @content-desc = 'Xác nhận email của bạn'
       ] |
@@ -488,8 +490,8 @@ export class ShopLocator {
 
   get corporateStorePage() {
     return $(
-      `${BACK_BUTTON_XPATH}/following-sibling::android.view.View[
-        @content-desc='Corporate Store' or 
+      `${HEADER_REGION_XPATH}/android.view.View[
+        @content-desc='Corporate Store' or
         @content-desc='Corporate offer' or 
         @content-desc='Samsung Corporate Shop' or
         @content-desc='İş Ortaklarına Özel Mağaza'
@@ -506,7 +508,7 @@ export class ShopLocator {
 
   get vipStorePage() {
     return $(
-      `${BACK_BUTTON_XPATH}/following-sibling::android.view.View/android.widget.Button[contains(@content-desc, 'VIP Offers') or contains(@content-desc, 'VIP offers')]`
+      `${HEADER_REGION_XPATH}/android.view.View/android.widget.Button[contains(@content-desc, 'VIP Offers') or contains(@content-desc, 'VIP offers')]`
     );
   }
 
@@ -540,7 +542,7 @@ export class ShopLocator {
 	contains(@text, 'Live Shop') or
 	contains(@text, 'LiveShop')
 ] |
- ${BACK_BUTTON_XPATH}/following-sibling::android.view.View[@content-desc='Samsung Live'] |
+ ${HEADER_REGION_XPATH}/android.view.View[@content-desc='Samsung Live'] |
  //android.view.View[@content-desc='Live Shop'] |
  //android.widget.Button[contains(@content-desc, 'Live Shop')]`
     );

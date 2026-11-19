@@ -233,7 +233,10 @@ export class LoginLocator {
   }
 
   get ssoAddAccountLogoArea() {
-    return $(`//android.widget.LinearLayout[${SAMSUNG_ACCOUNT_PACKAGE} and contains(@resource-id,"app_logo_parent")]`);
+    return $(
+      `//android.widget.LinearLayout[${SAMSUNG_ACCOUNT_PACKAGE} and contains(@resource-id,"app_logo_parent")]
+      | //android.widget.TextView[${SAMSUNG_ACCOUNT_PACKAGE} and contains(@resource-id,"suc_layout_title")]`
+    );
   }
 
   get ssoIdNextButton() {

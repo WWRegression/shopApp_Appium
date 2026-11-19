@@ -1,4 +1,4 @@
-import { BACK_BUTTON_XPATH } from './header.locator';
+import { HeaderLocator } from './header.locator';
 
 export const DASHBOARD_MENUS = ['rewards', 'vouchers', 'wishlist'] as const;
 
@@ -657,12 +657,12 @@ export class MypageLocator {
 
   /** Back button of a page opened from My Page — My Page itself has none */
   get subPageBackButton() {
-    return $(BACK_BUTTON_XPATH);
+    return new HeaderLocator().backButton;
   }
 
   /** Title next to Back on a page opened from My Page (US nests it in a container) */
   get subPageTitle() {
-    return $(`(${BACK_BUTTON_XPATH}/following-sibling::*/descendant-or-self::*[@content-desc])[1]`);
+    return new HeaderLocator().headerTitle;
   }
 
   /** Profile card showing every word of the account name; CN by its greeting ('欢迎光临') since it shows a random "sa_…" nickname */

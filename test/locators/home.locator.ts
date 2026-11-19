@@ -122,7 +122,7 @@ export class HomeLocator {
 
   get mainKv() {
     return $(
-      `(//android.widget.ScrollView//android.view.View[@clickable = 'true' and preceding-sibling::android.widget.ImageView]
+      `(//android.widget.ScrollView//android.view.View[@clickable = 'true' and (preceding-sibling::android.widget.ImageView or following-sibling::android.widget.ImageView)]
       | //android.widget.ScrollView/android.view.View[1]//android.view.View[android.view.View]//*[self::android.widget.ImageView or self::android.view.View][@clickable = 'true'])[1]`
     );
   }

@@ -293,6 +293,10 @@ export class CartLocator {
   get eupAppliedLabel() {
     return this.eupRemoveButton;
   }
+
+  get flexLogo() {
+    return $("div[class*='logo--flex']");
+  }
   /** EUP END -------------------------------------------------------------- */
 
   /** TRADE-UP -------------------------------------------------------------- */

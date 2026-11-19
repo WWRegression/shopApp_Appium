@@ -468,6 +468,24 @@ export class BasePage {
     await this.prepareHeaderBnb();
     await this.ensureBnbVisible(menu);
     await clickElement(this.bnbLocator.menu(menu));
+    // A popup that shows up late (CL Insider banner) takes the tap — close it and tap again
+    for (let retry = 1; retry <= 2 && !(await this.isBnbTabOpened(menu)); retry++) {
+      if (!(await this.closeTopPopup())) {
+        return;
+      }
+      console.log(`[selectBnbMenu] popup closed, ${menu} tapped again (${retry})`);
+      await clickElement(this.bnbLocator.menu(menu));
+    }
+  }
+
+  /** True when the tab is marked selected within 3s, or the BNB has gone (US/IN Cart has none). */
+  private async isBnbTabOpened(menu: BnbMenu): Promise<boolean> {
+    return driver
+      .waitUntil(
+        async () => (await this.isBnbMenuMarkedSelected(menu)) || !(await isDisplayedOrFalse(this.bnbLocator.homeButton)),
+        { timeout: 3000, interval: 500 }
+      )
+      .then(() => true, () => false);
   }
 
   async matchesBnbMenu(menu: BnbMenu): Promise<boolean> {
@@ -521,12 +539,11 @@ export class BasePage {
   }
 
   private async ensureBnbVisible(menu: BnbMenu): Promise<void> {
+    // The Insider banner sits over the BNB while the BNB still reads as displayed, so a tap would hit the banner (CL)
+    await this.closeInsiderBannerIfShown();
     if (await isDisplayedOrFalse(this.bnbLocator.menu(menu))) {
       return;
     }
-
-    // The Insider banner sits over the BNB while the BNB still reads as displayed, so a tap would hit the banner (CL)
-    await this.closeInsiderBannerIfShown();
 
     // The search area has no BNB. Closing it with header Back returns to a page that has one.
     const { SearchPage } = await import('./search.page');

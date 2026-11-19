@@ -149,6 +149,8 @@ export class PfPage extends BasePage {
 
   /** Price on the first visible PF card. Does not scroll the list, so a following selectPfCard({ mode: 'first' }) hits the same card. */
   async getFirstCardPrice(): Promise<number> {
+    await switchToNative();
+    await this.isPfCardDisplayed();
     const [card] = [...(await this.pflocator.productGrid)];
     if (!card) {
       return NaN;
@@ -1052,8 +1054,11 @@ export class PfPage extends BasePage {
     const wholeEuros = /^\d{1,3}(?:[.\s]?\d{3})*,-$/m.test(label);
     // Upper-case ISO codes only, so words such as "try" or "all" are not codes: "4,799.00 AED"
     const isoCode = /\b(?:AED|SAR|QAR|KWD|BHD|OMR|EGP|JOD|MAD|TND|DZD|TRY|PLN|CZK|HUF|RON|BGN|SEK|NOK|DKK|CHF|GBP|UAH|KZT|MYR|SGD|HKD|TWD|CNY|JPY|INR|IDR|PHP|THB|AUD|NZD|CAD|MXN|BRL|ARS|CLP|COP|PEN|ZAR|ILS)\b/;
+    // SE writes "15 990 kr"
+    const krona = /\d\s*kr\b/.test(label);
     return (
       wholeEuros ||
+      krona ||
       (/\d/.test(label) && (isoCode.test(label) || /\b(?:vnd|usd|eur|krw)\b|\brp\s*\d|\br\s*\d|\$|€|£|₩|¥|₫|﷼|⃁|₪|円|₱|฿|₹/i.test(label)))
     );
   }
@@ -1158,6 +1163,8 @@ export class PfPage extends BasePage {
    */
   async verifyWishlistRemovedOnPf(sku: string): Promise<void> {
     await switchToNative();
+    // PF cards render a few seconds after landing; scrolling earlier skips the first cards
+    await waitForDisplayedOrFalse(this.pflocator.wishlistIcon(), { timeout: 10000 });
     const addShown = await scrollUntilVisible(this.pflocator.wishlistIcon(sku));
     const removeShown = await isDisplayedOrFalse(this.pflocator.wishlistRemoveIcon(sku));
     console.log(

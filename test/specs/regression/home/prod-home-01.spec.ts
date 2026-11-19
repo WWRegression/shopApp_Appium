@@ -37,7 +37,7 @@ describe('PROD_HOME_01', () => {
       await shopPage.verifyCountry(site.countryName);
 
       await homePage.configureUniversalBuild();
-      await onboardingPage.selectTrustArcCookie('decline');
+      await onboardingPage.selectTrustArcCookieIfShown('decline');
       await loginPage.continueAsGuestIfShown();
 
       await mypagePage.openPushNotificationMenu();

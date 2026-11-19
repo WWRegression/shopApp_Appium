@@ -84,7 +84,7 @@ export class OnboardingPage extends BasePage {
     }
     await switchToNative();
     const button = choice === 'accept' ? this.locator.trustArcAcceptButton : this.locator.trustArcDeclineButton;
-    const selected = await clickIfDisplayed(button, 10000);
+    const selected = await clickIfDisplayed(button, 5000);
     console.log(`[selectTrustArcCookieIfShown] ${selected ? `selected "${choice} all"` : 'TrustArc cookie not shown — skipped'}`);
   }
 
