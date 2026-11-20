@@ -15,7 +15,6 @@ export class MypageWishlistLocator {
     return $(
       [
         `.wishlist-product[data-modelcode="${sku}" i] .wishlist-product__name span`,
-        `.wishlist-product[data-modelcode="${sku}" i] [class*="wishlist-product__name"]`,
       ].join(', ')
     );
   }
@@ -28,9 +27,7 @@ export class MypageWishlistLocator {
   get removeButton() {
     return $(
       [
-        'button[aria-label="Remove from wishlist" i]',
         'button[aria-label="wishlist:wishlist cleared" i]',
-        "button[class='wishlist-remove-btn']",
       ].join(', ')
     );
   }
@@ -39,9 +36,7 @@ export class MypageWishlistLocator {
   productRemoveButton(sku: string) {
     return $(
       [
-        `.wishlist-product[data-modelcode="${sku}" i] button[aria-label="Remove from wishlist" i]`,
         `.wishlist-product[data-modelcode="${sku}" i] button[aria-label="wishlist:wishlist cleared" i]`,
-        `.wishlist-product[data-modelcode="${sku}" i] button[class='wishlist-remove-btn']`,
       ].join(', ')
     );
   }
