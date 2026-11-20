@@ -464,7 +464,7 @@ export class CheckoutPage extends BasePage {
       [data.email, ['email']],
       [data.mobile, ['phone']],
       // CL requires the RUT tax ID here, ZA the TV licence number for TVs
-      [data.documentNumber, ['vatnumber', 'tvlicensenumber']],
+      [data.documentNumber, ['vatnumber', 'tvlicensenumber', 'personaltaxnumber']],
     ]);
   }
 
@@ -508,10 +508,11 @@ export class CheckoutPage extends BasePage {
       formId,
       [
         [data.address1, ['line1']],
-        [data.address2, ['line2', 'ward', 'suburb', 'kecamatan', 'județ']],
+        [data.address2, ['line2', 'ward', 'suburb', 'kecamatan', 'județ', 'line2_c']],
+        [data.address3, ['line2_d']],
         [pincodeFirst ? undefined : data.postalCode, ['postalcode']],
         [data.town, ['town', 'shippingcityname']],
-        [data.district, ['state', 'district', 'shippingdistrictname']],
+        [data.district, ['state', 'district', 'shippingdistrictname', 'line2_b']],
         [data.apartment, ['apartment']],
         [data.landmark, ['landmark']],
         [data.searchText, ['regioniso', 'searchaddress']],

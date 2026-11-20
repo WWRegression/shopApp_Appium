@@ -67,6 +67,8 @@ export interface Site {
   shipping: {
     address1: string;
     address2?: string;
+    /** CO secondary street number (line2_d). */
+    address3?: string;
     apartment?: string;
     district?: string;
     floor?: string;

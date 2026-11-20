@@ -14,7 +14,8 @@
   },
   "shipping": {
     "address1": "Casa",
-    "address2": "#AB123-CD456",
+    "address2": "AB123",
+    "address3": "CD456",
     "apartment": "asdfasg",
     "district": "Bogota, D.C.",
     "landmark": "Monserrate",
