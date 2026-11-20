@@ -304,7 +304,7 @@ export class BcLocator {
   }
 
   get tradeInEditButton() {
-    return $('button[an-la*="trade-in:edit" i], button[an-la*="trade-in:change" i], button[an-la*="edit trade-in" i]');
+    return $('[an-la*="trade-in:edit" i], [an-la*="trade-in:change" i], [an-la*="edit trade-in" i]');
   }
 
   get tradeInPriceLabel() {

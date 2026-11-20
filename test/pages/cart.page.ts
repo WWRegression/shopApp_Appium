@@ -291,6 +291,10 @@ export class CartPage extends BasePage {
   /** Get the quantity of the cart item */
   async getCartTotalCount(): Promise<number> {
     const cartTotalCountSection = await this.locator.cartTotalCountSection.getText();
+    // One item is written as a word, e.g. SE "Du har en produkt i din varukorg"
+    if (cartTotalCountSection.trim() && !/\d/.test(cartTotalCountSection)) {
+      return 1;
+    }
     return parseNumber(cartTotalCountSection);
   }
 
