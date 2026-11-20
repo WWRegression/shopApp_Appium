@@ -36,7 +36,7 @@ const defaults: RunConfig = {
   testType: 'sanity',
   environment: 'prod',
   releaseName: 'TESTDEV',
-  reportDb: false,
+  reportDb: true,
   flagshipSetupDone: false,
   appiumPort: 4723,
   systemPort: 8200,
